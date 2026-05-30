@@ -1,4 +1,4 @@
-package com.pepero.bitboard.encode;
+package com.pepero.jcb.encode;
 
 public class MoveList {
     private final int[] moves = new int[256];

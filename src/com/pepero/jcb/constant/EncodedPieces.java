@@ -1,4 +1,4 @@
-package com.pepero.bitboard.constant;
+package com.pepero.jcb.constant;
 
 public class EncodedPieces {
     // white pieces
@@ -16,4 +16,15 @@ public class EncodedPieces {
     public static final int r = 9; // black rook
     public static final int q = 10; // black queen
     public static final int k = 11; // black king
+
+    public static String encodedPieceToString(int piece){
+        return switch (piece) {
+            case N, n -> "N";
+            case B, b -> "B";
+            case R, r -> "R";
+            case Q, q -> "Q";
+            case K, k -> "K";
+            default -> "";
+        };
+    }
 }

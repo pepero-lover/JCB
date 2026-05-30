@@ -1,8 +1,9 @@
-package com.pepero.bitboard.core;
+package com.pepero.jcb.core;
 
-import com.pepero.bitboard.bitboard.Attacks;
-import com.pepero.bitboard.bitboard.Magics;
-import com.pepero.bitboard.encode.EncodeMove;
+import com.pepero.jcb.bitboard.Attacks;
+import com.pepero.jcb.bitboard.Magics;
+import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.hash.Zobrist;
 
 public class Initializer {
     /**
@@ -17,6 +18,8 @@ public class Initializer {
         ChessBoardUtils.initCharPieces();
 
         EncodeMove.initPromotedPiecesChar();
+
+        Zobrist.initHashKeys();
 
         // it doesn't need now because the magic numbers is now saved on arrays
         // Magics.initMagicNumbers();

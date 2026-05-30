@@ -1,4 +1,4 @@
-package com.pepero.bitboard.constant;
+package com.pepero.jcb.constant;
 
 public class BoardSquares {
     // For human reading board numbers
@@ -26,4 +26,21 @@ public class BoardSquares {
             "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
             "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     };
+
+    public static int coordinates_to_square(String coordinate) {
+        if (coordinate == null || coordinate.length() != 2) {
+            return -1; // return if the coordinate is not right
+        }
+
+        int file = coordinate.charAt(0) - 'a';
+        int rank = '8' - coordinate.charAt(1);
+
+        // if square is out of bounds
+        if (file < 0 || file > 7 || rank < 0 || rank > 7) {
+            return -1;
+        }
+
+        // return result
+        return rank * 8 + file;
+    }
 }
