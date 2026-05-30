@@ -1,4 +1,4 @@
-package com.pepero.bitboard.constant;
+package com.pepero.jcb.constant;
 
 /**
  * define side to move

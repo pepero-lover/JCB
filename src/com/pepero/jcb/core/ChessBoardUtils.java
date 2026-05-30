@@ -1,17 +1,18 @@
-package com.pepero.bitboard.core;
+package com.pepero.jcb.core;
 
-import com.pepero.bitboard.bitboard.BitBoardUtils;
-import com.pepero.bitboard.constant.BoardSquares;
-import com.pepero.bitboard.constant.CastlingRights;
-import com.pepero.bitboard.constant.SideToMove;
+import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.CastlingRights;
+import com.pepero.jcb.constant.SideToMove;
+import com.pepero.jcb.hash.Zobrist;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pepero.bitboard.constant.BoardSquares.*;
-import static com.pepero.bitboard.constant.EncodedPieces.*;
-import static com.pepero.bitboard.constant.SideToMove.*;
+import static com.pepero.jcb.constant.BoardSquares.*;
+import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.constant.SideToMove.*;
 
 public class ChessBoardUtils {
     public static final char[] ascii_pieces = {
@@ -95,6 +96,10 @@ public class ChessBoardUtils {
                 .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
                 .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
                 .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
+                .append("\n");
+
+        sb.append("      Hash key:  ")
+                .append(Long.toHexString(chessboard.hash_key))
                 .append("\n");
 
         System.out.print(sb);
@@ -199,8 +204,91 @@ public class ChessBoardUtils {
             chessboard.occupancies[black] |= chessboard.bitboards[piece];
         }
 
+        // init ply
+        chessboard.ply = Integer.parseInt(fenDivided[4]);
+
+        // init half ply
+        chessboard.half_ply = Integer.parseInt(fenDivided[5]);
+
         // init all occupancies
         chessboard.occupancies[both] |= chessboard.occupancies[white];
         chessboard.occupancies[both] |= chessboard.occupancies[black];
+
+        // init hash key
+        chessboard.hash_key = Zobrist.generateHashKey(chessboard);
+    }
+
+    /**
+     * Get piece type on square
+     * if there is notting, returns -1
+     *
+     * @param chessboard chessboard
+     * @param square square
+     * @return Get piece type on square
+     * if there is notting, returns -1
+     */
+    public static int getPieceTypeOnSquare(Chessboard chessboard, int square){
+        for (int piece = P; piece <= k; piece++){
+            if(BitBoardUtils.getBit(chessboard.bitboards[piece], square)) return piece;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Get whether king is under attack (depends on side to move)
+     * @param chessboard chessboard
+     * @return whether king is under attack
+     */
+    public static boolean isCheck(Chessboard chessboard) {
+        int kingPos = BitBoardUtils.getLS1BIndex(
+                chessboard.side == white ?
+                        chessboard.bitboards[K] : chessboard.bitboards[k]);
+
+        ChessBoardUtils.printChessBoard(chessboard);
+
+        return MoveGenerator.isSquareAttacked(chessboard, kingPos, chessboard.side == white ? black : white);
+    }
+
+    /**
+     * Get whether this position is checkmate
+     *
+     * @param chessboard chessboard
+     * @return whether this position is checkmate
+     */
+    public static boolean isCheckmate(Chessboard chessboard) {
+        return isCheck(chessboard) && MoveGenerator.generateMoves(chessboard, new int[255]) == 0;
+    }
+
+    /**
+     * Get whether this position is stalemate
+     *
+     * @param chessboard chessboard
+     * @return whether this position is stalemate
+     */
+    public static boolean isStaleMate(Chessboard chessboard) {
+        return !isCheck(chessboard) && MoveGenerator.generateMoves(chessboard, new int[255]) == 0;
+    }
+
+    /**
+     * Get this position's repetition count
+     *
+     * @param chessboard chessboard
+     * @return this position's repetition count
+     */
+    public static int getRepetitionCount(Chessboard chessboard) {
+        int count = 1;
+
+        for (int i = chessboard.ply - 2; i >= chessboard.ply - chessboard.half_ply; i -= 2) {
+            if (chessboard.historyHashes[i] == chessboard.hash_key){
+                count++;
+
+                if (count >= 3){
+                    return 3;
+                }
+            }
+        }
+
+        return count;
     }
 }

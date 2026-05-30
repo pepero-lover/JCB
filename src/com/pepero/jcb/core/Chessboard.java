@@ -1,10 +1,11 @@
-package com.pepero.bitboard.core;
+package com.pepero.jcb.core;
 
-import com.pepero.bitboard.constant.BoardSquares;
+import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.hash.Zobrist;
 
 import java.util.Arrays;
 
-import static com.pepero.bitboard.constant.BoardSquares.*;
+import static com.pepero.jcb.constant.BoardSquares.*;
 
 public class Chessboard {
 
@@ -30,6 +31,16 @@ public class Chessboard {
     // init to no square
     public int enpassant = BoardSquares.no_sq;
 
+    // history hashes
+    public long[] historyHashes = new long[1024];
+
+    // ply
+    public int ply = 0;
+
+    // half ply
+    public int half_ply = 0;
+
+
     /*
        bin  dec
 
@@ -48,14 +59,8 @@ public class Chessboard {
     // castling rights
     public int castle;
 
-
-    /**********************************\
-     ==================================
-
-     History Stack (for takeBack)
-
-     ==================================
-     \**********************************/
+    // "almost" unique position identifier aka hash key or position key
+    public long hash_key;
 
     // maximum search depth (Perft & Search)
     public static final int MAX_DEPTH = 128;
@@ -67,17 +72,13 @@ public class Chessboard {
     private int[] enpassant_copy = new int[MAX_DEPTH];
     private int[] castle_copy = new int[MAX_DEPTH];
 
+    private long[] hash_key_copy = new long[MAX_DEPTH];
+
+    private int[] ply_copy = new int[MAX_DEPTH];
+    private int[] half_ply_copy = new int[MAX_DEPTH];
+
     // ply counter for history stack
-    private int copy_ply = 0;
-
-
-    /**********************************\
-     ==================================
-
-     Class Constructors
-
-     ==================================
-     \**********************************/
+    private int copy_index = 0;
 
     public Chessboard() {
         resetBoard();
@@ -86,24 +87,6 @@ public class Chessboard {
     public Chessboard(String fen) {
         ChessBoardUtils.parseFen(this, fen);
     }
-
-    public Chessboard(Chessboard chessboard) {
-        System.arraycopy(chessboard.bitboards, 0, this.bitboards, 0, bitboards.length);
-        System.arraycopy(chessboard.occupancies, 0, this.occupancies, 0, occupancies.length);
-
-        this.side = chessboard.side;
-        this.enpassant = chessboard.enpassant;
-        this.castle = chessboard.castle;
-    }
-
-
-    /**********************************\
-     ==================================
-
-     Board Methods
-
-     ==================================
-     \**********************************/
 
     public void resetBoard() {
         // reset board position and state variables
@@ -118,7 +101,16 @@ public class Chessboard {
         this.castle = 0;
 
         // reset history ply pointer
-        this.copy_ply = 0;
+        this.copy_index = 0;
+
+        // init hash key
+        this.hash_key = Zobrist.generateHashKey(this);
+
+        // reset ply
+        this.ply = 0;
+
+        // reset half ply
+        this.half_ply = 0;
     }
 
     public void setStartPos() {
@@ -134,31 +126,41 @@ public class Chessboard {
      */
     public void copyBoard() {
         // copy current state into the history stack at current ply
-        System.arraycopy(this.bitboards, 0, bitboards_copy[copy_ply], 0, 12);
-        System.arraycopy(this.occupancies, 0, occupancies_copy[copy_ply], 0, 3);
+        System.arraycopy(this.bitboards, 0, bitboards_copy[copy_index], 0, 12);
+        System.arraycopy(this.occupancies, 0, occupancies_copy[copy_index], 0, 3);
 
-        side_copy[copy_ply] = this.side;
-        enpassant_copy[copy_ply] = this.enpassant;
-        castle_copy[copy_ply] = this.castle;
+        side_copy[copy_index] = this.side;
+        enpassant_copy[copy_index] = this.enpassant;
+        castle_copy[copy_index] = this.castle;
 
-        // increment ply (go deeper)
-        copy_ply++;
+        hash_key_copy[copy_index] = this.hash_key;
+
+        ply_copy[copy_index] = this.ply;
+        half_ply_copy[copy_index] = this.half_ply;
+
+        // increment index
+        copy_index++;
     }
 
     /**
      * Restore board state (Pop from History Stack)
      */
     public void takeBack() {
-        // decrement ply to get the previous state (go back)
-        copy_ply--;
+        // decrement index to get the previous state
+        copy_index--;
 
         // copy the previous state from the history stack back to the board
-        System.arraycopy(bitboards_copy[copy_ply], 0, this.bitboards, 0, 12);
-        System.arraycopy(occupancies_copy[copy_ply], 0, this.occupancies, 0, 3);
+        System.arraycopy(bitboards_copy[copy_index], 0, this.bitboards, 0, 12);
+        System.arraycopy(occupancies_copy[copy_index], 0, this.occupancies, 0, 3);
 
-        this.side = side_copy[copy_ply];
-        this.enpassant = enpassant_copy[copy_ply];
-        this.castle = castle_copy[copy_ply];
+        this.side = side_copy[copy_index];
+        this.enpassant = enpassant_copy[copy_index];
+        this.castle = castle_copy[copy_index];
+
+        this.hash_key = hash_key_copy[copy_index];
+
+        this.ply = ply_copy[copy_index];
+        this.half_ply = half_ply_copy[copy_index];
     }
 
     /**

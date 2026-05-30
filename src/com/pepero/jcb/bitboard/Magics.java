@@ -1,6 +1,6 @@
-package com.pepero.bitboard.bitboard;
+package com.pepero.jcb.bitboard;
 
-import com.pepero.bitboard.util.Random;
+import com.pepero.jcb.util.Random;
 
 import java.util.Arrays;
 
@@ -90,6 +90,9 @@ public class Magics {
      * Init magic numbers
      */
     public static void initMagicNumbers(){
+        // update pseudo random number state
+        Random.setRandomStateForMagicNumber();
+
         // loop over 64 board squares
         for(int square = 0;square<64;square++){
             // init rook magic numbers

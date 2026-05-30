@@ -1,11 +1,9 @@
-package com.pepero.bitboard.util;
+package com.pepero.jcb.util;
 
-import com.pepero.bitboard.bitboard.BitBoardUtils;
-import com.pepero.bitboard.constant.BoardSquares;
-import com.pepero.bitboard.core.ChessBoardUtils;
-import com.pepero.bitboard.core.Chessboard;
-import com.pepero.bitboard.core.MoveGenerator;
-import com.pepero.bitboard.encode.EncodeMove;
+import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.encode.EncodeMove;
 
 public class PerftDriver {
     // leaf nodes (number of positions reached during the test of the move generator at a given depth

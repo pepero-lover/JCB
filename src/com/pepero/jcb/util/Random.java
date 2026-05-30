@@ -1,8 +1,14 @@
-package com.pepero.bitboard.util;
+package com.pepero.jcb.util;
 
 public class Random {
     // pseudo random number state
     private static int state = 1804289383;
+
+    // state for MAGIC NUM
+    private static final int MAGIC_NUM_STATE = 1804289383;
+
+    // state for HASHING
+    private static final int HASHING_STATE = 1804289383;
 
     /**
      * Generate 32-bit pseudo legal numbers
@@ -62,5 +68,19 @@ public class Random {
      */
     public static long generateMagicNumber(){
         return getRandom64BitsNumber() & getRandom64BitsNumber() & getRandom64BitsNumber();
+    }
+
+    /**
+     * Set random state value to MAGIC_NUM_STATE value
+     */
+    public static void setRandomStateForMagicNumber(){
+        state = MAGIC_NUM_STATE;
+    }
+
+    /**
+     * Set random state value to HASHING_STATE value
+     */
+    public static void setRandomStateForHashing(){
+        state = HASHING_STATE;
     }
 }

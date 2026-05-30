@@ -1,12 +1,12 @@
-package com.pepero.bitboard.encode;
+package com.pepero.jcb.encode;
 
-import com.pepero.bitboard.constant.BoardSquares;
+import com.pepero.jcb.constant.BoardSquares;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pepero.bitboard.constant.EncodedPieces.*;
-import static com.pepero.bitboard.core.ChessBoardUtils.ascii_pieces;
+import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.core.ChessBoardUtils.ascii_pieces;
 
 public class EncodeMove {
     /*

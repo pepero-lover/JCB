@@ -1,7 +1,4 @@
-package com.pepero.bitboard.bitboard;
-
-import com.pepero.bitboard.core.ChessBoardUtils;
-import com.pepero.bitboard.core.Chessboard;
+package com.pepero.jcb.bitboard;
 
 public class BitBoardUtils {
     // The bitboard type is just 'long'

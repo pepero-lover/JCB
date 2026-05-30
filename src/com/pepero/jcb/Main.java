@@ -1,12 +1,13 @@
-package com.pepero.bitboard;
+package com.pepero.jcb;
 
-import com.pepero.bitboard.core.Chessboard;
-import com.pepero.bitboard.core.Initializer;
+import com.pepero.jcb.convertstr.ConvertStringMoveUtils;
+import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.Initializer;
+import com.pepero.jcb.core.MoveGenerator;
 
 import java.io.IOException;
 import java.util.Scanner;
-
-import static com.pepero.bitboard.util.PerftDriver.perft_test;
 
 public class Main {
     // This project actually copied the ChessProgramming's code
@@ -30,8 +31,5 @@ public class Main {
 
         // parse custom FEN string
         Chessboard chessboard = new Chessboard(start_position);
-
-        // perft
-        perft_test(chessboard, 5);
     }
 }

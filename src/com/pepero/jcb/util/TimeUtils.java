@@ -1,4 +1,4 @@
-package com.pepero.bitboard.util;
+package com.pepero.jcb.util;
 
 public class TimeUtils {
     // get time milliseconds
