@@ -299,7 +299,14 @@ public class ConvertStringMoveUtils {
             throw new ConvertMoveException("Promotion Type is not correct!");
         }
 
-        if(chessboard.side == white && promotion_type != 0) promotion_type -= 6;
+        if (promotion_type != 0) {
+            if (promotion_type >= 6) {
+                promotion_type -= 6;
+            }
+            if (chessboard.side != white) {
+                promotion_type += 6;
+            }
+        }
 
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
 
