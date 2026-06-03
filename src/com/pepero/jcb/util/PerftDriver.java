@@ -27,7 +27,7 @@ public class PerftDriver {
         // loop over generated moves
         for(int move_count = 0; move_count < count; move_count++){
             // make move
-            boolean isLegal = MoveGenerator.makeMove(chessboard ,move_list[move_count], MoveGenerator.ALL_MOVES);
+            boolean isLegal = MoveGenerator.makeMove(chessboard ,move_list[move_count]);
             if(!isLegal)
                 // skip to the next move
                 continue;
@@ -37,12 +37,28 @@ public class PerftDriver {
 
             // take back
             chessboard.takeBack();
+
+            // build hash key for the updated position (after move is made) from scratch
+            //long hash_from_scratch = Zobrist.generateHashKey(chessboard);
+
+            // in case if the hash key built from scratch doesn't match
+            // the one that was incrementally updated, we interrupt execution
+            /*if(chessboard.hash_key != hash_from_scratch){
+                System.out.println("\n\n Take back \n");
+                System.out.println("move: " + EncodeMove.getMoveString(move_list[move_count]));
+                ChessBoardUtils.printChessBoard(chessboard);
+                System.out.println("hash key should be: " + Long.toHexString(hash_from_scratch));
+                new Scanner(System.in).nextLine();
+            }*/
         }
     }
 
     // perft test
-    public static void perft_test(Chessboard chessboard, int depth){
+    public static void perftTest(Chessboard chessboard, int depth){
         System.out.println("\n    Performance test    \n");
+
+        // reset nodes count
+        nodes = 0;
 
         // create move list instance
         int[] move_list = new int[255];
@@ -58,7 +74,7 @@ public class PerftDriver {
             int move = move_list[move_count];
 
             // make move
-            if(!MoveGenerator.makeMove(chessboard ,move, MoveGenerator.ALL_MOVES))
+            if(!MoveGenerator.makeMove(chessboard ,move))
                 // skip to the next move
                 continue;
 
@@ -89,10 +105,23 @@ public class PerftDriver {
             System.out.println(sb);
         }
 
+        // init end time
+        long endTime = TimeUtils.getTimeNt();
+
+        // calculate duration
+        long durationNs = endTime - startTime;
+        long durationMs = durationNs / 1_000_000;
+
+        // calculate nodes per second (NPS)
+        long nps = 0;
+        if (durationNs > 0) {
+            nps = (long) ((double) nodes / ((double) durationNs / 1_000_000_000.0));
+        }
+
         // print results
         System.out.println("\n\n    Depth: " + depth);
         System.out.println("    Nodes: " + nodes);
-        System.out.println("     Time: " + (TimeUtils.getTimeNt() - startTime) / 1_000_000 + " ms ( + " +
-                (TimeUtils.getTimeNt() - startTime) % 1_000_000 + " ns)");
+        System.out.println("     Time: " + durationMs + " ms ( + " + (durationNs % 1_000_000) + " ns)");
+        System.out.printf("      NPS: %,d (%.2f MNPS)\n", nps, (double) nps / 1_000_000.0);
     }
 }

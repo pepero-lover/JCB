@@ -2,7 +2,6 @@ package com.pepero.jcb.constant;
 
 public class BoardSquares {
     // For human reading board numbers
-
     public static final int a8 = 0;     public static final int b8 = 1;     public static final int c8 = 2;     public static final int d8 = 3;     public static final int e8 = 4;     public static final int f8 = 5;     public static final int g8 = 6;     public static final int h8 = 7;
     public static final int a7 = 8;     public static final int b7 = 9;     public static final int c7 = 10;     public static final int d7 = 11;     public static final int e7 = 12;     public static final int f7 = 13;     public static final int g7 = 14;     public static final int h7 = 15;
     public static final int a6 = 16;     public static final int b6 = 17;     public static final int c6 = 18;     public static final int d6 = 19;     public static final int e6 = 20;     public static final int f6 = 21;     public static final int g6 = 22;     public static final int h6 = 23;

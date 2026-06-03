@@ -10,7 +10,7 @@ import static com.pepero.jcb.constant.BoardSquares.*;
 public class Chessboard {
 
     // start pos
-    public static String start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
+    public static final String start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
 
     // define bitboards
     public long[] bitboards = new long[12];
