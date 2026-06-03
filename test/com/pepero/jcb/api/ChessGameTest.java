@@ -228,4 +228,31 @@ class ChessGameTest {
         // 2. e8 칸에는 폰이 아니라 '백 퀸'이 있어야 한다
         assertEquals(Piece.WHITE_QUEEN, game.getPieceOnSquare(Square.e8), "승급 후 목적지(e8)에는 백 퀸이 존재해야 합니다.");
     }
+
+    @Test
+    @DisplayName("되돌리기와 다시 되돌리기가 정상작동 해야 한다.")
+    void testingUndoRedo() {
+        ChessGame chessGame = new ChessGame();
+
+        String start = chessGame.getFEN();
+
+        chessGame.makeMove("e2e4");
+        chessGame.makeMove("e7e5");
+        chessGame.makeMove("g1f3");
+
+        String fen = chessGame.getFEN();
+
+        chessGame.unmakeMove();
+        chessGame.unmakeMove();
+        chessGame.remakeMove();
+        chessGame.remakeMove();
+
+        assertEquals(fen, chessGame.getFEN());
+
+        chessGame.unmakeMove();
+        chessGame.unmakeMove();
+        chessGame.unmakeMove();
+
+        assertEquals(start, chessGame.getFEN());
+    }
 }

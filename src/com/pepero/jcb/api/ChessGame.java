@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.exception.EmptyMoveRedoException;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.FENConvertException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
@@ -33,6 +34,9 @@ public class ChessGame {
     // Move history
     private final List<MoveInfo> moveHistory;
 
+    // remake Move history
+    private final Stack<MoveInfo> redoHistory;
+
     /**
      * Initialize position with FEN string
      * @param fen fen string
@@ -44,6 +48,7 @@ public class ChessGame {
 
         chessboard = new Chessboard();
         moveHistory = new ArrayList<>();
+        redoHistory = new Stack<>();
 
         try {
             ChessBoardUtils.parseFen(this.chessboard, fen);
@@ -58,10 +63,10 @@ public class ChessGame {
     public ChessGame() {
         this.chessboard = new Chessboard();
         this.moveHistory = new ArrayList<>();
+        redoHistory = new Stack<>();
+
         ChessBoardUtils.parseFen(this.chessboard, Chessboard.start_position);
     }
-
-
 
     /**
      * Get FEN on this ChessGame
@@ -70,8 +75,6 @@ public class ChessGame {
     public String getFEN() {
         return ChessBoardUtils.getFen(this.chessboard);
     }
-
-
 
     /**
      * Make move on this ChessGame (LAN MOVE)
@@ -87,6 +90,7 @@ public class ChessGame {
         if(!isSuccess) throw new IllegalMoveException(moveString);
 
         moveHistory.add(new MoveInfo(encoded_move));
+        redoHistory.clear();
     }
 
     /**
@@ -126,6 +130,7 @@ public class ChessGame {
         );
 
         moveHistory.add(new MoveInfo(encoded_move));
+        redoHistory.clear();
     }
 
     /**
@@ -148,6 +153,7 @@ public class ChessGame {
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
 
         moveHistory.add(new MoveInfo(moveInfo.getOriginEncodedData()));
+        redoHistory.clear();
     }
 
     /**
@@ -163,9 +169,45 @@ public class ChessGame {
         MoveInfo moveInfo = moveHistory.getLast();
 
         this.chessboard.takeBack();
-        moveHistory.removeFirst();
+        moveHistory.removeLast();
 
+        redoHistory.push(moveInfo);
         return moveInfo;
+    }
+
+    /**
+     * Remake (redo) move on this ChessGame
+     *
+     * @return remade move info
+     */
+    public MoveInfo remakeMove() {
+        if (!canRedo()) throw new EmptyMoveRedoException();
+
+        MoveInfo moveInfo = redoHistory.pop();
+
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.getOriginEncodedData());
+        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+
+        moveHistory.add(moveInfo);
+        return moveInfo;
+    }
+
+    /**
+     * Get whether this position can undo
+     *
+     * @return whether this position can undo
+     */
+    public boolean canUndo() {
+        return !moveHistory.isEmpty();
+    }
+
+    /**
+     * Get whether this position can redo
+     *
+     * @return whether this position can redo
+     */
+    public boolean canRedo() {
+        return !redoHistory.isEmpty();
     }
 
     /**
@@ -177,6 +219,11 @@ public class ChessGame {
         return Collections.unmodifiableList(moveHistory);
     }
 
+    /**
+     * Get the last (previous) move
+     *
+     * @return the last (previous) move
+     */
     public MoveInfo getLastMove() {
         if (this.moveHistory.isEmpty()) return null;
         return this.moveHistory.getLast();
