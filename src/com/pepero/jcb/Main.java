@@ -1,10 +1,11 @@
 package com.pepero.jcb;
 
-import com.pepero.jcb.convertstr.ConvertStringMoveUtils;
-import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.Perft;
+import com.pepero.jcb.api.Square;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.Initializer;
-import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.util.PerftDriver;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -23,13 +24,12 @@ public class Main {
     public static String cmk_position = "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 ";
 
     public static void main(String[] args) throws IOException {
-        // init all
-        Initializer.init();
-
         // for debugging
         Scanner scanner = new Scanner(System.in);
 
         // parse custom FEN string
-        Chessboard chessboard = new Chessboard(start_position);
+        ChessGame chessGame = new ChessGame();
+
+        System.out.println(chessGame.getFEN());
     }
 }

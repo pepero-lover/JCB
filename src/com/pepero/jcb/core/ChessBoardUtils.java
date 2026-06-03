@@ -20,24 +20,53 @@ public class ChessBoardUtils {
             'p','n','b','r','q','k'
     };
 
+    public static final char[] promotion_pieces = {
+            'p','n','b','r','q','k'
+    };
+
     // convert char pieces to encoded constants
-    public static final Map<Character, Integer> char_pieces = new HashMap<>();
+    public static final Map<Character, Integer> char_to_encoded_piece = new HashMap<>();
+
+    // init piece char
+    public static void initCharPieces(){
+        initCharToEncodedPiece();
+        initPieceToCharPieces();
+    }
 
     // init char map
-    public static void initCharPieces(){
-        char_pieces.put('P', P);
-        char_pieces.put('N', N);
-        char_pieces.put('B', B);
-        char_pieces.put('R', R);
-        char_pieces.put('Q', Q);
-        char_pieces.put('K', K);
+    private static void initCharToEncodedPiece(){
+        char_to_encoded_piece.put('P', P);
+        char_to_encoded_piece.put('N', N);
+        char_to_encoded_piece.put('B', B);
+        char_to_encoded_piece.put('R', R);
+        char_to_encoded_piece.put('Q', Q);
+        char_to_encoded_piece.put('K', K);
 
-        char_pieces.put('p', p);
-        char_pieces.put('n', n);
-        char_pieces.put('b', b);
-        char_pieces.put('r', r);
-        char_pieces.put('q', q);
-        char_pieces.put('k', k);
+        char_to_encoded_piece.put('p', p);
+        char_to_encoded_piece.put('n', n);
+        char_to_encoded_piece.put('b', b);
+        char_to_encoded_piece.put('r', r);
+        char_to_encoded_piece.put('q', q);
+        char_to_encoded_piece.put('k', k);
+    }
+
+    public static final Map<Integer, Character> encoded_piece_to_char = new HashMap<>();
+
+    // init char map
+    private static void initPieceToCharPieces(){
+        encoded_piece_to_char.put(P, 'P');
+        encoded_piece_to_char.put(N, 'N');
+        encoded_piece_to_char.put(B, 'B');
+        encoded_piece_to_char.put(R, 'R');
+        encoded_piece_to_char.put(Q, 'Q');
+        encoded_piece_to_char.put(K, 'K');
+
+        encoded_piece_to_char.put(p, 'p');
+        encoded_piece_to_char.put(n, 'n');
+        encoded_piece_to_char.put(b, 'b');
+        encoded_piece_to_char.put(r, 'r');
+        encoded_piece_to_char.put(q, 'q');
+        encoded_piece_to_char.put(k, 'k');
     }
 
     /**
@@ -147,7 +176,7 @@ public class ChessBoardUtils {
                 int square = rank * 8 + file;
 
                 // init piece type
-                Integer piece = ChessBoardUtils.char_pieces.get(fenChar);
+                Integer piece = ChessBoardUtils.char_to_encoded_piece.get(fenChar);
 
                 if (piece != null) {
                     // set piece on the corresponding bitboard
@@ -204,11 +233,11 @@ public class ChessBoardUtils {
             chessboard.occupancies[black] |= chessboard.bitboards[piece];
         }
 
-        // init ply
-        chessboard.ply = Integer.parseInt(fenDivided[4]);
-
         // init half ply
-        chessboard.half_ply = Integer.parseInt(fenDivided[5]);
+        chessboard.half_ply = Integer.parseInt(fenDivided[4]);
+
+        // init ply
+        chessboard.ply = (Integer.parseInt(fenDivided[5]) - 1) * 2 + chessboard.side == white ? 0 : 1;
 
         // init all occupancies
         chessboard.occupancies[both] |= chessboard.occupancies[white];
@@ -216,6 +245,64 @@ public class ChessBoardUtils {
 
         // init hash key
         chessboard.hash_key = Zobrist.generateHashKey(chessboard);
+    }
+
+    public static String getFen(Chessboard chessboard){
+        StringBuilder fen = new StringBuilder();
+
+        for (int rank = 0; rank < 8; rank++){
+            int empty_square = 0;
+
+            for (int file = 0; file < 8; file++){
+                int square = rank * 8 + file;
+
+                int type = getPieceTypeOnSquare(chessboard, square);
+                if(type == -1) {
+                    empty_square++;
+                    continue;
+                }
+
+                if(empty_square > 0) {
+                    fen.append(empty_square);
+                    empty_square = 0;
+                }
+
+                fen.append(encoded_piece_to_char.get(type));
+            }
+
+            if(empty_square > 0) {
+                fen.append(empty_square);
+            }
+
+            if (rank < 7){
+                fen.append("/");
+            }
+        }
+
+        // side to move
+        fen.append(chessboard.side == white ? " w " : " b ");
+
+        // castling rights
+        StringBuilder castle = new StringBuilder();
+        if ((chessboard.castle & CastlingRights.WK) != 0) castle.append("K");
+        if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append("Q");
+        if ((chessboard.castle & CastlingRights.BK) != 0) castle.append("k");
+        if ((chessboard.castle & CastlingRights.BQ) != 0) castle.append("q");
+
+        fen.append(castle.isEmpty() ? "-" : castle.toString()).append(" ");
+
+        // enpassant
+        if (chessboard.enpassant == BoardSquares.no_sq) {
+            fen.append("- ");
+        } else {
+            fen.append(BoardSquares.square_to_coordinates[chessboard.enpassant]).append(" ");
+        }
+
+        fen.append(chessboard.half_ply).append(" ");
+
+        fen.append((chessboard.ply / 2) + 1);
+
+        return fen.toString();
     }
 
     /**
@@ -245,9 +332,27 @@ public class ChessBoardUtils {
                 chessboard.side == white ?
                         chessboard.bitboards[K] : chessboard.bitboards[k]);
 
-        ChessBoardUtils.printChessBoard(chessboard);
-
         return MoveGenerator.isSquareAttacked(chessboard, kingPos, chessboard.side == white ? black : white);
+    }
+
+    /**
+     * Return whether this position has legal move(s)
+     *
+     * @param chessboard chess board
+     * @return whether this position has legal move(s)
+     */
+    public static boolean hasLegalMoves(Chessboard chessboard) {
+        int[] move_list = new int[255];
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        for (int i = 0; i < move_count; i++) {
+            if (MoveGenerator.makeMove(chessboard, move_list[i])) {
+                chessboard.takeBack();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -257,7 +362,7 @@ public class ChessBoardUtils {
      * @return whether this position is checkmate
      */
     public static boolean isCheckmate(Chessboard chessboard) {
-        return isCheck(chessboard) && MoveGenerator.generateMoves(chessboard, new int[255]) == 0;
+        return isCheck(chessboard) && !hasLegalMoves(chessboard);
     }
 
     /**
@@ -267,7 +372,7 @@ public class ChessBoardUtils {
      * @return whether this position is stalemate
      */
     public static boolean isStaleMate(Chessboard chessboard) {
-        return !isCheck(chessboard) && MoveGenerator.generateMoves(chessboard, new int[255]) == 0;
+        return !isCheck(chessboard) && !hasLegalMoves(chessboard);
     }
 
     /**
