@@ -469,7 +469,8 @@ public class ChessGame {
      * @return converted SAN move
      */
     public String toSan(String lanMove){
-        return ConvertStringMoveUtils.translateLanSequence(this.chessboard, lanMove).trim();
+        ChessGame tempGame = new ChessGame(this.getFEN());
+        return ConvertStringMoveUtils.translateLanSequence(tempGame.chessboard, lanMove).trim();
     }
 
     /**
@@ -479,12 +480,14 @@ public class ChessGame {
      * @return converted SAN move
      */
     public String toSan(List<MoveInfo> moveData){
+        ChessGame tempGame = new ChessGame(this.getFEN());
+
         StringBuilder sb = new StringBuilder();
         for(MoveInfo moveInfo : moveData) {
             sb.append(moveInfo.toString()).append(" ");
         }
 
-        return ConvertStringMoveUtils.translateLanSequence(this.chessboard, sb.toString()).trim();
+        return ConvertStringMoveUtils.translateLanSequence(tempGame.chessboard, sb.toString()).trim();
     }
 
     @Override
