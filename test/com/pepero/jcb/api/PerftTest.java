@@ -4,7 +4,7 @@ import com.pepero.jcb.util.TimeUtils;
 
 import java.util.List;
 
-public class Perft {
+public class PerftTest {
     // leaf nodes (number of positions reached during the test of the move generator at a given depth
     public static long nodes;
 

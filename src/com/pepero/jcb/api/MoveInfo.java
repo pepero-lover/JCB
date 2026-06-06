@@ -1,68 +1,38 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.enums.Piece;
+import com.pepero.jcb.api.enums.PieceType;
+import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.encode.EncodeMove;
 
-public class MoveInfo {
-    private final Square sourceSquare;
-    private final Square targetSquare;
-    private final Piece pieceType;
-    private final PieceType promotionPiece;
-    private final boolean capture;
-    private final boolean pawnDoublePush;
-    private final boolean enpassant;
-    private final boolean castling;
+import java.util.Objects;
 
-    private final int originEncodedData;
-
-    public MoveInfo(int moveData) {
-        this.sourceSquare = Square.fromIndex(EncodeMove.getMoveSource(moveData));
-        this.targetSquare = Square.fromIndex(EncodeMove.getMoveTarget(moveData));
-        this.pieceType = Piece.fromIndex(EncodeMove.getMovePiece(moveData));
-        this.promotionPiece = EncodeMove.getMovePromoted(moveData) == 0 ? PieceType.NONE :
-                PieceType.fromIndex(EncodeMove.getMovePromoted(moveData));
-        this.capture = EncodeMove.getMoveCapture(moveData);
-        this.pawnDoublePush = EncodeMove.getMoveDouble(moveData);
-        this.enpassant = EncodeMove.getMoveEnpassant(moveData);
-        this.castling = EncodeMove.getMoveCastling(moveData);
-
-        this.originEncodedData = moveData;
-    }
-
-    public Square getSourceSquare() {
-        return sourceSquare;
-    }
-
-    public Square getTargetSquare() {
-        return targetSquare;
-    }
-
-    public Piece getPieceType() {
-        return pieceType;
-    }
-
-    public PieceType getPromotionPiece() {
-        return promotionPiece;
-    }
-
-    public boolean isCapture() {
-        return capture;
-    }
-
-    public boolean isPawnDoublePush() {
-        return pawnDoublePush;
-    }
-
-    public boolean isEnpassant() {
-        return enpassant;
-    }
-
-    public boolean isCastling() {
-        return castling;
-    }
-
-
-    public int getOriginEncodedData() {
-        return originEncodedData;
+public record MoveInfo(
+        Square sourceSquare,
+        Square targetSquare,
+        Piece pieceType,
+        PieceType promotionPiece,
+        boolean capture,
+        boolean pawnDoublePush,
+        boolean enpassant,
+        boolean castling,
+        int originEncodedData,
+        int fullMove
+) {
+    public MoveInfo(int moveData, int nowPly) {
+        this(
+                Square.fromIndex(EncodeMove.getMoveSource(moveData)),
+                Square.fromIndex(EncodeMove.getMoveTarget(moveData)),
+                Piece.fromIndex(EncodeMove.getMovePiece(moveData)),
+                EncodeMove.getMovePromoted(moveData) == 0 ?
+                        PieceType.NONE : PieceType.fromIndex(EncodeMove.getMovePromoted(moveData)),
+                EncodeMove.getMoveCapture(moveData),
+                EncodeMove.getMoveDouble(moveData),
+                EncodeMove.getMoveEnpassant(moveData),
+                EncodeMove.getMoveCastling(moveData),
+                moveData,
+                nowPly
+        );
     }
 
     @Override
@@ -70,5 +40,20 @@ public class MoveInfo {
         boolean promotion = promotionPiece != PieceType.NONE;
 
         return String.valueOf(sourceSquare) + targetSquare + (promotion ? promotionPiece : "");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MoveInfo moveInfo = (MoveInfo) o;
+        return sourceSquare == moveInfo.sourceSquare &&
+                targetSquare == moveInfo.targetSquare &&
+                promotionPiece == moveInfo.promotionPiece;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sourceSquare, targetSquare, promotionPiece);
     }
 }
