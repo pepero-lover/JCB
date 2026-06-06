@@ -1,4 +1,4 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.SquareConvertException;
 

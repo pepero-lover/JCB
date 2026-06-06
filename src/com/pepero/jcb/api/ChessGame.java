@@ -1,13 +1,13 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.exception.EmptyMoveRedoException;
-import com.pepero.jcb.api.exception.EmptyMoveUndoException;
-import com.pepero.jcb.api.exception.FENConvertException;
-import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.enums.GameOverReason;
+import com.pepero.jcb.api.enums.Piece;
+import com.pepero.jcb.api.enums.PieceType;
+import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.convertstr.ConvertStringMoveUtils;
 import com.pepero.jcb.core.ChessBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.Initializer;
@@ -31,15 +31,54 @@ public class ChessGame {
     // Chessboard class
     private final Chessboard chessboard;
 
-    // Move history
-    private final List<MoveInfo> moveHistory;
+    // For variation mode
+    private class MoveNode {
+        final MoveNode parent;
+        final List<MoveNode> children = new ArrayList<>();
+        final MoveInfo moveData;
 
-    // remake Move history
-    private final Stack<MoveInfo> redoHistory;
+        MoveNode() {
+            this.moveData = null;
+            this.parent = null;
+        }
+
+        MoveNode(MoveInfo moveData, MoveNode parent) {
+            this.moveData = moveData;
+            this.parent = parent;
+        }
+
+        @Override
+        public String toString() {
+            String dataStr = (moveData == null) ? "ROOT" : moveData.toString();
+            return dataStr + " -> " + children;
+        }
+    }
+
+    public record MoveNodeDTO(
+            MoveInfo moveData,
+            List<MoveNodeDTO> children
+    ) {
+        private static MoveNodeDTO from(MoveNode node) {
+            if (node == null) return null;
+
+            List<MoveNodeDTO> childDTOs = node.children.stream()
+                    .map(MoveNodeDTO::from)
+                    .toList();
+
+            return new MoveNodeDTO(node.moveData, childDTOs);
+        }
+    }
+
+    public final MoveNode moveHistoryRoot = new MoveNode();
+
+    // pointer
+    private MoveNode currentNode = moveHistoryRoot;
 
     /**
      * Initialize position with FEN string
      * @param fen fen string
+     *
+     * @throws FENConvertException - if converting fen string failed
      */
     public ChessGame(String fen) {
         if (fen == null || fen.trim().isEmpty()) {
@@ -47,8 +86,6 @@ public class ChessGame {
         }
 
         chessboard = new Chessboard();
-        moveHistory = new ArrayList<>();
-        redoHistory = new Stack<>();
 
         try {
             ChessBoardUtils.parseFen(this.chessboard, fen);
@@ -62,8 +99,6 @@ public class ChessGame {
      */
     public ChessGame() {
         this.chessboard = new Chessboard();
-        this.moveHistory = new ArrayList<>();
-        redoHistory = new Stack<>();
 
         ChessBoardUtils.parseFen(this.chessboard, Chessboard.start_position);
     }
@@ -80,6 +115,9 @@ public class ChessGame {
      * Make move on this ChessGame (LAN MOVE)
      *
      * @param moveString move like e2e4, e7e5 (LAN move string)
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(String moveString) {
         int encoded_move = ConvertStringMoveUtils.parseLanToEncodedMove(
@@ -89,8 +127,9 @@ public class ChessGame {
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
         if(!isSuccess) throw new IllegalMoveException(moveString);
 
-        moveHistory.add(new MoveInfo(encoded_move));
-        redoHistory.clear();
+        MoveInfo moveData = new MoveInfo(encoded_move, this.chessboard.ply);
+
+        addMoveOnTree(moveData);
     }
 
     /**
@@ -99,6 +138,9 @@ public class ChessGame {
      * @param sourceSquare Source square (you can make square on BoardSquares.java)
      * @param targetSquare Target square (you can make square on BoardSquares.java)
      * @param promotionType Promotion type like queen, rook, bishop and knight (PieceType.QUEEN, PieceType.ROOK ... )
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(Square sourceSquare, Square targetSquare, PieceType promotionType) {
         Objects.requireNonNull(sourceSquare, "The source square can not be null!");
@@ -129,8 +171,9 @@ public class ChessGame {
                 String.valueOf(sourceSquare) + targetSquare + (promotionType != PieceType.NONE ? promotionType : "")
         );
 
-        moveHistory.add(new MoveInfo(encoded_move));
-        redoHistory.clear();
+        MoveInfo moveData = new MoveInfo(encoded_move, this.chessboard.ply);
+
+        addMoveOnTree(moveData);
     }
 
     /**
@@ -138,6 +181,9 @@ public class ChessGame {
      *
      * @param sourceSquare Source square (you can make square on BoardSquares.java)
      * @param targetSquare Target square (you can make square on BoardSquares.java)
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(Square sourceSquare, Square targetSquare) {
         makeMove(sourceSquare, targetSquare, PieceType.NONE);
@@ -147,31 +193,38 @@ public class ChessGame {
      * Make move on this ChessGame (MoveInfo)
      *
      * @param moveInfo MoveInfo class
+     *
+     * @throws IllegalMoveException - if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
-        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.getOriginEncodedData());
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
 
-        moveHistory.add(new MoveInfo(moveInfo.getOriginEncodedData()));
-        redoHistory.clear();
+        MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData(), this.chessboard.ply);
+
+        addMoveOnTree(moveData);
     }
 
     /**
      * Unmake previous move on this ChessGame
      *
      * @return unmade move info
+     *
+     * @throws EmptyMoveUndoException - if move history is empty and unmake move
+     * @throws MoveNotFoundException - if the current node is not found (Only for variation mode)
      */
     public MoveInfo unmakeMove() {
-        if(moveHistory.isEmpty()) {
+        System.out.println(moveHistoryRoot);
+
+        if(!canUndo()) {
             throw new EmptyMoveUndoException();
         }
 
-        MoveInfo moveInfo = moveHistory.getLast();
+        MoveInfo moveInfo = getLastMove();
+        undoMoveOnTree();
 
         this.chessboard.takeBack();
-        moveHistory.removeLast();
 
-        redoHistory.push(moveInfo);
         return moveInfo;
     }
 
@@ -179,16 +232,45 @@ public class ChessGame {
      * Remake (redo) move on this ChessGame
      *
      * @return remade move info
+     * <p>
+     * Example : <br> e2e4 e7e5 (d7d5) g1f3 and pointer is e2e4
+     * and remakeMove(), and pointer is now e7e5. <br>
+     *
+     * @throws EmptyMoveRedoException - if redo history is empty and remake move
      */
     public MoveInfo remakeMove() {
         if (!canRedo()) throw new EmptyMoveRedoException();
 
-        MoveInfo moveInfo = redoHistory.pop();
+        // only main line
+        MoveInfo moveInfo = redoMoveOnTree();
 
-        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.getOriginEncodedData());
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
 
-        moveHistory.add(moveInfo);
+        return moveInfo;
+    }
+
+    /**
+     * Remake (redo) move on this ChessGame (with Variation index) <br>
+     *
+     * @param variationIndex variation index (if 0, goes main line)
+     *
+     * @return remade move info
+     * <p>
+     * Example : <br> e2e4 e7e5 (d7d5) g1f3 and pointer is e2e4
+     * and remakeMove(1), and pointer is now d7d5. <br>
+     * if remakeMove(0), pointer is now e7e5. <br>
+     *
+     * @throws EmptyMoveRedoException - if redo history is empty and remake move
+     */
+    public MoveInfo remakeMove(int variationIndex) {
+        if (!canRedo()) throw new EmptyMoveRedoException();
+
+        MoveInfo moveInfo = redoMoveOnTree(variationIndex);
+
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
+        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+
         return moveInfo;
     }
 
@@ -198,35 +280,63 @@ public class ChessGame {
      * @return whether this position can undo
      */
     public boolean canUndo() {
-        return !moveHistory.isEmpty();
+        return currentNode != moveHistoryRoot;
     }
 
     /**
      * Get whether this position can redo
      *
      * @return whether this position can redo
+     *
+     * @throws MoveNotFoundException if the current node is not found
      */
     public boolean canRedo() {
-        return !redoHistory.isEmpty();
+        return !currentNode.children.isEmpty();
     }
 
     /**
-     * Get move history
+     * Remake (redo) move on this ChessGame (with Variation index) <br>
      *
-     * @return move history
+     * @param variationIndex variation index (if 0, goes main line)
+     *
+     * @return whether this position can redo
+     */
+    public boolean canRedo(int variationIndex) {
+        if(currentNode == null) throw new MoveNotFoundException();
+        return currentNode.children.size() > variationIndex;
+    }
+
+    /**
+     * Get previous moves
+     *
+     * @return previous moves
      */
     public List<MoveInfo> getMoveHistory(){
-        return Collections.unmodifiableList(moveHistory);
+        List<MoveInfo> result = new ArrayList<>();
+
+        MoveNode current = currentNode;
+
+        while (current != null && current.moveData != null) {
+            result.add(current.moveData);
+            current = current.parent;
+        }
+
+        Collections.reverse(result);
+
+        return Collections.unmodifiableList(result);
     }
 
     /**
      * Get the last (previous) move
      *
      * @return the last (previous) move
+     *
+     * @throws MoveNotFoundException if the current node is not found (Only for variation mode)
      */
     public MoveInfo getLastMove() {
-        if (this.moveHistory.isEmpty()) return null;
-        return this.moveHistory.getLast();
+        if(currentNode == null) throw new MoveNotFoundException();
+
+        return currentNode.moveData;
     }
 
     /**
@@ -335,7 +445,7 @@ public class ChessGame {
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
             this.chessboard.takeBack();
-            result.add(new MoveInfo(encodedMove));
+            result.add(new MoveInfo(encodedMove, this.chessboard.ply));
         }
 
         return result;
@@ -362,7 +472,7 @@ public class ChessGame {
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
             this.chessboard.takeBack();
-            result.add(new MoveInfo(encodedMove));
+            result.add(new MoveInfo(encodedMove, chessboard.ply + 1));
         }
 
         return result;
@@ -488,6 +598,106 @@ public class ChessGame {
         }
 
         return ConvertStringMoveUtils.translateLanSequence(tempGame.chessboard, sb.toString()).trim();
+    }
+
+    /**
+     * Get 'full move' on this ChessGame
+     *
+     * @return full move
+     */
+    public int getFullMove() {
+        return this.chessboard.ply;
+    }
+
+    /**
+     * Get 'half move' on this ChessGame
+     *
+     * @return half move
+     */
+    public int getHalfMove() {
+        return this.chessboard.half_ply;
+    }
+
+    /**
+     * Add move data on move history (tree)
+     *
+     * @param moveData move info (data)
+     *
+     * @throws MoveNotFoundException - could not find the node
+     */
+    private void addMoveOnTree(MoveInfo moveData) {
+        for(int i = 0; i < currentNode.children.size(); i++) {
+            MoveNode child = currentNode.children.get(i);
+
+            if (moveData.equals(child.moveData)) {
+                currentNode = child;
+
+                return;
+            }
+        }
+
+        MoveNode result = new MoveNode(moveData, currentNode);
+
+        currentNode.children.add(result);
+        currentNode = result;
+    }
+
+    /**
+     * Redo move on tree (variation)
+     * <p>
+     * Example: e2e4 e7e5 (d7d5) g1f3 and pointer is on e2e4. <br>
+     * if redoMoveOnTree(0), e7e5 is pointer, <br>
+     * if redoMoveOnTree(1), d7d5 is pointer.
+     *
+     * @param variationIndex variation index
+     *
+     * @throws VariationNotFoundException if variation is not found
+     * @throws MoveNotFoundException if the current node (move) is not found
+     *
+     * @return Move info
+     */
+    private MoveInfo redoMoveOnTree(int variationIndex) {
+        if(currentNode.children.size() <= variationIndex
+                || currentNode.children.get(variationIndex) == null) throw new VariationNotFoundException();
+
+        currentNode = currentNode.children.get(variationIndex);
+        return currentNode.moveData;
+    }
+
+
+    /**
+     * Redo move on tree (just main line)
+     *
+     * <p>
+     * Example: e2e4 e7e5 (d7d5) g1f3 and pointer is on e2e4. <br>
+     * when redoMoveOnTree() is called, g1f3 is pointer
+     *
+     * @throws VariationNotFoundException if variation is not found
+     * @throws MoveNotFoundException if the current node (move) is not found
+     *
+     * @return Move info
+     */
+    private MoveInfo redoMoveOnTree() {
+        return redoMoveOnTree(0);
+    }
+
+    /**
+     * Undo move on move history (tree)
+     *
+     * @throws EmptyMoveUndoException if there is no move to undo
+     */
+    private void undoMoveOnTree() {
+        if(currentNode == moveHistoryRoot) throw new EmptyMoveUndoException();
+        currentNode = currentNode.parent;
+    }
+
+    /**
+     * Get Root node on move history <br>
+     *
+     * @return Root node
+     */
+    public MoveNodeDTO getRootNode() {
+        return MoveNodeDTO.from(moveHistoryRoot);
     }
 
     @Override
