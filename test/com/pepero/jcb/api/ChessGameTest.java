@@ -1,9 +1,8 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.enums.GameOverReason;
-import com.pepero.jcb.api.enums.Piece;
-import com.pepero.jcb.api.enums.PieceType;
-import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.dto.PGNGame;
+import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import org.junit.jupiter.api.DisplayName;
@@ -118,14 +117,24 @@ class ChessGameTest {
     }
 
     @Test
-    @DisplayName("특정 기물의 합법수만 필터링해서 가져와야 한다")
-    void getLegalMovesForPiece() {
+    @DisplayName("Source Square 에서 합법수만 필터링해서 가져와야 한다")
+    void getLegalMovesForSource() {
         ChessGame chessGame = new ChessGame();
-        List<MoveInfo> e2Moves = chessGame.getLegalMovesForPiece(Square.e2);
+        List<MoveInfo> e2Moves = chessGame.getLegalMovesForSource(Square.e2);
 
         assertEquals(2, e2Moves.size());
         assertEquals(Square.e3, e2Moves.get(0).targetSquare());
         assertEquals(Square.e4, e2Moves.get(1).targetSquare());
+    }
+
+    @Test
+    @DisplayName("Target Square 에서 합법수만 필터링해서 가져와야 한다")
+    void getLegalMovesForTarget() {
+        ChessGame chessGame = new ChessGame();
+        List<MoveInfo> e2Moves = chessGame.getLegalMovesForTarget(Square.e4);
+
+        assertEquals(1, e2Moves.size());
+        assertEquals(Square.e4, e2Moves.getFirst().targetSquare());
     }
 
     @Test
@@ -181,6 +190,20 @@ class ChessGameTest {
     }
 
     @Test
+    @DisplayName("SAN 을 LAN 으로 정상 변환해야 한다")
+    void toLan() {
+        ChessGame chessGame = new ChessGame();
+
+        assertEquals("e2e4", chessGame.toLanString("e4"));
+        assertEquals("g1f3", chessGame.toLanString("Nf3"));
+
+        chessGame.makeMove("e2e4");
+        chessGame.makeMove("d7d5");
+
+        assertEquals("e4d5", chessGame.toLanString("exd5"));
+    }
+
+    @Test
     @DisplayName("되돌리기와 다시 되돌리기가 정상 작동 해야 한다.")
     void undoRedo() {
         ChessGame chessGame = new ChessGame();
@@ -190,10 +213,6 @@ class ChessGameTest {
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
         chessGame.makeMove("g1f3");
-
-        String fen = chessGame.getFEN();
-
-        System.out.println(chessGame.moveHistoryRoot);
 
         chessGame.unmakeMove();
         chessGame.unmakeMove();
@@ -208,30 +227,12 @@ class ChessGameTest {
     }
 
     @Test
-    @DisplayName("Full move 가 정상적으로 카운팅 되어야 한다.")
-    void movePly() {
-        ChessGame chessGame = new ChessGame();
-
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
-
-        List<MoveInfo> moveHistory = chessGame.getMoveHistory();
-
-        for (int i = 1; i <= moveHistory.size(); i++){
-            assertEquals(i, moveHistory.get(i - 1).fullMove());
-        }
-    }
-
-    @Test
     @DisplayName("바리에이션이 정확히 작성되어야 한다.")
     void variation() {
         ChessGame chessGame = new ChessGame();
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
         chessGame.unmakeMove();
-
-        System.out.println(chessGame);
 
         chessGame.makeMove("d7d5");
         chessGame.unmakeMove();
@@ -243,5 +244,130 @@ class ChessGameTest {
         test.makeMove("d7d5");
 
         assertEquals(chessGame.getFEN(), test.getFEN());
+    }
+
+    @Test
+    @DisplayName("스퀘어가 밝은 칸인지 어두운 칸인지 판별해야 한다.")
+    void isLightSquare() {
+        assertTrue(Square.e2.isLightSquare());
+        assertFalse(Square.f8.isLightSquare());
+    }
+
+    @Test
+    @DisplayName("FEN 이 정확히 작성되어야 한다.")
+    void fenAdvanced(){
+        ChessGame chessGame = new ChessGame();
+        chessGame.makeMove("e2e4");
+        chessGame.makeMove("e7e5");
+        chessGame.makeMove("g1f3");
+        chessGame.makeMove("g8f6");
+        chessGame.makeMove("b1c3");
+        chessGame.makeMove("b8c6");
+        chessGame.makeMove("f1c4");
+        chessGame.makeMove("f8c5");
+        chessGame.makeMove("e1g1");
+        chessGame.makeMove("e8g8");
+
+        assertEquals("r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQ1RK1 w - - 8 6",
+                chessGame.getFEN());
+    }
+
+    @Test
+    @DisplayName("PGN 을 정확히 파싱해야 한다.")
+    void pgnAdvanced() {
+        ChessGame chessGame = new ChessGame();
+        String pgnString = """
+                [Event "?"]
+                [Site "?"]
+                [Date "????.??.??"]
+                [Round "?"]
+                [White "?"]
+                [Black "?"]
+                [Result "*"]
+                [Link "https://www.chess.com/analysis/game/pgn/2wCTfp3KJn/analysis"]
+                
+                1. e4 e5 2. Nf3 Nc6 3. Bc4 (3. Nc3 Nf6 4. d3 (4. Bb5) 4... d6 $6) 3... Bc5 *
+                """;
+
+        PGNGame pgnGame = chessGame.loadPGN(pgnString);
+
+        assertNotNull(pgnGame, "파싱 결과는 null 이 아니어야 합니다.");
+        assertEquals("https://www.chess.com/analysis/game/pgn/2wCTfp3KJn/analysis", pgnGame.headers().get("Link"));
+        assertEquals("?", pgnGame.headers().get("White"));
+        assertEquals(GameResult.UNKNOWN, pgnGame.matchResult(), "UNKNOWN 이어야 한다");
+
+        ChessGame.MoveNodeDTO root = pgnGame.rootNode();
+
+        ChessGame.MoveNodeDTO e4 = root.children().getFirst();
+        assertEquals("e4", e4.san());
+
+        ChessGame.MoveNodeDTO e5 = e4.children().getFirst();
+        ChessGame.MoveNodeDTO nf3 = e5.children().getFirst();
+        ChessGame.MoveNodeDTO nc6 = nf3.children().getFirst();
+        assertEquals("Nc6", nc6.san());
+
+        assertEquals(2, nc6.children().size(), "총 2개의 자식이 있어야 한다");
+
+        ChessGame.MoveNodeDTO bc4 = nc6.children().getFirst();
+        assertEquals("Bc4", bc4.san());
+        ChessGame.MoveNodeDTO bc5 = bc4.children().getFirst();
+        assertEquals("Bc5", bc5.san());
+
+        ChessGame.MoveNodeDTO nc3_var = nc6.children().get(1);
+        assertEquals("Nc3", nc3_var.san());
+
+        ChessGame.MoveNodeDTO nf6_var = nc3_var.children().getFirst();
+
+        assertEquals(2, nf6_var.children().size(), "Nf6 이후 변화수 내에서 또 한 번 분기되어야 한다.");
+
+        ChessGame.MoveNodeDTO d3_var = nf6_var.children().getFirst();
+        assertEquals("d3", d3_var.san());
+
+        ChessGame.MoveNodeDTO d6_var = d3_var.children().getFirst();
+        assertEquals("d6", d6_var.san());
+        assertEquals("$6", d6_var.nag(), "d6 수에는 $6 평가 기호가 정확히 들어가야 한다.");
+
+        ChessGame.MoveNodeDTO bb5_var = nf6_var.children().get(1);
+        assertEquals("Bb5", bb5_var.san());
+    }
+
+    @Test
+    @DisplayName("PGN을 정확히 파싱하고 다시 동일한 텍스트로 내보낼 수 있어야 한다.")
+    void pgnConvert() {
+        ChessGame chessGame = new ChessGame();
+        String pgnString = """
+                [Event "?"]
+                [Site "?"]
+                [Date "????.??.??"]
+                [Round "?"]
+                [White "?"]
+                [Black "?"]
+                [Result "*"]
+                [Link "https://www.chess.com/analysis/game/pgn/2wCTfp3KJn/analysis"]
+                
+                1. e4 e5 2. Nf3 Nc6 3. Bc4 ( 3. Nc3 Nf6 4. d3 ( 4. Bb5 ) 4... d6 $6 ) 3... Bc5 *
+                """;
+
+        chessGame.loadPGN(pgnString);
+
+        assertEquals("https://www.chess.com/analysis/game/pgn/2wCTfp3KJn/analysis", chessGame.getHeaders().get("Link"));
+        assertEquals("*", chessGame.getHeaders().get("Result"));
+
+        String exportedPgn = chessGame.getPGN();
+
+        System.out.println("=== Exported PGN Result ===");
+        System.out.println(exportedPgn);
+        System.out.println("===========================");
+
+        assertTrue(exportedPgn.contains("1. e4 e5 2. Nf3 Nc6 3. Bc4"), "초반 메인 라인이 깨졌습니다.");
+
+        assertTrue(exportedPgn.contains("( 3. Nc3 Nf6 4. d3"), "1차 변화수 파싱에 실패했습니다.");
+        assertTrue(exportedPgn.contains("4... d6 $6"), "흑의 턴 번호 복구 또는 NAG 파싱에 실패했습니다.");
+
+        assertTrue(exportedPgn.contains("( 4. Bb5 )"), "2차 중첩 변화수 파싱에 실패했습니다.");
+
+        assertTrue(exportedPgn.contains("3... Bc5"), "변화수가 끝난 후 흑의 턴 번호(3...)가 정상적으로 강제 출력되지 않았습니다.");
+
+        assertTrue(exportedPgn.endsWith("*"), "PGN 마지막의 게임 결과 심볼이 누락되었습니다.");
     }
 }

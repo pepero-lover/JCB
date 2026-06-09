@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.core.ChessBoardUtils.ascii_pieces;
+import static com.pepero.jcb.core.ChessboardUtils.ascii_pieces;
 
 public class EncodeMove {
     /*

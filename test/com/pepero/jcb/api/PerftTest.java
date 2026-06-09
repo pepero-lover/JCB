@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.util.TimeUtils;
 
 import java.util.List;

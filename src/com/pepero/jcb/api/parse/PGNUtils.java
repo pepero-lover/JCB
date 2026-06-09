@@ -1,0 +1,100 @@
+package com.pepero.jcb.api.parse;
+
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.dto.PGNGame;
+import com.pepero.jcb.api.enums.GameResult;
+import com.pepero.jcb.api.exception.PGNConvertException;
+
+import java.util.List;
+import java.util.Map;
+
+public class PGNUtils {
+    private static final int MOVE_LIMIT = 4096;
+
+    /**
+     * Export PGNGame to pgn string
+     *
+     * @param game PGN Game data
+     * @return Exported pgn string
+     *
+     * @throws PGNConvertException when pgn convert fails (move is too long)
+     */
+    public static String export(PGNGame game) {
+        StringBuilder sb = new StringBuilder();
+
+        for (Map.Entry<String, String> entry : game.headers().entrySet()) {
+            sb.append("[").append(entry.getKey()).append(" \"")
+                    .append(entry.getValue()).append("\"]\n");
+        }
+        sb.append("\n");
+
+        if (game.rootNode() != null && game.rootNode().children() != null && !game.rootNode().children().isEmpty()) {
+            buildMoveText(game.rootNode().children(), sb, true, 1, true);
+        }
+
+        sb.append(" ").append(getGameResultString(game.matchResult()));
+
+        return sb.toString().replaceAll(" +", " ").trim();
+    }
+
+    public static String getGameResultString(GameResult gameResult) {
+        if (gameResult == null) return "*";
+        return switch (gameResult) {
+            case WHITE_WON -> "1-0";
+            case BLACK_WON -> "0-1";
+            case DRAW -> "1/2-1/2";
+            case UNKNOWN -> "*";
+        };
+    }
+
+    /**
+     * Build pgn
+     *
+     * @param siblings move node children
+     * @param sb string pgn
+     * @param isWhite is white turn
+     * @param moveNumber move number like 1. 1...
+     * @param forceMoveNumber if move is variation (like 1. e4 ("1." d4))
+     *
+     * @throws PGNConvertException when pgn convert fails (like too many moves)
+     */
+    private static void buildMoveText(List<ChessGame.MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite, int moveNumber, boolean forceMoveNumber) {
+        if (siblings == null || siblings.isEmpty()) return;
+
+        ChessGame.MoveNodeDTO mainMove = siblings.getFirst();
+
+        if(moveNumber >= MOVE_LIMIT) throw new PGNConvertException("Too many moves!");
+
+        if (isWhite) {
+            sb.append(moveNumber).append(". ");
+        } else if (forceMoveNumber) {
+            sb.append(moveNumber).append("... ");
+        }
+        sb.append(mainMove.san()).append(" ");
+
+        boolean interrupted = false;
+
+        if (mainMove.nag() != null) {
+            sb.append(mainMove.nag()).append(" ");
+        }
+        if (mainMove.comment() != null) {
+            sb.append("{").append(mainMove.comment()).append("} ");
+            interrupted = true;
+        }
+
+        for (int i = 1; i < siblings.size(); i++) {
+            sb.append("( ");
+            buildMoveText(List.of(siblings.get(i)), sb, isWhite, moveNumber, true);
+            sb.append(") ");
+            interrupted = true;
+        }
+
+        if (mainMove.children() != null && !mainMove.children().isEmpty()) {
+            boolean nextIsWhite = !isWhite;
+            int nextMoveNumber = isWhite ? moveNumber : moveNumber + 1;
+            boolean nextForceNumber = !nextIsWhite && interrupted;
+
+            buildMoveText(mainMove.children(), sb, nextIsWhite, nextMoveNumber, nextForceNumber);
+        }
+    }
+}

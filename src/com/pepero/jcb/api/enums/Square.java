@@ -88,6 +88,22 @@ public enum Square {
         return 8 - (this.ordinal() / 8);
     }
 
+    /**
+     * Get whether this square is light square
+     * <p>
+     * Example : <br>
+     * e2 -> light square -> true <br>
+     * f8 -> dark square -> false <br>
+     *
+     * @return whether this square is light square
+     */
+    public boolean isLightSquare() {
+        int index = this.ordinal();
+        int rank = index / 8;
+        int file = index % 8;
+        return (rank + file) % 2 == 0;
+    }
+
     @Override
     public String toString() {
         return String.valueOf(getFile()) + getRank();

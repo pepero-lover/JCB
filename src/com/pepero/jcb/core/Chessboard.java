@@ -85,7 +85,11 @@ public class Chessboard {
     }
 
     public Chessboard(String fen) {
-        ChessBoardUtils.parseFen(this, fen);
+        ChessboardUtils.parseFen(this, fen);
+    }
+
+    public Chessboard(Chessboard source) {
+        this.copyFrom(source);
     }
 
     public void resetBoard() {
@@ -118,7 +122,21 @@ public class Chessboard {
         resetBoard();
 
         // set start position with fen
-        ChessBoardUtils.parseFen(this, start_position);
+        ChessboardUtils.parseFen(this, start_position);
+    }
+
+    public void copyFrom(Chessboard source) {
+        System.arraycopy(source.bitboards, 0, this.bitboards, 0, 12);
+        System.arraycopy(source.occupancies, 0, this.occupancies, 0, 3);
+
+        this.side = source.side;
+        this.enpassant = source.enpassant;
+        this.castle = source.castle;
+
+        this.hash_key = source.hash_key;
+
+        this.ply = source.ply;
+        this.half_ply = source.half_ply;
     }
 
     /**

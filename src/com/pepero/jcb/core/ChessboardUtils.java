@@ -14,7 +14,7 @@ import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
-public class ChessBoardUtils {
+public class ChessboardUtils {
     public static final char[] ascii_pieces = {
             'P','N','B','R','Q','K',
             'p','n','b','r','q','k'
@@ -176,7 +176,7 @@ public class ChessBoardUtils {
                 int square = rank * 8 + file;
 
                 // init piece type
-                Integer piece = ChessBoardUtils.char_to_encoded_piece.get(fenChar);
+                Integer piece = ChessboardUtils.char_to_encoded_piece.get(fenChar);
 
                 if (piece != null) {
                     // set piece on the corresponding bitboard
