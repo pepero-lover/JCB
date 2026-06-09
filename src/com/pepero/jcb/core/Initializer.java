@@ -15,7 +15,7 @@ public class Initializer {
         Magics.initSlidersAttacks(Attacks.bishop);
         Magics.initSlidersAttacks(Attacks.rook);
 
-        ChessBoardUtils.initCharPieces();
+        ChessboardUtils.initCharPieces();
 
         EncodeMove.initPromotedPiecesChar();
 

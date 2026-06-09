@@ -1,14 +1,15 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.enums.GameOverReason;
-import com.pepero.jcb.api.enums.Piece;
-import com.pepero.jcb.api.enums.PieceType;
-import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.dto.PGNGame;
+import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.*;
+import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
+import com.pepero.jcb.api.parse.PGNUtils;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.Initializer;
 import com.pepero.jcb.core.MoveGenerator;
@@ -19,7 +20,7 @@ import java.util.*;
 import static com.pepero.jcb.constant.BoardSquares.no_sq;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.white;
-import static com.pepero.jcb.core.ChessBoardUtils.ascii_pieces;
+import static com.pepero.jcb.core.ChessboardUtils.ascii_pieces;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 import static com.pepero.jcb.core.MoveGenerator.generateMoves;
 
@@ -36,6 +37,13 @@ public class ChessGame {
         final MoveNode parent;
         final List<MoveNode> children = new ArrayList<>();
         final MoveInfo moveData;
+
+        String san;
+        String comment;
+        String nag;
+
+        GameResult terminalResult = null;
+        GameOverReason terminalReason = null;
 
         MoveNode() {
             this.moveData = null;
@@ -56,7 +64,10 @@ public class ChessGame {
 
     public record MoveNodeDTO(
             MoveInfo moveData,
-            List<MoveNodeDTO> children
+            List<MoveNodeDTO> children,
+            String san,
+            String comment,
+            String nag // numeric annotation glyph
     ) {
         private static MoveNodeDTO from(MoveNode node) {
             if (node == null) return null;
@@ -65,14 +76,29 @@ public class ChessGame {
                     .map(MoveNodeDTO::from)
                     .toList();
 
-            return new MoveNodeDTO(node.moveData, childDTOs);
+            return new MoveNodeDTO(
+                    node.moveData,
+                    childDTOs,
+                    node.san,
+                    node.comment,
+                    node.nag
+            );
         }
     }
 
-    public final MoveNode moveHistoryRoot = new MoveNode();
+    private MoveNode moveHistoryRoot = new MoveNode();
 
     // pointer
     private MoveNode currentNode = moveHistoryRoot;
+
+
+
+    private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+
+    private GameResult gameResult = GameResult.UNKNOWN;
+    private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
+
+    private final String startPositionFEN;
 
     /**
      * Initialize position with FEN string
@@ -86,9 +112,10 @@ public class ChessGame {
         }
 
         chessboard = new Chessboard();
+        startPositionFEN = fen;
 
         try {
-            ChessBoardUtils.parseFen(this.chessboard, fen);
+            ChessboardUtils.parseFen(this.chessboard, fen);
         } catch (Exception e){
             throw new FENConvertException("Could not parse the fen.");
         }
@@ -100,7 +127,9 @@ public class ChessGame {
     public ChessGame() {
         this.chessboard = new Chessboard();
 
-        ChessBoardUtils.parseFen(this.chessboard, Chessboard.start_position);
+        ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
+
+        startPositionFEN = Chessboard.start_position;
     }
 
     /**
@@ -108,7 +137,7 @@ public class ChessGame {
      * @return fen
      */
     public String getFEN() {
-        return ChessBoardUtils.getFen(this.chessboard);
+        return ChessboardUtils.getFen(this.chessboard);
     }
 
     /**
@@ -127,9 +156,11 @@ public class ChessGame {
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
         if(!isSuccess) throw new IllegalMoveException(moveString);
 
-        MoveInfo moveData = new MoveInfo(encoded_move, this.chessboard.ply);
+        MoveInfo moveData = new MoveInfo(encoded_move);
 
         addMoveOnTree(moveData);
+
+        updateGameState();
     }
 
     /**
@@ -156,7 +187,7 @@ public class ChessGame {
 
         if(isLegal == ILLEGAL_MOVE){
             String promoChar = (promotionType != PieceType.NONE) ?
-                    String.valueOf(ChessBoardUtils.promotion_pieces[promotionType.getPieceType()]) : "";
+                    String.valueOf(ChessboardUtils.promotion_pieces[promotionType.getPieceType()]) : "";
             throw new IllegalMoveException(BoardSquares.square_to_coordinates[sourceSquare.getIndex()]
                     + BoardSquares.square_to_coordinates[targetSquare.getIndex()]
                     + promoChar);
@@ -171,9 +202,11 @@ public class ChessGame {
                 String.valueOf(sourceSquare) + targetSquare + (promotionType != PieceType.NONE ? promotionType : "")
         );
 
-        MoveInfo moveData = new MoveInfo(encoded_move, this.chessboard.ply);
+        MoveInfo moveData = new MoveInfo(encoded_move);
 
         addMoveOnTree(moveData);
+
+        updateGameState();
     }
 
     /**
@@ -200,9 +233,11 @@ public class ChessGame {
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
 
-        MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData(), this.chessboard.ply);
+        MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData());
 
         addMoveOnTree(moveData);
+
+        updateGameState();
     }
 
     /**
@@ -214,8 +249,6 @@ public class ChessGame {
      * @throws MoveNotFoundException - if the current node is not found (Only for variation mode)
      */
     public MoveInfo unmakeMove() {
-        System.out.println(moveHistoryRoot);
-
         if(!canUndo()) {
             throw new EmptyMoveUndoException();
         }
@@ -224,6 +257,8 @@ public class ChessGame {
         undoMoveOnTree();
 
         this.chessboard.takeBack();
+
+        updateGameState();
 
         return moveInfo;
     }
@@ -246,6 +281,8 @@ public class ChessGame {
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+
+        updateGameState();
 
         return moveInfo;
     }
@@ -270,6 +307,8 @@ public class ChessGame {
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+
+        updateGameState();
 
         return moveInfo;
     }
@@ -423,7 +462,7 @@ public class ChessGame {
      * @return piece type
      */
     public Piece getPieceOnSquare(Square square){
-        int piece_type = ChessBoardUtils.getPieceTypeOnSquare(this.chessboard, square.getIndex());
+        int piece_type = ChessboardUtils.getPieceTypeOnSquare(this.chessboard, square.getIndex());
 
         return Piece.fromIndex(piece_type);
     }
@@ -445,21 +484,21 @@ public class ChessGame {
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
             this.chessboard.takeBack();
-            result.add(new MoveInfo(encodedMove, this.chessboard.ply));
+            result.add(new MoveInfo(encodedMove));
         }
 
         return result;
     }
 
     /**
-     * Generate moves only one piece
+     * Generate moves only one source square
      * <p>
      * Example : chessboard = start pos, square = e2, returns e2e3, e2e4
      *
      * @return generated move
      */
-    public List<MoveInfo> getLegalMovesForPiece(Square square) {
-        Objects.requireNonNull(square, "Square is null!");
+    public List<MoveInfo> getLegalMovesForSource(Square square) {
+        Objects.requireNonNull(square, "Source Square is null!");
 
         int[] move_list = new int[255];
         int move_count = generateMoves(this.chessboard, move_list);
@@ -472,13 +511,38 @@ public class ChessGame {
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
             this.chessboard.takeBack();
-            result.add(new MoveInfo(encodedMove, chessboard.ply + 1));
+            result.add(new MoveInfo(encodedMove));
         }
 
         return result;
     }
 
+    /**
+     * Generate moves only one target square
+     * <p>
+     * Example : chessboard = start pos, square = e4, returns e2e3, e2e4
+     *
+     * @return generated move
+     */
+    public List<MoveInfo> getLegalMovesForTarget(Square square) {
+        Objects.requireNonNull(square, "Target Square is null!");
 
+        int[] move_list = new int[255];
+        int move_count = generateMoves(this.chessboard, move_list);
+        List<MoveInfo> result = new ArrayList<>(move_count);
+
+        for (int count = 0; count < move_count; count++){
+            int encodedMove = move_list[count];
+            if(EncodeMove.getMoveTarget(encodedMove) != square.getIndex()) continue;
+
+            if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
+                continue;
+            this.chessboard.takeBack();
+            result.add(new MoveInfo(encodedMove));
+        }
+
+        return result;
+    }
 
     /**
      * Get board state (Map)(square)(piece)
@@ -507,15 +571,13 @@ public class ChessGame {
         return getPieceOnSquare(square) == Piece.NONE;
     }
 
-
-
     /**
      * Get whether the king is under attack
      *
      * @return whether the king is under attack
      */
     public boolean isCheck() {
-        return ChessBoardUtils.isCheck(this.chessboard);
+        return ChessboardUtils.isCheck(this.chessboard);
     }
 
     /**
@@ -524,7 +586,7 @@ public class ChessGame {
      * @return whether this position is checkmate
      */
     public boolean isCheckmate() {
-        return ChessBoardUtils.isCheckmate(this.chessboard);
+        return ChessboardUtils.isCheckmate(this.chessboard);
     }
 
     /**
@@ -533,7 +595,7 @@ public class ChessGame {
      * @return whether this position is stalemate
      */
     public boolean isStalemate() {
-        return ChessBoardUtils.isStaleMate(this.chessboard);
+        return ChessboardUtils.isStaleMate(this.chessboard);
     }
 
     /**
@@ -542,7 +604,7 @@ public class ChessGame {
      * @return whether this position is threefold repetition
      */
     public boolean isThreefoldRepetition(){
-        return ChessBoardUtils.getRepetitionCount(this.chessboard) == 3;
+        return ChessboardUtils.getRepetitionCount(this.chessboard) == 3;
         // because getRepetitionCount method returns 3 if the position is repeated over 3 times
     }
 
@@ -601,6 +663,26 @@ public class ChessGame {
     }
 
     /**
+     * Translate SAN string to LAN string
+     *
+     * @param san SAN move
+     * @return Translated string result
+     */
+    public String toLanString(String san) {
+        return ConvertStringMoveUtils.toLanString(chessboard, san);
+    }
+
+    /**
+     * Translate SAN string to MoveInfo
+     *
+     * @param san SAN move
+     * @return Translated move data result
+     */
+    public MoveInfo toLanMoveData(String san) {
+        return new MoveInfo(ConvertStringMoveUtils.toLanMoveData(chessboard, san));
+    }
+
+    /**
      * Get 'full move' on this ChessGame
      *
      * @return full move
@@ -616,6 +698,19 @@ public class ChessGame {
      */
     public int getHalfMove() {
         return this.chessboard.half_ply;
+    }
+
+    private void forceEndGame(GameResult result, GameOverReason reason) {
+        if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
+            throw new IllegalStateException("This game is already finished!");
+        }
+
+        this.gameResult = result;
+        this.gameoverReason = reason;
+        this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+
+        this.currentNode.terminalResult = result;
+        this.currentNode.terminalReason = reason;
     }
 
     /**
@@ -698,6 +793,315 @@ public class ChessGame {
      */
     public MoveNodeDTO getRootNode() {
         return MoveNodeDTO.from(moveHistoryRoot);
+    }
+
+    /**
+     * Add default headers like Event, Site, etc.
+     */
+    private void setDefaultHeaders() {
+        headers.put("Event", "?");
+        headers.put("Site", "?");
+        headers.put("Date", "????.??.??");
+        headers.put("Round", "?");
+        headers.put("White", "?");
+        headers.put("Black", "?");
+        headers.put("Result", "*");
+    }
+
+    /**
+     * Get headers like Event, Site, etc.
+     *
+     * @return header map (String, value)
+     */
+    public LinkedHashMap<String, String> getHeaders() {
+        return headers;
+    }
+
+    /**
+     * Set / Add header
+     *
+     * @param key header string
+     * @param value header value
+     */
+    public void setHeader(String key, String value) {
+        this.headers.put(key, value);
+    }
+
+    /**
+     * Update game result (state)
+     */
+    private void updateGameState() {
+        if (this.currentNode.terminalReason != null) {
+            this.gameResult = this.currentNode.terminalResult;
+            this.gameoverReason = this.currentNode.terminalReason;
+            this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+            return;
+        }
+
+        this.gameoverReason = isGameOver();
+
+        this.gameResult = switch (this.gameoverReason) {
+            case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+            case STALEMATE, THREEFOLD, FIFTYMOVES -> GameResult.DRAW;
+            default -> GameResult.UNKNOWN;
+        };
+
+        this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+    }
+
+    /**
+     * Load PGN on this ChessGame
+     *
+     * @param pgnString PGN data
+     */
+    public PGNGame loadPGN(String pgnString) {
+        Map<String, String> headers = new HashMap<>();
+
+        String[] lines = pgnString.split("\\R");
+
+        int line_stopped = -1;
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+
+            line = line.trim();
+
+            if(line.isEmpty()) continue;
+
+            if(line.startsWith("[")) {
+                line = line.substring(1, line.length() - 1);
+
+                String[] parts = line.split(" ", 2);
+                if(parts.length == 2) {
+                    String type = parts[0];
+                    String what = parts[1].replace("\"", "");
+
+                    headers.put(type, what);
+                }
+            } else {
+                line_stopped = i;
+                break;
+            }
+        }
+
+        String movePGNString = "";
+
+        if(line_stopped != -1) {
+            StringBuilder moveBuilder = new StringBuilder();
+            for (int i = line_stopped; i < lines.length; i++) {
+                moveBuilder.append(lines[i]);
+                moveBuilder.append("\n");
+            }
+            movePGNString = moveBuilder.toString();
+        }
+
+        MoveNode rootNode = new MoveNode();
+        MoveNode currentNode = rootNode;
+
+        record VariationState(MoveNode node, Chessboard snapshotBoard) {}
+
+        Stack<VariationState> variationStack = new Stack<>();
+
+        movePGNString = movePGNString.replaceAll("\\s+", " ");
+
+        movePGNString = movePGNString.replace("(", " ( ")
+                .replace(")", " ) ")
+                .replace("{", " { ")
+                .replace("}", " } ");
+        movePGNString = movePGNString.replaceAll("\\s+", " ").trim();
+
+        Chessboard pgnChessboard;
+
+        String[] tokens = movePGNString.split(" ");
+
+        boolean isInsideComment = false;
+
+        StringBuilder commentBuilder = new StringBuilder();
+
+        if("1".equals(headers.get("SetUp")) && headers.containsKey("FEN")) {
+            String startFEN = headers.get("FEN");
+            pgnChessboard = new Chessboard(startFEN);
+        } else {
+            pgnChessboard = new Chessboard(Chessboard.start_position);
+        }
+
+        GameResult gameResult = GameResult.UNKNOWN;
+
+        for (String token : tokens) {
+            if(token.equals("{")) {
+                isInsideComment = true;
+                commentBuilder.setLength(0);
+                continue;
+            }
+
+            if(token.equals("}")) {
+                isInsideComment = false;
+
+                currentNode.comment = commentBuilder.toString().trim();
+
+                continue;
+            }
+
+            if (isInsideComment) {
+                commentBuilder.append(token).append(" ");
+                continue;
+            }
+
+
+            // number token like "1. e4" on "1."
+            if (token.matches("\\d+\\.+")) {
+                continue;
+            }
+
+
+            // Game result
+            if (token.equals("1-0")) {
+                gameResult = GameResult.WHITE_WON;
+
+                continue;
+            }
+            if(token.equals("0-1")) {
+                gameResult = GameResult.BLACK_WON;
+
+                continue;
+            }
+            if(token.equals("1/2-1/2")) {
+                gameResult = GameResult.DRAW;
+
+                continue;
+            }
+            if(token.equals("*")) {
+                continue;
+            }
+
+
+            if (token.startsWith("$")) {
+                currentNode.nag = token;
+                continue;
+            }
+
+            if (token.equals("(")) {
+                variationStack.push(new VariationState(currentNode, new Chessboard(pgnChessboard)));
+                currentNode = currentNode.parent;
+                pgnChessboard.takeBack();
+
+                continue;
+            }
+
+            if (token.equals(")")) {
+                VariationState state = variationStack.pop();
+
+                currentNode = state.node;
+                pgnChessboard = state.snapshotBoard;
+
+                continue;
+            }
+
+            int moveData = ConvertStringMoveUtils.toLanMoveData(pgnChessboard, token);
+
+            MoveGenerator.makeMove(pgnChessboard, moveData);
+
+            MoveInfo moveInfo = new MoveInfo(moveData);
+
+            MoveNode newNode = new MoveNode(moveInfo, currentNode);
+            newNode.san = token;
+
+            currentNode.children.add(newNode);
+
+            currentNode = newNode;
+        }
+
+        String fenToLoad = headers.getOrDefault("FEN", Chessboard.start_position);
+        ChessboardUtils.parseFen(this.chessboard, fenToLoad);
+
+        MoveNodeDTO rootDTO = MoveNodeDTO.from(rootNode);
+
+        this.moveHistoryRoot = rootNode;
+        this.currentNode = rootNode;
+
+        this.headers.clear();
+        setDefaultHeaders();
+        this.headers.putAll(headers);
+
+        this.gameResult = gameResult;
+        if (gameResult != GameResult.UNKNOWN) {
+            MoveNode lastNode = getLastMainlineNode(rootNode);
+
+            if (!ChessboardUtils.isCheckmate(pgnChessboard) && !ChessboardUtils.isStaleMate(pgnChessboard)) {
+                lastNode.terminalResult = gameResult;
+                lastNode.terminalReason = (gameResult == GameResult.DRAW) ?
+                        GameOverReason.AGREEMENTDRAW : GameOverReason.RESIGNATION;
+            }
+        }
+
+        updateGameState();
+
+        return new PGNGame(headers, rootDTO, gameResult);
+    }
+
+    public PGNGame toPGNGame() {
+        if(this.headers.isEmpty()) setDefaultHeaders();
+
+        String currentStartFen = this.startPositionFEN;
+        if (!currentStartFen.equals(Chessboard.start_position)) {
+            this.headers.put("SetUp", "1");
+            this.headers.put("FEN", currentStartFen);
+        } else {
+            this.headers.remove("SetUp");
+            this.headers.remove("FEN");
+        }
+
+        updateGameState();
+
+        this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+
+        MoveNodeDTO rootDTO = MoveNodeDTO.from(this.moveHistoryRoot);
+
+        return new PGNGame(new LinkedHashMap<>(this.headers), rootDTO, this.gameResult);
+    }
+
+    public String getPGN() {
+        return PGNUtils.export(toPGNGame());
+    }
+
+    /**
+     * Get last main line node
+     * <p>
+     * Example : <br>
+     * e4 e5 Nf3 Nc6 (Nf6 Nxe5) 'Bc4' <br>
+     * and the result is Bc4
+     *
+     * @return last main line node
+     */
+    private MoveNode getLastMainlineNode() {
+        MoveNode lastNode = moveHistoryRoot;
+
+        while (!lastNode.children.isEmpty()) {
+            lastNode = lastNode.children.getFirst();
+        }
+
+        return lastNode;
+    }
+
+    /**
+     * Get last main line node
+     * <p>
+     * Example : <br>
+     * e4 e5 Nf3 Nc6 (Nf6 Nxe5) 'Bc4' <br>
+     * and the result is Bc4
+     *
+     * @param startNode start root node
+     *
+     * @return last main line node
+     */
+    private MoveNode getLastMainlineNode(MoveNode startNode) {
+        MoveNode lastNode = startNode;
+
+        while (!lastNode.children.isEmpty()) {
+            lastNode = lastNode.children.getFirst();
+        }
+
+        return lastNode;
     }
 
     @Override

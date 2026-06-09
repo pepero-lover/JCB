@@ -1,11 +1,10 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.api.parse;
 
 import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.EncodedPieces;
-import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
@@ -15,15 +14,10 @@ import static com.pepero.jcb.constant.SideToMove.white;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 
 public class ConvertStringMoveUtils {
-    private static class TranslateResult {
-        String moveString;
-        int moveData;
-
-        TranslateResult(String moveString, int moveData) {
-            this.moveString = moveString;
-            this.moveData = moveData;
-        }
-    }
+    private record TranslateResult(
+            String moveString,
+            int moveData
+    ) {}
 
     /**
      * Convert lan move to san move
@@ -51,7 +45,7 @@ public class ConvertStringMoveUtils {
             throw new ConvertMoveException("Square string is not correct!", lan);
         }
 
-        int type = ChessBoardUtils.getPieceTypeOnSquare(chessboard, source_square);
+        int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
 
         // if piece is not found
         if(type == -1) {
@@ -78,7 +72,7 @@ public class ConvertStringMoveUtils {
         int target_file = target_square % 8;
         int target_rank = target_square / 8;
 
-        boolean is_capture = ChessBoardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1;
+        boolean is_capture = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1;
 
         if(type == p || type == P){
             boolean is_pawn_capture = source_file != target_file;
@@ -106,7 +100,7 @@ public class ConvertStringMoveUtils {
         } else {
             if(!castle) {
                 // add piece type
-                sb.append(EncodedPieces.encodedPieceToString(type));
+                sb.append(encodedPieceToString(type));
 
                 // add disambiguation
                 if (!(type == k || type == K)) {
@@ -185,9 +179,9 @@ public class ConvertStringMoveUtils {
 
                 MoveGenerator.makeMove(chessboard, move);
 
-                if(ChessBoardUtils.isCheckmate(chessboard)) {
+                if(ChessboardUtils.isCheckmate(chessboard)) {
                     sb.append("#");
-                } else if(ChessBoardUtils.isCheck(chessboard)) {
+                } else if(ChessboardUtils.isCheck(chessboard)) {
                     sb.append("+");
                 }
 
@@ -261,7 +255,7 @@ public class ConvertStringMoveUtils {
 
         int promotion_type = 0;
         if(lan.length() == 5){
-            promotion_type = ChessBoardUtils.char_to_encoded_piece.get(lan.charAt(4));
+            promotion_type = ChessboardUtils.char_to_encoded_piece.get(lan.charAt(4));
             if(chessboard.side == white) promotion_type -= 6;
         }
 
@@ -279,6 +273,146 @@ public class ConvertStringMoveUtils {
         throw new IllegalMoveException(lan);
     }
 
+    /**
+     * Translate SAN string to LAN data
+     *
+     * @param chessboard chessboard
+     * @param san SAN move
+     * @return Translated Result
+     */
+    private static TranslateResult parseSan(Chessboard chessboard, String san) {
+        int source_square = -1;
+        int target_square = -1;
+        int promotion_type = -1;
+
+        int expected_file = -1;
+        int expected_rank = -1;
+
+        boolean whiteTurn = chessboard.side == white;
+
+        if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
+            boolean isKingSide = san.equals("O-O") || san.equals("0-0");
+
+            int[] move_list = new int[255];
+            int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+            for (int count = 0; count < move_count; count++) {
+                int move = move_list[count];
+
+                if(!EncodeMove.getMoveCastling(move)) continue;
+
+                int target = EncodeMove.getMoveTarget(move);
+                if(target == BoardSquares.g1 && isKingSide) return new TranslateResult("e1g1", move);
+                if(target == BoardSquares.g8 && isKingSide) return new TranslateResult("e8g8", move);
+                if(target == BoardSquares.c1 && !isKingSide) return new TranslateResult("e1c1", move);
+                if(target == BoardSquares.c8 && !isKingSide) return new TranslateResult("e8c8", move);
+            }
+
+            throw new ConvertMoveException("There is no possible castling move!");
+        }
+
+        boolean isCapture = san.contains("x");
+        if(isCapture) san = san.replace("x", "");
+        san = san.replace("+", "");
+        san = san.replace("#", "");
+
+        int piece_type = switch (san.charAt(0)) {
+            case 'N' -> whiteTurn ? N : n;
+            case 'B' -> whiteTurn ? B : b;
+            case 'R' -> whiteTurn ? R : r;
+            case 'Q' -> whiteTurn ? Q : q;
+            case 'K' -> whiteTurn ? K : k;
+            default -> whiteTurn ? P : p;
+        };
+
+        if(piece_type != P && piece_type != p) {
+            // Qae7
+            // Ne3c4
+
+            // ae7
+            // e3c4
+            san = san.substring(1);
+
+            if(san.length() == 3) {
+                boolean isFile = Character.isAlphabetic(san.charAt(0));
+                if(isFile) {
+                    expected_file = san.charAt(0) - 'a';
+                } else {
+                    expected_rank = 7 - (san.charAt(0) - '1');
+                }
+
+                san = san.substring(1);
+            } else if(san.length() == 4) {
+                expected_file = san.charAt(0) - 'a';
+                expected_rank = 7 - (san.charAt(1) - '1');
+
+                san = san.substring(2);
+            }
+
+            target_square = BoardSquares.coordinates_to_square(san.substring(0,2));
+        } else {
+            // exd8=Q
+            if (isCapture) {
+                expected_file = san.charAt(0) - 'a';
+
+                san = san.substring(1);
+            }
+
+            // d8=Q
+            target_square = BoardSquares.coordinates_to_square(san.substring(0,2));
+        }
+
+        // promotion
+        if(san.contains("=") && san.indexOf('=') + 1 < san.length())
+            promotion_type = switch (san.charAt(san.indexOf('=') + 1)) {
+                case 'Q', 'q' -> Q;
+                case 'R', 'r' -> R;
+                case 'B', 'b' -> B;
+                case 'N', 'n' -> N;
+                default -> throw new ConvertMoveException("Promotion piece char Not Found!");
+            };
+
+        int[] move_list = new int[255];
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        boolean result = false;
+        int move_result = -1;
+
+        for (int count = 0; count < move_count; count++) {
+            int move = move_list[count];
+
+            if (EncodeMove.getMovePiece(move) == piece_type &&
+                    EncodeMove.getMoveTarget(move) == target_square) {
+                int source = EncodeMove.getMoveSource(move);
+
+                if(promotion_type != -1 && EncodeMove.getMovePromoted(move) != promotion_type) continue;
+                if(expected_file != -1 && source % 8 != expected_file) continue;
+                if(expected_rank != -1 && source / 8 != expected_rank) continue;
+
+                if(result) throw new ConvertMoveException("Available move count is more than 1!");
+
+                source_square = source;
+                target_square = EncodeMove.getMoveTarget(move);
+
+                result = true;
+                move_result = move;
+            }
+        }
+
+        if(move_result == -1) throw new ConvertMoveException("Available move count is zero!");
+
+        return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
+                + BoardSquares.square_to_coordinates[target_square]
+                + (promotion_type != -1 ? ChessboardUtils.promotion_pieces[promotion_type] : ""), move_result);
+    }
+
+    public static String toLanString(Chessboard chessboard, String san) {
+        return parseSan(chessboard, san).moveString;
+    }
+
+    public static int toLanMoveData(Chessboard chessboard, String san) {
+        return parseSan(chessboard, san).moveData;
+    }
 
     /**
      * Parse move data (source square, target square, promotion type)
@@ -326,6 +460,6 @@ public class ConvertStringMoveUtils {
 
         throw new IllegalMoveException(BoardSquares.square_to_coordinates[source_square]
         +BoardSquares.square_to_coordinates[target_square]
-        +(promotion_type!=0?ChessBoardUtils.promotion_pieces[promotion_type] : ""));
+        +(promotion_type!=0? ChessboardUtils.promotion_pieces[promotion_type] : ""));
     }
 }

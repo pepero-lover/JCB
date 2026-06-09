@@ -1,4 +1,4 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.api.dto;
 
 import com.pepero.jcb.api.enums.Piece;
 import com.pepero.jcb.api.enums.PieceType;
@@ -16,10 +16,9 @@ public record MoveInfo(
         boolean pawnDoublePush,
         boolean enpassant,
         boolean castling,
-        int originEncodedData,
-        int fullMove
+        int originEncodedData
 ) {
-    public MoveInfo(int moveData, int nowPly) {
+    public MoveInfo(int moveData) {
         this(
                 Square.fromIndex(EncodeMove.getMoveSource(moveData)),
                 Square.fromIndex(EncodeMove.getMoveTarget(moveData)),
@@ -30,8 +29,7 @@ public record MoveInfo(
                 EncodeMove.getMoveDouble(moveData),
                 EncodeMove.getMoveEnpassant(moveData),
                 EncodeMove.getMoveCastling(moveData),
-                moveData,
-                nowPly
+                moveData
         );
     }
 

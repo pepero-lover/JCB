@@ -1,7 +1,7 @@
 package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.PieceNotFoundException;
-import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.core.ChessboardUtils;
 
 public enum PieceType {
     PAWN(0),
@@ -59,10 +59,31 @@ public enum PieceType {
         return BY_INDEX[index];
     }
 
+    /**
+     * Get piece type from char
+     * <p>
+     * Example : <br>
+     * q -> QUEEN, B -> BISHOP
+     *
+     * @param c char input
+     * @return piece type from char
+     */
+    public static PieceType fromChar(char c) {
+        return switch (c) {
+            case 'P', 'p' -> PAWN;
+            case 'N', 'n' -> KNIGHT;
+            case 'B', 'b' -> BISHOP;
+            case 'R', 'r' -> ROOK;
+            case 'Q', 'q' -> QUEEN;
+            case 'K', 'k' -> KING;
+            default -> NONE;
+        };
+    }
+
     @Override
     public String toString() {
         if(this == NONE) return "";
 
-        return String.valueOf(ChessBoardUtils.ascii_pieces[getPieceType() % 6]);
+        return String.valueOf(ChessboardUtils.ascii_pieces[getPieceType() % 6]);
     }
 }

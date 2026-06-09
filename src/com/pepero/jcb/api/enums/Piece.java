@@ -1,7 +1,7 @@
 package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.PieceNotFoundException;
-import com.pepero.jcb.core.ChessBoardUtils;
+import com.pepero.jcb.core.ChessboardUtils;
 
 public enum Piece {
     WHITE_PAWN(0),
@@ -47,6 +47,45 @@ public enum Piece {
     }
 
     /**
+     * Get piece type enum (PieceType.java)
+     *
+     * @return piece type (PieceType.java)
+     */
+    public PieceType getPieceTypeEnum() {
+        if(this == NONE) return PieceType.NONE;
+
+        return PieceType.fromIndex(pieceType % 6);
+    }
+
+    /**
+     * Get piece type from char
+     * <p>
+     * Example : <br>
+     * q -> BLACK_QUEEN, B -> WHITE_BISHOP
+     *
+     * @param c char input
+     * @return piece type from char
+     */
+    public static Piece fromChar(char c) {
+        return switch (c) {
+            case 'P' -> WHITE_PAWN;
+            case 'N' -> WHITE_KNIGHT;
+            case 'B' -> WHITE_BISHOP;
+            case 'R' -> WHITE_ROOK;
+            case 'Q' -> WHITE_QUEEN;
+            case 'K' -> WHITE_KING;
+
+            case 'p' -> BLACK_PAWN;
+            case 'n' -> BLACK_KNIGHT;
+            case 'b' -> BLACK_BISHOP;
+            case 'r' -> BLACK_ROOK;
+            case 'q' -> BLACK_QUEEN;
+            case 'k' -> BLACK_KING;
+            default -> NONE;
+        };
+    }
+
+    /**
      * Get whether this piece is a white piece or not
      *
      * @return whether this piece is a white piece or not
@@ -83,6 +122,6 @@ public enum Piece {
 
     @Override
     public String toString() {
-        return String.valueOf(ChessBoardUtils.ascii_pieces[getPieceType()]);
+        return String.valueOf(ChessboardUtils.ascii_pieces[getPieceType()]);
     }
 }
