@@ -175,8 +175,6 @@ public class ConvertStringMoveUtils {
             if (EncodeMove.getMoveSource(move) == source_square && EncodeMove.getMoveTarget(move) == target_square) {
                 found_move = true;
 
-                chessboard.copyBoard();
-
                 MoveGenerator.makeMove(chessboard, move);
 
                 if(ChessboardUtils.isCheckmate(chessboard)) {
@@ -185,7 +183,7 @@ public class ConvertStringMoveUtils {
                     sb.append("+");
                 }
 
-                chessboard.takeBack();
+                MoveGenerator.unmakeMove(chessboard, move);
 
                 break;
             }
@@ -213,6 +211,8 @@ public class ConvertStringMoveUtils {
         String[] lans = lanSequence.trim().split("\\s+");
         StringBuilder sanSequence = new StringBuilder();
 
+        int[] moveData = new int[lans.length];
+
         for (String lan : lans) {
             TranslateResult result = translateLan(chessboard, lan);
 
@@ -225,8 +225,8 @@ public class ConvertStringMoveUtils {
             MoveGenerator.makeMove(chessboard, result.moveData);
         }
 
-        for (int i = 0; i < lans.length; i++){
-            chessboard.takeBack();
+        for (int i = lans.length - 1; i >= 0; i--){
+            MoveGenerator.unmakeMove(chessboard, moveData[lans.length - i]);
         }
 
         return sanSequence.toString();

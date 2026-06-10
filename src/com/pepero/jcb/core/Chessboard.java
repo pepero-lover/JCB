@@ -62,20 +62,14 @@ public class Chessboard {
     // "almost" unique position identifier aka hash key or position key
     public long hash_key;
 
-    // maximum search depth (Perft & Search)
-    public static final int MAX_DEPTH = 128;
+    public static final int MAX_DEPTH = 1024; // 넉넉하게 1024 수까지 지원
 
-    // preserve board state arrays (stack)
-    private long[][] bitboards_copy = new long[MAX_DEPTH][12];
-    private long[][] occupancies_copy = new long[MAX_DEPTH][3];
-    private int[] side_copy = new int[MAX_DEPTH];
-    private int[] enpassant_copy = new int[MAX_DEPTH];
-    private int[] castle_copy = new int[MAX_DEPTH];
+    public int[] enpassant_history = new int[MAX_DEPTH];
+    public int[] castle_history = new int[MAX_DEPTH];
+    public int[] half_ply_history = new int[MAX_DEPTH];
+    public long[] hash_key_history = new long[MAX_DEPTH];
 
-    private long[] hash_key_copy = new long[MAX_DEPTH];
-
-    private int[] ply_copy = new int[MAX_DEPTH];
-    private int[] half_ply_copy = new int[MAX_DEPTH];
+    public int[] captured_piece_history = new int[MAX_DEPTH];
 
     // ply counter for history stack
     private int copy_index = 0;
@@ -98,6 +92,12 @@ public class Chessboard {
 
         // reset occupancies (bitboards)
         Arrays.fill(this.occupancies, 0L);
+
+        Arrays.fill(this.enpassant_history, 0);
+        Arrays.fill(this.castle_history, 0);
+        Arrays.fill(this.half_ply_history, 0);
+        Arrays.fill(this.hash_key_history, 0);
+        Arrays.fill(this.captured_piece_history, 0);
 
         // reset game state variables
         this.side = 0;
@@ -137,48 +137,13 @@ public class Chessboard {
 
         this.ply = source.ply;
         this.half_ply = source.half_ply;
-    }
 
-    /**
-     * Preserve board state (Push into History Stack)
-     */
-    public void copyBoard() {
-        // copy current state into the history stack at current ply
-        System.arraycopy(this.bitboards, 0, bitboards_copy[copy_index], 0, 12);
-        System.arraycopy(this.occupancies, 0, occupancies_copy[copy_index], 0, 3);
-
-        side_copy[copy_index] = this.side;
-        enpassant_copy[copy_index] = this.enpassant;
-        castle_copy[copy_index] = this.castle;
-
-        hash_key_copy[copy_index] = this.hash_key;
-
-        ply_copy[copy_index] = this.ply;
-        half_ply_copy[copy_index] = this.half_ply;
-
-        // increment index
-        copy_index++;
-    }
-
-    /**
-     * Restore board state (Pop from History Stack)
-     */
-    public void takeBack() {
-        // decrement index to get the previous state
-        copy_index--;
-
-        // copy the previous state from the history stack back to the board
-        System.arraycopy(bitboards_copy[copy_index], 0, this.bitboards, 0, 12);
-        System.arraycopy(occupancies_copy[copy_index], 0, this.occupancies, 0, 3);
-
-        this.side = side_copy[copy_index];
-        this.enpassant = enpassant_copy[copy_index];
-        this.castle = castle_copy[copy_index];
-
-        this.hash_key = hash_key_copy[copy_index];
-
-        this.ply = ply_copy[copy_index];
-        this.half_ply = half_ply_copy[copy_index];
+        System.arraycopy(source.historyHashes, 0, this.historyHashes, 0, 1024);
+        System.arraycopy(source.enpassant_history, 0, this.enpassant_history, 0, MAX_DEPTH);
+        System.arraycopy(source.castle_history, 0, this.castle_history, 0, MAX_DEPTH);
+        System.arraycopy(source.half_ply_history, 0, this.half_ply_history, 0, MAX_DEPTH);
+        System.arraycopy(source.hash_key_history, 0, this.hash_key_history, 0, MAX_DEPTH);
+        System.arraycopy(source.captured_piece_history, 0, this.captured_piece_history, 0, MAX_DEPTH);
     }
 
     /**

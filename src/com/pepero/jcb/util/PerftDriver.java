@@ -27,7 +27,7 @@ public class PerftDriver {
         // loop over generated moves
         for(int move_count = 0; move_count < count; move_count++){
             // make move
-            boolean isLegal = MoveGenerator.makeMove(chessboard ,move_list[move_count]);
+            boolean isLegal = MoveGenerator.makeMove(chessboard, move_list[move_count]);
             if(!isLegal)
                 // skip to the next move
                 continue;
@@ -35,8 +35,7 @@ public class PerftDriver {
             // call perft driver recursively
             perftDriver(chessboard, depth - 1);
 
-            // take back
-            chessboard.takeBack();
+            MoveGenerator.unmakeMove(chessboard, move_list[move_count]);
 
             // build hash key for the updated position (after move is made) from scratch
             //long hash_from_scratch = Zobrist.generateHashKey(chessboard);
@@ -88,7 +87,7 @@ public class PerftDriver {
             long old_nodes = nodes - cumulative_nodes;
 
             // take back
-            chessboard.takeBack();
+            MoveGenerator.unmakeMove(chessboard, move_list[move_count]);
 
             // print move
             StringBuilder sb = new StringBuilder();

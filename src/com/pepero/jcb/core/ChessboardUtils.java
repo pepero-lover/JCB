@@ -347,7 +347,7 @@ public class ChessboardUtils {
 
         for (int i = 0; i < move_count; i++) {
             if (MoveGenerator.makeMove(chessboard, move_list[i])) {
-                chessboard.takeBack();
+                MoveGenerator.unmakeMove(chessboard, move_list[move_count]);
                 return true;
             }
         }

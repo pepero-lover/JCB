@@ -53,10 +53,15 @@ public class MoveGenerator {
      * @return whether this move is successfully generated or not
      * ( if not generated, returns false. otherwise, returns true)
      */
-    public static boolean makeMove(Chessboard chessboard,int move){
-        // preserve board state
-        chessboard.copyBoard();
+    public static boolean makeMove(Chessboard chessboard, int move){
+        // set chessboard history move data
+        chessboard.enpassant_history[chessboard.ply] = chessboard.enpassant;
+        chessboard.castle_history[chessboard.ply] = chessboard.castle;
+        chessboard.half_ply_history[chessboard.ply] = chessboard.half_ply;
+        chessboard.hash_key_history[chessboard.ply] = chessboard.hash_key;
+        chessboard.captured_piece_history[chessboard.ply] = -1;
 
+        // chessboard hash
         chessboard.historyHashes[chessboard.ply] = chessboard.hash_key;
 
         // parse move
@@ -104,6 +109,9 @@ public class MoveGenerator {
 
                     // remove the piece from hash key
                     chessboard.hash_key ^= Zobrist.piece_keys[bb_piece][target_square];
+
+                    // if move is capture
+                    chessboard.captured_piece_history[chessboard.ply] = bb_piece;
 
                     break;
                 }
@@ -327,8 +335,7 @@ public class MoveGenerator {
                 (chessboard.side == white) ? BitBoardUtils.getLS1BIndex(chessboard.bitboards[k])
                         : BitBoardUtils.getLS1BIndex(chessboard.bitboards[K])
                 , chessboard.side)){
-            // take move back
-            chessboard.takeBack();
+            unmakeMove(chessboard, move);
 
             // return illegal move
             return false;
@@ -338,6 +345,92 @@ public class MoveGenerator {
             // return legal move
             return true;
         }
+    }
+
+    /**
+     * Unmake Move on chessboard
+     *
+     * @param chessboard chessboard
+     * @param move encoded move
+     */
+    public static void unmakeMove(Chessboard chessboard, int move) {
+        // decrease ply
+        chessboard.ply--;
+        chessboard.side ^= 1;
+
+        // get enpassant square, castle, half_ply, hash_key
+        chessboard.enpassant = chessboard.enpassant_history[chessboard.ply];
+        chessboard.castle = chessboard.castle_history[chessboard.ply];
+        chessboard.half_ply = chessboard.half_ply_history[chessboard.ply];
+        chessboard.hash_key = chessboard.hash_key_history[chessboard.ply];
+
+        // get captured piece
+        int captured_piece = chessboard.captured_piece_history[chessboard.ply];
+
+        int source_square = EncodeMove.getMoveSource(move);
+        int target_square = EncodeMove.getMoveTarget(move);
+        int piece = EncodeMove.getMovePiece(move);
+        int promoted_piece = EncodeMove.getMovePromoted(move);
+        boolean capture = EncodeMove.getMoveCapture(move);
+        boolean enpass = EncodeMove.getMoveEnpassant(move);
+        boolean castling = EncodeMove.getMoveCastling(move);
+
+        // if castling move is undoing move
+        if (castling) {
+            switch (target_square) {
+                case g1:
+                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], f1);
+                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], h1);
+                    break;
+                case c1:
+                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], d1);
+                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], a1);
+                    break;
+                case g8:
+                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], f8);
+                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], h8);
+                    break;
+                case c8:
+                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], d8);
+                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], a8);
+                    break;
+            }
+        }
+
+        // when promotion
+        if (promoted_piece != 0) {
+            chessboard.bitboards[promoted_piece] = BitBoardUtils.popBit(chessboard.bitboards[promoted_piece], target_square);
+        } else {
+            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
+        }
+
+        // set piece
+        chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
+
+        // if normal capture move
+        if (capture && !enpass) {
+            chessboard.bitboards[captured_piece] = BitBoardUtils.setBit(chessboard.bitboards[captured_piece], target_square);
+        }
+
+        // if enpassant
+        if (enpass) {
+            if (chessboard.side == white) {
+                chessboard.bitboards[p] = BitBoardUtils.setBit(chessboard.bitboards[p], target_square + 8);
+            } else {
+                chessboard.bitboards[P] = BitBoardUtils.setBit(chessboard.bitboards[P], target_square - 8);
+            }
+        }
+
+        // set occupancies
+        Arrays.fill(chessboard.occupancies, 0L);
+        for (int bb_piece = P; bb_piece <= K; bb_piece++) {
+            chessboard.occupancies[white] |= chessboard.bitboards[p];
+        }
+        for (int bb_piece = p; bb_piece <= k; bb_piece++) {
+            chessboard.occupancies[black] |= chessboard.bitboards[p];
+        }
+        chessboard.occupancies[both] |= chessboard.occupancies[white];
+        chessboard.occupancies[both] |= chessboard.occupancies[black];
     }
 
     /**
@@ -811,7 +904,7 @@ public class MoveGenerator {
                     return false;
                 }
 
-                chessboard.takeBack();
+                unmakeMove(chessboard, possible_move);
                 return true;
             }
         }
@@ -835,7 +928,7 @@ public class MoveGenerator {
                     return ILLEGAL_MOVE;
                 }
 
-                chessboard.takeBack();
+                unmakeMove(chessboard, possible_move);
                 return possible_move;
             }
         }
