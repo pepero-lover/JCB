@@ -86,11 +86,18 @@ public class ChessGame {
         }
     }
 
+    // for variation
+
     private MoveNode moveHistoryRoot = new MoveNode();
 
     // pointer
     private MoveNode currentNode = moveHistoryRoot;
 
+
+    // for linear
+
+    private List<MoveInfo> linearHistory = new ArrayList<>();
+    private int currentMoveIndex = -1;
 
 
     private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
@@ -98,21 +105,25 @@ public class ChessGame {
     private GameResult gameResult = GameResult.UNKNOWN;
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
 
+    private final GameMode gameMode;
+
     private final String startPositionFEN;
 
     /**
      * Initialize position with FEN string
      * @param fen fen string
+     * @param gameMode game mode (variation mode, linear mode)
      *
      * @throws FENConvertException - if converting fen string failed
      */
-    public ChessGame(String fen) {
+    public ChessGame(String fen, GameMode gameMode) {
         if (fen == null || fen.trim().isEmpty()) {
             throw new FENConvertException("FEN string is empty!");
         }
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
+        this.gameMode = gameMode;
 
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
@@ -122,14 +133,34 @@ public class ChessGame {
     }
 
     /**
+     * Initialize position with FEN string (Variation mode default)
+     *
+     * @param fen fen string
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public ChessGame(String fen) {
+        this(fen, GameMode.VARIATION);
+    }
+
+    /**
      * Initialize position to start position
      */
-    public ChessGame() {
+    public ChessGame(GameMode gameMode) {
         this.chessboard = new Chessboard();
 
         ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
 
         startPositionFEN = Chessboard.start_position;
+
+        this.gameMode = gameMode;
+    }
+
+    /**
+     * Initialize position to start position
+     */
+    public ChessGame() {
+        this(GameMode.VARIATION);
     }
 
     /**
@@ -158,7 +189,7 @@ public class ChessGame {
 
         MoveInfo moveData = new MoveInfo(encoded_move);
 
-        addMoveOnTree(moveData);
+        addMoveHistory(moveData);
 
         updateGameState();
     }
@@ -204,7 +235,7 @@ public class ChessGame {
 
         MoveInfo moveData = new MoveInfo(encoded_move);
 
-        addMoveOnTree(moveData);
+        addMoveHistory(moveData);
 
         updateGameState();
     }
@@ -235,7 +266,7 @@ public class ChessGame {
 
         MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData());
 
-        addMoveOnTree(moveData);
+        addMoveHistory(moveData);
 
         updateGameState();
     }
@@ -249,15 +280,18 @@ public class ChessGame {
      * @throws MoveNotFoundException - if the current node is not found (Only for variation mode)
      */
     public MoveInfo unmakeMove() {
-        if(!canUndo()) {
-            throw new EmptyMoveUndoException();
+        if (!canUndo()) throw new EmptyMoveUndoException();
+
+        MoveInfo moveInfo;
+        if (gameMode == GameMode.VARIATION) {
+            moveInfo = currentNode.moveData;
+            currentNode = currentNode.parent;
+        } else {
+            moveInfo = linearHistory.get(currentMoveIndex);
+            currentMoveIndex--;
         }
 
-        MoveInfo moveInfo = getLastMove();
-        undoMoveOnTree();
-
         this.chessboard.takeBack();
-
         updateGameState();
 
         return moveInfo;
@@ -276,19 +310,32 @@ public class ChessGame {
     public MoveInfo remakeMove() {
         if (!canRedo()) throw new EmptyMoveRedoException();
 
-        // only main line
-        MoveInfo moveInfo = redoMoveOnTree();
+        MoveInfo moveInfo;
+        if (gameMode == GameMode.VARIATION) {
+            currentNode = currentNode.children.getFirst();
+            moveInfo = currentNode.moveData;
+        } else {
+            currentMoveIndex++;
+            moveInfo = linearHistory.get(currentMoveIndex);
+        }
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+        if (!isSuccess) {
+            if (gameMode == GameMode.VARIATION) {
+                currentNode = currentNode.parent;
+            } else {
+                currentMoveIndex--;
+            }
+            throw new IllegalMoveException(moveInfo.toString());
+        }
 
         updateGameState();
-
         return moveInfo;
     }
 
     /**
      * Remake (redo) move on this ChessGame (with Variation index) <br>
+     * ONLY ON VARIATION MODE!
      *
      * @param variationIndex variation index (if 0, goes main line)
      *
@@ -299,17 +346,34 @@ public class ChessGame {
      * if remakeMove(0), pointer is now e7e5. <br>
      *
      * @throws EmptyMoveRedoException - if redo history is empty and remake move
+     * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public MoveInfo remakeMove(int variationIndex) {
+        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
         if (!canRedo()) throw new EmptyMoveRedoException();
 
-        MoveInfo moveInfo = redoMoveOnTree(variationIndex);
+        MoveInfo moveInfo;
+        if (gameMode == GameMode.VARIATION) {
+            if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
+
+            currentNode = currentNode.children.get(variationIndex);
+            moveInfo = currentNode.moveData;
+        } else {
+            currentMoveIndex++;
+            moveInfo = linearHistory.get(currentMoveIndex);
+        }
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+        if (!isSuccess) {
+            if (gameMode == GameMode.VARIATION) {
+                currentNode = currentNode.parent;
+            } else {
+                currentMoveIndex--;
+            }
+            throw new IllegalMoveException(moveInfo.toString());
+        }
 
         updateGameState();
-
         return moveInfo;
     }
 
@@ -319,7 +383,11 @@ public class ChessGame {
      * @return whether this position can undo
      */
     public boolean canUndo() {
-        return currentNode != moveHistoryRoot;
+        if (gameMode == GameMode.VARIATION) {
+            return currentNode != moveHistoryRoot;
+        } else {
+            return currentMoveIndex >= 0;
+        }
     }
 
     /**
@@ -330,18 +398,27 @@ public class ChessGame {
      * @throws MoveNotFoundException if the current node is not found
      */
     public boolean canRedo() {
-        return !currentNode.children.isEmpty();
+        if (gameMode == GameMode.VARIATION) {
+            return !currentNode.children.isEmpty();
+        } else {
+            return currentMoveIndex < linearHistory.size() - 1;
+        }
     }
 
     /**
      * Remake (redo) move on this ChessGame (with Variation index) <br>
+     * ONLY ON VARIATION MODE!
      *
      * @param variationIndex variation index (if 0, goes main line)
      *
      * @return whether this position can redo
+     *
+     * @throws MoveNotFoundException - if current node (move) not found
+     * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public boolean canRedo(int variationIndex) {
-        if(currentNode == null) throw new MoveNotFoundException();
+        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
+        if (currentNode == null) throw new MoveNotFoundException();
         return currentNode.children.size() > variationIndex;
     }
 
@@ -350,19 +427,24 @@ public class ChessGame {
      *
      * @return previous moves
      */
-    public List<MoveInfo> getMoveHistory(){
-        List<MoveInfo> result = new ArrayList<>();
-
-        MoveNode current = currentNode;
-
-        while (current != null && current.moveData != null) {
-            result.add(current.moveData);
-            current = current.parent;
+    public List<MoveInfo> getMoveHistory() {
+        if (gameMode == GameMode.VARIATION) {
+            List<MoveInfo> result = new ArrayList<>();
+            MoveNode current = currentNode;
+            while (current != null && current.moveData != null) {
+                result.add(current.moveData);
+                current = current.parent;
+            }
+            Collections.reverse(result);
+            return Collections.unmodifiableList(result);
+        } else {
+            if (currentMoveIndex < 0) return Collections.emptyList();
+            List<MoveInfo> result = new ArrayList<>(currentMoveIndex + 1);
+            for (int i = 0; i <= currentMoveIndex; i++) {
+                result.add(linearHistory.get(i));
+            }
+            return Collections.unmodifiableList(result);
         }
-
-        Collections.reverse(result);
-
-        return Collections.unmodifiableList(result);
     }
 
     /**
@@ -418,7 +500,7 @@ public class ChessGame {
     }
 
     /**
-     * Get piece score
+     * Get piece score (For GUI showing / material comparison)
      *
      * @return piece score
      */
@@ -700,6 +782,12 @@ public class ChessGame {
         return this.chessboard.half_ply;
     }
 
+    /**
+     * Force to make the game end
+     *
+     * @param result game result
+     * @param reason game over reason
+     */
     private void forceEndGame(GameResult result, GameOverReason reason) {
         if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
             throw new IllegalStateException("This game is already finished!");
@@ -713,6 +801,52 @@ public class ChessGame {
         this.currentNode.terminalReason = reason;
     }
 
+
+    /**
+     * Get game result
+     *
+     * @return game result
+     */
+    public GameResult getGameResult() {
+        return this.gameResult;
+    }
+
+    /**
+     * Get game over reason
+     *
+     * @return game over reason
+     */
+    public GameOverReason getGameoverReason() {
+        return this.gameoverReason;
+    }
+
+    /**
+     * When one of player have resigned
+     *
+     * @param isWhiteResigning is player white
+     */
+    public void resign(boolean isWhiteResigning) {
+        GameResult result = isWhiteResigning ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+        forceEndGame(result, GameOverReason.RESIGNATION);
+    }
+
+    /**
+     * If both players agreed draw
+     */
+    public void agreeDraw() {
+        forceEndGame(GameResult.DRAW, GameOverReason.AGREEMENTDRAW);
+    }
+
+    /**
+     * When server have to force this game end
+     *
+     * @param result game result
+     * @param reason game over reason
+     */
+    public void forceEndGameExternal(GameResult result, GameOverReason reason) {
+        forceEndGame(result, reason);
+    }
+
     /**
      * Add move data on move history (tree)
      *
@@ -720,21 +854,35 @@ public class ChessGame {
      *
      * @throws MoveNotFoundException - could not find the node
      */
-    private void addMoveOnTree(MoveInfo moveData) {
-        for(int i = 0; i < currentNode.children.size(); i++) {
-            MoveNode child = currentNode.children.get(i);
+    private void addMoveHistory(MoveInfo moveData) {
+        if(gameMode == GameMode.VARIATION) {
+            // Variation tree logic
 
-            if (moveData.equals(child.moveData)) {
-                currentNode = child;
+            for(int i = 0; i < currentNode.children.size(); i++) {
+                MoveNode child = currentNode.children.get(i);
 
-                return;
+                if (moveData.equals(child.moveData)) {
+                    currentNode = child;
+
+                    return;
+                }
             }
+
+            MoveNode result = new MoveNode(moveData, currentNode);
+
+            currentNode.children.add(result);
+            currentNode = result;
+
+            return;
         }
 
-        MoveNode result = new MoveNode(moveData, currentNode);
-
-        currentNode.children.add(result);
-        currentNode = result;
+        if(gameMode == GameMode.LINEAR) {
+            if (currentMoveIndex < linearHistory.size() - 1) {
+                linearHistory.subList(currentMoveIndex + 1, linearHistory.size()).clear();
+            }
+            linearHistory.add(moveData);
+            currentMoveIndex++;
+        }
     }
 
     /**
@@ -757,33 +905,6 @@ public class ChessGame {
 
         currentNode = currentNode.children.get(variationIndex);
         return currentNode.moveData;
-    }
-
-
-    /**
-     * Redo move on tree (just main line)
-     *
-     * <p>
-     * Example: e2e4 e7e5 (d7d5) g1f3 and pointer is on e2e4. <br>
-     * when redoMoveOnTree() is called, g1f3 is pointer
-     *
-     * @throws VariationNotFoundException if variation is not found
-     * @throws MoveNotFoundException if the current node (move) is not found
-     *
-     * @return Move info
-     */
-    private MoveInfo redoMoveOnTree() {
-        return redoMoveOnTree(0);
-    }
-
-    /**
-     * Undo move on move history (tree)
-     *
-     * @throws EmptyMoveUndoException if there is no move to undo
-     */
-    private void undoMoveOnTree() {
-        if(currentNode == moveHistoryRoot) throw new EmptyMoveUndoException();
-        currentNode = currentNode.parent;
     }
 
     /**
@@ -947,6 +1068,14 @@ public class ChessGame {
                 continue;
             }
 
+            if (token.matches("^\\d+\\.+.*")) {
+                token = token.replaceFirst("^\\d+\\.+", "");
+
+                if (token.isEmpty()) {
+                    continue;
+                }
+            }
+
 
             // number token like "1. e4" on "1."
             if (token.matches("\\d+\\.+")) {
@@ -1102,6 +1231,10 @@ public class ChessGame {
         }
 
         return lastNode;
+    }
+
+    public String getStartPositionFEN() {
+        return startPositionFEN;
     }
 
     @Override
