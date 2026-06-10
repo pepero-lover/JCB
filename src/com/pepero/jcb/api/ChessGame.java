@@ -291,7 +291,7 @@ public class ChessGame {
             currentMoveIndex--;
         }
 
-        this.chessboard.takeBack();
+        MoveGenerator.unmakeMove(chessboard, moveInfo.originEncodedData());
         updateGameState();
 
         return moveInfo;
@@ -565,7 +565,7 @@ public class ChessGame {
             int encodedMove = move_list[count];
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
-            this.chessboard.takeBack();
+            MoveGenerator.unmakeMove(chessboard, encodedMove);
             result.add(new MoveInfo(encodedMove));
         }
 
@@ -592,7 +592,7 @@ public class ChessGame {
 
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
-            this.chessboard.takeBack();
+            MoveGenerator.unmakeMove(chessboard, encodedMove);
             result.add(new MoveInfo(encodedMove));
         }
 
@@ -619,7 +619,7 @@ public class ChessGame {
 
             if(!MoveGenerator.makeMove(this.chessboard ,encodedMove))
                 continue;
-            this.chessboard.takeBack();
+            MoveGenerator.unmakeMove(chessboard, encodedMove);
             result.add(new MoveInfo(encodedMove));
         }
 
@@ -1112,7 +1112,9 @@ public class ChessGame {
             if (token.equals("(")) {
                 variationStack.push(new VariationState(currentNode, new Chessboard(pgnChessboard)));
                 currentNode = currentNode.parent;
-                pgnChessboard.takeBack();
+
+                int moveToUnmake = currentNode.moveData.originEncodedData();
+                MoveGenerator.unmakeMove(pgnChessboard, moveToUnmake);
 
                 continue;
             }

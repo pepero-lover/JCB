@@ -28,7 +28,7 @@ public class PerftBitboardTest {
             if (MoveGenerator.makeMove(chessboard, move)) {
                 perftDriver(chessboard, depth - 1);
 
-                chessboard.takeBack();
+                MoveGenerator.unmakeMove(chessboard, move);
             }
         }
     }
@@ -55,7 +55,7 @@ public class PerftBitboardTest {
                 perftDriver(chessboard, depth - 1);
 
                 long old_nodes = nodes - cumulative_nodes;
-                chessboard.takeBack();
+                MoveGenerator.unmakeMove(chessboard, move);
 
                 int source = EncodeMove.getMoveSource(move);
                 int target = EncodeMove.getMoveTarget(move);
@@ -98,6 +98,6 @@ public class PerftBitboardTest {
 
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
-        perftTest(chessboard, 5);
+        perftTest(chessboard, 6);
     }
 }
