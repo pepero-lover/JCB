@@ -35,6 +35,10 @@ public record MoveInfo(
 
     @Override
     public String toString() {
+        return toLanString();
+    }
+
+    public String toLanString() {
         boolean promotion = promotionPiece != PieceType.NONE;
 
         return String.valueOf(sourceSquare) + targetSquare + (promotion ? promotionPiece : "");
