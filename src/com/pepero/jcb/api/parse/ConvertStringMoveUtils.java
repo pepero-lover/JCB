@@ -226,7 +226,7 @@ public class ConvertStringMoveUtils {
         }
 
         for (int i = lans.length - 1; i >= 0; i--){
-            MoveGenerator.unmakeMove(chessboard, moveData[lans.length - i]);
+            MoveGenerator.unmakeMove(chessboard, moveData[i]);
         }
 
         return sanSequence.toString();
