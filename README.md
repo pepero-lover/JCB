@@ -9,17 +9,17 @@
 
 ### 1. jar 파일 다운로드
 [JCB 릴리스](https://github.com/pepero-lover/JCB/releases) 에서 최신 릴리즈의 
-`JCB.jar` 를 다운로드 받습니다.
+`JCB-*.jar` 를 다운로드 받습니다.
 
 ### 2. 프로젝트에 추가하기
 ### Gradle 프로젝트의 경우
 
-1. 프로젝트 루트 또는 `libs/` 폴더에 `JCB.jar` 파일을 넣습니다.
+1. 프로젝트 루트 또는 `libs/` 폴더에 `JCB-*.jar` 파일을 넣습니다.
 2. `build.gradle` 파일의 `dependencies`에 아래 코드를 추가합니다.
 ```groovy
 dependencies {
     // libs 폴더 안에 JCB.jar 추가
-    implementation files('libs/JCB.jar')
+    implementation files('libs/JCB-*.jar')
 
     // 또는 libs 폴더 안의 모든 jar 파일을 한 번에 포함할 경우
     // implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -28,15 +28,15 @@ dependencies {
 
 ### Maven 프로젝트의 경우
 
-1. 프로젝트 루트에 `lib/` 폴더를 만들고 `JCB.jar` 를 넣습니다.
+1. 프로젝트 루트에 `lib/` 폴더를 만들고 `JCB-*.jar` 를 넣습니다.
 2. `pom.xml` 파일에 아래와 같이 `system` 스코프로 의존성을 추가합니다.
 ```xml
 <dependency>
     <groupId>com.pepero</groupId>
     <artifactId>jcb</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/JCB.jar</systemPath>
+    <systemPath>${project.basedir}/libs/JCB-*.jar</systemPath>
 </dependency>
 ```
 
