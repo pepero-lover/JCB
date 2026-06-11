@@ -424,10 +424,10 @@ public class MoveGenerator {
         // set occupancies
         Arrays.fill(chessboard.occupancies, 0L);
         for (int bb_piece = P; bb_piece <= K; bb_piece++) {
-            chessboard.occupancies[white] |= chessboard.bitboards[p];
+            chessboard.occupancies[white] |= chessboard.bitboards[bb_piece];
         }
         for (int bb_piece = p; bb_piece <= k; bb_piece++) {
-            chessboard.occupancies[black] |= chessboard.bitboards[p];
+            chessboard.occupancies[black] |= chessboard.bitboards[bb_piece];
         }
         chessboard.occupancies[both] |= chessboard.occupancies[white];
         chessboard.occupancies[both] |= chessboard.occupancies[black];
