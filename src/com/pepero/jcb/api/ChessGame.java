@@ -9,10 +9,7 @@ import com.pepero.jcb.api.parse.PGNUtils;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.Initializer;
-import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.*;
@@ -117,6 +114,19 @@ public class ChessGame {
      * @throws FENConvertException - if converting fen string failed
      */
     public ChessGame(String fen, GameMode gameMode) {
+        this(fen, gameMode, GameVariants.STANDARD);
+    }
+
+
+    /**
+     * Initialize position with FEN string
+     * @param fen fen string
+     * @param gameMode game mode (variation mode, linear mode)
+     * @param gameVariants game variants ( standard, chess 960 ... )
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public ChessGame(String fen, GameMode gameMode, GameVariants gameVariants) {
         if (fen == null || fen.trim().isEmpty()) {
             throw new FENConvertException("FEN string is empty!");
         }
@@ -130,6 +140,8 @@ public class ChessGame {
         } catch (Exception e){
             throw new FENConvertException("Could not parse the fen.");
         }
+
+        chessboard.gameVariants = gameVariants;
     }
 
     /**
@@ -1235,8 +1247,17 @@ public class ChessGame {
         return lastNode;
     }
 
+    /**
+     * Get game start position fen
+     *
+     * @return game start position fen
+     */
     public String getStartPositionFEN() {
         return startPositionFEN;
+    }
+
+    public GameVariants getGameVariants() {
+        return chessboard.gameVariants;
     }
 
     @Override
