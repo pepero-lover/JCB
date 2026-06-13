@@ -1,28 +1,43 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.uci.UCIEngineWrapper;
+import com.pepero.jcb.api.enums.GameMode;
 
-import java.util.List;
+import java.util.Scanner;
 
 public class MainTest {
     public static void main(String[] args) {
-        UCIEngineWrapper wrapper = new UCIEngineWrapper("engines/stockfish/stockfish.exe", 100,
-                new UCIEngineWrapper.EngineAnalysisListener() {
-            @Override
-            public void onAnalysisBundled(List<UCIEngineWrapper.EngineLine> bundledLines) {
-                System.out.println(bundledLines);
+        ChessGame chessGame = new ChessGame(GameMode.VARIATION);
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println(chessGame);
+
+        while (true) {
+            System.out.print("\n수를 입력하세요 >> ");
+            String input = scanner.nextLine().trim();
+
+            if (input.equalsIgnoreCase("quit") || input.equalsIgnoreCase("exit")) {
+                break;
             }
 
-            @Override
-            public void onBestMoveFound(String bestMove) {
-                System.out.println(bestMove);
-            }
-        });
+            if (input.isEmpty()) continue;
 
-        ChessGame chessGame = new ChessGame();
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
+            try {
+                if (input.equalsIgnoreCase("u")) {
+                    if (chessGame.canUndo()) {
+                        chessGame.unmakeMove();
+                    }
+                } else if (input.equalsIgnoreCase("r")) {
+                    if (chessGame.canRedo()) {
+                        chessGame.remakeMove();
+                    }
+                } else {
+                    chessGame.makeMove(input);
+                }
+            } catch (Exception e) {}
 
-        wrapper.startAnalysis(chessGame, 20, 5);
+            System.out.println(chessGame);
+        }
+
+        scanner.close();
     }
 }

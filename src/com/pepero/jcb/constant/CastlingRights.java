@@ -12,7 +12,7 @@ public class CastlingRights {
     // castling bits binary representation
 
     public static int WK = 1; // 0001
-    public static int WQ = 2; // 0100
-    public static int BK = 4; // 0010
+    public static int WQ = 2; // 0010
+    public static int BK = 4; // 0100
     public static int BQ = 8; // 1000
 }

@@ -188,6 +188,27 @@ public class ChessboardUtils {
             }
         }
 
+        long rooks = chessboard.bitboards[r];
+
+        int queen_rook_square = BitBoardUtils.getLS1BIndex(rooks);
+
+        if(queen_rook_square != -1) {
+            chessboard.queen_side_rook_file = queen_rook_square;
+
+            rooks = BitBoardUtils.popBit(rooks, queen_rook_square);
+            int king_rook_square = BitBoardUtils.getLS1BIndex(rooks);
+
+            if (king_rook_square != -1) {
+                chessboard.king_side_rook_file = king_rook_square % 8;
+            } else {
+                chessboard.king_side_rook_file = -1;
+            }
+        } else {
+            chessboard.king_side_rook_file = -1;
+            chessboard.queen_side_rook_file = -1;
+        }
+
+
         // parse side to move
         String sideFen = fenDivided[1];
         chessboard.side = 'w' == sideFen.charAt(0) ? white : black;
@@ -245,6 +266,10 @@ public class ChessboardUtils {
 
         // init hash key
         chessboard.hash_key = Zobrist.generateHashKey(chessboard);
+    }
+
+    public static void parseFen(Chessboard chessboard, String fen, GameVariants gameVariants) {
+
     }
 
     public static String getFen(Chessboard chessboard){

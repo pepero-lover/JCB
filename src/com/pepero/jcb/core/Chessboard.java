@@ -8,7 +8,6 @@ import java.util.Arrays;
 import static com.pepero.jcb.constant.BoardSquares.*;
 
 public class Chessboard {
-
     // start pos
     public static final String start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
 
@@ -62,7 +61,17 @@ public class Chessboard {
     // "almost" unique position identifier aka hash key or position key
     public long hash_key;
 
-    public static final int MAX_DEPTH = 1024; // 넉넉하게 1024 수까지 지원
+
+    // For chess 960
+
+    // king side rook square on chess 960
+    public int king_side_rook_file = -1;
+    // queen side rook on chess 960
+    public int queen_side_rook_file = -1;
+
+    public GameVariants gameVariants;
+
+    public static final int MAX_DEPTH = 1024;
 
     public int[] enpassant_history = new int[MAX_DEPTH];
     public int[] castle_history = new int[MAX_DEPTH];
@@ -71,15 +80,22 @@ public class Chessboard {
 
     public int[] captured_piece_history = new int[MAX_DEPTH];
 
-    // ply counter for history stack
-    private int copy_index = 0;
-
     public Chessboard() {
-        resetBoard();
+        this(GameVariants.STANDARD);
+    }
+
+    public Chessboard(GameVariants gameVariants) {
+        resetBoard(gameVariants);
     }
 
     public Chessboard(String fen) {
+        this(fen, GameVariants.STANDARD);
+    }
+
+    public Chessboard(String fen, GameVariants gameVariants) {
         ChessboardUtils.parseFen(this, fen);
+
+        this.gameVariants = gameVariants;
     }
 
     public Chessboard(Chessboard source) {
@@ -104,8 +120,12 @@ public class Chessboard {
         this.enpassant = no_sq;
         this.castle = 0;
 
-        // reset history ply pointer
-        this.copy_index = 0;
+        // game variants
+        this.gameVariants = GameVariants.STANDARD;
+
+        // chess 960
+        this.king_side_rook_file = -1;
+        this.queen_side_rook_file = -1;
 
         // init hash key
         this.hash_key = Zobrist.generateHashKey(this);
@@ -115,6 +135,11 @@ public class Chessboard {
 
         // reset half ply
         this.half_ply = 0;
+    }
+
+    public void resetBoard(GameVariants gameVariants) {
+        resetBoard();
+        this.gameVariants = gameVariants;
     }
 
     public void setStartPos() {
@@ -137,6 +162,11 @@ public class Chessboard {
 
         this.ply = source.ply;
         this.half_ply = source.half_ply;
+
+        this.gameVariants = source.gameVariants;
+
+        this.king_side_rook_file = source.king_side_rook_file;
+        this.queen_side_rook_file = source.queen_side_rook_file;
 
         System.arraycopy(source.historyHashes, 0, this.historyHashes, 0, 1024);
         System.arraycopy(source.enpassant_history, 0, this.enpassant_history, 0, MAX_DEPTH);

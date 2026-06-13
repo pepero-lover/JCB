@@ -74,13 +74,51 @@ public class MoveGenerator {
         boolean enpass = EncodeMove.getMoveEnpassant(move);
         boolean castling = EncodeMove.getMoveCastling(move);
 
-        // move piece
-        chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], source_square);
-        chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], target_square);
+        // castling
+        if(!castling) {
+            // move piece
+            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], source_square);
+            chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], target_square);
 
-        // hash piece
-        chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square]; // remove piece from source square in hash key
-        chessboard.hash_key ^= Zobrist.piece_keys[piece][target_square]; // set piece to the target square in hash key
+            // hash piece
+            chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square]; // remove piece from source square in hash key
+            chessboard.hash_key ^= Zobrist.piece_keys[piece][target_square]; // set piece to the target square in hash key
+        } else {
+            int king_target, rook_target, rook_piece;
+            if (chessboard.side == white) {
+                rook_piece = R;
+                if (target_square > source_square) {
+                    king_target = g1;
+                    rook_target = f1;
+                }
+                else {
+                    king_target = c1;
+                    rook_target = d1;
+                }
+            } else {
+                rook_piece = r;
+                if (target_square > source_square) {
+                    king_target = g8;
+                    rook_target = f8;
+                }
+                else {
+                    king_target = c8;
+                    rook_target = d8;
+                }
+            }
+
+            // king
+            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], source_square);
+            chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], king_target);
+            chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square];
+            chessboard.hash_key ^= Zobrist.piece_keys[piece][king_target];
+
+            // rook
+            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], target_square);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], rook_target);
+            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][target_square];
+            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][rook_target];
+        }
 
         // handling capture moves
         if (capture){
@@ -216,58 +254,9 @@ public class MoveGenerator {
             }
         }
 
-        // handle castling moves
-        if (castling){
-            switch (target_square){
-                // white castles king side
-                case (g1):
-                    // move H rook
-                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], h1);
-                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], f1);
-
-                    // hash rook
-                    chessboard.hash_key ^= Zobrist.piece_keys[R][h1]; // remove rook from h1 from hash key
-                    chessboard.hash_key ^= Zobrist.piece_keys[R][f1]; // put rook on f1 into a hash key
-
-                    break;
-
-                // white castles queen side
-                case (c1):
-                    // move H rook
-                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], a1);
-                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], d1);
-
-                    // hash rook
-                    chessboard.hash_key ^= Zobrist.piece_keys[R][a1]; // remove rook from a1 from hash key
-                    chessboard.hash_key ^= Zobrist.piece_keys[R][d1]; // put rook on d1 into a hash key
-
-                    break;
-
-                // black castles king side
-                case (g8):
-                    // move H rook
-                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], h8);
-                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], f8);
-
-                    // hash rook
-                    chessboard.hash_key ^= Zobrist.piece_keys[r][h8]; // remove rook from h8 from hash key
-                    chessboard.hash_key ^= Zobrist.piece_keys[r][f8]; // put rook on f8 into a hash key
-
-                    break;
-
-                // black castles queen side
-                case (c8):
-                    // move H rook
-                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], a8);
-                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], d8);
-
-                    // hash rook
-                    chessboard.hash_key ^= Zobrist.piece_keys[r][a8]; // remove rook from h8 from hash key
-                    chessboard.hash_key ^= Zobrist.piece_keys[r][d8]; // put rook on f8 into a hash key
-
-                    break;
-            }
-        }
+        // remove castling rights if king moved
+        if (piece == K) chessboard.castle &= ~(CastlingRights.WK | CastlingRights.WQ);
+        if (piece == k) chessboard.castle &= ~(CastlingRights.BK | CastlingRights.BQ);
 
         // hash castling
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
@@ -375,26 +364,45 @@ public class MoveGenerator {
         boolean enpass = EncodeMove.getMoveEnpassant(move);
         boolean castling = EncodeMove.getMoveCastling(move);
 
-        // if castling move is undoing move
+        // unmake castling
         if (castling) {
-            switch (target_square) {
-                case g1:
-                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], f1);
-                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], h1);
-                    break;
-                case c1:
-                    chessboard.bitboards[R] = BitBoardUtils.popBit(chessboard.bitboards[R], d1);
-                    chessboard.bitboards[R] = BitBoardUtils.setBit(chessboard.bitboards[R], a1);
-                    break;
-                case g8:
-                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], f8);
-                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], h8);
-                    break;
-                case c8:
-                    chessboard.bitboards[r] = BitBoardUtils.popBit(chessboard.bitboards[r], d8);
-                    chessboard.bitboards[r] = BitBoardUtils.setBit(chessboard.bitboards[r], a8);
-                    break;
+            int k_target, r_target, rook_piece;
+            if (chessboard.side == white) {
+                rook_piece = R;
+                if (target_square > source_square) { // king side castling
+                    k_target = g1;
+                    r_target = f1;
+                }
+                else { // queen side castling
+                    k_target = c1;
+                    r_target = d1;
+                }
+            } else {
+                rook_piece = r;
+                if (target_square > source_square) { // king side castling
+                    k_target = g8; r_target = f8;
+                }
+                else { // queen side castling
+                    k_target = c8;
+                    r_target = d8;
+                }
             }
+
+            // unmake king
+            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], k_target);
+            chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
+
+            // unmake rook
+            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], r_target);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], target_square);
+        } else {
+            // unmake piece
+            if (promoted_piece != 0) {
+                chessboard.bitboards[promoted_piece] = BitBoardUtils.popBit(chessboard.bitboards[promoted_piece], target_square);
+            } else {
+                chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
+            }
+            chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
         }
 
         // when promotion
@@ -438,8 +446,8 @@ public class MoveGenerator {
      *
      * @param chessboard the chessboard
      * @param square the square which will be checked this is attacked or not
-     * @param side if the side is white, this method will check the black piece(s) is attacking
-     *             if the side is black, this method will check the white piece(s) is attacking
+     * @param side if the side is white, this method will check the white piece(s) is attacking
+     *             if the side is black, this method will check the black piece(s) is attacking
      * @return return the square is attacked or not
      */
     public static boolean isSquareAttacked(Chessboard chessboard, int square, int side){
@@ -626,30 +634,98 @@ public class MoveGenerator {
 
                 // castling moves
                 if (piece == K){
+                    source_square = BitBoardUtils.getLS1BIndex(chessboard.bitboards[K]);
+
                     // king side castling is available
-                    if((chessboard.castle & CastlingRights.WK) != 0){
+                    if ((chessboard.castle & CastlingRights.WK) != 0 && chessboard.king_side_rook_file != -1) {
+                        int r_sq = chessboard.king_side_rook_file + 56;
+                        boolean empty = true;
+
+                        int min_king_rook_pos = Math.min(source_square, r_sq);
+                        int max_king_rook_pos = Math.max(source_square, r_sq);
+
                         // make sure the square between king and king's rook are empty
-                        if (!BitBoardUtils.getBit(occupancy, f1) &&
-                                !BitBoardUtils.getBit(occupancy, g1)){
-                            // make sure king and the f1 squares are not under attacks
-                            if(!isSquareAttacked(chessboard, e1, black) && !isSquareAttacked(chessboard, f1, black)){
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(e1, g1, piece, 0,
-                                        false, false, false, true));
+                        for (int sq = min_king_rook_pos + 1; sq < max_king_rook_pos; sq++) {
+                            if (BitBoardUtils.getBit(occupancy, sq)) {
+                                empty = false;
+                                break;
+                            }
+                        }
+
+                        // make sure the final squares are empty (excluding king and rook themselves)
+                        if (empty) {
+                            if (f1 != source_square && f1 != r_sq && BitBoardUtils.getBit(occupancy, f1)) {
+                                empty = false;
+                            }
+
+                            if (g1 != source_square && g1 != r_sq && BitBoardUtils.getBit(occupancy, g1)) {
+                                empty = false;
+                            }
+                        }
+
+                        // make sure king's path is not under attacks
+                        if (empty) {
+                            boolean safe = true;
+
+                            int min_king_pos = Math.min(source_square, g1);
+                            int max_king_pos = Math.max(source_square, g1);
+
+                            for (int square = min_king_pos; square <= max_king_pos; square++) {
+                                if (isSquareAttacked(chessboard, square, black)) {
+                                    safe = false;
+                                    break;
+                                }
+                            }
+                            if (safe) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                        piece, 0, false, false, false, true));
                             }
                         }
                     }
 
                     // queen side castling is available
-                    if((chessboard.castle & CastlingRights.WQ) != 0){
-                        // make sure the square between king and queen's rook are empty
-                        if (!BitBoardUtils.getBit(occupancy, d1) &&
-                                !BitBoardUtils.getBit(occupancy, c1) &&
-                                !BitBoardUtils.getBit(occupancy, b1)){
+                    if ((chessboard.castle & CastlingRights.WQ) != 0 && chessboard.queen_side_rook_file != -1) {
+                        int r_sq = chessboard.queen_side_rook_file + 56;
+                        boolean empty = true;
 
-                            // make sure king and the d1 squares are not under attacks
-                            if(!isSquareAttacked(chessboard, e1, black) && !isSquareAttacked(chessboard, d1, black)){
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(e1, c1, piece, 0,
-                                        false, false, false, true));
+                        int min_king_rook_pos = Math.min(source_square, r_sq);
+                        int max_king_rook_pos = Math.max(source_square, r_sq);
+
+                        // make sure the square between king and queen's rook are empty
+                        for (int sq = min_king_rook_pos + 1; sq < max_king_rook_pos; sq++) {
+                            if (BitBoardUtils.getBit(occupancy, sq)) {
+                                empty = false;
+                                break;
+                            }
+                        }
+
+                        // make sure the final squares are empty (excluding king and rook themselves)
+                        if (empty) {
+                            if (c1 != source_square && c1 != r_sq && BitBoardUtils.getBit(occupancy, c1)) {
+                                empty = false;
+                            }
+
+                            if (d1 != source_square && d1 != r_sq && BitBoardUtils.getBit(occupancy, d1)) {
+                                empty = false;
+                            }
+                        }
+
+                        // make sure king's path is not under attacks
+                        if (empty) {
+                            boolean safe = true;
+
+                            int min_king_pos = Math.min(source_square, c1);
+                            int max_king_pos = Math.max(source_square, c1);
+
+                            for (int sq = min_king_pos; sq <= max_king_pos; sq++) {
+                                if (isSquareAttacked(chessboard, sq, black)) {
+                                    safe = false;
+                                    break;
+                                }
+                            }
+                            if (safe) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                        piece, 0, false, false, false, true));
                             }
                         }
                     }
@@ -733,30 +809,98 @@ public class MoveGenerator {
 
                 // castling moves
                 if (piece == k){
+                    source_square = BitBoardUtils.getLS1BIndex(chessboard.bitboards[k]);
+
                     // king side castling is available
-                    if((chessboard.castle & CastlingRights.BK) != 0){
+                    if ((chessboard.castle & CastlingRights.BK) != 0 && chessboard.king_side_rook_file != -1) {
+                        int r_sq = chessboard.king_side_rook_file;
+                        boolean empty = true;
+
+                        int min_king_rook_pos = Math.min(source_square, r_sq);
+                        int max_king_rook_pos = Math.max(source_square, r_sq);
+
                         // make sure the square between king and king's rook are empty
-                        if (!BitBoardUtils.getBit(occupancy, f8) &&
-                                !BitBoardUtils.getBit(occupancy, g8)){
-                            // make sure king and the f1 squares are not under attacks
-                            if(!isSquareAttacked(chessboard, e8, white) && !isSquareAttacked(chessboard, f8, white)){
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(e8, g8, piece, 0,
-                                        false, false, false, true));
+                        for (int sq = min_king_rook_pos + 1; sq < max_king_rook_pos; sq++) {
+                            if (BitBoardUtils.getBit(occupancy, sq)) {
+                                empty = false;
+                                break;
+                            }
+                        }
+
+                        // make sure the final squares are empty (excluding king and rook themselves)
+                        if (empty) {
+                            if (f8 != source_square && f8 != r_sq && BitBoardUtils.getBit(occupancy, f8)) {
+                                empty = false;
+                            }
+
+                            if (g8 != source_square && g8 != r_sq && BitBoardUtils.getBit(occupancy, g8)) {
+                                empty = false;
+                            }
+                        }
+
+                        // make sure king's path is not under attacks
+                        if (empty) {
+                            boolean safe = true;
+
+                            int min_king_pos = Math.min(source_square, g8);
+                            int max_king_pos = Math.max(source_square, g8);
+
+                            for (int sq = min_king_pos; sq <= max_king_pos; sq++) {
+                                if (isSquareAttacked(chessboard, sq, white)) {
+                                    safe = false;
+                                    break;
+                                }
+                            }
+                            if (safe) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                        piece, 0, false, false, false, true));
                             }
                         }
                     }
 
                     // queen side castling is available
-                    if((chessboard.castle & CastlingRights.BQ) != 0){
-                        // make sure the square between king and queen's rook are empty
-                        if (!BitBoardUtils.getBit(occupancy, d8) &&
-                                !BitBoardUtils.getBit(occupancy, c8) &&
-                                !BitBoardUtils.getBit(occupancy, b8)){
+                    if ((chessboard.castle & CastlingRights.BQ) != 0 && chessboard.queen_side_rook_file != -1) {
+                        int r_sq = chessboard.queen_side_rook_file;
+                        boolean empty = true;
 
-                            // make sure king and the d1 squares are not under attacks
-                            if(!isSquareAttacked(chessboard, e8, white) && !isSquareAttacked(chessboard, d8, white)){
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(e8, c8, piece, 0,
-                                        false, false, false, true));
+                        int min_king_rook_pos = Math.min(source_square, r_sq);
+                        int max_king_rook_pos = Math.max(source_square, r_sq);
+
+                        // make sure the square between king and queen's rook are empty
+                        for (int sq = min_king_rook_pos + 1; sq < max_king_rook_pos; sq++) {
+                            if (BitBoardUtils.getBit(occupancy, sq)) {
+                                empty = false;
+                                break;
+                            }
+                        }
+
+                        // make sure the final squares are empty (excluding king and rook themselves)
+                        if (empty) {
+                            if (c8 != source_square && c8 != r_sq && BitBoardUtils.getBit(occupancy, c8)) {
+                                empty = false;
+                            }
+
+                            if (d8 != source_square && d8 != r_sq && BitBoardUtils.getBit(occupancy, d8)) {
+                                empty = false;
+                            }
+                        }
+
+                        // make sure king's path is not under attacks
+                        if (empty) {
+                            boolean safe = true;
+
+                            int min_king_pos = Math.min(source_square, c8);
+                            int max_king_pos = Math.max(source_square, c8);
+
+                            for (int sq = min_king_pos; sq <= max_king_pos; sq++) {
+                                if (isSquareAttacked(chessboard, sq, white)) {
+                                    safe = false;
+                                    break;
+                                }
+                            }
+                            if (safe) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                        piece, 0, false, false, false, true));
                             }
                         }
                     }

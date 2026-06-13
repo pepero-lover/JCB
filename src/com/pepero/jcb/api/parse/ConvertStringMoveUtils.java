@@ -4,12 +4,15 @@ import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.constant.SideToMove.black;
 import static com.pepero.jcb.constant.SideToMove.white;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 
@@ -54,16 +57,17 @@ public class ConvertStringMoveUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        boolean castle = false;
+        int encoded_move = parseLanToEncodedMove(chessboard, lan);
+        boolean castle = EncodeMove.getMoveCastling(encoded_move);
 
-        if (type == k || type == K) {
-            int file_diff = Math.abs((target_square % 8) - (source_square % 8));
-            if (file_diff == 2) {
-                if ((target_square % 8) == 6) sb.append("O-O");
-                else if ((target_square % 8) == 2) sb.append("O-O-O");
+        if (castle) {
+            int moveTgt = EncodeMove.getMoveTarget(encoded_move);
+            boolean isKingSide = (chessboard.side == white) ?
+                    (moveTgt == chessboard.king_side_rook_file + 56) :
+                    (moveTgt == chessboard.king_side_rook_file);
 
-                castle = true;
-            }
+            if (isKingSide) sb.append("O-O");
+            else sb.append("O-O-O");
         }
 
         int source_file = source_square % 8;
@@ -264,6 +268,26 @@ public class ConvertStringMoveUtils {
             throw new ConvertMoveException("Square string is not correct!", lan);
         }
 
+        int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+
+        if (type == K && chessboard.side == white && source_square == BoardSquares.e1) {
+            if (target_square == BoardSquares.g1 && chessboard.king_side_rook_file != -1 &&
+                    (chessboard.castle & CastlingRights.WK) != 0) {
+                target_square = chessboard.king_side_rook_file + 56;
+            } else if (target_square == BoardSquares.c1 && chessboard.queen_side_rook_file != -1
+                    && (chessboard.castle & CastlingRights.WQ) != 0) {
+                target_square = chessboard.queen_side_rook_file + 56;
+            }
+        } else if (type == k && chessboard.side == black && source_square == BoardSquares.e8) {
+            if (target_square == BoardSquares.g8 && chessboard.king_side_rook_file != -1 &&
+                    (chessboard.castle & CastlingRights.BK) != 0) {
+                target_square = chessboard.king_side_rook_file;
+            } else if (target_square == BoardSquares.c8 && chessboard.queen_side_rook_file != -1 &&
+                    (chessboard.castle & CastlingRights.BQ) != 0) {
+                target_square = chessboard.queen_side_rook_file;
+            }
+        }
+
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
 
         if(isLegal != ILLEGAL_MOVE){
@@ -302,10 +326,18 @@ public class ConvertStringMoveUtils {
                 if(!EncodeMove.getMoveCastling(move)) continue;
 
                 int target = EncodeMove.getMoveTarget(move);
-                if(target == BoardSquares.g1 && isKingSide) return new TranslateResult("e1g1", move);
-                if(target == BoardSquares.g8 && isKingSide) return new TranslateResult("e8g8", move);
-                if(target == BoardSquares.c1 && !isKingSide) return new TranslateResult("e1c1", move);
-                if(target == BoardSquares.c8 && !isKingSide) return new TranslateResult("e8c8", move);
+
+                if (whiteTurn) {
+                    if (isKingSide && target == chessboard.king_side_rook_file + 56)
+                        return new TranslateResult(lanForCastling(chessboard, move), move);
+                    if (!isKingSide && target == chessboard.queen_side_rook_file + 56)
+                        return new TranslateResult(lanForCastling(chessboard, move), move);
+                } else {
+                    if (isKingSide && target == chessboard.king_side_rook_file)
+                        return new TranslateResult(lanForCastling(chessboard, move), move);
+                    if (!isKingSide && target == chessboard.queen_side_rook_file)
+                        return new TranslateResult(lanForCastling(chessboard, move), move);
+                }
             }
 
             throw new ConvertMoveException("There is no possible castling move!");
@@ -406,6 +438,28 @@ public class ConvertStringMoveUtils {
                 + (promotion_type != -1 ? ChessboardUtils.promotion_pieces[promotion_type] : ""), move_result);
     }
 
+    /**
+     * Get Lan for Castling move
+     *
+     * @param board chessboard
+     * @param move encoded move (castling)
+     * @return lan string
+     */
+    private static String lanForCastling(Chessboard board, int move) {
+        int src = EncodeMove.getMoveSource(move);
+        int tgt = EncodeMove.getMoveTarget(move);
+
+        if (board.gameVariants == GameVariants.CHESS960) {
+            return BoardSquares.square_to_coordinates[src] + BoardSquares.square_to_coordinates[tgt];
+        }
+
+        boolean isWhite = board.side == white;
+        boolean isKingSide = isWhite ? (tgt == board.king_side_rook_file + 56) : (tgt == board.king_side_rook_file);
+
+        if (isWhite) return isKingSide ? "e1g1" : "e1c1";
+        else return isKingSide ? "e8g8" : "e8c8";
+    }
+
     public static String toLanString(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveString;
     }
@@ -413,6 +467,7 @@ public class ConvertStringMoveUtils {
     public static int toLanMoveData(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveData;
     }
+
 
     /**
      * Parse move data (source square, target square, promotion type)

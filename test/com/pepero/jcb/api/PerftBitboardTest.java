@@ -98,6 +98,6 @@ public class PerftBitboardTest {
 
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
-        perftTest(chessboard, 6);
+        perftTest(chessboard, 7);
     }
 }

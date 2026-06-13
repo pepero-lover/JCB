@@ -5,6 +5,11 @@ import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
+import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.CastlingRights;
+import com.pepero.jcb.core.*;
+import com.pepero.jcb.encode.EncodeMove;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -369,5 +374,39 @@ class ChessGameTest {
         assertTrue(exportedPgn.contains("3... Bc5"), "변화수가 끝난 후 흑의 턴 번호(3...)가 정상적으로 강제 출력되지 않았습니다.");
 
         assertTrue(exportedPgn.endsWith("*"), "PGN 마지막의 게임 결과 심볼이 누락되었습니다.");
+    }
+
+    @Test
+    @DisplayName("e1g1 (킹사이드 캐슬링) 입력 시 e1h1 으로 변환해야 한다.")
+    public void testCastling() {
+        Initializer.init();
+
+        Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+
+        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e1g1");
+
+        assertTrue(EncodeMove.getMoveCastling(encodedMove), "캐슬링 플래그가 켜져 있어야 합니다.");
+
+        assertEquals(BoardSquares.h1, EncodeMove.getMoveTarget(encodedMove), "갈 위치가 h1이여야 합니다.");
+
+        MoveGenerator.makeMove(board, encodedMove);
+
+        encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e8g8");
+
+        assertTrue(EncodeMove.getMoveCastling(encodedMove), "캐슬링 플래그가 켜져 있어야 합니다.");
+
+        assertEquals(BoardSquares.h8, EncodeMove.getMoveTarget(encodedMove), "갈 위치가 h1이여야 합니다.");
+    }
+
+    @Test
+    @DisplayName("Chess 960 에서 e1h1 입력시 정상적으로 파싱되어야 한다")
+    public void testChess960Castling() {
+        Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1",
+                GameVariants.CHESS960);
+
+        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e1h1");
+
+        assertTrue(EncodeMove.getMoveCastling(encodedMove));
+        assertEquals(BoardSquares.h1, EncodeMove.getMoveTarget(encodedMove));
     }
 }

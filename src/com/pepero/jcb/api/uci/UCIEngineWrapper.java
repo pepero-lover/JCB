@@ -55,6 +55,12 @@ public class UCIEngineWrapper {
             this.uciokLatch = new CountDownLatch(1);
             this.readyokLatch = new CountDownLatch(1);
 
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (engineProcess != null && engineProcess.isAlive()) {
+                    engineProcess.destroy();
+                }
+            }));
+
             startParsingThread();
 
             startBroadcastingThread();
