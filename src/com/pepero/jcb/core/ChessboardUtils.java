@@ -409,7 +409,9 @@ public class ChessboardUtils {
     public static int getRepetitionCount(Chessboard chessboard) {
         int count = 1;
 
-        for (int i = chessboard.ply - 2; i >= chessboard.ply - chessboard.half_ply; i -= 2) {
+        int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
+
+        for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
             if (chessboard.historyHashes[i] == chessboard.hash_key){
                 count++;
 

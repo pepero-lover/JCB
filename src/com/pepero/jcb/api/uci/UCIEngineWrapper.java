@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,8 @@ public class UCIEngineWrapper {
 
     private CountDownLatch uciokLatch;
     private CountDownLatch readyokLatch;
+
+    private CompletableFuture<String> currentMoveFuture;
 
     private final ConcurrentHashMap<Integer, EngineLine> latestAnalysisMap = new ConcurrentHashMap<>();
     private volatile boolean isAnalyzing = false;
@@ -102,7 +105,7 @@ public class UCIEngineWrapper {
         if (history != null && !history.isEmpty()) {
             positionCmd.append(" moves");
             for (MoveInfo move : history) {
-                positionCmd.append(" ").append(move.toLanString());
+                positionCmd.append(" ").append(move.toLanString(chessGame.getGameVariants()));
             }
         }
 
@@ -152,6 +155,10 @@ public class UCIEngineWrapper {
                         isAnalyzing = false;
                         String bestMove = line.split(" ")[1];
                         if (listener != null) listener.onBestMoveFound(bestMove);
+
+                        if (currentMoveFuture != null && !currentMoveFuture.isDone()) {
+                            currentMoveFuture.complete(bestMove);
+                        }
                     } else if (line.startsWith("info") && line.contains("score") && line.contains(" pv ")) {
                         parseInfoLine(line);
                     }
@@ -235,6 +242,55 @@ public class UCIEngineWrapper {
 
         } catch (Exception e) {
             // ignore format exception
+        }
+    }
+
+    public String startAnalysisSync(ChessGame chessGame, int depthLimit,
+                                    long wtimeMs, long btimeMs,
+                                    long wincMs, long bincMs,
+                                    int multiPv) {
+        this.currentMoveFuture = new CompletableFuture<>();
+        this.latestAnalysisMap.clear();
+        this.isAnalyzing = true;
+
+        sendCommand("setoption name MultiPV value " + multiPv);
+
+        StringBuilder positionCmd = new StringBuilder();
+        String startFen = chessGame.getStartPositionFEN();
+
+        if (startFen.equals(Chessboard.start_position)) {
+            positionCmd.append("position startpos");
+        } else {
+            positionCmd.append("position fen ").append(startFen);
+        }
+
+        List<MoveInfo> history = chessGame.getMoveHistory();
+        if (history != null && !history.isEmpty()) {
+            positionCmd.append(" moves");
+            for (MoveInfo move : history) {
+                positionCmd.append(" ").append(move.toLanString(chessGame.getGameVariants()));
+            }
+        }
+
+        sendCommand(positionCmd.toString());
+
+        StringBuilder goCmd = new StringBuilder("go");
+
+        if (wtimeMs > 0 || btimeMs > 0) {
+            goCmd.append(" wtime ").append(wtimeMs);
+            goCmd.append(" btime ").append(btimeMs);
+            if (wincMs > 0) goCmd.append(" winc ").append(wincMs);
+            if (bincMs > 0) goCmd.append(" binc ").append(bincMs);
+        } else if (depthLimit > 0) {
+            goCmd.append(" depth ").append(depthLimit);
+        }
+
+        sendCommand(goCmd.toString());
+
+        try {
+            return currentMoveFuture.get();
+        } catch (Exception e) {
+            throw new RuntimeException("Sync failed while waiting engine's response", e);
         }
     }
 

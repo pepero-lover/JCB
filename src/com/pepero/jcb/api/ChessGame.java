@@ -1198,9 +1198,45 @@ public class ChessGame {
 
         this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
 
-        MoveNodeDTO rootDTO = MoveNodeDTO.from(this.moveHistoryRoot);
+        Chessboard tempBoard = new Chessboard(startPositionFEN);
+        tempBoard.gameVariants = this.getGameVariants();
+
+        MoveNodeDTO rootDTO = buildPGNTreeWithSan(this.moveHistoryRoot, tempBoard);
 
         return new PGNGame(new LinkedHashMap<>(this.headers), rootDTO, this.gameResult);
+    }
+
+    /**
+     * Add san move on pgn tree
+     *
+     * @param node root node
+     * @param tempBoard board
+     * @return root node
+     */
+    private MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard) {
+        String calculatedSan = null;
+
+        if (node.moveData != null) {
+            String lan = node.moveData.toLanString(tempBoard.gameVariants);
+
+            calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, lan);
+
+            MoveGenerator.makeMove(tempBoard, node.moveData.originEncodedData());
+        }
+
+        List<MoveNodeDTO> childrenDTOs = new java.util.ArrayList<>();
+
+        for (MoveNode child : node.children) {
+            childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard)));
+        }
+
+        return new MoveNodeDTO(
+                node.moveData,
+                childrenDTOs,
+                calculatedSan,
+                node.nag,
+                node.comment
+        );
     }
 
     public String getPGN() {

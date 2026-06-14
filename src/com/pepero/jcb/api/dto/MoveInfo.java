@@ -3,6 +3,7 @@ package com.pepero.jcb.api.dto;
 import com.pepero.jcb.api.enums.Piece;
 import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.Objects;
@@ -39,9 +40,20 @@ public record MoveInfo(
     }
 
     public String toLanString() {
+        return toLanString(GameVariants.STANDARD);
+    }
+
+    public String toLanString(GameVariants variants) {
         boolean promotion = promotionPiece != PieceType.NONE;
 
-        return String.valueOf(sourceSquare) + targetSquare + (promotion ? promotionPiece : "");
+        if (castling && variants == GameVariants.STANDARD) {
+            if (sourceSquare == Square.e1 && targetSquare == Square.h1) return "e1g1";
+            if (sourceSquare == Square.e1 && targetSquare == Square.a1) return "e1c1";
+            if (sourceSquare == Square.e8 && targetSquare == Square.h8) return "e8g8";
+            if (sourceSquare == Square.e8 && targetSquare == Square.a8) return "e8c8";
+        }
+
+        return String.valueOf(sourceSquare) + targetSquare + (promotion ? promotionPiece.toString().toLowerCase() : "");
     }
 
     @Override

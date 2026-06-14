@@ -3,7 +3,7 @@ package com.pepero.jcb.util;
 public class TimeUtils {
     // get time milliseconds
     public static long getTimeMs(){
-        return System.nanoTime() / 1_000_000;
+        return System.currentTimeMillis();
     }
 
     // get time nano time

@@ -11,6 +11,8 @@ import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
+import java.util.Objects;
+
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.black;
 import static com.pepero.jcb.constant.SideToMove.white;
@@ -78,6 +80,8 @@ public class ConvertStringMoveUtils {
 
         boolean is_capture = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1;
 
+        String promotionStr = "";
+
         if(type == p || type == P){
             boolean is_pawn_capture = source_file != target_file;
 
@@ -91,14 +95,11 @@ public class ConvertStringMoveUtils {
             }
 
             // if the move is promotion
-            if (target_rank == 0 || target_rank == 7){
+            if (target_rank == 0 || target_rank == 7) {
                 try {
-                    sb
-                            .append("=")
-                            .append(String.valueOf(lan.charAt(4)).toUpperCase()); // get promotion string
+                    promotionStr = "=" + String.valueOf(lan.charAt(4)).toUpperCase();
                 } catch (IndexOutOfBoundsException e){
-                    // promotion char not found
-                    return null;
+                    throw new ConvertMoveException("Promotion char not found!");
                 }
             }
         } else {
@@ -120,37 +121,26 @@ public class ConvertStringMoveUtils {
 
                         if (EncodeMove.getMovePiece(move) == type &&
                                 EncodeMove.getMoveTarget(move) == target_square) {
-                            if (EncodeMove.getMoveSource(move) == source_square) continue;
+                            if (MoveGenerator.makeMove(chessboard, move)) {
+                                going_piece_count++;
+                                int other_src = EncodeMove.getMoveSource(move);
 
-                            going_piece_count++;
-
-                            // if file equal
-                            if (EncodeMove.getMoveSource(move) % 8 ==
-                                    source_file) {
-                                equal_file = true;
-                            }
-
-                            // if rank equal
-                            if (EncodeMove.getMoveSource(move) / 8 ==
-                                    source_rank) {
-                                equal_rank = true;
+                                if (other_src != source_square) {
+                                    if (other_src % 8 == source_file) equal_file = true;
+                                    if (other_src / 8 == source_rank) equal_rank = true;
+                                }
+                                MoveGenerator.unmakeMove(chessboard, move);
                             }
                         }
                     }
 
-                    if (going_piece_count != 0) {
-                        if (equal_file && !equal_rank) {
-                            // add file number
+                    if (going_piece_count > 1) {
+                        if (!equal_file) {
                             sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
-                        } else if (!equal_file && equal_rank) {
-                            // add rank number
+                        } else if (!equal_rank) {
                             sb.append(BoardSquares.square_to_coordinates[source_square].charAt(1));
-                        } else if (equal_file) {
-                            // add square number
-                            sb.append(BoardSquares.square_to_coordinates[source_square]);
                         } else {
-                            // add file number
-                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
+                            sb.append(BoardSquares.square_to_coordinates[source_square]);
                         }
                     }
                 }
@@ -163,41 +153,33 @@ public class ConvertStringMoveUtils {
             }
         }
 
-        if(!castle){
-            // add target square
+        if(!castle) {
             sb.append(BoardSquares.square_to_coordinates[target_square]);
+            sb.append(promotionStr);
         }
 
-        int[] move_list = new int[255];
-        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-        boolean found_move = false;
-        int move = -1;
-
-        for (int count = 0; count < move_count; count++) {
-            move = move_list[count];
-            if (EncodeMove.getMoveSource(move) == source_square && EncodeMove.getMoveTarget(move) == target_square) {
-                found_move = true;
-
-                MoveGenerator.makeMove(chessboard, move);
-
-                if(ChessboardUtils.isCheckmate(chessboard)) {
-                    sb.append("#");
-                } else if(ChessboardUtils.isCheck(chessboard)) {
-                    sb.append("+");
-                }
-
-                MoveGenerator.unmakeMove(chessboard, move);
-
-                break;
-            }
-        }
-
-        if(!found_move){
+        boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
+        if (!isSuccess) {
             throw new IllegalMoveException(lan);
         }
 
-        return new TranslateResult(sb.toString(), move);
+        if(ChessboardUtils.isCheckmate(chessboard)) {
+            sb.append("#");
+        } else if(ChessboardUtils.isCheck(chessboard)) {
+            sb.append("+");
+        }
+
+        MoveGenerator.unmakeMove(chessboard, encoded_move);
+
+        return new TranslateResult(sb.toString(), encoded_move);
+    }
+
+    public static String toSanString(Chessboard chessboard, String lan) {
+        return Objects.requireNonNull(translateLan(chessboard, lan)).moveString;
+    }
+
+    public static int toSanMoveData(Chessboard chessboard, String lan) {
+        return Objects.requireNonNull(translateLan(chessboard, lan)).moveData;
     }
 
     /**
@@ -270,21 +252,23 @@ public class ConvertStringMoveUtils {
 
         int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
 
-        if (type == K && chessboard.side == white && source_square == BoardSquares.e1) {
-            if (target_square == BoardSquares.g1 && chessboard.king_side_rook_file != -1 &&
-                    (chessboard.castle & CastlingRights.WK) != 0) {
-                target_square = chessboard.king_side_rook_file + 56;
-            } else if (target_square == BoardSquares.c1 && chessboard.queen_side_rook_file != -1
-                    && (chessboard.castle & CastlingRights.WQ) != 0) {
-                target_square = chessboard.queen_side_rook_file + 56;
-            }
-        } else if (type == k && chessboard.side == black && source_square == BoardSquares.e8) {
-            if (target_square == BoardSquares.g8 && chessboard.king_side_rook_file != -1 &&
-                    (chessboard.castle & CastlingRights.BK) != 0) {
-                target_square = chessboard.king_side_rook_file;
-            } else if (target_square == BoardSquares.c8 && chessboard.queen_side_rook_file != -1 &&
-                    (chessboard.castle & CastlingRights.BQ) != 0) {
-                target_square = chessboard.queen_side_rook_file;
+        if (chessboard.gameVariants == GameVariants.STANDARD) {
+            if (type == K && chessboard.side == white && source_square == BoardSquares.e1) {
+                if (target_square == BoardSquares.g1 && chessboard.king_side_rook_file != -1 &&
+                        (chessboard.castle & CastlingRights.WK) != 0) {
+                    target_square = chessboard.king_side_rook_file + 56;
+                } else if (target_square == BoardSquares.c1 && chessboard.queen_side_rook_file != -1
+                        && (chessboard.castle & CastlingRights.WQ) != 0) {
+                    target_square = chessboard.queen_side_rook_file + 56;
+                }
+            } else if (type == k && chessboard.side == black && source_square == BoardSquares.e8) {
+                if (target_square == BoardSquares.g8 && chessboard.king_side_rook_file != -1 &&
+                        (chessboard.castle & CastlingRights.BK) != 0) {
+                    target_square = chessboard.king_side_rook_file;
+                } else if (target_square == BoardSquares.c8 && chessboard.queen_side_rook_file != -1 &&
+                        (chessboard.castle & CastlingRights.BQ) != 0) {
+                    target_square = chessboard.queen_side_rook_file;
+                }
             }
         }
 
