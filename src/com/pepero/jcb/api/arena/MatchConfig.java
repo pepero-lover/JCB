@@ -2,6 +2,7 @@ package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.hash.PolyglotBookReader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,8 @@ public class MatchConfig {
     private final EngineLimit engine2Limit;
     private final int multiPv;
 
+    private final PolyglotBookReader openingBook;
+
     private MatchConfig(Builder builder) {
         this.rounds = builder.rounds;
         this.variant = builder.variant;
@@ -31,6 +34,7 @@ public class MatchConfig {
         this.engine1Limit = builder.engine1Limit;
         this.engine2Limit = builder.engine2Limit;
         this.multiPv = builder.multiPv;
+        this.openingBook = builder.openingBook;
     }
 
     public int getRounds() { return rounds; }
@@ -39,6 +43,8 @@ public class MatchConfig {
     public EngineLimit getEngine1Limit() { return engine1Limit; }
     public EngineLimit getEngine2Limit() { return engine2Limit; }
     public int getMultiPv() { return multiPv; }
+    public PolyglotBookReader getOpeningBook() { return openingBook; }
+    public boolean hasOpeningBook() { return openingBook != null; }
 
     public static class Builder {
         private int rounds = 1;
@@ -50,6 +56,8 @@ public class MatchConfig {
 
         private int multiPv = 1;
 
+        private PolyglotBookReader openingBook = null;
+
         public Builder rounds(int rounds) {
             this.rounds = rounds;
             return this;
@@ -57,6 +65,11 @@ public class MatchConfig {
 
         public Builder variant(GameVariants variant) {
             this.variant = variant;
+            return this;
+        }
+
+        public Builder openingBook(String bookFilePath) {
+            this.openingBook = new PolyglotBookReader(bookFilePath);
             return this;
         }
 

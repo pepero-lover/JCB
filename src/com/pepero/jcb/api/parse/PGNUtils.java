@@ -14,25 +14,27 @@ public class PGNUtils {
     /**
      * Export PGNGame to pgn string
      *
-     * @param game PGN Game data
+     * @param chessGame chess pgn
+     * @param pgn PGN Game data
      * @return Exported pgn string
      *
      * @throws PGNConvertException when pgn convert fails (move is too long)
      */
-    public static String export(PGNGame game) {
+    public static String export(ChessGame chessGame, PGNGame pgn) {
         StringBuilder sb = new StringBuilder();
 
-        for (Map.Entry<String, String> entry : game.headers().entrySet()) {
+        for (Map.Entry<String, String> entry : pgn.headers().entrySet()) {
             sb.append("[").append(entry.getKey()).append(" \"")
                     .append(entry.getValue()).append("\"]\n");
         }
         sb.append("\n");
 
-        if (game.rootNode() != null && game.rootNode().children() != null && !game.rootNode().children().isEmpty()) {
-            buildMoveText(game.rootNode().children(), sb, true, 1, true);
+        if (pgn.rootNode() != null && pgn.rootNode().children() != null && !pgn.rootNode().children().isEmpty()) {
+            buildMoveText(pgn.rootNode().children(), sb, chessGame.getTurn(),
+                    Integer.parseInt(chessGame.getStartPositionFEN().split(" ")[5]) / 2 + 1, true);
         }
 
-        sb.append(" ").append(getGameResultString(game.matchResult()));
+        sb.append(" ").append(getGameResultString(pgn.matchResult()));
 
         return sb.toString().replaceAll(" +", " ").trim();
     }

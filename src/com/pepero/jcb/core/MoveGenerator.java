@@ -191,18 +191,6 @@ public class MoveGenerator {
 
         // handle enpassant captures
         if (enpass){
-            // erase the pawn depending on the side to move
-            if(chessboard.side == white) {
-                chessboard.bitboards[p] = BitBoardUtils.popBit(
-                        chessboard.bitboards[p],
-                        target_square + 8);
-            } else {
-                chessboard.bitboards[P] = BitBoardUtils.popBit(
-                        chessboard.bitboards[P],
-                        target_square - 8);
-            }
-
-
             // white to move
             if (chessboard.side == white){
                 // remove captured pawn
@@ -255,10 +243,13 @@ public class MoveGenerator {
         }
 
         // remove castling rights if king moved
+        chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
+
         if (piece == K) chessboard.castle &= ~(CastlingRights.WK | CastlingRights.WQ);
         if (piece == k) chessboard.castle &= ~(CastlingRights.BK | CastlingRights.BQ);
+        chessboard.castle &= castling_rights[source_square];
+        chessboard.castle &= castling_rights[target_square];
 
-        // hash castling
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
 
         // update castling rights
@@ -403,13 +394,6 @@ public class MoveGenerator {
                 chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
             }
             chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
-        }
-
-        // when promotion
-        if (promoted_piece != 0) {
-            chessboard.bitboards[promoted_piece] = BitBoardUtils.popBit(chessboard.bitboards[promoted_piece], target_square);
-        } else {
-            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
         }
 
         // set piece

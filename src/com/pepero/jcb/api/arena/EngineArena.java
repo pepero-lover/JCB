@@ -4,6 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
+import com.pepero.jcb.hash.PolyglotHashUtils;
 
 public class EngineArena {
     private ChessGame chessGame;
@@ -42,22 +43,36 @@ public class EngineArena {
 
             long currentWTime = clock.getWhiteTimeMs();
             long currentBTime = clock.getBlackTimeMs();
-
-            long startTime = System.currentTimeMillis();
-
             int currentDepthLimit = isWhiteTurn ? whiteLimit.depthLimit() : blackLimit.depthLimit();
 
-            String bestMoveLan = currentEngine.startAnalysisSync(
-                    chessGame,
-                    currentDepthLimit,
-                    currentWTime,
-                    currentBTime,
-                    whiteLimit.incrementMs(),
-                    blackLimit.incrementMs(),
-                    matchConfig.getMultiPv()
-            );
+            String bestMoveLan = null;
+            long timeSpent;
 
-            long timeSpent = System.currentTimeMillis() - startTime;
+            if (matchConfig.hasOpeningBook()) {
+                long currentHash = PolyglotHashUtils.getPolyglotHash(chessGame.getChessboard());
+
+                bestMoveLan = matchConfig.getOpeningBook().pickRandomMove(currentHash);
+            }
+
+            if (bestMoveLan != null) {
+                timeSpent = 0;
+            }
+            else {
+                long startTime = System.currentTimeMillis();
+
+                bestMoveLan = currentEngine.startAnalysisSync(
+                        chessGame,
+                        currentDepthLimit,
+                        currentWTime,
+                        currentBTime,
+                        whiteLimit.incrementMs(),
+                        blackLimit.incrementMs(),
+                        matchConfig.getMultiPv()
+                );
+
+                timeSpent = System.currentTimeMillis() - startTime;
+            }
+
             clock.spendTime(isWhiteTurn, timeSpent);
 
             if (whiteLimit.hasTimeLimit() && clock.isTimeUp(isWhiteTurn)) {

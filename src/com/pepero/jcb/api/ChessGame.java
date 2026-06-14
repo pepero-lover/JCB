@@ -490,7 +490,26 @@ public class ChessGame {
     public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) {
         Map<PieceType, Integer> captured = new EnumMap<>(PieceType.class);
 
-        int initPawn = 8, initKnight = 2, initBishop = 2, initRook = 2, initQueen = 1;
+        // Get origin start pos and pieces
+
+        String boardFen = startPositionFEN.split(" ")[0];
+
+        int initPawn = 0, initKnight = 0, initBishop = 0, initRook = 0, initQueen = 0;
+
+        char pawnChar   = isWhite ? 'p' : 'P';
+        char knightChar = isWhite ? 'n' : 'N';
+        char bishopChar = isWhite ? 'b' : 'B';
+        char rookChar   = isWhite ? 'r' : 'R';
+        char queenChar  = isWhite ? 'q' : 'Q';
+
+        for (int i = 0; i < boardFen.length(); i++) {
+            char c = boardFen.charAt(i);
+            if (c == pawnChar) initPawn++;
+            else if (c == knightChar) initKnight++;
+            else if (c == bishopChar) initBishop++;
+            else if (c == rookChar) initRook++;
+            else if (c == queenChar) initQueen++;
+        }
 
         if (isWhite) {
             captured.put(PieceType.PAWN, initPawn - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
@@ -697,9 +716,39 @@ public class ChessGame {
      *
      * @return whether this position is threefold repetition
      */
-    public boolean isThreefoldRepetition(){
+    public boolean isThreefoldRepetition() {
         return ChessboardUtils.getRepetitionCount(this.chessboard) == 3;
         // because getRepetitionCount method returns 3 if the position is repeated over 3 times
+    }
+
+    public boolean isInsufficientMaterial() {
+        if(chessboard.bitboards[P] != 0 || chessboard.bitboards[p] != 0) return false;
+        if(chessboard.bitboards[R] != 0 || chessboard.bitboards[r] != 0) return false;
+        if(chessboard.bitboards[Q] != 0 || chessboard.bitboards[q] != 0) return false;
+
+        int white_knight = BitBoardUtils.countBits(chessboard.bitboards[N]);
+        int black_knight = BitBoardUtils.countBits(chessboard.bitboards[n]);
+
+        int white_bishop = BitBoardUtils.countBits(chessboard.bitboards[B]);
+        int black_bishop = BitBoardUtils.countBits(chessboard.bitboards[b]);
+
+        int white_minor = white_knight + white_bishop;
+        int black_minor = black_knight + black_bishop;
+
+        if (white_minor + black_minor <= 1) return true;
+
+        if (white_bishop == 1 && black_bishop == 1) {
+            long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
+
+            boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
+            boolean isBlackBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
+
+            if (isWhiteBishopOnLight == isBlackBishopOnLight) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -708,7 +757,7 @@ public class ChessGame {
      * @return whether this position is fifty moves draw
      */
     public boolean isFiftyMoves() {
-        return chessboard.half_ply >= 50;
+        return chessboard.half_ply >= 100;
     }
 
     /**
@@ -724,6 +773,7 @@ public class ChessGame {
         if(isStalemate()) return GameOverReason.STALEMATE;
         if(isThreefoldRepetition()) return GameOverReason.THREEFOLD;
         if(isFiftyMoves()) return GameOverReason.FIFTYMOVES;
+        if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
 
         return GameOverReason.NOTGAMEOVER;
     }
@@ -975,7 +1025,7 @@ public class ChessGame {
 
         this.gameResult = switch (this.gameoverReason) {
             case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-            case STALEMATE, THREEFOLD, FIFTYMOVES -> GameResult.DRAW;
+            case STALEMATE, THREEFOLD, FIFTYMOVES, INSUFFICIENTMATERIAL -> GameResult.DRAW;
             default -> GameResult.UNKNOWN;
         };
 
@@ -1240,7 +1290,7 @@ public class ChessGame {
     }
 
     public String getPGN() {
-        return PGNUtils.export(toPGNGame());
+        return PGNUtils.export(this, toPGNGame());
     }
 
     /**
@@ -1292,8 +1342,22 @@ public class ChessGame {
         return startPositionFEN;
     }
 
+    /**
+     * Get game variants
+     *
+     * @return game variants
+     */
     public GameVariants getGameVariants() {
         return chessboard.gameVariants;
+    }
+
+    /**
+     * Get bitboard chessboard
+     *
+     * @return Chessboard
+     */
+    public Chessboard getChessboard() {
+        return chessboard;
     }
 
     @Override
