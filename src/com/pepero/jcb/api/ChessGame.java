@@ -3,8 +3,10 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.*;
+import com.pepero.jcb.api.event.ChessGameListener;
 import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
+import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.api.parse.PGNUtils;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
@@ -106,6 +108,8 @@ public class ChessGame {
 
     private final String startPositionFEN;
 
+    private final List<ChessGameListener> listeners = new ArrayList<>();
+
     /**
      * Initialize position with FEN string
      * @param fen fen string
@@ -127,9 +131,7 @@ public class ChessGame {
      * @throws FENConvertException - if converting fen string failed
      */
     public ChessGame(String fen, GameMode gameMode, GameVariants gameVariants) {
-        if (fen == null || fen.trim().isEmpty()) {
-            throw new FENConvertException("FEN string is empty!");
-        }
+        FENValidator.validateString(fen);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
@@ -137,11 +139,13 @@ public class ChessGame {
 
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new FENConvertException("Could not parse the fen.");
         }
 
         chessboard.gameVariants = gameVariants;
+
+        FENValidator.validateLogicalState(chessboard);
     }
 
     /**
@@ -203,6 +207,8 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
+        notifyMoveMade(moveData);
+
         updateGameState();
     }
 
@@ -249,6 +255,8 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
+        notifyMoveMade(moveData);
+
         updateGameState();
     }
 
@@ -279,6 +287,8 @@ public class ChessGame {
         MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData());
 
         addMoveHistory(moveData);
+
+        notifyMoveMade(moveData);
 
         updateGameState();
     }
@@ -861,6 +871,8 @@ public class ChessGame {
 
         this.currentNode.terminalResult = result;
         this.currentNode.terminalReason = reason;
+
+        notifyGameOver(result, reason);
     }
 
 
@@ -1030,6 +1042,10 @@ public class ChessGame {
         };
 
         this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+
+        if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
     }
 
     /**
@@ -1173,10 +1189,11 @@ public class ChessGame {
 
             if (token.equals("(")) {
                 variationStack.push(new VariationState(currentNode, new Chessboard(pgnChessboard)));
-                currentNode = currentNode.parent;
 
                 int moveToUnmake = currentNode.moveData.originEncodedData();
                 MoveGenerator.unmakeMove(pgnChessboard, moveToUnmake);
+
+                currentNode = currentNode.parent;
 
                 continue;
             }
@@ -1284,8 +1301,8 @@ public class ChessGame {
                 node.moveData,
                 childrenDTOs,
                 calculatedSan,
-                node.nag,
-                node.comment
+                node.comment,
+                node.nag
         );
     }
 
@@ -1358,6 +1375,50 @@ public class ChessGame {
      */
     public Chessboard getChessboard() {
         return chessboard;
+    }
+
+    /**
+     * Add chess game listener
+     *
+     * @param listener listener
+     */
+    public void addChessGameListener(ChessGameListener listener) {
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    /**
+     * Remove chess game listener
+     *
+     * @param listener listener
+     */
+    public void removeChessGameListener(ChessGameListener listener) {
+        listeners.remove(listener);
+    }
+
+
+    /**
+     * Notify listeners when move made
+     *
+     * @param moveInfo move data
+     */
+    private void notifyMoveMade(MoveInfo moveInfo) {
+        for(ChessGameListener listener : listeners) {
+            listener.onMoveMade(moveInfo);
+        }
+    }
+
+    /**
+     * Notify listeners when game overed
+     *
+     * @param result game result
+     * @param reason game over reason
+     */
+    private void notifyGameOver(GameResult result, GameOverReason reason) {
+        for (ChessGameListener listener : listeners) {
+            listener.onGameOver(result, reason);
+        }
     }
 
     @Override
