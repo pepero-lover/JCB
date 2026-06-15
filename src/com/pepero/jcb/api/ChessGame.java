@@ -121,9 +121,20 @@ public class ChessGame {
         this(fen, gameMode, GameVariants.STANDARD);
     }
 
+    /**
+     * Initialize position with FEN string
+     * @param fen fen string
+     * @param gameVariants game variants ( standard, chess 960 ... )
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public ChessGame(String fen, GameVariants gameVariants) {
+        this(fen, GameMode.VARIATION, gameVariants);
+    }
 
     /**
      * Initialize position with FEN string
+     *
      * @param fen fen string
      * @param gameMode game mode (variation mode, linear mode)
      * @param gameVariants game variants ( standard, chess 960 ... )

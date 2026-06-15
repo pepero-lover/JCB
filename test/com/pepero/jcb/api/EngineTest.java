@@ -6,22 +6,22 @@ import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
 public class EngineTest {
     public static void main(String[] args) {
-        UCIEngineWrapper stockfish = new UCIEngineWrapper("engines/stockfish/stockfish.exe", 100, null);
-        UCIEngineWrapper myEngine = new UCIEngineWrapper("engines/stockfish/stockfish.exe", 100, null);
+        UCIEngineWrapper engine1 = new UCIEngineWrapper("engine1/path/engine.exe", 100, null);
+        UCIEngineWrapper engine2 = new UCIEngineWrapper("engine2/path/engine.exe", 100, null);
 
         MatchConfig config = new MatchConfig.Builder()
-                .openingBook("opening/gm2001.bin")
+                .openingBook("opening/path/opening.bin")
                 .depthLimit(10)
                 .build();
 
-        while (true) {
-            EngineArena arena = new EngineArena(new ChessGame(), stockfish, myEngine, config);
+        for(int i = 0; i < 10; i++) {
+            EngineArena arena = new EngineArena(new ChessGame(), engine1, engine2, config);
 
             try {
                 arena.startMatch();
             } catch (Exception e) {
-                stockfish.close();
-                myEngine.close();
+                engine1.close();
+                engine2.close();
                 throw new RuntimeException(e);
             }
         }
