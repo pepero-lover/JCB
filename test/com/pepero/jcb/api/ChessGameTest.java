@@ -409,4 +409,29 @@ class ChessGameTest {
         assertTrue(EncodeMove.getMoveCastling(encodedMove));
         assertEquals(BoardSquares.h1, EncodeMove.getMoveTarget(encodedMove));
     }
+
+    @Test
+    @DisplayName("메인 라인 노드 및 노드 아이디를 통한 체스 보드가 잘 불러와져야 한다.")
+    public void jumpToNode() {
+        ChessGame chessGame = new ChessGame();
+        chessGame.makeMove("e2e4");
+        chessGame.makeMove("e7e5");
+        chessGame.makeMove("g1f3");
+        String fen1 = chessGame.getFEN();
+        String uuid1 = chessGame.getCurrentNodeId();
+
+        chessGame.makeMove("b8c6");
+        chessGame.unmakeMove();
+        chessGame.makeMove("g8f6");
+        String fen2 = chessGame.getFEN();
+        String uuid2 = chessGame.getCurrentNodeId();
+
+        // e4 e5 Nf3 Nc6 (Nf6)
+
+        chessGame.jumpToNode(uuid1);
+        assertEquals(fen1, chessGame.getFEN());
+
+        chessGame.jumpToNode(uuid2);
+        assertEquals(fen2, chessGame.getFEN());
+    }
 }

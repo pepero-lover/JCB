@@ -33,6 +33,7 @@ public class ChessGame {
 
     // For variation mode
     private class MoveNode {
+        final String uuid = UUID.randomUUID().toString().substring(0, 8);
         final MoveNode parent;
         final List<MoveNode> children = new ArrayList<>();
         final MoveInfo moveData;
@@ -62,6 +63,7 @@ public class ChessGame {
     }
 
     public record MoveNodeDTO(
+            String uuid,
             MoveInfo moveData,
             List<MoveNodeDTO> children,
             String san,
@@ -76,6 +78,7 @@ public class ChessGame {
                     .toList();
 
             return new MoveNodeDTO(
+                    node.uuid,
                     node.moveData,
                     childDTOs,
                     node.san,
@@ -86,6 +89,7 @@ public class ChessGame {
     }
 
     // for variation
+    private final Map<String, MoveNode> nodeCache = new HashMap<>();
 
     private MoveNode moveHistoryRoot = new MoveNode();
 
@@ -98,6 +102,8 @@ public class ChessGame {
     private List<MoveInfo> linearHistory = new ArrayList<>();
     private int currentMoveIndex = -1;
 
+
+    // game variables
 
     private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
@@ -157,6 +163,8 @@ public class ChessGame {
         chessboard.gameVariants = gameVariants;
 
         FENValidator.validateLogicalState(chessboard);
+
+        nodeCache.put(moveHistoryRoot.uuid, moveHistoryRoot);
     }
 
     /**
@@ -181,6 +189,8 @@ public class ChessGame {
         startPositionFEN = Chessboard.start_position;
 
         this.gameMode = gameMode;
+
+        nodeCache.put(moveHistoryRoot.uuid, moveHistoryRoot);
     }
 
     /**
@@ -477,6 +487,31 @@ public class ChessGame {
                 result.add(linearHistory.get(i));
             }
             return Collections.unmodifiableList(result);
+        }
+    }
+
+
+    /**
+     * Get last move to string squares
+     * <p>
+     * Examples : <br>
+     * last move is e2e4 and return is String[]{"e2","e4"}
+     *
+     * @return Get last move (string[])
+     */
+    public String[] getLastMoveSquares() {
+        if(!canUndo()) return new String[0];
+
+        try {
+            MoveInfo lastMove = getLastMove();
+
+            String source = lastMove.sourceSquare().toString().toLowerCase();
+            String target = lastMove.targetSquare().toString().toLowerCase();
+
+            return new String[] { source, target };
+
+        } catch (MoveNotFoundException e) {
+            return new String[0];
         }
     }
 
@@ -958,6 +993,8 @@ public class ChessGame {
             currentNode.children.add(result);
             currentNode = result;
 
+            nodeCache.put(result.uuid, result);
+
             return;
         }
 
@@ -999,6 +1036,138 @@ public class ChessGame {
      */
     public MoveNodeDTO getRootNode() {
         return MoveNodeDTO.from(moveHistoryRoot);
+    }
+
+    /**
+     * Get current node's UUID
+     * ONLY ON VARIATION MODE!
+     *
+     * @return current node's uuid string
+     * @throws VariationModeException if game mode is linear
+     */
+    public String getCurrentNodeId() {
+        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
+        if (currentNode == null) return null;
+
+        return currentNode.uuid;
+    }
+
+    /**
+     * Get current node as DTO
+     *
+     * @return MoveNodeDTO of the current node
+     * @throws VariationModeException if game mode is linear
+     */
+    public MoveNodeDTO getCurrentNodeDTO() {
+        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
+        if (currentNode == null) return null;
+
+        return MoveNodeDTO.from(currentNode);
+    }
+
+    /**
+     * Move position to node (nodeId)
+     * ONLY ON VARIATION MODE!
+     *
+     * @param nodeId node uuid
+     */
+    public void jumpToNode(String nodeId) {
+        if(gameMode == GameMode.LINEAR) throw new VariationModeException();
+
+        // get node
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) {
+            throw new MoveNotFoundException("Could not find the node!");
+        }
+
+        // get node path
+        List<MoveNode> historyPath = new ArrayList<>();
+        MoveNode temp = targetNode;
+        while (temp != moveHistoryRoot) {
+            historyPath.add(temp);
+            temp = temp.parent;
+        }
+
+        Collections.reverse(historyPath);
+
+        // reset pos
+        ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
+
+        for (MoveNode node : historyPath) {
+            MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
+        }
+
+        this.currentNode = targetNode;
+        updateGameState();
+    }
+
+    /**
+     * Jump to mainline ply
+     * <p>
+     * Example : <br>
+     * e2e4 e7e5 g1f3 g8f6
+     * jumpToMainlinePly(2) and result is e7e5
+     *
+     * @param targetPly ply
+     *
+     * @throws MoveNotFoundException - if move is not found or targetPly is out of bounds
+     */
+    public void jumpToMainlinePly(int targetPly) {
+        if(gameMode == GameMode.LINEAR) {
+            if(linearHistory.size() < targetPly || targetPly < 0) {
+                throw new MoveNotFoundException("Linear history out of bounds!");
+            }
+
+            boolean redo = currentMoveIndex < targetPly;
+
+            for(int i = 0; i < Math.abs(targetPly - currentMoveIndex); i++) {
+                if(redo) remakeMove();
+                else unmakeMove();
+            }
+        } else {
+            if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
+            if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
+
+            int currentPly = 0;
+            MoveNode temp = this.currentNode;
+            List<MoveNode> history = new ArrayList<>();
+
+            while (temp != moveHistoryRoot && temp != null) {
+                history.add(temp);
+                currentPly++;
+                temp = temp.parent;
+            }
+
+            if (currentPly == targetPly) return;
+
+            if (targetPly < currentPly) {
+                Collections.reverse(history);
+
+                ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
+                MoveNode newCurrentNode = moveHistoryRoot;
+
+                for (int i = 0; i < targetPly; i++) {
+                    MoveNode nextNode = history.get(i);
+                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
+                    newCurrentNode = nextNode;
+                }
+                this.currentNode = newCurrentNode;
+            } else {
+                while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
+                    MoveNode nextNode = this.currentNode.children.getFirst();
+
+                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
+                    this.currentNode = nextNode;
+                    currentPly++;
+                }
+
+                if (currentPly < targetPly) {
+                    throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
+                }
+            }
+        }
+
+        updateGameState();
     }
 
     /**
@@ -1309,6 +1478,7 @@ public class ChessGame {
         }
 
         return new MoveNodeDTO(
+                node.uuid,
                 node.moveData,
                 childrenDTOs,
                 calculatedSan,
