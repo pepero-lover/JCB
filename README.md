@@ -137,3 +137,6 @@ public class GameStateExample {
     }
 }
 ```
+
+## 라이선스
+이 프로젝트는 MIT License 에 따라 라이선스가 부여됩니다.
