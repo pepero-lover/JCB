@@ -1,5 +1,7 @@
 package com.pepero.jcb.core;
 
+import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
@@ -8,6 +10,7 @@ import com.pepero.jcb.hash.Zobrist;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
@@ -358,6 +361,64 @@ public class ChessboardUtils {
                         chessboard.bitboards[K] : chessboard.bitboards[k]);
 
         return MoveGenerator.isSquareAttacked(chessboard, kingPos, chessboard.side == white ? black : white);
+    }
+
+    /**
+     * Get checkers square <br>
+     * if return is <b>00101010001010</b>, <br>
+     * the first checker square is '<b>001010</b>', and second checker is '<b>100010</b>' <br>
+     * and attacking piece count is '<b>11</b>' and count is 2.
+     *
+     * @param chessboard chessboard
+     * @return checkers square
+     */
+    public static int getChecker(Chessboard chessboard) {
+        int kingSquare = BitBoardUtils.getLS1BIndex(
+                chessboard.side == white ? chessboard.bitboards[K] : chessboard.bitboards[k]);
+
+        int firstAttacker = -1;
+        int secondAttacker = -1;
+        int oppSide = chessboard.side == white ? black : white;
+
+        // get all checker
+        long checkersMask = 0L;
+
+        // pawn
+        if (oppSide == white) {
+            checkersMask |= Attacks.pawn_attacks[black][kingSquare] & chessboard.bitboards[P];
+        } else {
+            checkersMask |= Attacks.pawn_attacks[white][kingSquare] & chessboard.bitboards[p];
+        }
+
+        // knight
+        checkersMask |= Attacks.knight_attacks[kingSquare] &
+                (oppSide == white ? chessboard.bitboards[N] : chessboard.bitboards[n]);
+
+        // bishop
+        checkersMask |= Attacks.getBishopAttacks(kingSquare, chessboard.occupancies[both]) &
+                (oppSide == white ? (chessboard.bitboards[B] | chessboard.bitboards[Q]) :
+                        (chessboard.bitboards[b] | chessboard.bitboards[q]));
+
+        // rook
+        checkersMask |= Attacks.getRookAttacks(kingSquare, chessboard.occupancies[both]) &
+                (oppSide == white ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) :
+                        (chessboard.bitboards[r] | chessboard.bitboards[q]));
+
+        // queen is already contained
+
+        if (checkersMask != 0) {
+            firstAttacker = BitBoardUtils.getLS1BIndex(checkersMask);
+            checkersMask = BitBoardUtils.popBit(checkersMask, firstAttacker);
+
+            if (checkersMask != 0) {
+                secondAttacker = BitBoardUtils.getLS1BIndex(checkersMask);
+            }
+        }
+
+        return (firstAttacker != -1 ? firstAttacker : 0) |
+                (secondAttacker != -1 ? secondAttacker << 6 : 0) |
+                (firstAttacker != -1 ? 1 << 12 : 0) |
+                (secondAttacker != -1 ? 1 << 13 : 0);
     }
 
     /**

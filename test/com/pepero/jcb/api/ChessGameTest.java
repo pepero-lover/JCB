@@ -160,6 +160,17 @@ class ChessGameTest {
     }
 
     @Test
+    @DisplayName("체크 하는 기물을 정확히 봐야 한다.")
+    void getChecker() {
+        Chessboard chessboard = new Chessboard(SCHOLARS_MATE_FEN);
+
+        int val = ChessboardUtils.getChecker(chessboard);
+
+        assertEquals(13, val & 0x3f);
+        assertEquals(1, val >>> 12 & 3);
+    }
+
+    @Test
     @DisplayName("스테일메이트 상태를 정확히 판별해야 한다")
     void isStalemate() {
         ChessGame chessGame = new ChessGame(STALEMATE_FEN);

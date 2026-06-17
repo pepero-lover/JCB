@@ -24,10 +24,6 @@ import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 import static com.pepero.jcb.core.MoveGenerator.generateMoves;
 
 public class ChessGame {
-    static {
-        Initializer.init();
-    }
-
     // Chessboard class
     private final Chessboard chessboard;
 
@@ -515,6 +511,16 @@ public class ChessGame {
         }
     }
 
+    public MoveType getLastMoveType() {
+        MoveInfo lastMove = getLastMove();
+
+        if(lastMove.capture()) return MoveType.CAPTURE;
+        if(lastMove.castling()) return MoveType.CASTLING;
+        if(lastMove.promotionPiece() != PieceType.NONE) return MoveType.PROMOTION;
+        if(lastMove.enpassant()) return MoveType.ENPASSANT;
+        return MoveType.NORMAL;
+    }
+
     /**
      * Get the last (previous) move
      *
@@ -750,6 +756,32 @@ public class ChessGame {
     }
 
     /**
+     * Get checking piece (max size is 2)
+     *
+     * @return checking piece
+     */
+    public List<Square> getChecker() {
+        int checkers = ChessboardUtils.getChecker(chessboard);
+        int firstAttacker = checkers & 0x3f;
+        int secondAttacker = (checkers >> 6) & 0x3f;
+        boolean hasFirst = ((checkers >> 12) & 1) == 1;
+        boolean hasSecond = ((checkers >> 13) & 1) == 1;
+
+        if(hasSecond) {
+            return List.of(
+                    Square.fromIndex(firstAttacker),
+                    Square.fromIndex(secondAttacker)
+            );
+        } else if(hasFirst) {
+            return List.of(
+                    Square.fromIndex(firstAttacker)
+            );
+        } else {
+            return List.of();
+        }
+    }
+
+    /**
      * Get whether this position is checkmate
      *
      * @return whether this position is checkmate
@@ -797,7 +829,7 @@ public class ChessGame {
             long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
 
             boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
-            boolean isBlackBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
+            boolean isBlackBishopOnLight = (chessboard.bitboards[b] & LIGHT_SQUARES) != 0;
 
             if (isWhiteBishopOnLight == isBlackBishopOnLight) {
                 return true;

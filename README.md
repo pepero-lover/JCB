@@ -4,6 +4,7 @@
 ## JCB 에 대해
 * 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높이었습니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
+###### 이 라이브러리에는 의존성이 없습니다
 
 ## 설치 방법
 
@@ -19,7 +20,7 @@
 ```groovy
 dependencies {
     // libs 폴더 안에 JCB.jar 추가
-    implementation files('libs/JCB-*.jar')
+    implementation files('libs/JCB-1.1.0.jar')
 
     // 또는 libs 폴더 안의 모든 jar 파일을 한 번에 포함할 경우
     // implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -34,7 +35,7 @@ dependencies {
 <dependency>
     <groupId>com.pepero</groupId>
     <artifactId>jcb</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <scope>system</scope>
     <systemPath>${project.basedir}/libs/JCB-*.jar</systemPath>
 </dependency>

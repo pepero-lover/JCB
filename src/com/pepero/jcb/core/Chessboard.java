@@ -8,6 +8,10 @@ import java.util.Arrays;
 import static com.pepero.jcb.constant.BoardSquares.*;
 
 public class Chessboard {
+    static {
+        Initializer.init();
+    }
+
     // start pos
     public static final String start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
 
