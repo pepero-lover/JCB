@@ -1635,8 +1635,12 @@ public class ChessGame {
         }
     }
 
-    @Override
-    public String toString() {
+    /**
+     * Get this board to ascii
+     *
+     * @return Ascii board
+     */
+    public String toAscii() {
         StringBuilder sb = new StringBuilder(256);
         char[] board = new char[64];
 
@@ -1692,5 +1696,17 @@ public class ChessGame {
                 .append("\n");
 
         return sb.toString();
+    }
+
+    /**
+     * Print this board ascii
+     */
+    public void printBoard() {
+        System.out.println(this.toAscii());
+    }
+
+    @Override
+    public String toString() {
+        return this.getFEN();
     }
 }

@@ -4,7 +4,9 @@
 ## JCB 에 대해
 * 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높이었습니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
-###### 이 라이브러리에는 의존성이 없습니다
+* 빌드된 jar 라이브러리 파일의 크기가 **124KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
+* 코어 비트보드 탐색 성능은 **40 MNPS (초당 4,000만 노드)** 입니다. (cpu i7-14700KF 기준)
+* 이 라이브러리에서는 단 하나의 외부 라이브러리를 쓰지 않습니다. (단, 테스트용 JUnit 제외)
 
 ## 설치 방법
 
@@ -29,7 +31,7 @@ dependencies {
 
 ### Maven 프로젝트의 경우
 
-1. 프로젝트 루트에 `lib/` 폴더를 만들고 `JCB-*.jar` 를 넣습니다.
+1. 프로젝트 루트에 `libs/` 폴더를 만들고 `JCB-*.jar` 를 넣습니다.
 2. `pom.xml` 파일에 아래와 같이 `system` 스코프로 의존성을 추가합니다.
 ```xml
 <dependency>
@@ -59,20 +61,20 @@ public class MainExample {
         chessGame.makeMove("e7e5");
         chessGame.makeMove("g1f3");
 
-        // 현제 턴 및 FEN 데이터 확인
-        System.out.println("현제 차례: " + chessGame.getTurn());
-        System.out.println("현제 FEN: " + chessGame.getFEN());
+        // 현재 턴 및 FEN 데이터 확인
+        System.out.println("현재 차례: " + chessGame.getTurn());
+        System.out.println("현재 FEN: " + chessGame.getFEN());
 
         // 무르기 및 다시두기 테스트
         if (chessGame.canUndo()) {
             System.out.println("무르기 전 포지션 : ");
-            System.out.println(chessGame);
+            chessGame.toAscii();
             System.out.println();
 
             chessGame.unmakeMove(); // g1f3 무르기
 
             System.out.println("무른 후 포지션 : ");
-            System.out.println(chessGame);
+            chessGame.toAscii();
         }
     }
 }
@@ -134,6 +136,58 @@ public class GameStateExample {
         // 개별 상태 체크도 가능 합니다.
         System.out.println("체크메이트 상태인가? : " + game.isCheckmate());
         System.out.println("체크 상태인가? : " + game.isCheck());
+    }
+}
+```
+
+### 4. 엔진끼리 대결하기
+
+```java
+import com.pepero.jcb.api.arena.EngineArena;
+import com.pepero.jcb.api.arena.MatchConfig;
+import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.api.uci.UCIEngineWrapper;
+
+public class EngineTest {
+    public static void main(String[] args) {
+        // 외부 UCI 엔진 파일의 경로를 입력하여 Wrapper 를 생성합니다.
+        UCIEngineWrapper engine1 = new UCIEngineWrapper("engine1/path/engine.exe", 100, null);
+        UCIEngineWrapper engine2 = new UCIEngineWrapper("engine2/path/engine.exe", 100, null);
+
+        // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
+        MatchConfig config = new MatchConfig.Builder()
+                .openingBook("opening/path/opening.bin") // 오프닝 북도 가져올 수 있습니다.
+                .depthLimit(10) // 고정 깊이 탐색
+                //.timeControl(300_000, 2_000) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
+                // 300_000 밀리 세컨드 = 300초 = 5분
+                // 2_000 밀리 세컨드 = 2초 = 2초 증가분
+                .build();
+
+        // 10 경기를 진행합니다.
+        for(int i = 0; i < 10; i++) {
+            ChessGame chessGame = new ChessGame();
+
+            EngineArena arena = new EngineArena(
+                    chessGame, // 체스 게임
+                    engine1, // 엔진 1 Wrapper
+                    engine2, // 엔진 2 Wrapper
+                    config // 대전 환경
+            );
+
+            System.out.println("엔진 매치를 시작합니다.");
+
+            try {
+                // 대전을 시작합니다.
+                MatchResult matchResult = arena.startMatch(); // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
+                System.out.println("경기 결과: " + matchResult.result());
+                System.out.println("기보(PGN):\n" + matchResult.pgn());
+            } catch (Exception e) {
+                // 만약 예외가 발생할 경우
+                engine1.close();
+                engine2.close();
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
 ```

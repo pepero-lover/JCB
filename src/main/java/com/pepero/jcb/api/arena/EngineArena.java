@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
@@ -25,7 +26,7 @@ public class EngineArena {
         isEngine1White = !isEngine1White;
     }
 
-    public void startMatch() {
+    public MatchResult startMatch() {
         UCIEngineWrapper whiteEngine = isEngine1White ? engine1 : engine2;
         UCIEngineWrapper blackEngine = isEngine1White ? engine2 : engine1;
 
@@ -84,7 +85,10 @@ public class EngineArena {
             chessGame.makeMove(bestMoveLan);
         }
 
-        System.out.println("Result: " + chessGame.getGameResult());
-        System.out.println("PGN:\n" + chessGame.getPGN());
+        return new MatchResult(
+                chessGame.getGameResult(),
+                chessGame.isGameOver(),
+                chessGame.getPGN()
+        );
     }
 }
