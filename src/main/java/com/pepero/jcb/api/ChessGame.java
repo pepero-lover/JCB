@@ -15,6 +15,7 @@ import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.pepero.jcb.constant.BoardSquares.no_sq;
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -110,7 +111,7 @@ public class ChessGame {
 
     private final String startPositionFEN;
 
-    private final List<ChessGameListener> listeners = new ArrayList<>();
+    private final List<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * Initialize position with FEN string

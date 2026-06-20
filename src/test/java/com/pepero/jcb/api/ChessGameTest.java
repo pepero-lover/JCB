@@ -7,7 +7,6 @@ import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import org.junit.jupiter.api.DisplayName;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ChessGameTest {
+public class ChessGameTest {
     private static final String START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     private static final String SCHOLARS_MATE_FEN = "r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4";
     private static final String STALEMATE_FEN = "7k/5K2/6Q1/8/8/8/8/8 b - - 0 1";
