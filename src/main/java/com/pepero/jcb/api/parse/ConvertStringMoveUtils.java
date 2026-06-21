@@ -36,6 +36,7 @@ public class ConvertStringMoveUtils {
      * @return converted san string (if error occurs, returns null)
      *
      * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if move is illegal
      */
     private static TranslateResult parseLan(Chessboard chessboard, String lan){
         // check the length
@@ -182,6 +183,8 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      * @param moveInfo move
      * @return Translated Result
+     *
+     * @throws IllegalMoveException - if move is illegal
      */
     private static TranslateResult parseLan(Chessboard chessboard, MoveInfo moveInfo) {
         int encoded_move = moveInfo.originEncodedData();
@@ -279,11 +282,14 @@ public class ConvertStringMoveUtils {
             sb.append(promotionStr);
         }
 
-        MoveGenerator.makeMove(chessboard, encoded_move);
+        boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
+        if (!isSuccess) {
+            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
+        }
 
-        if (ChessboardUtils.isCheckmate(chessboard)) {
+        if(ChessboardUtils.isCheckmate(chessboard)) {
             sb.append("#");
-        } else if (ChessboardUtils.isCheck(chessboard)) {
+        } else if(ChessboardUtils.isCheck(chessboard)) {
             sb.append("+");
         }
 
@@ -311,6 +317,8 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      * @param move move data
      * @return san move string
+     *
+     * @throws IllegalMoveException - if move is illegal
      */
     public static String toSanString(Chessboard chessboard, MoveInfo move) {
         return ConvertStringMoveUtils.parseLan(chessboard, move).moveString;
@@ -324,6 +332,7 @@ public class ConvertStringMoveUtils {
      * @return translated san sequence
      *
      * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if move is illegal
      */
     public static String translateLanSequence(Chessboard chessboard, String lanSequence){
         if(lanSequence.trim().isEmpty()) return "";
@@ -350,7 +359,7 @@ public class ConvertStringMoveUtils {
 
     /**
      * Parse LAN move to encoded move
-     *
+     * <p>
      * Example : e2e4 -> encoded int move data
      *
      * @param chessboard chessboard
@@ -358,6 +367,7 @@ public class ConvertStringMoveUtils {
      * @return Parsed LAN move to encoded move
      *
      * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if move is illegal
      */
     public static int parseLanToEncodedMove(Chessboard chessboard, String lan){
         // check the length
@@ -461,8 +471,7 @@ public class ConvertStringMoveUtils {
 
         boolean isCapture = san.contains("x");
         if(isCapture) san = san.replace("x", "");
-        san = san.replace("+", "");
-        san = san.replace("#", "");
+        san = san.replaceAll("[+#!?]", "");
 
         int piece_type = switch (san.charAt(0)) {
             case 'N' -> whiteTurn ? N : n;
