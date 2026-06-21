@@ -230,6 +230,19 @@ public class ChessGame {
         updateGameState();
     }
 
+    public void makeMove(int encodedMove) {
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
+        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
+
+        MoveInfo moveData = new MoveInfo(encodedMove);
+
+        addMoveHistory(moveData);
+
+        notifyMoveMade(moveData);
+
+        updateGameState();
+    }
+
     /**
      * Make move on this ChessGame (Source square, Target square, Promotion Type)
      *
@@ -912,7 +925,7 @@ public class ChessGame {
      * @return Translated move data result
      */
     public MoveInfo toLanMoveData(String san) {
-        return new MoveInfo(ConvertStringMoveUtils.toLanMoveData(chessboard, san));
+        return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(chessboard, san));
     }
 
     /**
@@ -1420,7 +1433,7 @@ public class ChessGame {
                 continue;
             }
 
-            int moveData = ConvertStringMoveUtils.toLanMoveData(pgnChessboard, token);
+            int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, token);
 
             MoveGenerator.makeMove(pgnChessboard, moveData);
 
@@ -1497,9 +1510,7 @@ public class ChessGame {
         String calculatedSan = null;
 
         if (node.moveData != null) {
-            String lan = node.moveData.toLanString(tempBoard.gameVariants);
-
-            calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, lan);
+            calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, node.moveData);
 
             MoveGenerator.makeMove(tempBoard, node.moveData.originEncodedData());
         }
@@ -1518,6 +1529,18 @@ public class ChessGame {
                 node.comment,
                 node.nag
         );
+    }
+
+    /**
+     * Generate new MoveNodeDTO with san move data
+     *
+     * @return new MoveNodeDTO with san move data
+     */
+    public MoveNodeDTO getRootNodeWithSan() {
+        Chessboard tempBoard = new Chessboard(this.startPositionFEN);
+        tempBoard.gameVariants = this.getGameVariants();
+
+        return buildPGNTreeWithSan(moveHistoryRoot, tempBoard);
     }
 
     public String getPGN() {
@@ -1611,7 +1634,6 @@ public class ChessGame {
         listeners.remove(listener);
     }
 
-
     /**
      * Notify listeners when move made
      *
@@ -1703,6 +1725,42 @@ public class ChessGame {
      */
     public void printBoard() {
         System.out.println(this.toAscii());
+    }
+
+    /**
+     * Print history with san
+     *
+     * @param rootNode root node
+     * @param depth start depth
+     */
+    private void printHistory(MoveNodeDTO rootNode, int depth) {
+        if(rootNode == null) return;
+
+        boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.uuid());
+        String pointer = isCurrent ? " <-" : "";
+
+        if (Objects.equals(rootNode.uuid(), this.moveHistoryRoot.uuid)) {
+            System.out.println(pointer.trim());
+        } else {
+            String prefix = (depth > 0) ? "└ " : "";
+            System.out.println(" ".repeat(depth) + prefix + rootNode.san() + pointer);
+        }
+
+        for(int i = 1; i < rootNode.children().size(); i++) {
+            MoveNodeDTO child = rootNode.children().get(i);
+            printHistory(child, depth + 1);
+        }
+
+        if (!rootNode.children().isEmpty()) {
+            printHistory(rootNode.children().getFirst(), depth);
+        }
+    }
+
+    /**
+     * Print history
+     */
+    public void printHistory() {
+        printHistory(getRootNodeWithSan(), 0);
     }
 
     @Override

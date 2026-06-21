@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.pepero.jcb'
-version = '1.0-SNAPSHOT'
+version = '1.2.0-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

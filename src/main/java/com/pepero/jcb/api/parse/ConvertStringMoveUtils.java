@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.parse;
 
+import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
@@ -35,7 +37,7 @@ public class ConvertStringMoveUtils {
      *
      * @throws ConvertMoveException - if converting move failed
      */
-    private static TranslateResult translateLan(Chessboard chessboard, String lan){
+    private static TranslateResult parseLan(Chessboard chessboard, String lan){
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
@@ -174,12 +176,144 @@ public class ConvertStringMoveUtils {
         return new TranslateResult(sb.toString(), encoded_move);
     }
 
-    public static String toSanString(Chessboard chessboard, String lan) {
-        return Objects.requireNonNull(translateLan(chessboard, lan)).moveString;
+    /**
+     * Translate LAN string to SAN data
+     *
+     * @param chessboard chessboard
+     * @param moveInfo move
+     * @return Translated Result
+     */
+    private static TranslateResult parseLan(Chessboard chessboard, MoveInfo moveInfo) {
+        int encoded_move = moveInfo.originEncodedData();
+
+        int source_square = EncodeMove.getMoveSource(encoded_move);
+        int target_square = EncodeMove.getMoveTarget(encoded_move);
+
+        int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+
+        StringBuilder sb = new StringBuilder();
+
+        // castling
+        boolean castle = EncodeMove.getMoveCastling(encoded_move);
+        if (castle) {
+            boolean isKingSide = (chessboard.side == white) ?
+                    (target_square == chessboard.king_side_rook_file + 56) :
+                    (target_square == chessboard.king_side_rook_file);
+
+            if (isKingSide) sb.append("O-O");
+            else sb.append("O-O-O");
+        }
+
+        int source_file = source_square % 8;
+        int source_rank = source_square / 8;
+
+        int target_file = target_square % 8;
+
+        boolean is_capture = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1 || moveInfo.enpassant();
+
+        String promotionStr = "";
+
+        // if pawn moved
+        if (type == p || type == P) {
+            boolean is_pawn_capture = source_file != target_file;
+
+            if (is_pawn_capture) {
+                sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
+                sb.append("x");
+            }
+
+            if (moveInfo.promotionPiece() != PieceType.NONE) {
+                promotionStr = "=" + moveInfo.promotionPiece().name().substring(0, 1).toUpperCase();
+                if (moveInfo.promotionPiece() == PieceType.KNIGHT) promotionStr = "=N";
+            }
+        } else {
+            if (!castle) {
+                sb.append(encodedPieceToString(type));
+
+                if (!(type == k || type == K)) {
+                    int[] move_list = new int[255];
+                    int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+                    int going_piece_count = 0;
+                    boolean equal_file = false;
+                    boolean equal_rank = false;
+
+                    for (int count = 0; count < move_count; count++) {
+                        int move = move_list[count];
+
+                        // 같은 종류의 아군 기물이 같은 목적지로 가는 합법수인지 체크
+                        if (EncodeMove.getMovePiece(move) == type &&
+                                EncodeMove.getMoveTarget(move) == target_square) {
+                            if (MoveGenerator.makeMove(chessboard, move)) {
+                                going_piece_count++;
+                                int other_src = EncodeMove.getMoveSource(move);
+
+                                if (other_src != source_square) {
+                                    if (other_src % 8 == source_file) equal_file = true;
+                                    if (other_src / 8 == source_rank) equal_rank = true;
+                                }
+                                MoveGenerator.unmakeMove(chessboard, move);
+                            }
+                        }
+                    }
+
+                    if (going_piece_count > 1) {
+                        if (!equal_file) {
+                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
+                        } else if (!equal_rank) {
+                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(1));
+                        } else {
+                            sb.append(BoardSquares.square_to_coordinates[source_square]);
+                        }
+                    }
+                }
+
+                if (is_capture) {
+                    sb.append("x");
+                }
+            }
+        }
+
+        if (!castle) {
+            sb.append(BoardSquares.square_to_coordinates[target_square]);
+            sb.append(promotionStr);
+        }
+
+        MoveGenerator.makeMove(chessboard, encoded_move);
+
+        if (ChessboardUtils.isCheckmate(chessboard)) {
+            sb.append("#");
+        } else if (ChessboardUtils.isCheck(chessboard)) {
+            sb.append("+");
+        }
+
+        MoveGenerator.unmakeMove(chessboard, encoded_move);
+
+        return new TranslateResult(sb.toString(), moveInfo.originEncodedData());
     }
 
-    public static int toSanMoveData(Chessboard chessboard, String lan) {
-        return Objects.requireNonNull(translateLan(chessboard, lan)).moveData;
+    /**
+     * Parse lan string data to san string
+     *
+     * @param chessboard chessboard
+     * @param lan lan move string
+     * @return san move string
+     *
+     * @throws ConvertMoveException - if converting move failed
+     */
+    public static String toSanString(Chessboard chessboard, String lan) {
+        return ConvertStringMoveUtils.parseLan(chessboard, lan).moveString;
+    }
+
+    /**
+     * Parse move data to san string
+     *
+     * @param chessboard chessboard
+     * @param move move data
+     * @return san move string
+     */
+    public static String toSanString(Chessboard chessboard, MoveInfo move) {
+        return ConvertStringMoveUtils.parseLan(chessboard, move).moveString;
     }
 
     /**
@@ -200,11 +334,7 @@ public class ConvertStringMoveUtils {
         int[] moveData = new int[lans.length];
 
         for (String lan : lans) {
-            TranslateResult result = translateLan(chessboard, lan);
-
-            if (result == null) {
-                throw new ConvertMoveException("The result is null", lan);
-            }
+            TranslateResult result = parseLan(chessboard, lan);
 
             sanSequence.append(result.moveString).append(" ");
 
@@ -287,6 +417,8 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      * @param san SAN move
      * @return Translated Result
+     *
+     * @throws ConvertMoveException - if converting move failed
      */
     private static TranslateResult parseSan(Chessboard chessboard, String san) {
         int source_square = -1;
@@ -444,11 +576,29 @@ public class ConvertStringMoveUtils {
         else return isKingSide ? "e8g8" : "e8c8";
     }
 
+    /**
+     * Parse san to lan string
+     *
+     * @param chessboard chessboard
+     * @param san san move
+     * @return lan string
+     *
+     * @throws ConvertMoveException - if converting move failed
+     */
     public static String toLanString(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveString;
     }
 
-    public static int toLanMoveData(Chessboard chessboard, String san) {
+    /**
+     * Parse san to move data
+     *
+     * @param chessboard chessboard
+     * @param san san move
+     * @return move data
+     *
+     * @throws ConvertMoveException - if converting move failed
+     */
+    public static int sanToMoveData(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveData;
     }
 
