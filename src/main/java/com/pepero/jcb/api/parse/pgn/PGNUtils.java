@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.parse;
+package com.pepero.jcb.api.parse.pgn;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.PGNGame;

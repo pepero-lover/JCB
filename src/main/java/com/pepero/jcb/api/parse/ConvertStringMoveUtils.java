@@ -57,7 +57,8 @@ public class ConvertStringMoveUtils {
 
         // if piece is not found
         if(type == -1) {
-            throw new ConvertMoveException("Piece not found!", lan);
+            throw new ConvertMoveException("Piece not found! ( FEN : " +
+                    ChessboardUtils.getFen(chessboard) + " )", lan);
         }
 
         StringBuilder sb = new StringBuilder();
@@ -440,38 +441,34 @@ public class ConvertStringMoveUtils {
 
         boolean whiteTurn = chessboard.side == white;
 
+        boolean isCapture = san.contains("x");
+        if(isCapture) san = san.replace("x", "");
+        san = san.replaceAll("[+#!?]", "");
+
         if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
             boolean isKingSide = san.equals("O-O") || san.equals("0-0");
 
             int[] move_list = new int[255];
             int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
+            ChessboardUtils.printChessBoard(chessboard);
+
             for (int count = 0; count < move_count; count++) {
                 int move = move_list[count];
 
                 if(!EncodeMove.getMoveCastling(move)) continue;
 
+                int source = EncodeMove.getMoveSource(move);
                 int target = EncodeMove.getMoveTarget(move);
 
-                if (whiteTurn) {
-                    if (isKingSide && target == chessboard.king_side_rook_file + 56)
-                        return new TranslateResult(lanForCastling(chessboard, move), move);
-                    if (!isKingSide && target == chessboard.queen_side_rook_file + 56)
-                        return new TranslateResult(lanForCastling(chessboard, move), move);
-                } else {
-                    if (isKingSide && target == chessboard.king_side_rook_file)
-                        return new TranslateResult(lanForCastling(chessboard, move), move);
-                    if (!isKingSide && target == chessboard.queen_side_rook_file)
-                        return new TranslateResult(lanForCastling(chessboard, move), move);
-                }
+                boolean isMoveKingSide = target > source;
+
+                if(isKingSide == isMoveKingSide) return new TranslateResult(lanForCastling(chessboard, move), move);
             }
 
-            throw new ConvertMoveException("There is no possible castling move!");
+            throw new ConvertMoveException("There is no possible castling move! ( FEN : " +
+                    ChessboardUtils.getFen(chessboard) + " )");
         }
-
-        boolean isCapture = san.contains("x");
-        if(isCapture) san = san.replace("x", "");
-        san = san.replaceAll("[+#!?]", "");
 
         int piece_type = switch (san.charAt(0)) {
             case 'N' -> whiteTurn ? N : n;
@@ -526,7 +523,8 @@ public class ConvertStringMoveUtils {
                 case 'R', 'r' -> R;
                 case 'B', 'b' -> B;
                 case 'N', 'n' -> N;
-                default -> throw new ConvertMoveException("Promotion piece char Not Found!");
+                default -> throw new ConvertMoveException("Promotion piece char Not Found! ( FEN : " +
+                        ChessboardUtils.getFen(chessboard) + " )");
             };
 
         int[] move_list = new int[255];
@@ -546,7 +544,8 @@ public class ConvertStringMoveUtils {
                 if(expected_file != -1 && source % 8 != expected_file) continue;
                 if(expected_rank != -1 && source / 8 != expected_rank) continue;
 
-                if(result) throw new ConvertMoveException("Available move count is more than 1!");
+                if(result) throw new ConvertMoveException("Available move count is more than 1! ( FEN : " +
+                        ChessboardUtils.getFen(chessboard) + " )");
 
                 source_square = source;
                 target_square = EncodeMove.getMoveTarget(move);
@@ -556,7 +555,8 @@ public class ConvertStringMoveUtils {
             }
         }
 
-        if(move_result == -1) throw new ConvertMoveException("Available move count is zero!");
+        if(move_result == -1) throw new ConvertMoveException("Available move count is zero! ( FEN : " +
+                ChessboardUtils.getFen(chessboard) + " )");
 
         return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
                 + BoardSquares.square_to_coordinates[target_square]

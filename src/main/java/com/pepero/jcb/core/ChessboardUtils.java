@@ -6,6 +6,7 @@ import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.constant.SideToMove;
+import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
 import java.util.Arrays;
@@ -434,6 +435,28 @@ public class ChessboardUtils {
         for (int i = 0; i < move_count; i++) {
             if (MoveGenerator.makeMove(chessboard, move_list[i])) {
                 MoveGenerator.unmakeMove(chessboard, move_list[i]);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return whether this move is legal move or not
+     *
+     * @param chessboard chessboard
+     * @param encoded_move encoded move
+     * @return whether this move is legal move or not
+     */
+    public static boolean isLegalMove(Chessboard chessboard, int encoded_move) {
+        int[] move_list = new int[255];
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        for (int i = 0; i < move_count; i++) {
+            if(EncodeMove.getMoveSource(move_list[i]) == EncodeMove.getMoveSource(encoded_move) &&
+                    EncodeMove.getMoveTarget(move_list[i]) == EncodeMove.getMoveTarget(encoded_move) &&
+                    EncodeMove.getMovePromoted(move_list[i]) == EncodeMove.getMovePromoted(encoded_move)) {
                 return true;
             }
         }

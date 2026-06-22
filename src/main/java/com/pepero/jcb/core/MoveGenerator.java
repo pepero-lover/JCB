@@ -252,13 +252,6 @@ public class MoveGenerator {
 
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
 
-        // update castling rights
-        chessboard.castle &= castling_rights[source_square];
-        chessboard.castle &= castling_rights[target_square];
-
-        // hash castling
-        chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
-
         // reset occupancies
         Arrays.fill(chessboard.occupancies,0L);
 

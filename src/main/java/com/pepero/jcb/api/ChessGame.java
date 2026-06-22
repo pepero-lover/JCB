@@ -2,12 +2,15 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.PGNGame;
+import com.pepero.jcb.api.dto.PGNToken;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.event.ChessGameListener;
 import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
-import com.pepero.jcb.api.parse.PGNUtils;
+import com.pepero.jcb.api.parse.pgn.PGNLexer;
+import com.pepero.jcb.api.parse.pgn.PGNUtils;
+import com.pepero.jcb.api.parse.pgn.TokenType;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
@@ -218,6 +221,9 @@ public class ChessGame {
                 this.chessboard, moveString
         );
 
+        if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
+            throw new IllegalMoveException(moveString);
+
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
         if(!isSuccess) throw new IllegalMoveException(moveString);
 
@@ -230,7 +236,14 @@ public class ChessGame {
         updateGameState();
     }
 
+    public void makeMoveSan(String sanString) {
+        makeMove(toLanString(sanString));
+    }
+
     public void makeMove(int encodedMove) {
+        if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove))
+            throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
+
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
         if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
 
@@ -277,10 +290,11 @@ public class ChessGame {
                 this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
         );
 
+        if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
+            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
+
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
-        if(!isSuccess) throw new IllegalMoveException(
-                String.valueOf(sourceSquare) + targetSquare + (promotionType != PieceType.NONE ? promotionType : "")
-        );
+        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
 
         MoveInfo moveData = new MoveInfo(encoded_move);
 
@@ -312,6 +326,9 @@ public class ChessGame {
      * @throws IllegalMoveException - if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
+        if(!ChessboardUtils.isLegalMove(this.chessboard, moveInfo.originEncodedData()))
+            throw new IllegalMoveException(moveInfo.toLanString());
+
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
 
@@ -1280,6 +1297,11 @@ public class ChessGame {
      * @param pgnString PGN data
      */
     public PGNGame loadPGN(String pgnString) {
+        if (pgnString == null || pgnString.isEmpty()) {
+            throw new IllegalArgumentException("PGN string is empty");
+        }
+        pgnString = pgnString.replace("\uFEFF", "");
+
         Map<String, String> headers = new HashMap<>();
 
         String[] lines = pgnString.split("\\R");
@@ -1327,21 +1349,7 @@ public class ChessGame {
 
         Stack<VariationState> variationStack = new Stack<>();
 
-        movePGNString = movePGNString.replaceAll("\\s+", " ");
-
-        movePGNString = movePGNString.replace("(", " ( ")
-                .replace(")", " ) ")
-                .replace("{", " { ")
-                .replace("}", " } ");
-        movePGNString = movePGNString.replaceAll("\\s+", " ").trim();
-
         Chessboard pgnChessboard;
-
-        String[] tokens = movePGNString.split(" ");
-
-        boolean isInsideComment = false;
-
-        StringBuilder commentBuilder = new StringBuilder();
 
         if("1".equals(headers.get("SetUp")) && headers.containsKey("FEN")) {
             String startFEN = headers.get("FEN");
@@ -1352,99 +1360,58 @@ public class ChessGame {
 
         GameResult gameResult = GameResult.UNKNOWN;
 
-        for (String token : tokens) {
-            if(token.equals("{")) {
-                isInsideComment = true;
-                commentBuilder.setLength(0);
-                continue;
+        PGNLexer lexer = new PGNLexer(movePGNString);
+        PGNToken currentToken;
+
+        while ((currentToken = lexer.nextToken()).type() != TokenType.EOF) {
+            switch (currentToken.type()) {
+                case COMMENT:
+                    String newComment = currentToken.value().trim();
+                    currentNode.comment = (currentNode.comment == null)
+                            ? newComment : currentNode.comment + " " + newComment;
+                    break;
+                case NAG:
+                    currentNode.nag = currentToken.value();
+                    break;
+                case VARIATION_START:
+                    // start variation
+                    variationStack.push(new VariationState(currentNode, new Chessboard(pgnChessboard)));
+                    if (currentNode.moveData != null) {
+                        int moveToUnmake = currentNode.moveData.originEncodedData();
+                        MoveGenerator.unmakeMove(pgnChessboard, moveToUnmake);
+                        currentNode = currentNode.parent;
+                    }
+                    break;
+                case VARIATION_END:
+                    // return to previous board
+                    if (!variationStack.isEmpty()) {
+                        VariationState state = variationStack.pop();
+                        currentNode = state.node;
+                        pgnChessboard = state.snapshotBoard;
+                    } else {
+                        throw new PGNConvertException("Variation stack is empty!");
+                    }
+                    break;
+                case RESULT:
+                    // game result
+                    if (currentToken.value().equals("1-0")) gameResult = GameResult.WHITE_WON;
+                    if (currentToken.value().equals("0-1")) gameResult = GameResult.BLACK_WON;
+                    if (currentToken.value().equals("1/2-1/2")) gameResult = GameResult.DRAW;
+                    break;
+                case MOVE:
+                    System.out.println(currentToken.value());
+
+                    int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, currentToken.value());
+                    MoveGenerator.makeMove(pgnChessboard, moveData);
+
+                    MoveInfo moveInfo = new MoveInfo(moveData);
+                    MoveNode newNode = new MoveNode(moveInfo, currentNode);
+                    newNode.san = currentToken.value();
+
+                    currentNode.children.add(newNode);
+                    currentNode = newNode;
+                    break;
             }
-
-            if(token.equals("}")) {
-                isInsideComment = false;
-
-                currentNode.comment = commentBuilder.toString().trim();
-
-                continue;
-            }
-
-            if (isInsideComment) {
-                commentBuilder.append(token).append(" ");
-                continue;
-            }
-
-            if (token.matches("^\\d+\\.+.*")) {
-                token = token.replaceFirst("^\\d+\\.+", "");
-
-                if (token.isEmpty()) {
-                    continue;
-                }
-            }
-
-
-            // number token like "1. e4" on "1."
-            if (token.matches("\\d+\\.+")) {
-                continue;
-            }
-
-
-            // Game result
-            if (token.equals("1-0")) {
-                gameResult = GameResult.WHITE_WON;
-
-                continue;
-            }
-            if(token.equals("0-1")) {
-                gameResult = GameResult.BLACK_WON;
-
-                continue;
-            }
-            if(token.equals("1/2-1/2")) {
-                gameResult = GameResult.DRAW;
-
-                continue;
-            }
-            if(token.equals("*")) {
-                continue;
-            }
-
-
-            if (token.startsWith("$")) {
-                currentNode.nag = token;
-                continue;
-            }
-
-            if (token.equals("(")) {
-                variationStack.push(new VariationState(currentNode, new Chessboard(pgnChessboard)));
-
-                int moveToUnmake = currentNode.moveData.originEncodedData();
-                MoveGenerator.unmakeMove(pgnChessboard, moveToUnmake);
-
-                currentNode = currentNode.parent;
-
-                continue;
-            }
-
-            if (token.equals(")")) {
-                VariationState state = variationStack.pop();
-
-                currentNode = state.node;
-                pgnChessboard = state.snapshotBoard;
-
-                continue;
-            }
-
-            int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, token);
-
-            MoveGenerator.makeMove(pgnChessboard, moveData);
-
-            MoveInfo moveInfo = new MoveInfo(moveData);
-
-            MoveNode newNode = new MoveNode(moveInfo, currentNode);
-            newNode.san = token;
-
-            currentNode.children.add(newNode);
-
-            currentNode = newNode;
         }
 
         String fenToLoad = headers.getOrDefault("FEN", Chessboard.start_position);
@@ -1462,9 +1429,13 @@ public class ChessGame {
         this.gameResult = gameResult;
         if (gameResult != GameResult.UNKNOWN) {
             MoveNode lastNode = getLastMainlineNode(rootNode);
+            lastNode.terminalResult = gameResult;
 
-            if (!ChessboardUtils.isCheckmate(pgnChessboard) && !ChessboardUtils.isStaleMate(pgnChessboard)) {
-                lastNode.terminalResult = gameResult;
+            if (ChessboardUtils.isCheckmate(pgnChessboard)) {
+                lastNode.terminalReason = GameOverReason.CHECKMATE;
+            } else if (ChessboardUtils.isStaleMate(pgnChessboard)) {
+                lastNode.terminalReason = GameOverReason.STALEMATE;
+            } else {
                 lastNode.terminalReason = (gameResult == GameResult.DRAW) ?
                         GameOverReason.AGREEMENTDRAW : GameOverReason.RESIGNATION;
             }
