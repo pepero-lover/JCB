@@ -1,5 +1,6 @@
 package com.pepero.jcb.core;
 
+import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
@@ -443,11 +444,11 @@ public class ChessboardUtils {
     }
 
     /**
-     * Return whether this move is legal move or not
+     * Return whether this move is a legal move or not
      *
      * @param chessboard chessboard
      * @param encoded_move encoded move
-     * @return whether this move is legal move or not
+     * @return whether this move is a legal move or not
      */
     public static boolean isLegalMove(Chessboard chessboard, int encoded_move) {
         int[] move_list = new int[255];

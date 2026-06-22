@@ -358,4 +358,42 @@ public class ChessGameTest {
         chessGame.jumpToNode(uuid2);
         assertEquals(fen2, chessGame.getFEN());
     }
+
+    @Test
+    @DisplayName("중첩 변이 및 평가 기호 통합 파싱/NAG 분리 검증")
+    void testMultiversePGNTreeStructure() {
+        String multiversePgn = """
+                \uFEFF[Event "Variation Stress Test"]
+                [Result "*"]
+
+                1.e4!!(1.d4!?{Queen's Pawn}Nf6 2.c4(2.Nf3 d5)2...e6)1...e5?? 2.Nf3!?(2.f4{King's Gambit}exf4 3.Nf3)2...Nc6?! 3.Bb5(3 .Bc4 Bc5(3...Nf6 4.d3)4.c3)3...a6$1 4.Ba4(4.Bxc6 dxc6 5.0-0(5.d3 f6))4...Nf6 *""";
+
+        ChessGame chessGame = new ChessGame();
+        PGNGame pgnGame = chessGame.loadPGN(multiversePgn);
+        ChessGame.MoveNodeDTO root = pgnGame.rootNode();
+
+        assertNotNull(root, "루트 노드는 생성되어야 합니다.");
+
+        ChessGame.MoveNodeDTO move1_e4 = root.children().getFirst();
+        assertEquals("e4", move1_e4.san());
+        assertEquals("$3", move1_e4.nag(), "!! 기호는 $3으로 매핑되어야 합니다.");
+
+        ChessGame.MoveNodeDTO var1_d4 = root.children().get(1);
+        assertEquals("d4", var1_d4.san());
+        assertEquals("$5", var1_d4.nag(), "!? 기호는 $5로 매핑되어야 합니다.");
+
+        ChessGame.MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
+        assertEquals("e5", move1_e5.san());
+        assertEquals("$4", move1_e5.nag(), "?? 기호는 $4로 매핑되어야 합니다.");
+
+        ChessGame.MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
+        assertEquals("Nf3", move2_Nf3.san());
+        assertEquals("$5", move2_Nf3.nag());
+
+        ChessGame.MoveNodeDTO move2_Nc6 = move2_Nf3.children().getFirst();
+        ChessGame.MoveNodeDTO move3_Bb5 = move2_Nc6.children().getFirst();
+        ChessGame.MoveNodeDTO move3_a6 = move3_Bb5.children().getFirst();
+        assertEquals("a6", move3_a6.san());
+        assertEquals("$1", move3_a6.nag(), "$1 기호는 그대로 저장되어야 합니다.");
+    }
 }

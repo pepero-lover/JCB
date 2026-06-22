@@ -443,15 +443,13 @@ public class ConvertStringMoveUtils {
 
         boolean isCapture = san.contains("x");
         if(isCapture) san = san.replace("x", "");
-        san = san.replaceAll("[+#!?]", "");
+        san = san.replace("+", "").replace("#", "");
 
         if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
             boolean isKingSide = san.equals("O-O") || san.equals("0-0");
 
             int[] move_list = new int[255];
             int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-            ChessboardUtils.printChessBoard(chessboard);
 
             for (int count = 0; count < move_count; count++) {
                 int move = move_list[count];

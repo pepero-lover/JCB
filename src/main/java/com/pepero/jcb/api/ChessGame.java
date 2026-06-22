@@ -1399,14 +1399,38 @@ public class ChessGame {
                     if (currentToken.value().equals("1/2-1/2")) gameResult = GameResult.DRAW;
                     break;
                 case MOVE:
-                    System.out.println(currentToken.value());
+                    String rawSan = currentToken.value();
 
-                    int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, currentToken.value());
+                    int cleanEnd = rawSan.length();
+                    while (cleanEnd > 0) {
+                        char lastChar = rawSan.charAt(cleanEnd - 1);
+                        if (lastChar == '!' || lastChar == '?') cleanEnd--;
+                        else break;
+                    }
+
+                    String pureSan = rawSan.substring(0, cleanEnd);
+                    String annotation = rawSan.substring(cleanEnd);
+
+                    int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
+                    if(!ChessboardUtils.isLegalMove(pgnChessboard, moveData))
+                        throw new IllegalMoveException(new MoveInfo(moveData).toString());
                     MoveGenerator.makeMove(pgnChessboard, moveData);
 
                     MoveInfo moveInfo = new MoveInfo(moveData);
                     MoveNode newNode = new MoveNode(moveInfo, currentNode);
-                    newNode.san = currentToken.value();
+                    newNode.san = pureSan;
+
+                    if (!annotation.isEmpty()) {
+                        String parsedNag = switch (annotation) {
+                            case "!" -> "$1"; case "?" -> "$2"; case "!!" -> "$3";
+                            case "??" -> "$4"; case "!?" -> "$5"; case "?!" -> "$6";
+                            default -> "";
+                        };
+                        if (!parsedNag.isEmpty()) {
+                            newNode.nag = (newNode.nag == null || newNode.nag.isEmpty())
+                                    ? parsedNag : newNode.nag + " " + parsedNag;
+                        }
+                    }
 
                     currentNode.children.add(newNode);
                     currentNode = newNode;
