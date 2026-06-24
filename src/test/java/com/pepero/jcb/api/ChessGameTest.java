@@ -342,13 +342,13 @@ public class ChessGameTest {
         chessGame.makeMove("e7e5");
         chessGame.makeMove("g1f3");
         String fen1 = chessGame.getFEN();
-        String uuid1 = chessGame.getCurrentNodeId();
+        long uuid1 = chessGame.getCurrentNodeId();
 
         chessGame.makeMove("b8c6");
         chessGame.unmakeMove();
         chessGame.makeMove("g8f6");
         String fen2 = chessGame.getFEN();
-        String uuid2 = chessGame.getCurrentNodeId();
+        long uuid2 = chessGame.getCurrentNodeId();
 
         // e4 e5 Nf3 Nc6 (Nf6)
 

@@ -34,6 +34,8 @@ public class EngineTest {
             System.out.println("엔진 매치를 시작합니다.");
 
             try {
+                // 여기까지는 이전과 같지만 여기에서 MatchResult 로 DTO 를 받습니다
+
                 // 대전을 시작합니다.
                 MatchResult matchResult = arena.startMatch(); // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
                 System.out.println("경기 결과: " + matchResult.result());

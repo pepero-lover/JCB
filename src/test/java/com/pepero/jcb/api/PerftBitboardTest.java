@@ -98,6 +98,11 @@ public class PerftBitboardTest {
 
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
+        // JVM preheat
+        System.out.println("Preheating...");
+        perftDriver(chessboard, 6);
+        System.out.println("Preheating complete!");
+
         perftTest(chessboard, 6);
     }
 }

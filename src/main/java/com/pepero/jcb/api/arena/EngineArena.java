@@ -38,7 +38,7 @@ public class EngineArena {
                 blackLimit.timeControlMs(), blackLimit.incrementMs()
         );
 
-        while (chessGame.isGameOver() == GameOverReason.NOTGAMEOVER) {
+        while (chessGame.getGameoverReason() == GameOverReason.NOTGAMEOVER) {
             boolean isWhiteTurn = chessGame.getTurn();
             UCIEngineWrapper currentEngine = isWhiteTurn ? whiteEngine : blackEngine;
 

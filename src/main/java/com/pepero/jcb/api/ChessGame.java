@@ -35,7 +35,7 @@ public class ChessGame {
 
     // For variation mode
     private class MoveNode {
-        final String uuid = UUID.randomUUID().toString().substring(0, 8);
+        final long id;
         final MoveNode parent;
         final List<MoveNode> children = new ArrayList<>();
         final MoveInfo moveData;
@@ -46,15 +46,25 @@ public class ChessGame {
 
         String clk;
 
+        // for external
         GameResult terminalResult = null;
         GameOverReason terminalReason = null;
 
+        // cache game state
+        boolean isStateEvaluated = false;
+        GameResult calculatedResult = GameResult.UNKNOWN;
+        GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
+
         MoveNode() {
+            this.id = ++nodeCounter;
+
             this.moveData = null;
             this.parent = null;
         }
 
         MoveNode(MoveInfo moveData, MoveNode parent) {
+            this.id = ++nodeCounter;
+
             this.moveData = moveData;
             this.parent = parent;
         }
@@ -67,7 +77,7 @@ public class ChessGame {
     }
 
     public record MoveNodeDTO(
-            String uuid,
+            long id,
             MoveInfo moveData,
             List<MoveNodeDTO> children,
             String san,
@@ -83,7 +93,7 @@ public class ChessGame {
                     .toList();
 
             return new MoveNodeDTO(
-                    node.uuid,
+                    node.id,
                     node.moveData,
                     childDTOs,
                     node.san,
@@ -94,16 +104,19 @@ public class ChessGame {
         }
     }
 
-    // for variation
-    private final Map<String, MoveNode> nodeCache = new HashMap<>();
+    private long nodeCounter = 0L;
+    private final Map<Long, MoveNode> nodeCache = new HashMap<>();
+
+    private boolean autoChangeGameOver = true;
 
     private MoveNode moveHistoryRoot = new MoveNode();
 
-    // pointer
     private MoveNode currentNode = moveHistoryRoot;
 
 
     // game variables
+
+    private int[] initialPieceCounts = new int[12];
 
     private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
@@ -148,7 +161,9 @@ public class ChessGame {
 
         FENValidator.validateLogicalState(chessboard);
 
-        nodeCache.put(moveHistoryRoot.uuid, moveHistoryRoot);
+        nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
+
+        calculateInitialPieces(fen);
     }
 
     /**
@@ -161,7 +176,9 @@ public class ChessGame {
 
         startPositionFEN = Chessboard.start_position;
 
-        nodeCache.put(moveHistoryRoot.uuid, moveHistoryRoot);
+        nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
+
+        calculateInitialPieces(this.getFEN());
     }
 
     /**
@@ -195,15 +212,33 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        updateGameState();
-
         notifyMoveMade(moveData);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
     }
 
+    /**
+     * Make a move on this ChessGame (San string)
+     *
+     * @param sanString san string
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
     public void makeMoveSan(String sanString) {
         makeMove(toLanString(sanString));
     }
 
+    /**
+     * Make a move on this ChessGame (ENCODED MOVE)
+     *
+     * @param encodedMove encoded move
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
     public void makeMove(int encodedMove) {
         if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove))
             throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
@@ -215,9 +250,43 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        updateGameState();
-
         notifyMoveMade(moveData);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
+    }
+
+    /**
+     * Make moves on this ChessGame (San string)
+     *
+     * @param sanString san string like "e4 e5 Nf3 Nc6"
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
+    public void makeMoveSanAll(String sanString) {
+        sanString = sanString.trim();
+        String[] sanStrings = sanString.split(" ");
+        for(String san : sanStrings) {
+            makeMoveSan(san);
+        }
+    }
+
+    /**
+     * Make moves on this ChessGame (Lan string)
+     *
+     * @param lanString san string like "e2e4 e7e5 g1f3 b8c6"
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
+    public void makeMoveAll(String lanString) {
+        lanString = lanString.trim();
+        String[] lanStrings = lanString.split(" ");
+        for(String lan : lanStrings) {
+            makeMove(lan);
+        }
     }
 
     /**
@@ -264,9 +333,11 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        updateGameState();
-
         notifyMoveMade(moveData);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
     }
 
     /**
@@ -300,9 +371,11 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        updateGameState();
-
         notifyMoveMade(moveData);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
     }
 
     /**
@@ -320,9 +393,12 @@ public class ChessGame {
         currentNode = currentNode.parent;
 
         MoveGenerator.unmakeMove(chessboard, moveInfo.originEncodedData());
-        updateGameState();
 
         notifyMoveUnmade(moveInfo);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
 
         return moveInfo;
     }
@@ -343,7 +419,6 @@ public class ChessGame {
 
     /**
      * Remake (redo) move on this ChessGame (with Variation index) <br>
-     * ONLY ON VARIATION MODE!
      *
      * @param variationIndex variation index (if 0, goes main line)
      *
@@ -354,7 +429,6 @@ public class ChessGame {
      * if remakeMove(0), pointer is now e7e5. <br>
      *
      * @throws EmptyMoveRedoException - if redo history is empty and remake move
-     * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public MoveInfo remakeMove(int variationIndex) {
         if (!canRedo()) throw new EmptyMoveRedoException();
@@ -370,9 +444,11 @@ public class ChessGame {
             throw new IllegalMoveException(moveInfo.toString());
         }
 
-        updateGameState();
-
         notifyMoveRemade(moveInfo);
+
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
 
         return moveInfo;
     }
@@ -399,14 +475,12 @@ public class ChessGame {
 
     /**
      * Remake (redo) move on this ChessGame (with Variation index) <br>
-     * ONLY ON VARIATION MODE!
      *
      * @param variationIndex variation index (if 0, goes main line)
      *
      * @return whether this position can redo
      *
      * @throws MoveNotFoundException - if current node (move) not found
-     * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public boolean canRedo(int variationIndex) {
         if (currentNode == null) throw new MoveNotFoundException();
@@ -491,6 +565,26 @@ public class ChessGame {
     }
 
     /**
+     * Init initial piece count
+     *
+     * @param fen this chess game fen
+     */
+    private void calculateInitialPieces(String fen) {
+        String boardFen = fen.split(" ")[0];
+        for (int i = 0; i < boardFen.length(); i++) {
+            char c = boardFen.charAt(i);
+            switch (c) {
+                case 'P' -> initialPieceCounts[P]++; case 'N' -> initialPieceCounts[N]++;
+                case 'B' -> initialPieceCounts[B]++; case 'R' -> initialPieceCounts[R]++;
+                case 'Q' -> initialPieceCounts[Q]++;
+                case 'p' -> initialPieceCounts[p]++; case 'n' -> initialPieceCounts[n]++;
+                case 'b' -> initialPieceCounts[b]++; case 'r' -> initialPieceCounts[r]++;
+                case 'q' -> initialPieceCounts[q]++;
+            }
+        }
+    }
+
+    /**
      * Get captured piece
      *
      * @param isWhite if white, returns black captured piece. if black, returns white captured piece.
@@ -499,43 +593,31 @@ public class ChessGame {
     public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) {
         Map<PieceType, Integer> captured = new EnumMap<>(PieceType.class);
 
-        // Get origin start pos and pieces
-
-        String boardFen = startPositionFEN.split(" ")[0];
-
-        int initPawn = 0, initKnight = 0, initBishop = 0, initRook = 0, initQueen = 0;
-
-        char pawnChar   = isWhite ? 'p' : 'P';
-        char knightChar = isWhite ? 'n' : 'N';
-        char bishopChar = isWhite ? 'b' : 'B';
-        char rookChar   = isWhite ? 'r' : 'R';
-        char queenChar  = isWhite ? 'q' : 'Q';
-
-        for (int i = 0; i < boardFen.length(); i++) {
-            char c = boardFen.charAt(i);
-            if (c == pawnChar) initPawn++;
-            else if (c == knightChar) initKnight++;
-            else if (c == bishopChar) initBishop++;
-            else if (c == rookChar) initRook++;
-            else if (c == queenChar) initQueen++;
-        }
-
         if (isWhite) {
-            captured.put(PieceType.PAWN, initPawn - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
-            captured.put(PieceType.KNIGHT, initKnight - BitBoardUtils.countBits(chessboard.getBitboardPiece(n)));
-            captured.put(PieceType.BISHOP, initBishop - BitBoardUtils.countBits(chessboard.getBitboardPiece(b)));
-            captured.put(PieceType.ROOK, initRook - BitBoardUtils.countBits(chessboard.getBitboardPiece(r)));
-            captured.put(PieceType.QUEEN, initQueen - BitBoardUtils.countBits(chessboard.getBitboardPiece(q)));
+            captured.put(PieceType.PAWN,
+                    initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
+            captured.put(PieceType.KNIGHT,
+                    initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.getBitboardPiece(n)));
+            captured.put(PieceType.BISHOP,
+                    initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.getBitboardPiece(b)));
+            captured.put(PieceType.ROOK,
+                    initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.getBitboardPiece(r)));
+            captured.put(PieceType.QUEEN,
+                    initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(q)));
         } else {
-            captured.put(PieceType.PAWN, initPawn - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
-            captured.put(PieceType.KNIGHT, initKnight - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
-            captured.put(PieceType.BISHOP, initBishop - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
-            captured.put(PieceType.ROOK, initRook - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
-            captured.put(PieceType.QUEEN, initQueen - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
+            captured.put(PieceType.PAWN,
+                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
+            captured.put(PieceType.KNIGHT,
+                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
+            captured.put(PieceType.BISHOP,
+                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
+            captured.put(PieceType.ROOK,
+                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
+            captured.put(PieceType.QUEEN,
+                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
         }
 
         captured.values().removeIf(count -> count <= 0);
-
         return captured;
     }
 
@@ -778,9 +860,7 @@ public class ChessGame {
             boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
             boolean isBlackBishopOnLight = (chessboard.bitboards[b] & LIGHT_SQUARES) != 0;
 
-            if (isWhiteBishopOnLight == isBlackBishopOnLight) {
-                return true;
-            }
+            return isWhiteBishopOnLight == isBlackBishopOnLight;
         }
 
         return false;
@@ -804,8 +884,14 @@ public class ChessGame {
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
     public GameOverReason isGameOver() {
-        if(isCheckmate()) return GameOverReason.CHECKMATE;
-        if(isStalemate()) return GameOverReason.STALEMATE;
+        boolean inCheck = isCheck();
+
+        if (inCheck) {
+            if (isCheckmate()) return GameOverReason.CHECKMATE;
+        } else {
+            if (isStalemate()) return GameOverReason.STALEMATE;
+        }
+
         if(isThreefoldRepetition()) return GameOverReason.THREEFOLD;
         if(isFiftyMoves()) return GameOverReason.FIFTYMOVES;
         if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
@@ -907,6 +993,7 @@ public class ChessGame {
      * @return game result
      */
     public GameResult getGameResult() {
+        evaluateGameState();
         return this.gameResult;
     }
 
@@ -916,6 +1003,7 @@ public class ChessGame {
      * @return game over reason
      */
     public GameOverReason getGameoverReason() {
+        evaluateGameState();
         return this.gameoverReason;
     }
 
@@ -969,7 +1057,7 @@ public class ChessGame {
         currentNode.children.add(result);
         currentNode = result;
 
-        nodeCache.put(result.uuid, result);
+        nodeCache.put(result.id, result);
     }
 
     /**
@@ -1005,22 +1093,20 @@ public class ChessGame {
 
     /**
      * Get current node's UUID
-     * ONLY ON VARIATION MODE!
+     * When current node is null, returns -1
      *
      * @return current node's uuid string
-     * @throws VariationModeException if game mode is linear
      */
-    public String getCurrentNodeId() {
-        if (currentNode == null) return null;
+    public long getCurrentNodeId() {
+        if (currentNode == null) return -1;
 
-        return currentNode.uuid;
+        return currentNode.id;
     }
 
     /**
      * Get current node as DTO
      *
      * @return MoveNodeDTO of the current node
-     * @throws VariationModeException if game mode is linear
      */
     public MoveNodeDTO getCurrentNodeDTO() {
         if (currentNode == null) return null;
@@ -1030,11 +1116,10 @@ public class ChessGame {
 
     /**
      * Move position to node (nodeId)
-     * ONLY ON VARIATION MODE!
      *
      * @param nodeId node uuid
      */
-    public void jumpToNode(String nodeId) {
+    public void jumpToNode(long nodeId) {
         // get node
         MoveNode targetNode = nodeCache.get(nodeId);
         if (targetNode == null) {
@@ -1059,7 +1144,9 @@ public class ChessGame {
         }
 
         this.currentNode = targetNode;
-        updateGameState();
+        if(autoChangeGameOver) {
+            evaluateGameState();
+        }
 
         notifyPositionJumped(getFEN());
     }
@@ -1117,8 +1204,6 @@ public class ChessGame {
             }
         }
 
-        updateGameState();
-
         notifyPositionJumped(getFEN());
     }
 
@@ -1155,29 +1240,57 @@ public class ChessGame {
     }
 
     /**
-     * Update game result (state)
+     * Change flag changing game over state when moved / unmoved. <br>
+     * if you want efficiency, disable this to get more NPS. but you can't use Listener on onGameOver method. <br>
+     *
+     * @param autoChangeGameOver en/disable flag changing game over state when moved
      */
-    private void updateGameState() {
+    public void setAutoChangingGameOver(boolean autoChangeGameOver) {
+        this.autoChangeGameOver = autoChangeGameOver;
+    }
+
+    /**
+     * Update this current node's game over state.
+     * if this current node's game over state is already there, just return cached value.
+     */
+    private void evaluateGameState() {
+        // when resign / agreement draw
         if (this.currentNode.terminalReason != null) {
             this.gameResult = this.currentNode.terminalResult;
             this.gameoverReason = this.currentNode.terminalReason;
-            this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
             return;
         }
 
-        this.gameoverReason = isGameOver();
+        // when value is already cached
+        if (this.currentNode.isStateEvaluated) {
+            this.gameResult = this.currentNode.calculatedResult;
+            this.gameoverReason = this.currentNode.calculatedReason;
 
-        this.gameResult = switch (this.gameoverReason) {
-            case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-            case STALEMATE, THREEFOLD, FIFTYMOVES, INSUFFICIENTMATERIAL -> GameResult.DRAW;
-            default -> GameResult.UNKNOWN;
-        };
-
-        this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
-
-        if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
+            return;
         }
+
+        // if value is not cached
+
+        GameOverReason reason = isGameOver();
+        GameResult result = GameResult.UNKNOWN;
+
+        if (reason != GameOverReason.NOTGAMEOVER) {
+            result = switch (reason) {
+                case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+                case STALEMATE, THREEFOLD, FIFTYMOVES, INSUFFICIENTMATERIAL -> GameResult.DRAW;
+                default -> GameResult.UNKNOWN;
+            };
+
+            notifyGameOver(result, reason);
+        }
+
+        this.currentNode.calculatedReason = reason;
+        this.currentNode.calculatedResult = result;
+        this.currentNode.isStateEvaluated = true;
+
+        this.gameoverReason = reason;
+        this.gameResult = result;
+        this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
     }
 
     /**
@@ -1255,6 +1368,9 @@ public class ChessGame {
 
         MoveNode rootNode = new MoveNode();
         MoveNode currentNode = rootNode;
+
+        this.nodeCache.clear();
+        this.nodeCache.put(rootNode.id, rootNode);
 
         record VariationState(MoveNode node, Chessboard snapshotBoard) {}
 
@@ -1357,6 +1473,9 @@ public class ChessGame {
 
                     currentNode.children.add(newNode);
                     currentNode = newNode;
+
+                    this.nodeCache.put(newNode.id, newNode);
+
                     break;
             }
         }
@@ -1388,8 +1507,6 @@ public class ChessGame {
             }
         }
 
-        updateGameState();
-
         return new PGNGame(headers, rootDTO, gameResult);
     }
 
@@ -1405,8 +1522,7 @@ public class ChessGame {
             this.headers.remove("FEN");
         }
 
-        updateGameState();
-
+        evaluateGameState();
         this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
 
         Chessboard tempBoard = new Chessboard(startPositionFEN);
@@ -1440,7 +1556,7 @@ public class ChessGame {
         }
 
         return new MoveNodeDTO(
-                node.uuid,
+                node.id,
                 node.moveData,
                 childrenDTOs,
                 calculatedSan,
@@ -1688,10 +1804,10 @@ public class ChessGame {
     private void printHistory(MoveNodeDTO rootNode, int depth) {
         if(rootNode == null) return;
 
-        boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.uuid());
+        boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
         String pointer = isCurrent ? " <-" : "";
 
-        if (Objects.equals(rootNode.uuid(), this.moveHistoryRoot.uuid)) {
+        if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
             System.out.println(pointer.trim());
         } else {
             String prefix = (depth > 0) ? "└ " : "";
