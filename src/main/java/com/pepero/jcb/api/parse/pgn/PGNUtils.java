@@ -79,8 +79,22 @@ public class PGNUtils {
         if (mainMove.nag() != null) {
             sb.append(mainMove.nag()).append(" ");
         }
-        if (mainMove.comment() != null) {
-            sb.append("{").append(mainMove.comment()).append("} ");
+
+        boolean hasComment = mainMove.comment() != null && !mainMove.comment().isEmpty();
+        boolean hasClk = mainMove.clk() != null && !mainMove.clk().isEmpty();
+
+        if (hasComment || hasClk) {
+            sb.append("{");
+            if (hasComment) {
+                sb.append(mainMove.comment());
+            }
+            if (hasComment && hasClk) {
+                sb.append(" ");
+            }
+            if (hasClk) {
+                sb.append("[%clk ").append(mainMove.clk()).append("]");
+            }
+            sb.append("} ");
             interrupted = true;
         }
 

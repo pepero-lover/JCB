@@ -19,6 +19,8 @@ import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.pepero.jcb.constant.BoardSquares.no_sq;
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -41,6 +43,8 @@ public class ChessGame {
         String san;
         String comment;
         String nag;
+
+        String clk;
 
         GameResult terminalResult = null;
         GameOverReason terminalReason = null;
@@ -68,7 +72,8 @@ public class ChessGame {
             List<MoveNodeDTO> children,
             String san,
             String comment,
-            String nag // numeric annotation glyph
+            String nag, // numeric annotation glyph
+            String clk
     ) {
         private static MoveNodeDTO from(MoveNode node) {
             if (node == null) return null;
@@ -83,7 +88,8 @@ public class ChessGame {
                     childDTOs,
                     node.san,
                     node.comment,
-                    node.nag
+                    node.nag,
+                    node.clk
             );
         }
     }
@@ -97,20 +103,12 @@ public class ChessGame {
     private MoveNode currentNode = moveHistoryRoot;
 
 
-    // for linear
-
-    private List<MoveInfo> linearHistory = new ArrayList<>();
-    private int currentMoveIndex = -1;
-
-
     // game variables
 
     private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
     private GameResult gameResult = GameResult.UNKNOWN;
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
-
-    private final GameMode gameMode;
 
     private final String startPositionFEN;
 
@@ -119,40 +117,26 @@ public class ChessGame {
     /**
      * Initialize position with FEN string
      * @param fen fen string
-     * @param gameMode game mode (variation mode, linear mode)
      *
      * @throws FENConvertException - if converting fen string failed
      */
-    public ChessGame(String fen, GameMode gameMode) {
-        this(fen, gameMode, GameVariants.STANDARD);
+    public ChessGame(String fen) {
+        this(fen, GameVariants.STANDARD);
     }
 
     /**
      * Initialize position with FEN string
+     *
      * @param fen fen string
      * @param gameVariants game variants ( standard, chess 960 ... )
      *
      * @throws FENConvertException - if converting fen string failed
      */
     public ChessGame(String fen, GameVariants gameVariants) {
-        this(fen, GameMode.VARIATION, gameVariants);
-    }
-
-    /**
-     * Initialize position with FEN string
-     *
-     * @param fen fen string
-     * @param gameMode game mode (variation mode, linear mode)
-     * @param gameVariants game variants ( standard, chess 960 ... )
-     *
-     * @throws FENConvertException - if converting fen string failed
-     */
-    public ChessGame(String fen, GameMode gameMode, GameVariants gameVariants) {
         FENValidator.validateString(fen);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
-        this.gameMode = gameMode;
 
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
@@ -168,36 +152,16 @@ public class ChessGame {
     }
 
     /**
-     * Initialize position with FEN string (Variation mode default)
-     *
-     * @param fen fen string
-     *
-     * @throws FENConvertException - if converting fen string failed
-     */
-    public ChessGame(String fen) {
-        this(fen, GameMode.VARIATION);
-    }
-
-    /**
      * Initialize position to start position
      */
-    public ChessGame(GameMode gameMode) {
+    public ChessGame() {
         this.chessboard = new Chessboard();
 
         ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
 
         startPositionFEN = Chessboard.start_position;
 
-        this.gameMode = gameMode;
-
         nodeCache.put(moveHistoryRoot.uuid, moveHistoryRoot);
-    }
-
-    /**
-     * Initialize position to start position
-     */
-    public ChessGame() {
-        this(GameMode.VARIATION);
     }
 
     /**
@@ -231,9 +195,9 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        notifyMoveMade(moveData);
-
         updateGameState();
+
+        notifyMoveMade(moveData);
     }
 
     public void makeMoveSan(String sanString) {
@@ -251,9 +215,9 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        notifyMoveMade(moveData);
-
         updateGameState();
+
+        notifyMoveMade(moveData);
     }
 
     /**
@@ -300,9 +264,9 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        notifyMoveMade(moveData);
-
         updateGameState();
+
+        notifyMoveMade(moveData);
     }
 
     /**
@@ -336,9 +300,9 @@ public class ChessGame {
 
         addMoveHistory(moveData);
 
-        notifyMoveMade(moveData);
-
         updateGameState();
+
+        notifyMoveMade(moveData);
     }
 
     /**
@@ -352,17 +316,13 @@ public class ChessGame {
     public MoveInfo unmakeMove() {
         if (!canUndo()) throw new EmptyMoveUndoException();
 
-        MoveInfo moveInfo;
-        if (gameMode == GameMode.VARIATION) {
-            moveInfo = currentNode.moveData;
-            currentNode = currentNode.parent;
-        } else {
-            moveInfo = linearHistory.get(currentMoveIndex);
-            currentMoveIndex--;
-        }
+        MoveInfo moveInfo = currentNode.moveData;
+        currentNode = currentNode.parent;
 
         MoveGenerator.unmakeMove(chessboard, moveInfo.originEncodedData());
         updateGameState();
+
+        notifyMoveUnmade(moveInfo);
 
         return moveInfo;
     }
@@ -378,29 +338,7 @@ public class ChessGame {
      * @throws EmptyMoveRedoException - if redo history is empty and remake move
      */
     public MoveInfo remakeMove() {
-        if (!canRedo()) throw new EmptyMoveRedoException();
-
-        MoveInfo moveInfo;
-        if (gameMode == GameMode.VARIATION) {
-            currentNode = currentNode.children.getFirst();
-            moveInfo = currentNode.moveData;
-        } else {
-            currentMoveIndex++;
-            moveInfo = linearHistory.get(currentMoveIndex);
-        }
-
-        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-        if (!isSuccess) {
-            if (gameMode == GameMode.VARIATION) {
-                currentNode = currentNode.parent;
-            } else {
-                currentMoveIndex--;
-            }
-            throw new IllegalMoveException(moveInfo.toString());
-        }
-
-        updateGameState();
-        return moveInfo;
+        return remakeMove(0);
     }
 
     /**
@@ -419,31 +357,23 @@ public class ChessGame {
      * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public MoveInfo remakeMove(int variationIndex) {
-        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
         if (!canRedo()) throw new EmptyMoveRedoException();
 
-        MoveInfo moveInfo;
-        if (gameMode == GameMode.VARIATION) {
-            if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
+        if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
 
-            currentNode = currentNode.children.get(variationIndex);
-            moveInfo = currentNode.moveData;
-        } else {
-            currentMoveIndex++;
-            moveInfo = linearHistory.get(currentMoveIndex);
-        }
+        currentNode = currentNode.children.get(variationIndex);
+        MoveInfo moveInfo = currentNode.moveData;
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if (!isSuccess) {
-            if (gameMode == GameMode.VARIATION) {
-                currentNode = currentNode.parent;
-            } else {
-                currentMoveIndex--;
-            }
+            currentNode = currentNode.parent;
             throw new IllegalMoveException(moveInfo.toString());
         }
 
         updateGameState();
+
+        notifyMoveRemade(moveInfo);
+
         return moveInfo;
     }
 
@@ -453,11 +383,7 @@ public class ChessGame {
      * @return whether this position can undo
      */
     public boolean canUndo() {
-        if (gameMode == GameMode.VARIATION) {
-            return currentNode != moveHistoryRoot;
-        } else {
-            return currentMoveIndex >= 0;
-        }
+        return currentNode != moveHistoryRoot;
     }
 
     /**
@@ -468,11 +394,7 @@ public class ChessGame {
      * @throws MoveNotFoundException if the current node is not found
      */
     public boolean canRedo() {
-        if (gameMode == GameMode.VARIATION) {
-            return !currentNode.children.isEmpty();
-        } else {
-            return currentMoveIndex < linearHistory.size() - 1;
-        }
+        return !currentNode.children.isEmpty();
     }
 
     /**
@@ -487,34 +409,28 @@ public class ChessGame {
      * @throws VariationModeException - this method is variation mode only, but if this ChessGame is linear mode
      */
     public boolean canRedo(int variationIndex) {
-        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
         if (currentNode == null) throw new MoveNotFoundException();
         return currentNode.children.size() > variationIndex;
     }
 
     /**
      * Get previous moves
+     * <p>
+     * Example : <br>
+     * <b>e2e4 e7e5 g1f3 ( b1c3 <- pointer) b8c6 ) g8f6 </b>
+     * and the result is <b>e2e4 e7e5 b1c3</b>
      *
      * @return previous moves
      */
     public List<MoveInfo> getMoveHistory() {
-        if (gameMode == GameMode.VARIATION) {
-            List<MoveInfo> result = new ArrayList<>();
-            MoveNode current = currentNode;
-            while (current != null && current.moveData != null) {
-                result.add(current.moveData);
-                current = current.parent;
-            }
-            Collections.reverse(result);
-            return Collections.unmodifiableList(result);
-        } else {
-            if (currentMoveIndex < 0) return Collections.emptyList();
-            List<MoveInfo> result = new ArrayList<>(currentMoveIndex + 1);
-            for (int i = 0; i <= currentMoveIndex; i++) {
-                result.add(linearHistory.get(i));
-            }
-            return Collections.unmodifiableList(result);
+        List<MoveInfo> result = new ArrayList<>();
+        MoveNode current = currentNode;
+        while (current != null && current.moveData != null) {
+            result.add(current.moveData);
+            current = current.parent;
         }
+        Collections.reverse(result);
+        return Collections.unmodifiableList(result);
     }
 
 
@@ -522,7 +438,7 @@ public class ChessGame {
      * Get last move to string squares
      * <p>
      * Examples : <br>
-     * last move is e2e4 and return is String[]{"e2","e4"}
+     * the last move is e2e4 and the return is String[]{"e2","e4"}
      *
      * @return Get last move (string[])
      */
@@ -1038,36 +954,22 @@ public class ChessGame {
      * @throws MoveNotFoundException - could not find the node
      */
     private void addMoveHistory(MoveInfo moveData) {
-        if(gameMode == GameMode.VARIATION) {
-            // Variation tree logic
+        for(int i = 0; i < currentNode.children.size(); i++) {
+            MoveNode child = currentNode.children.get(i);
 
-            for(int i = 0; i < currentNode.children.size(); i++) {
-                MoveNode child = currentNode.children.get(i);
+            if (moveData.equals(child.moveData)) {
+                currentNode = child;
 
-                if (moveData.equals(child.moveData)) {
-                    currentNode = child;
-
-                    return;
-                }
+                return;
             }
-
-            MoveNode result = new MoveNode(moveData, currentNode);
-
-            currentNode.children.add(result);
-            currentNode = result;
-
-            nodeCache.put(result.uuid, result);
-
-            return;
         }
 
-        if(gameMode == GameMode.LINEAR) {
-            if (currentMoveIndex < linearHistory.size() - 1) {
-                linearHistory.subList(currentMoveIndex + 1, linearHistory.size()).clear();
-            }
-            linearHistory.add(moveData);
-            currentMoveIndex++;
-        }
+        MoveNode result = new MoveNode(moveData, currentNode);
+
+        currentNode.children.add(result);
+        currentNode = result;
+
+        nodeCache.put(result.uuid, result);
     }
 
     /**
@@ -1109,7 +1011,6 @@ public class ChessGame {
      * @throws VariationModeException if game mode is linear
      */
     public String getCurrentNodeId() {
-        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
         if (currentNode == null) return null;
 
         return currentNode.uuid;
@@ -1122,7 +1023,6 @@ public class ChessGame {
      * @throws VariationModeException if game mode is linear
      */
     public MoveNodeDTO getCurrentNodeDTO() {
-        if (gameMode == GameMode.LINEAR) throw new VariationModeException();
         if (currentNode == null) return null;
 
         return MoveNodeDTO.from(currentNode);
@@ -1135,8 +1035,6 @@ public class ChessGame {
      * @param nodeId node uuid
      */
     public void jumpToNode(String nodeId) {
-        if(gameMode == GameMode.LINEAR) throw new VariationModeException();
-
         // get node
         MoveNode targetNode = nodeCache.get(nodeId);
         if (targetNode == null) {
@@ -1162,6 +1060,8 @@ public class ChessGame {
 
         this.currentNode = targetNode;
         updateGameState();
+
+        notifyPositionJumped(getFEN());
     }
 
     /**
@@ -1176,61 +1076,50 @@ public class ChessGame {
      * @throws MoveNotFoundException - if move is not found or targetPly is out of bounds
      */
     public void jumpToMainlinePly(int targetPly) {
-        if(gameMode == GameMode.LINEAR) {
-            if(linearHistory.size() < targetPly || targetPly < 0) {
-                throw new MoveNotFoundException("Linear history out of bounds!");
-            }
+        if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
+        if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
 
-            boolean redo = currentMoveIndex < targetPly;
+        int currentPly = 0;
+        MoveNode temp = this.currentNode;
+        List<MoveNode> history = new ArrayList<>();
 
-            for(int i = 0; i < Math.abs(targetPly - currentMoveIndex); i++) {
-                if(redo) remakeMove();
-                else unmakeMove();
+        while (temp != moveHistoryRoot && temp != null) {
+            history.add(temp);
+            currentPly++;
+            temp = temp.parent;
+        }
+
+        if (currentPly == targetPly) return;
+
+        if (targetPly < currentPly) {
+            Collections.reverse(history);
+
+            ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
+            MoveNode newCurrentNode = moveHistoryRoot;
+
+            for (int i = 0; i < targetPly; i++) {
+                MoveNode nextNode = history.get(i);
+                MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
+                newCurrentNode = nextNode;
             }
+            this.currentNode = newCurrentNode;
         } else {
-            if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
-            if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
+            while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
+                MoveNode nextNode = this.currentNode.children.getFirst();
 
-            int currentPly = 0;
-            MoveNode temp = this.currentNode;
-            List<MoveNode> history = new ArrayList<>();
-
-            while (temp != moveHistoryRoot && temp != null) {
-                history.add(temp);
+                MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
+                this.currentNode = nextNode;
                 currentPly++;
-                temp = temp.parent;
             }
 
-            if (currentPly == targetPly) return;
-
-            if (targetPly < currentPly) {
-                Collections.reverse(history);
-
-                ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
-                MoveNode newCurrentNode = moveHistoryRoot;
-
-                for (int i = 0; i < targetPly; i++) {
-                    MoveNode nextNode = history.get(i);
-                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    newCurrentNode = nextNode;
-                }
-                this.currentNode = newCurrentNode;
-            } else {
-                while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
-                    MoveNode nextNode = this.currentNode.children.getFirst();
-
-                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    this.currentNode = nextNode;
-                    currentPly++;
-                }
-
-                if (currentPly < targetPly) {
-                    throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
-                }
+            if (currentPly < targetPly) {
+                throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
             }
         }
 
         updateGameState();
+
+        notifyPositionJumped(getFEN());
     }
 
     /**
@@ -1289,6 +1178,28 @@ public class ChessGame {
         if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
+    }
+
+    /**
+     * Save clock data on last move on MoveNode(DTO)
+     *
+     * @param hours hours data
+     * @param minutes minutes data
+     * @param seconds seconds data
+     */
+    public void setCurrentMoveClock(int hours, int minutes, int seconds) {
+        if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
+        this.currentNode.clk = String.format("%d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    /**
+     * Save clock data on last move on MoveNode(DTO)
+     *
+     * @param clkTime string format like "0:05:00"
+     */
+    public void setCurrentMoveClock(String clkTime) {
+        if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
+        this.currentNode.clk = clkTime;
     }
 
     /**
@@ -1366,9 +1277,21 @@ public class ChessGame {
         while ((currentToken = lexer.nextToken()).type() != TokenType.EOF) {
             switch (currentToken.type()) {
                 case COMMENT:
-                    String newComment = currentToken.value().trim();
-                    currentNode.comment = (currentNode.comment == null)
-                            ? newComment : currentNode.comment + " " + newComment;
+                    String rawComment = currentToken.value().trim();
+
+                    Pattern clkPattern = Pattern.compile("\\[%clk\\s+([0-9:]+(\\.[0-9]+)?)\\]");
+                    Matcher matcher = clkPattern.matcher(rawComment);
+
+                    if (matcher.find()) {
+                        currentNode.clk = matcher.group(1);
+                        rawComment = matcher.replaceAll("").trim(); // remove clk data
+                    }
+
+                    if (!rawComment.isEmpty()) {
+                        currentNode.comment = (currentNode.comment == null)
+                                ? rawComment : currentNode.comment + " " + rawComment;
+                    }
+
                     break;
                 case NAG:
                     currentNode.nag = currentToken.value();
@@ -1522,7 +1445,8 @@ public class ChessGame {
                 childrenDTOs,
                 calculatedSan,
                 node.comment,
-                node.nag
+                node.nag,
+                node.clk
         );
     }
 
@@ -1637,6 +1561,39 @@ public class ChessGame {
     private void notifyMoveMade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
             listener.onMoveMade(moveInfo);
+        }
+    }
+
+    /**
+     * Notify listeners when move unmade
+     *
+     * @param moveInfo unmade move data
+     */
+    private void notifyMoveUnmade(MoveInfo moveInfo) {
+        for(ChessGameListener listener : listeners) {
+            listener.onMoveUnmade(moveInfo);
+        }
+    }
+
+    /**
+     * Notify listeners when move remade
+     *
+     * @param moveInfo remade move data
+     */
+    private void notifyMoveRemade(MoveInfo moveInfo) {
+        for(ChessGameListener listener : listeners) {
+            listener.onMoveRemade(moveInfo);
+        }
+    }
+
+    /**
+     * Notify listeners when position jumped to node (pgn move)
+     *
+     * @param targetFen jumped position fen
+     */
+    private void notifyPositionJumped(String targetFen) {
+        for (ChessGameListener listener : listeners) {
+            listener.onPositionJumped(targetFen);
         }
     }
 

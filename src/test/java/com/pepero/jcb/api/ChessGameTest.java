@@ -360,7 +360,7 @@ public class ChessGameTest {
     }
 
     @Test
-    @DisplayName("중첩 변이 및 평가 기호 통합 파싱/NAG 분리 검증")
+    @DisplayName("중첩 변이 및 평가 기호 통합 파싱/NAG 분리가 되어야 한다")
     void testMultiversePGNTreeStructure() {
         String multiversePgn = """
                 \uFEFF[Event "Variation Stress Test"]
@@ -395,5 +395,74 @@ public class ChessGameTest {
         ChessGame.MoveNodeDTO move3_a6 = move3_Bb5.children().getFirst();
         assertEquals("a6", move3_a6.san());
         assertEquals("$1", move3_a6.nag(), "$1 기호는 그대로 저장되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("PGN 주석 내 [%clk] 시간 태그 파싱을 정확히 해야 한다")
+    void testPGNClockParsingAndExporting() {
+        String inputPgn = """
+                [Event "Clock Stress Test"]
+                [Result "*"]
+
+                1.e4 {[%clk 0:05:00]} 1...e5 {Black responds [%clk 0:04:58]} 2.Nf3!! {[%clk 0:04:45]} (2.f4 {King's Gambit [%clk 0:04:50]} exf4 {[%clk 0:04:48]}) 2...Nc6 {[%clk 0:04:55]} *""";
+
+        ChessGame chessGame = new ChessGame();
+
+        PGNGame parsedGame = chessGame.loadPGN(inputPgn);
+        ChessGame.MoveNodeDTO root = parsedGame.rootNode();
+
+        assertNotNull(root);
+        assertFalse(root.children().isEmpty(), "루트의 자식이 있어야 합니다.");
+
+        ChessGame.MoveNodeDTO move1_e4 = root.children().getFirst();
+        assertEquals("e4", move1_e4.san());
+        assertEquals("0:05:00", move1_e4.clk(), "e4의 clk 값이 정확히 매핑되어야 합니다.");
+        assertNull(move1_e4.comment(), "순수 주석이 없으므로 null 이어야 합니다.");
+
+        ChessGame.MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
+        assertEquals("e5", move1_e5.san());
+        assertEquals("0:04:58", move1_e5.clk());
+        assertEquals("Black responds", move1_e5.comment(), "주석 텍스트에서 clk 태그만 깔끔하게 제거되어야 합니다.");
+
+        ChessGame.MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
+        assertEquals("Nf3", move2_Nf3.san());
+        assertEquals("$3", move2_Nf3.nag(), "이전의 !! 기호 분리 로직도 깨지지 않고 $3으로 유지되어야 합니다.");
+        assertEquals("0:04:45", move2_Nf3.clk());
+
+        assertTrue(move1_e5.children().size() > 1, "2수 백에는 변이 라인이 존재해야 합니다.");
+        ChessGame.MoveNodeDTO var2_f4 = move1_e5.children().get(1);
+        assertEquals("f4", var2_f4.san());
+        assertEquals("0:04:50", var2_f4.clk());
+        assertEquals("King's Gambit", var2_f4.comment());
+
+        String exportedPgn = chessGame.getPGN();
+
+        assertTrue(exportedPgn.contains("e4 {[%clk 0:05:00]}"));
+        assertTrue(exportedPgn.contains("e5 {Black responds [%clk 0:04:58]}"));
+        assertTrue(exportedPgn.contains("Nf3 $3 {[%clk 0:04:45]}"));
+        assertTrue(exportedPgn.contains("f4 {King's Gambit [%clk 0:04:50]}"));
+    }
+
+    @Test
+    @DisplayName("외부에서 수동으로 입력한 시계 데이터가 PGN에 올바르게 저장되는지 검증")
+    void testManualClockSetting() {
+        ChessGame chessGame = new ChessGame();
+
+        chessGame.makeMove("e2e4");
+        chessGame.setCurrentMoveClock(0, 4, 55);
+
+        chessGame.makeMove("e7e5");
+        chessGame.setCurrentMoveClock("0:04:52");
+
+        ChessGame.MoveNodeDTO root = chessGame.getRootNodeWithSan();
+        ChessGame.MoveNodeDTO move1 = root.children().getFirst();
+        ChessGame.MoveNodeDTO move2 = move1.children().getFirst();
+
+        assertEquals("0:04:55", move1.clk());
+        assertEquals("0:04:52", move2.clk());
+
+        String pgn = chessGame.getPGN();
+        assertTrue(pgn.contains("e4 {[%clk 0:04:55]}"));
+        assertTrue(pgn.contains("e5 {[%clk 0:04:52]}"));
     }
 }

@@ -1,7 +1,6 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.enums.GameMode;
 import com.pepero.jcb.util.TimeUtils;
 
 import java.util.List;
@@ -87,6 +86,6 @@ public class PerftTest {
     }
 
     public static void main(String[] args) {
-        perftTest(new ChessGame(GameMode.LINEAR), 5);
+        perftTest(new ChessGame(), 5);
     }
 }
