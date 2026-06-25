@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.parse.pgn;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.PGNConvertException;
@@ -60,10 +61,10 @@ public class PGNUtils {
      *
      * @throws PGNConvertException when pgn convert fails (like too many moves)
      */
-    private static void buildMoveText(List<ChessGame.MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite, int moveNumber, boolean forceMoveNumber) {
+    private static void buildMoveText(List<MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite, int moveNumber, boolean forceMoveNumber) {
         if (siblings == null || siblings.isEmpty()) return;
 
-        ChessGame.MoveNodeDTO mainMove = siblings.getFirst();
+        MoveNodeDTO mainMove = siblings.getFirst();
 
         if(moveNumber >= MOVE_LIMIT) throw new PGNConvertException("Too many moves!");
 
@@ -76,23 +77,23 @@ public class PGNUtils {
 
         boolean interrupted = false;
 
-        if (mainMove.nag() != null) {
-            sb.append(mainMove.nag()).append(" ");
+        if (mainMove.annotation().nag() != null) {
+            sb.append(mainMove.annotation().nag()).append(" ");
         }
 
-        boolean hasComment = mainMove.comment() != null && !mainMove.comment().isEmpty();
-        boolean hasClk = mainMove.clk() != null && !mainMove.clk().isEmpty();
+        boolean hasComment = mainMove.annotation().comment() != null && !mainMove.annotation().comment().isEmpty();
+        boolean hasClk = mainMove.annotation().clk() != null && !mainMove.annotation().clk().isEmpty();
 
         if (hasComment || hasClk) {
             sb.append("{");
             if (hasComment) {
-                sb.append(mainMove.comment());
+                sb.append(mainMove.annotation().comment());
             }
             if (hasComment && hasClk) {
                 sb.append(" ");
             }
             if (hasClk) {
-                sb.append("[%clk ").append(mainMove.clk()).append("]");
+                sb.append("[%clk ").append(mainMove.annotation().clk()).append("]");
             }
             sb.append("} ");
             interrupted = true;

@@ -1,13 +1,12 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.dto.PGNGame;
-import com.pepero.jcb.api.dto.PGNToken;
+import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.event.ChessGameListener;
 import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
+import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 import com.pepero.jcb.api.parse.pgn.PGNLexer;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.api.parse.pgn.TokenType;
@@ -39,12 +38,9 @@ public class ChessGame {
         final MoveNode parent;
         final List<MoveNode> children = new ArrayList<>();
         final MoveInfo moveData;
-
         String san;
-        String comment;
-        String nag;
 
-        String clk;
+        MoveAnnotation annotation = new MoveAnnotation();
 
         // for external
         GameResult terminalResult = null;
@@ -73,34 +69,6 @@ public class ChessGame {
         public String toString() {
             String dataStr = (moveData == null) ? "ROOT" : moveData.toString();
             return dataStr + " -> " + children;
-        }
-    }
-
-    public record MoveNodeDTO(
-            long id,
-            MoveInfo moveData,
-            List<MoveNodeDTO> children,
-            String san,
-            String comment,
-            String nag, // numeric annotation glyph
-            String clk
-    ) {
-        private static MoveNodeDTO from(MoveNode node) {
-            if (node == null) return null;
-
-            List<MoveNodeDTO> childDTOs = node.children.stream()
-                    .map(MoveNodeDTO::from)
-                    .toList();
-
-            return new MoveNodeDTO(
-                    node.id,
-                    node.moveData,
-                    childDTOs,
-                    node.san,
-                    node.comment,
-                    node.nag,
-                    node.clk
-            );
         }
     }
 
@@ -1058,6 +1026,8 @@ public class ChessGame {
         currentNode = result;
 
         nodeCache.put(result.id, result);
+
+        notifyHistoryChanged();
     }
 
     /**
@@ -1083,12 +1053,89 @@ public class ChessGame {
     }
 
     /**
+     * Remove cache on this node and this node's children
+     *
+     * @param node node
+     */
+    private void removeNodeFromCache(MoveNode node) {
+        if (node == null) return;
+
+        nodeCache.remove(node.id);
+
+        for (MoveNode child : node.children) {
+            removeNodeFromCache(child);
+        }
+    }
+
+    /**
+     * Remove node and node's all children on tree and cache
+     *
+     * @param nodeId node to remove (id)
+     *
+     * @throws MoveNotFoundException when the current node (move) is not found
+     * @throws HistoryTreeException when node to remove is root node
+     */
+    public void deleteVariation(long nodeId) {
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) throw new MoveNotFoundException("Could not find the node to delete!");
+        if (targetNode == moveHistoryRoot) throw new HistoryTreeException("Cannot delete the root node!");
+
+        MoveNode parent = targetNode.parent;
+
+        boolean isCurrentNodeDeleting = false;
+        MoveNode temp = currentNode;
+        while (temp != null) {
+            if (temp == targetNode) {
+                isCurrentNodeDeleting = true;
+                break;
+            }
+            temp = temp.parent;
+        }
+
+        if (isCurrentNodeDeleting) {
+            jumpToNode(parent.id);
+        }
+
+        parent.children.remove(targetNode);
+
+        removeNodeFromCache(targetNode);
+
+        notifyHistoryChanged();
+    }
+
+    /**
+     * Promote this node to mainline on nodeId's parent
+     * <p>
+     * Example : <br>
+     * e4 e5 Nf3 (Nc3 Nf6 <-) <br>
+     * and the result is <br>
+     * e4 e5 Nc3 (Nf3) Nf6
+     *
+     * @param nodeId node to promote
+     */
+    public void promoteVariationLocal(long nodeId) {
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) throw new MoveNotFoundException("Could not find the node to promote!");
+        if (targetNode == moveHistoryRoot || targetNode.parent == null) return;
+
+        MoveNode parent = targetNode.parent;
+        int currentIndex = parent.children.indexOf(targetNode);
+
+        if (currentIndex > 0) {
+            parent.children.remove(currentIndex);
+            parent.children.addFirst(targetNode);
+
+            notifyHistoryChanged();
+        }
+    }
+
+    /**
      * Get Root node on move history <br>
      *
      * @return Root node
      */
     public MoveNodeDTO getRootNode() {
-        return MoveNodeDTO.from(moveHistoryRoot);
+        return convertToDTO(moveHistoryRoot);
     }
 
     /**
@@ -1111,7 +1158,7 @@ public class ChessGame {
     public MoveNodeDTO getCurrentNodeDTO() {
         if (currentNode == null) return null;
 
-        return MoveNodeDTO.from(currentNode);
+        return convertToDTO(currentNode);
     }
 
     /**
@@ -1302,7 +1349,7 @@ public class ChessGame {
      */
     public void setCurrentMoveClock(int hours, int minutes, int seconds) {
         if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
-        this.currentNode.clk = String.format("%d:%02d:%02d", hours, minutes, seconds);
+        this.currentNode.annotation.clk = String.format("%d:%02d:%02d", hours, minutes, seconds);
     }
 
     /**
@@ -1312,7 +1359,68 @@ public class ChessGame {
      */
     public void setCurrentMoveClock(String clkTime) {
         if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
-        this.currentNode.clk = clkTime;
+        this.currentNode.annotation.clk = clkTime;
+    }
+
+    /**
+     * Add engine eval data on this current move
+     *
+     * @param eval eval data like "1.25", "#-3"...
+     */
+    public void setCurrentMoveEval(String eval) {
+        if (this.currentNode == moveHistoryRoot) return;
+        this.currentNode.annotation.eval = eval;
+    }
+
+    /**
+     * Add highlighting square data on this current move
+     *
+     * @param csl square data like "Ge4" (Green square on e4), "Yd5" (Yellow square on d5)
+     */
+    public void setCurrentMoveCsl(String csl) {
+        if (this.currentNode == moveHistoryRoot) return;
+        this.currentNode.annotation.csl = csl;
+    }
+
+    /**
+     * Add highlighting arrow data on this current move
+     *
+     * @param cal arrow data like "Gg1f3" (Green arrow g1 to f3), "Ye2e4" (Yellow arrow e2 to e4)
+     */
+    public void setCurrentMoveCal(String cal) {
+        if (this.currentNode == moveHistoryRoot) return;
+        this.currentNode.annotation.cal = cal;
+    }
+
+    /**
+     * Convert MoveNode to MoveNodeDTO
+     *
+     * @param node MoveNode class
+     * @return converted MoveNodeDTO
+     */
+    private MoveNodeDTO convertToDTO(MoveNode node) {
+        if (node == null) return null;
+
+        List<MoveNodeDTO> childDTOs = node.children.stream()
+                .map(this::convertToDTO)
+                .toList();
+
+        MoveAnnotationDTO annotationDTO = null;
+        if (node.annotation != null) {
+            MoveAnnotation anno = node.annotation;
+            annotationDTO = new MoveAnnotationDTO(
+                    anno.comment, anno.nag, anno.clk,
+                    anno.eval, anno.csl, anno.cal
+            );
+        }
+
+        return new MoveNodeDTO(
+                node.id,
+                node.moveData,
+                childDTOs,
+                node.san,
+                annotationDTO
+        );
     }
 
     /**
@@ -1395,22 +1503,47 @@ public class ChessGame {
                 case COMMENT:
                     String rawComment = currentToken.value().trim();
 
-                    Pattern clkPattern = Pattern.compile("\\[%clk\\s+([0-9:]+(\\.[0-9]+)?)\\]");
-                    Matcher matcher = clkPattern.matcher(rawComment);
-
-                    if (matcher.find()) {
-                        currentNode.clk = matcher.group(1);
-                        rawComment = matcher.replaceAll("").trim(); // remove clk data
+                    // clock parsing
+                    Pattern clkPattern = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
+                    Matcher clkMatcher = clkPattern.matcher(rawComment);
+                    if (clkMatcher.find()) {
+                        currentNode.annotation.clk = clkMatcher.group(1);
+                        rawComment = clkMatcher.replaceAll("").trim();
                     }
 
+                    // engine eval parsing
+                    Pattern evalPattern = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
+                    Matcher evalMatcher = evalPattern.matcher(rawComment);
+                    if (evalMatcher.find()) {
+                        currentNode.annotation.eval = evalMatcher.group(1);
+                        rawComment = evalMatcher.replaceAll("").trim();
+                    }
+
+                    // square light parsing
+                    Pattern cslPattern = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
+                    Matcher cslMatcher = cslPattern.matcher(rawComment);
+                    if (cslMatcher.find()) {
+                        currentNode.annotation.csl = cslMatcher.group(1);
+                        rawComment = cslMatcher.replaceAll("").trim();
+                    }
+
+                    // arrow light parsing
+                    Pattern calPattern = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
+                    Matcher calMatcher = calPattern.matcher(rawComment);
+                    if (calMatcher.find()) {
+                        currentNode.annotation.cal = calMatcher.group(1);
+                        rawComment = calMatcher.replaceAll("").trim();
+                    }
+
+                    // comment
                     if (!rawComment.isEmpty()) {
-                        currentNode.comment = (currentNode.comment == null)
-                                ? rawComment : currentNode.comment + " " + rawComment;
+                        currentNode.annotation.comment = (currentNode.annotation.comment == null)
+                                ? rawComment : currentNode.annotation.comment + " " + rawComment;
                     }
 
                     break;
                 case NAG:
-                    currentNode.nag = currentToken.value();
+                    currentNode.annotation.nag = currentToken.value();
                     break;
                 case VARIATION_START:
                     // start variation
@@ -1466,8 +1599,9 @@ public class ChessGame {
                             default -> "";
                         };
                         if (!parsedNag.isEmpty()) {
-                            newNode.nag = (newNode.nag == null || newNode.nag.isEmpty())
-                                    ? parsedNag : newNode.nag + " " + parsedNag;
+                            newNode.annotation.nag =
+                                    (newNode.annotation.nag == null || newNode.annotation.nag.isEmpty())
+                                    ? parsedNag : newNode.annotation.nag + " " + parsedNag;
                         }
                     }
 
@@ -1483,7 +1617,7 @@ public class ChessGame {
         String fenToLoad = headers.getOrDefault("FEN", Chessboard.start_position);
         ChessboardUtils.parseFen(this.chessboard, fenToLoad);
 
-        MoveNodeDTO rootDTO = MoveNodeDTO.from(rootNode);
+        MoveNodeDTO rootDTO = convertToDTO(rootNode);
 
         this.moveHistoryRoot = rootNode;
         this.currentNode = rootNode;
@@ -1555,14 +1689,20 @@ public class ChessGame {
             childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard)));
         }
 
+        MoveAnnotationDTO annotationDTO = null;
+        if (node.annotation != null) {
+            MoveAnnotation nodeAnnotation = node.annotation;
+
+            annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment, nodeAnnotation.nag, nodeAnnotation.clk,
+                    nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);
+        }
+
         return new MoveNodeDTO(
                 node.id,
                 node.moveData,
                 childrenDTOs,
                 calculatedSan,
-                node.comment,
-                node.nag,
-                node.clk
+                annotationDTO
         );
     }
 
@@ -1722,6 +1862,15 @@ public class ChessGame {
     private void notifyGameOver(GameResult result, GameOverReason reason) {
         for (ChessGameListener listener : listeners) {
             listener.onGameOver(result, reason);
+        }
+    }
+
+    /**
+     * Notify listeners when history changed
+     */
+    private void notifyHistoryChanged() {
+        for (ChessGameListener listener : listeners) {
+            listener.onHistoryChanged();
         }
     }
 

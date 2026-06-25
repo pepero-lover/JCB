@@ -1,6 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
@@ -370,31 +371,31 @@ public class ChessGameTest {
 
         ChessGame chessGame = new ChessGame();
         PGNGame pgnGame = chessGame.loadPGN(multiversePgn);
-        ChessGame.MoveNodeDTO root = pgnGame.rootNode();
+        MoveNodeDTO root = pgnGame.rootNode();
 
         assertNotNull(root, "루트 노드는 생성되어야 합니다.");
 
-        ChessGame.MoveNodeDTO move1_e4 = root.children().getFirst();
+        MoveNodeDTO move1_e4 = root.children().getFirst();
         assertEquals("e4", move1_e4.san());
-        assertEquals("$3", move1_e4.nag(), "!! 기호는 $3으로 매핑되어야 합니다.");
+        assertEquals("$3", move1_e4.annotation().nag(), "!! 기호는 $3으로 매핑되어야 합니다.");
 
-        ChessGame.MoveNodeDTO var1_d4 = root.children().get(1);
+        MoveNodeDTO var1_d4 = root.children().get(1);
         assertEquals("d4", var1_d4.san());
-        assertEquals("$5", var1_d4.nag(), "!? 기호는 $5로 매핑되어야 합니다.");
+        assertEquals("$5", var1_d4.annotation().nag(), "!? 기호는 $5로 매핑되어야 합니다.");
 
-        ChessGame.MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
+        MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
         assertEquals("e5", move1_e5.san());
-        assertEquals("$4", move1_e5.nag(), "?? 기호는 $4로 매핑되어야 합니다.");
+        assertEquals("$4", move1_e5.annotation().nag(), "?? 기호는 $4로 매핑되어야 합니다.");
 
-        ChessGame.MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
+        MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
         assertEquals("Nf3", move2_Nf3.san());
-        assertEquals("$5", move2_Nf3.nag());
+        assertEquals("$5", move2_Nf3.annotation().nag());
 
-        ChessGame.MoveNodeDTO move2_Nc6 = move2_Nf3.children().getFirst();
-        ChessGame.MoveNodeDTO move3_Bb5 = move2_Nc6.children().getFirst();
-        ChessGame.MoveNodeDTO move3_a6 = move3_Bb5.children().getFirst();
+        MoveNodeDTO move2_Nc6 = move2_Nf3.children().getFirst();
+        MoveNodeDTO move3_Bb5 = move2_Nc6.children().getFirst();
+        MoveNodeDTO move3_a6 = move3_Bb5.children().getFirst();
         assertEquals("a6", move3_a6.san());
-        assertEquals("$1", move3_a6.nag(), "$1 기호는 그대로 저장되어야 합니다.");
+        assertEquals("$1", move3_a6.annotation().nag(), "$1 기호는 그대로 저장되어야 합니다.");
     }
 
     @Test
@@ -409,31 +410,31 @@ public class ChessGameTest {
         ChessGame chessGame = new ChessGame();
 
         PGNGame parsedGame = chessGame.loadPGN(inputPgn);
-        ChessGame.MoveNodeDTO root = parsedGame.rootNode();
+        MoveNodeDTO root = parsedGame.rootNode();
 
         assertNotNull(root);
         assertFalse(root.children().isEmpty(), "루트의 자식이 있어야 합니다.");
 
-        ChessGame.MoveNodeDTO move1_e4 = root.children().getFirst();
+        MoveNodeDTO move1_e4 = root.children().getFirst();
         assertEquals("e4", move1_e4.san());
-        assertEquals("0:05:00", move1_e4.clk(), "e4의 clk 값이 정확히 매핑되어야 합니다.");
-        assertNull(move1_e4.comment(), "순수 주석이 없으므로 null 이어야 합니다.");
+        assertEquals("0:05:00", move1_e4.annotation().clk(), "e4의 clk 값이 정확히 매핑되어야 합니다.");
+        assertNull(move1_e4.annotation().comment(), "순수 주석이 없으므로 null 이어야 합니다.");
 
-        ChessGame.MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
+        MoveNodeDTO move1_e5 = move1_e4.children().getFirst();
         assertEquals("e5", move1_e5.san());
-        assertEquals("0:04:58", move1_e5.clk());
-        assertEquals("Black responds", move1_e5.comment(), "주석 텍스트에서 clk 태그만 깔끔하게 제거되어야 합니다.");
+        assertEquals("0:04:58", move1_e5.annotation().clk());
+        assertEquals("Black responds", move1_e5.annotation().comment(), "주석 텍스트에서 clk 태그만 깔끔하게 제거되어야 합니다.");
 
-        ChessGame.MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
+        MoveNodeDTO move2_Nf3 = move1_e5.children().getFirst();
         assertEquals("Nf3", move2_Nf3.san());
-        assertEquals("$3", move2_Nf3.nag(), "이전의 !! 기호 분리 로직도 깨지지 않고 $3으로 유지되어야 합니다.");
-        assertEquals("0:04:45", move2_Nf3.clk());
+        assertEquals("$3", move2_Nf3.annotation().nag(), "이전의 !! 기호 분리 로직도 깨지지 않고 $3으로 유지되어야 합니다.");
+        assertEquals("0:04:45", move2_Nf3.annotation().clk());
 
         assertTrue(move1_e5.children().size() > 1, "2수 백에는 변이 라인이 존재해야 합니다.");
-        ChessGame.MoveNodeDTO var2_f4 = move1_e5.children().get(1);
+        MoveNodeDTO var2_f4 = move1_e5.children().get(1);
         assertEquals("f4", var2_f4.san());
-        assertEquals("0:04:50", var2_f4.clk());
-        assertEquals("King's Gambit", var2_f4.comment());
+        assertEquals("0:04:50", var2_f4.annotation().clk());
+        assertEquals("King's Gambit", var2_f4.annotation().comment());
 
         String exportedPgn = chessGame.getPGN();
 
@@ -454,12 +455,12 @@ public class ChessGameTest {
         chessGame.makeMove("e7e5");
         chessGame.setCurrentMoveClock("0:04:52");
 
-        ChessGame.MoveNodeDTO root = chessGame.getRootNodeWithSan();
-        ChessGame.MoveNodeDTO move1 = root.children().getFirst();
-        ChessGame.MoveNodeDTO move2 = move1.children().getFirst();
+        MoveNodeDTO root = chessGame.getRootNodeWithSan();
+        MoveNodeDTO move1 = root.children().getFirst();
+        MoveNodeDTO move2 = move1.children().getFirst();
 
-        assertEquals("0:04:55", move1.clk());
-        assertEquals("0:04:52", move2.clk());
+        assertEquals("0:04:55", move1.annotation().clk());
+        assertEquals("0:04:52", move2.annotation().clk());
 
         String pgn = chessGame.getPGN();
         assertTrue(pgn.contains("e4 {[%clk 0:04:55]}"));
