@@ -5,7 +5,7 @@ import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
-import com.pepero.jcb.hash.PolyglotHashUtils;
+import com.pepero.jcb.api.book.PolyglotHashUtils;
 
 public class EngineArena {
     private ChessGame chessGame;

@@ -1,4 +1,4 @@
-package com.pepero.jcb.hash;
+package com.pepero.jcb.api.book;
 
 import com.pepero.jcb.api.dto.BookEntry;
 

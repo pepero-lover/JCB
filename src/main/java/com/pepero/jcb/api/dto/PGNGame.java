@@ -7,6 +7,6 @@ import java.util.Map;
 
 public record PGNGame(
         Map<String, String> headers,
-        ChessGame.MoveNodeDTO rootNode,
+        MoveNodeDTO rootNode,
         GameResult matchResult
 ) { }

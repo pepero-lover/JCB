@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.arena;
+package com.pepero.jcb.api.book;
 
 import java.util.Arrays;
 import java.util.Collections;

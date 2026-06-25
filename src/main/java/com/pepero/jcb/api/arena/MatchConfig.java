@@ -2,7 +2,7 @@ package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariants;
-import com.pepero.jcb.hash.PolyglotBookReader;
+import com.pepero.jcb.api.book.PolyglotBookReader;
 
 import java.util.ArrayList;
 import java.util.List;

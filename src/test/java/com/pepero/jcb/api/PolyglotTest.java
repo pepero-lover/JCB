@@ -1,7 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.BookEntry;
-import com.pepero.jcb.hash.PolyglotBookReader;
+import com.pepero.jcb.api.book.PolyglotBookReader;
 
 public class PolyglotTest {
     public static void main(String[] args) {
