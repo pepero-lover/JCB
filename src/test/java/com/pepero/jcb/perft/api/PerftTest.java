@@ -1,5 +1,6 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.perft.api;
 
+import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.util.TimeUtils;
 
@@ -91,7 +92,6 @@ public class PerftTest {
 
         // JVM preheat
         System.out.println("Preheating...");
-        perftDriver(chessGame, 5);
         perftDriver(chessGame, 5);
         System.out.println("Preheating complete!");
 

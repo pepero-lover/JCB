@@ -40,7 +40,7 @@ public class ChessGame {
         final MoveInfo moveData;
         String san;
 
-        MoveAnnotation annotation = new MoveAnnotation();
+        MoveAnnotation annotation = null;
 
         // for external
         GameResult terminalResult = null;
@@ -63,6 +63,13 @@ public class ChessGame {
 
             this.moveData = moveData;
             this.parent = parent;
+        }
+
+        public MoveAnnotation getAnnotation() {
+            if (this.annotation == null) {
+                this.annotation = new MoveAnnotation();
+            }
+            return this.annotation;
         }
 
         @Override
@@ -147,6 +154,28 @@ public class ChessGame {
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
 
         calculateInitialPieces(this.getFEN());
+    }
+
+    /**
+     * Lightweight copy constructor for multi-thread calculation
+     * Warning : This doesn't copy event listener and history tree but the position of this ChessGame
+     *
+     * @param other ChessGame class to copy
+     */
+    public ChessGame(ChessGame other) {
+        this.chessboard = new Chessboard(other.chessboard);
+
+        this.startPositionFEN = other.getFEN();
+        this.autoChangeGameOver = other.autoChangeGameOver;
+
+        System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
+
+        this.nodeCounter = 0L;
+        this.moveHistoryRoot = new MoveNode();
+        this.currentNode = this.moveHistoryRoot;
+        this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
+
+        setDefaultHeaders();
     }
 
     /**
@@ -1349,7 +1378,7 @@ public class ChessGame {
      */
     public void setCurrentMoveClock(int hours, int minutes, int seconds) {
         if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
-        this.currentNode.annotation.clk = String.format("%d:%02d:%02d", hours, minutes, seconds);
+        this.currentNode.getAnnotation().clk = String.format("%d:%02d:%02d", hours, minutes, seconds);
     }
 
     /**
@@ -1359,7 +1388,7 @@ public class ChessGame {
      */
     public void setCurrentMoveClock(String clkTime) {
         if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
-        this.currentNode.annotation.clk = clkTime;
+        this.currentNode.getAnnotation().clk = clkTime;
     }
 
     /**
@@ -1369,7 +1398,7 @@ public class ChessGame {
      */
     public void setCurrentMoveEval(String eval) {
         if (this.currentNode == moveHistoryRoot) return;
-        this.currentNode.annotation.eval = eval;
+        this.currentNode.getAnnotation().eval = eval;
     }
 
     /**
@@ -1379,7 +1408,7 @@ public class ChessGame {
      */
     public void setCurrentMoveCsl(String csl) {
         if (this.currentNode == moveHistoryRoot) return;
-        this.currentNode.annotation.csl = csl;
+        this.currentNode.getAnnotation().csl = csl;
     }
 
     /**
@@ -1389,7 +1418,7 @@ public class ChessGame {
      */
     public void setCurrentMoveCal(String cal) {
         if (this.currentNode == moveHistoryRoot) return;
-        this.currentNode.annotation.cal = cal;
+        this.currentNode.getAnnotation().cal = cal;
     }
 
     /**
@@ -1406,8 +1435,8 @@ public class ChessGame {
                 .toList();
 
         MoveAnnotationDTO annotationDTO = null;
-        if (node.annotation != null) {
-            MoveAnnotation anno = node.annotation;
+        if (node.getAnnotation() != null) {
+            MoveAnnotation anno = node.getAnnotation();
             annotationDTO = new MoveAnnotationDTO(
                     anno.comment, anno.nag, anno.clk,
                     anno.eval, anno.csl, anno.cal
@@ -1507,7 +1536,7 @@ public class ChessGame {
                     Pattern clkPattern = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
                     Matcher clkMatcher = clkPattern.matcher(rawComment);
                     if (clkMatcher.find()) {
-                        currentNode.annotation.clk = clkMatcher.group(1);
+                        currentNode.getAnnotation().clk = clkMatcher.group(1);
                         rawComment = clkMatcher.replaceAll("").trim();
                     }
 
@@ -1515,7 +1544,7 @@ public class ChessGame {
                     Pattern evalPattern = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
                     Matcher evalMatcher = evalPattern.matcher(rawComment);
                     if (evalMatcher.find()) {
-                        currentNode.annotation.eval = evalMatcher.group(1);
+                        currentNode.getAnnotation().eval = evalMatcher.group(1);
                         rawComment = evalMatcher.replaceAll("").trim();
                     }
 
@@ -1523,7 +1552,7 @@ public class ChessGame {
                     Pattern cslPattern = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
                     Matcher cslMatcher = cslPattern.matcher(rawComment);
                     if (cslMatcher.find()) {
-                        currentNode.annotation.csl = cslMatcher.group(1);
+                        currentNode.getAnnotation().csl = cslMatcher.group(1);
                         rawComment = cslMatcher.replaceAll("").trim();
                     }
 
@@ -1531,19 +1560,19 @@ public class ChessGame {
                     Pattern calPattern = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
                     Matcher calMatcher = calPattern.matcher(rawComment);
                     if (calMatcher.find()) {
-                        currentNode.annotation.cal = calMatcher.group(1);
+                        currentNode.getAnnotation().cal = calMatcher.group(1);
                         rawComment = calMatcher.replaceAll("").trim();
                     }
 
                     // comment
                     if (!rawComment.isEmpty()) {
-                        currentNode.annotation.comment = (currentNode.annotation.comment == null)
-                                ? rawComment : currentNode.annotation.comment + " " + rawComment;
+                        currentNode.getAnnotation().comment = (currentNode.getAnnotation().comment == null)
+                                ? rawComment : currentNode.getAnnotation().comment + " " + rawComment;
                     }
 
                     break;
                 case NAG:
-                    currentNode.annotation.nag = currentToken.value();
+                    currentNode.getAnnotation().nag = currentToken.value();
                     break;
                 case VARIATION_START:
                     // start variation
@@ -1599,9 +1628,9 @@ public class ChessGame {
                             default -> "";
                         };
                         if (!parsedNag.isEmpty()) {
-                            newNode.annotation.nag =
-                                    (newNode.annotation.nag == null || newNode.annotation.nag.isEmpty())
-                                    ? parsedNag : newNode.annotation.nag + " " + parsedNag;
+                            newNode.getAnnotation().nag =
+                                    (newNode.getAnnotation().nag == null || newNode.getAnnotation().nag.isEmpty())
+                                    ? parsedNag : newNode.getAnnotation().nag + " " + parsedNag;
                         }
                     }
 
@@ -1689,13 +1718,9 @@ public class ChessGame {
             childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard)));
         }
 
-        MoveAnnotationDTO annotationDTO = null;
-        if (node.annotation != null) {
-            MoveAnnotation nodeAnnotation = node.annotation;
-
-            annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment, nodeAnnotation.nag, nodeAnnotation.clk,
-                    nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);
-        }
+        MoveAnnotation nodeAnnotation = node.getAnnotation();
+        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment, nodeAnnotation.nag, nodeAnnotation.clk,
+                nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);;
 
         return new MoveNodeDTO(
                 node.id,

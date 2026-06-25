@@ -1,4 +1,4 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.perft.bitboard;
 
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.core.Chessboard;
@@ -8,59 +8,68 @@ import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.util.TimeUtils;
 
-public class PerftBitboardTest {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-    public static long nodes;
-
-    public static void perftDriver(Chessboard chessboard, int depth) {
+public class PerftBitboardMultiThread {
+    public static long perftDriver(Chessboard chessboard, int depth) {
         if (depth == 0) {
-            nodes++;
-            return;
+            return 1;
         }
 
+        long nodes = 0;
         int[] moveList = new int[255];
-
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
             if (MoveGenerator.makeMove(chessboard, move)) {
-                perftDriver(chessboard, depth - 1);
-
+                nodes += perftDriver(chessboard, depth - 1);
                 MoveGenerator.unmakeMove(chessboard, move);
             }
         }
+        return nodes;
     }
 
-    /**
-     * Perft Test 시작점 (루트 노드)
-     */
-    public static void perftTest(Chessboard chessboard, int depth) {
-        System.out.println("\n    Performance test    \n");
+    private static class PerftResult {
+        String moveStr;
+        long nodes;
 
-        nodes = 0;
+        public PerftResult(String moveStr, long nodes) {
+            this.moveStr = moveStr;
+            this.nodes = nodes;
+        }
+    }
+
+    public static void perftTest(Chessboard chessboard, int depth) {
+        System.out.println("\n    Performance test (Multi-threaded)    \n");
 
         int[] moveList = new int[255];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         long startTime = TimeUtils.getTimeNt();
 
+        int cores = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(cores);
+        List<Future<PerftResult>> futures = new ArrayList<>();
+
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
             if (MoveGenerator.makeMove(chessboard, move)) {
-                long cumulative_nodes = nodes;
 
-                perftDriver(chessboard, depth - 1);
+                final Chessboard clonedBoard = new Chessboard(chessboard);
 
-                long old_nodes = nodes - cumulative_nodes;
                 MoveGenerator.unmakeMove(chessboard, move);
 
                 int source = EncodeMove.getMoveSource(move);
                 int target = EncodeMove.getMoveTarget(move);
                 int promoted = EncodeMove.getMovePromoted(move);
-
                 String moveStr = BoardSquares.square_to_coordinates[source] +
                         BoardSquares.square_to_coordinates[target];
 
@@ -71,22 +80,40 @@ public class PerftBitboardTest {
                     }
                 }
 
-                System.out.println("    move: " + moveStr + "  nodes: " + old_nodes);
+                String finalMoveStr = moveStr;
+                Callable<PerftResult> task = () -> {
+                    long branchNodes = perftDriver(clonedBoard, depth - 1);
+                    return new PerftResult(finalMoveStr, branchNodes);
+                };
+                futures.add(executor.submit(task));
             }
         }
 
-        long endTime = TimeUtils.getTimeNt();
+        long totalNodes = 0;
 
+        try {
+            for (Future<PerftResult> future : futures) {
+                PerftResult result = future.get();
+                totalNodes += result.nodes;
+                System.out.println("    move: " + result.moveStr + "  nodes: " + result.nodes);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
+
+        long endTime = TimeUtils.getTimeNt();
         long durationNs = endTime - startTime;
         long durationMs = durationNs / 1_000_000;
 
         long nps = 0;
         if (durationNs > 0) {
-            nps = (long) ((double) nodes / ((double) durationNs / 1_000_000_000.0));
+            nps = (long) ((double) totalNodes / ((double) durationNs / 1_000_000_000.0));
         }
 
         System.out.println("\n\n    Depth: " + depth);
-        System.out.println("    Nodes: " + nodes);
+        System.out.println("    Nodes: " + totalNodes);
         System.out.println("     Time: " + durationMs + " ms ( + " + (durationNs % 1_000_000) + " ns)");
         System.out.printf("      NPS: %,d (%.2f MNPS)\n", nps, (double) nps / 1_000_000.0);
     }
@@ -95,14 +122,12 @@ public class PerftBitboardTest {
         Initializer.init();
 
         Chessboard chessboard = new Chessboard();
-
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
-        // JVM preheat
         System.out.println("Preheating...");
         perftDriver(chessboard, 6);
         System.out.println("Preheating complete!");
 
-        perftTest(chessboard, 6);
+        perftTest(chessboard, 7);
     }
 }
