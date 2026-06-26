@@ -203,6 +203,8 @@ public class ChessGameTest {
         ChessGame chessGame = new ChessGame();
         assertEquals("e4", chessGame.toSan("e2e4"));
         assertEquals("Nf3", chessGame.toSan("g1f3"));
+
+        assertEquals("e4 e5 Nf3", chessGame.toSan("e2e4 e7e5 g1f3"));
     }
 
     @Test

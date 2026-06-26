@@ -7,13 +7,12 @@ import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
-
-import java.util.Objects;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.black;
@@ -113,7 +112,7 @@ public class ConvertStringMoveUtils {
 
                 // add disambiguation
                 if (!(type == k || type == K)) {
-                    int[] move_list = new int[255];
+                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
                     int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
                     int going_piece_count = 0;
@@ -164,7 +163,7 @@ public class ConvertStringMoveUtils {
 
         boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
         if (!isSuccess) {
-            throw new IllegalMoveException(lan);
+            throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
         }
 
         if(ChessboardUtils.isCheckmate(chessboard)) {
@@ -235,7 +234,7 @@ public class ConvertStringMoveUtils {
                 sb.append(encodedPieceToString(type));
 
                 if (!(type == k || type == K)) {
-                    int[] move_list = new int[255];
+                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
                     int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
                     int going_piece_count = 0;
@@ -245,7 +244,6 @@ public class ConvertStringMoveUtils {
                     for (int count = 0; count < move_count; count++) {
                         int move = move_list[count];
 
-                        // 같은 종류의 아군 기물이 같은 목적지로 가는 합법수인지 체크
                         if (EncodeMove.getMovePiece(move) == type &&
                                 EncodeMove.getMoveTarget(move) == target_square) {
                             if (MoveGenerator.makeMove(chessboard, move)) {
@@ -285,7 +283,7 @@ public class ConvertStringMoveUtils {
 
         boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
         if (!isSuccess) {
-            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
+            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString(), ChessboardUtils.getFen(chessboard));
         }
 
         if(ChessboardUtils.isCheckmate(chessboard)) {
@@ -343,12 +341,16 @@ public class ConvertStringMoveUtils {
 
         int[] moveData = new int[lans.length];
 
-        for (String lan : lans) {
+        for (int i = 0; i < lans.length; i++) {
+            String lan = lans[i];
+
             TranslateResult result = parseLan(chessboard, lan);
 
             sanSequence.append(result.moveString).append(" ");
 
             MoveGenerator.makeMove(chessboard, result.moveData);
+
+            moveData[i] = result.moveData();
         }
 
         for (int i = lans.length - 1; i >= 0; i--){
@@ -419,7 +421,7 @@ public class ConvertStringMoveUtils {
             return isLegal;
         }
 
-        throw new IllegalMoveException(lan);
+        throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
     }
 
     /**
@@ -448,7 +450,7 @@ public class ConvertStringMoveUtils {
         if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
             boolean isKingSide = san.equals("O-O") || san.equals("0-0");
 
-            int[] move_list = new int[255];
+            int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
             int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
             for (int count = 0; count < move_count; count++) {
@@ -525,7 +527,7 @@ public class ConvertStringMoveUtils {
                         ChessboardUtils.getFen(chessboard) + " )");
             };
 
-        int[] move_list = new int[255];
+        int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         boolean result = false;
@@ -656,6 +658,6 @@ public class ConvertStringMoveUtils {
 
         throw new IllegalMoveException(BoardSquares.square_to_coordinates[source_square]
         +BoardSquares.square_to_coordinates[target_square]
-        +(promotion_type!=0? ChessboardUtils.promotion_pieces[promotion_type] : ""));
+        +(promotion_type!=0? ChessboardUtils.promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
     }
 }

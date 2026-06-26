@@ -4,6 +4,7 @@ import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.constant.EncodedPieces;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
@@ -30,9 +31,6 @@ public class MoveGenerator {
      black queen's rook moved:     1111 & 0111  =  0111    7
 
     */
-
-    private static final ThreadLocal<int[]> MOVE_LIST_CACHE =
-            ThreadLocal.withInitial(() -> new int[255]);
 
     // move types
     public static final int ILLEGAL_MOVE = -1;
@@ -1006,7 +1004,7 @@ public class MoveGenerator {
     }
 
     public static boolean isLegalMove(Chessboard chessboard, int move) {
-        int[] move_list = MOVE_LIST_CACHE.get();
+        int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int count = 0; count < move_count; count++) {
@@ -1027,7 +1025,7 @@ public class MoveGenerator {
     }
 
     public static int isLegalMove(Chessboard chessboard,int source_square, int target_square, int promotion_type) {
-        int[] move_list = MOVE_LIST_CACHE.get();
+        int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         if(promotion_type == -1) promotion_type = 0;

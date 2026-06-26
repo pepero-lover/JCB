@@ -14,6 +14,7 @@ import com.pepero.jcb.api.parse.pgn.TokenType;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -207,10 +208,10 @@ public class ChessGame {
         );
 
         if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
-            throw new IllegalMoveException(moveString);
+            throw new IllegalMoveException(moveString, this.getFEN());
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
-        if(!isSuccess) throw new IllegalMoveException(moveString);
+        if(!isSuccess) throw new IllegalMoveException(moveString, this.getFEN());
 
         MoveInfo moveData = new MoveInfo(encoded_move);
 
@@ -245,10 +246,10 @@ public class ChessGame {
      */
     public void makeMove(int encodedMove) {
         if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove))
-            throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
+            throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString(), this.getFEN());
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
-        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString());
+        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString(), this.getFEN());
 
         MoveInfo moveData = new MoveInfo(encodedMove);
 
@@ -310,7 +311,7 @@ public class ChessGame {
 
         if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
             promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT)
-            throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK");
+            throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
 
         int isLegal = MoveGenerator.isLegalMove(this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(),
                 promotionType.getPieceType());
@@ -320,7 +321,7 @@ public class ChessGame {
                     String.valueOf(ChessboardUtils.promotion_pieces[promotionType.getPieceType()]) : "";
             throw new IllegalMoveException(BoardSquares.square_to_coordinates[sourceSquare.getIndex()]
                     + BoardSquares.square_to_coordinates[targetSquare.getIndex()]
-                    + promoChar);
+                    + promoChar, ChessboardUtils.getFen(chessboard));
         }
 
         int encoded_move = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
@@ -328,10 +329,11 @@ public class ChessGame {
         );
 
         if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
-            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
+            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString(), ChessboardUtils.getFen(chessboard));
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
-        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString());
+        if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString()
+                , ChessboardUtils.getFen(chessboard));
 
         MoveInfo moveData = new MoveInfo(encoded_move);
 
@@ -366,10 +368,10 @@ public class ChessGame {
      */
     public void makeMove(MoveInfo moveInfo) {
         if(!ChessboardUtils.isLegalMove(this.chessboard, moveInfo.originEncodedData()))
-            throw new IllegalMoveException(moveInfo.toLanString());
+            throw new IllegalMoveException(moveInfo.toLanString(), ChessboardUtils.getFen(chessboard));
 
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString());
+        if(!isSuccess) throw new IllegalMoveException(moveInfo.toString(), ChessboardUtils.getFen(chessboard));
 
         MoveInfo moveData = new MoveInfo(moveInfo.originEncodedData());
 
@@ -390,7 +392,7 @@ public class ChessGame {
      * @throws EmptyMoveUndoException - if move history is empty and unmake move
      * @throws MoveNotFoundException - if the current node is not found (Only for variation mode)
      */
-    public MoveInfo unmakeMove() {
+    public synchronized MoveInfo unmakeMove() {
         if (!canUndo()) throw new EmptyMoveUndoException();
 
         MoveInfo moveInfo = currentNode.moveData;
@@ -434,7 +436,7 @@ public class ChessGame {
      *
      * @throws EmptyMoveRedoException - if redo history is empty and remake move
      */
-    public MoveInfo remakeMove(int variationIndex) {
+    public synchronized MoveInfo remakeMove(int variationIndex) {
         if (!canRedo()) throw new EmptyMoveRedoException();
 
         if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
@@ -445,7 +447,7 @@ public class ChessGame {
         boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
         if (!isSuccess) {
             currentNode = currentNode.parent;
-            throw new IllegalMoveException(moveInfo.toString());
+            throw new IllegalMoveException(moveInfo.toString(), ChessboardUtils.getFen(chessboard));
         }
 
         notifyMoveRemade(moveInfo);
@@ -599,7 +601,7 @@ public class ChessGame {
         int sourceIndex = source.getIndex();
         int targetIndex = target.getIndex();
 
-        int[] move_list = new int[255];
+        int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[this.chessboard.ply];
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for(int i = 0; i < move_count; i++) {
@@ -753,7 +755,7 @@ public class ChessGame {
      * @return legal moves
      */
     public List<MoveInfo> getLegalMoves() {
-        int[] move_list = new int[255];
+        int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[this.chessboard.ply];
         int move_count = generateMoves(this.chessboard, move_list);
         List<MoveInfo> result = new ArrayList<>(move_count);
 
@@ -778,7 +780,7 @@ public class ChessGame {
     public List<MoveInfo> getLegalMovesForSource(Square square) {
         Objects.requireNonNull(square, "Source Square is null!");
 
-        int[] move_list = new int[255];
+        int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[this.chessboard.ply];
         int move_count = generateMoves(this.chessboard, move_list);
         List<MoveInfo> result = new ArrayList<>(move_count);
 
@@ -805,7 +807,7 @@ public class ChessGame {
     public List<MoveInfo> getLegalMovesForTarget(Square square) {
         Objects.requireNonNull(square, "Target Square is null!");
 
-        int[] move_list = new int[255];
+        int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[this.chessboard.ply];
         int move_count = generateMoves(this.chessboard, move_list);
         List<MoveInfo> result = new ArrayList<>(move_count);
 
@@ -1687,7 +1689,8 @@ public class ChessGame {
 
                     int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
                     if(!ChessboardUtils.isLegalMove(pgnChessboard, moveData))
-                        throw new IllegalMoveException(new MoveInfo(moveData).toString());
+                        throw new IllegalMoveException(new MoveInfo(moveData).toString(),
+                                ChessboardUtils.getFen(chessboard));
                     MoveGenerator.makeMove(pgnChessboard, moveData);
 
                     MoveInfo moveInfo = new MoveInfo(moveData);
