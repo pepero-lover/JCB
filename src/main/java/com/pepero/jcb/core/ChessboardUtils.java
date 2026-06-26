@@ -497,7 +497,7 @@ public class ChessboardUtils {
         int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
 
         for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
-            if (chessboard.historyHashes[i] == chessboard.hash_key){
+            if (chessboard.hash_key_history[i] == chessboard.hash_key){
                 count++;
 
                 if (count >= 3){

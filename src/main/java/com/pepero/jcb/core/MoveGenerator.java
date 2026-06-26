@@ -31,17 +31,8 @@ public class MoveGenerator {
 
     */
 
-    // castling rights update constants
-    public static final int[] castling_rights = {
-            7, 15, 15, 15,  3, 15, 15, 11,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            15, 15, 15, 15, 15, 15, 15, 15,
-            13, 15, 15, 15, 12, 15, 15, 14
-    };
+    private static final ThreadLocal<int[]> MOVE_LIST_CACHE =
+            ThreadLocal.withInitial(() -> new int[255]);
 
     // move types
     public static final int ILLEGAL_MOVE = -1;
@@ -60,9 +51,6 @@ public class MoveGenerator {
         chessboard.half_ply_history[chessboard.ply] = chessboard.half_ply;
         chessboard.hash_key_history[chessboard.ply] = chessboard.hash_key;
         chessboard.captured_piece_history[chessboard.ply] = -1;
-
-        // chessboard hash
-        chessboard.historyHashes[chessboard.ply] = chessboard.hash_key;
 
         // parse move
         int source_square = EncodeMove.getMoveSource(move);
@@ -247,8 +235,16 @@ public class MoveGenerator {
 
         if (piece == K) chessboard.castle &= ~(CastlingRights.WK | CastlingRights.WQ);
         if (piece == k) chessboard.castle &= ~(CastlingRights.BK | CastlingRights.BQ);
-        chessboard.castle &= castling_rights[source_square];
-        chessboard.castle &= castling_rights[target_square];
+
+        int wk_rook_sq = (chessboard.king_side_rook_file != -1) ? chessboard.king_side_rook_file + 56 : h1;
+        int wq_rook_sq = (chessboard.queen_side_rook_file != -1) ? chessboard.queen_side_rook_file + 56 : a1;
+        int bk_rook_sq = (chessboard.king_side_rook_file != -1) ? chessboard.king_side_rook_file : h8;
+        int bq_rook_sq = (chessboard.queen_side_rook_file != -1) ? chessboard.queen_side_rook_file : a8;
+
+        if (source_square == wk_rook_sq || target_square == wk_rook_sq) chessboard.castle &= ~CastlingRights.WK;
+        if (source_square == wq_rook_sq || target_square == wq_rook_sq) chessboard.castle &= ~CastlingRights.WQ;
+        if (source_square == bk_rook_sq || target_square == bk_rook_sq) chessboard.castle &= ~CastlingRights.BK;
+        if (source_square == bq_rook_sq || target_square == bq_rook_sq) chessboard.castle &= ~CastlingRights.BQ;
 
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
 
@@ -388,9 +384,6 @@ public class MoveGenerator {
             }
             chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
         }
-
-        // set piece
-        chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
 
         // if normal capture move
         if (capture && !enpass) {
@@ -1012,8 +1005,8 @@ public class MoveGenerator {
         return moveCount;
     }
 
-    public static boolean isLegalMove(Chessboard chessboard,int move) {
-        int[] move_list = new int[255];
+    public static boolean isLegalMove(Chessboard chessboard, int move) {
+        int[] move_list = MOVE_LIST_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int count = 0; count < move_count; count++) {
@@ -1034,7 +1027,7 @@ public class MoveGenerator {
     }
 
     public static int isLegalMove(Chessboard chessboard,int source_square, int target_square, int promotion_type) {
-        int[] move_list = new int[255];
+        int[] move_list = MOVE_LIST_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         if(promotion_type == -1) promotion_type = 0;

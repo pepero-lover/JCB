@@ -50,7 +50,7 @@ public class EngineArena {
             long timeSpent;
 
             if (matchConfig.hasOpeningBook()) {
-                long currentHash = PolyglotHashUtils.getPolyglotHash(chessGame.getChessboard());
+                long currentHash = chessGame.getPolyglotHash();
 
                 bestMoveLan = matchConfig.getOpeningBook().pickRandomMove(currentHash);
             }

@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.event.ChessGameListener;
@@ -86,7 +87,7 @@ public class ChessGame {
 
     private MoveNode moveHistoryRoot = new MoveNode();
 
-    private MoveNode currentNode = moveHistoryRoot;
+    private volatile MoveNode currentNode = moveHistoryRoot;
 
 
     // game variables
@@ -95,12 +96,18 @@ public class ChessGame {
 
     private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
-    private GameResult gameResult = GameResult.UNKNOWN;
-    private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
+    private volatile GameResult gameResult = GameResult.UNKNOWN;
+    private volatile GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
 
     private final String startPositionFEN;
 
     private final List<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
+
+    // for pgn parsing pattern
+    private static final Pattern CLK_PATTERN = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
+    private static final Pattern EVAL_PATTERN = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
+    private static final Pattern CSL_PATTERN = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
+    private static final Pattern CAL_PATTERN = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
 
     /**
      * Initialize position with FEN string
@@ -157,7 +164,7 @@ public class ChessGame {
     }
 
     /**
-     * Lightweight copy constructor for multi-thread calculation
+     * Lightweight copy constructor
      * Warning : This doesn't copy event listener and history tree but the position of this ChessGame
      *
      * @param other ChessGame class to copy
@@ -485,6 +492,26 @@ public class ChessGame {
     }
 
     /**
+     * Go forward on history (mainline)
+     *
+     * @return forwarded move info (if forwarding move failed, returns null)
+     */
+    public MoveInfo goForward() {
+        if (canRedo()) return remakeMove();
+        return null;
+    }
+
+    /**
+     * Go backward on history (mainline)
+     *
+     * @return undid move info (if undoing move failed, returns null)
+     */
+    public MoveInfo goBackward() {
+        if (canUndo()) return unmakeMove();
+        return null;
+    }
+
+    /**
      * Get previous moves
      * <p>
      * Example : <br>
@@ -562,6 +589,55 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this move legal move
+     *
+     * @param source source square
+     * @param target target square
+     * @return whether this move legal move
+     */
+    public boolean canDropPiece(Square source, Square target) {
+        int sourceIndex = source.getIndex();
+        int targetIndex = target.getIndex();
+
+        int[] move_list = new int[255];
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        for(int i = 0; i < move_count; i++) {
+            int move = move_list[i];
+            if(EncodeMove.getMoveSource(move) == sourceIndex
+                    && EncodeMove.getMoveTarget(move) == targetIndex) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get whether this move is a promotion move
+     *
+     * @param source source square
+     * @param target target square
+     * @return whether this move is a promotion move
+     */
+    public boolean shouldPromotion(Square source, Square target) {
+        int sourceIndex = source.getIndex();
+        int targetIndex = target.getIndex();
+
+        if (BitBoardUtils.getBit(chessboard.bitboards[p], sourceIndex) &&
+                targetIndex >= 0 && targetIndex <= 7) {
+            return true;
+        }
+
+        if (BitBoardUtils.getBit(chessboard.bitboards[P], sourceIndex) &&
+                targetIndex >= 56 && targetIndex <= 63) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Init initial piece count
      *
      * @param fen this chess game fen
@@ -574,6 +650,7 @@ public class ChessGame {
                 case 'P' -> initialPieceCounts[P]++; case 'N' -> initialPieceCounts[N]++;
                 case 'B' -> initialPieceCounts[B]++; case 'R' -> initialPieceCounts[R]++;
                 case 'Q' -> initialPieceCounts[Q]++;
+
                 case 'p' -> initialPieceCounts[p]++; case 'n' -> initialPieceCounts[n]++;
                 case 'b' -> initialPieceCounts[b]++; case 'r' -> initialPieceCounts[r]++;
                 case 'q' -> initialPieceCounts[q]++;
@@ -605,13 +682,13 @@ public class ChessGame {
             captured.put(PieceType.PAWN,
                     initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
             captured.put(PieceType.KNIGHT,
-                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
+                    initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
             captured.put(PieceType.BISHOP,
-                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
+                    initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
             captured.put(PieceType.ROOK,
-                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
+                    initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
             captured.put(PieceType.QUEEN,
-                    initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
+                    initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
         }
 
         captured.values().removeIf(count -> count <= 0);
@@ -1533,32 +1610,28 @@ public class ChessGame {
                     String rawComment = currentToken.value().trim();
 
                     // clock parsing
-                    Pattern clkPattern = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
-                    Matcher clkMatcher = clkPattern.matcher(rawComment);
+                    Matcher clkMatcher = CLK_PATTERN.matcher(rawComment);
                     if (clkMatcher.find()) {
                         currentNode.getAnnotation().clk = clkMatcher.group(1);
                         rawComment = clkMatcher.replaceAll("").trim();
                     }
 
                     // engine eval parsing
-                    Pattern evalPattern = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
-                    Matcher evalMatcher = evalPattern.matcher(rawComment);
+                    Matcher evalMatcher = EVAL_PATTERN.matcher(rawComment);
                     if (evalMatcher.find()) {
                         currentNode.getAnnotation().eval = evalMatcher.group(1);
                         rawComment = evalMatcher.replaceAll("").trim();
                     }
 
                     // square light parsing
-                    Pattern cslPattern = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
-                    Matcher cslMatcher = cslPattern.matcher(rawComment);
+                    Matcher cslMatcher = CSL_PATTERN.matcher(rawComment);
                     if (cslMatcher.find()) {
                         currentNode.getAnnotation().csl = cslMatcher.group(1);
                         rawComment = cslMatcher.replaceAll("").trim();
                     }
 
                     // arrow light parsing
-                    Pattern calPattern = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
-                    Matcher calMatcher = calPattern.matcher(rawComment);
+                    Matcher calMatcher = CAL_PATTERN.matcher(rawComment);
                     if (calMatcher.find()) {
                         currentNode.getAnnotation().cal = calMatcher.group(1);
                         rawComment = calMatcher.replaceAll("").trim();
@@ -1806,15 +1879,6 @@ public class ChessGame {
     }
 
     /**
-     * Get bitboard chessboard
-     *
-     * @return Chessboard
-     */
-    public Chessboard getChessboard() {
-        return chessboard;
-    }
-
-    /**
      * Add chess game listener
      *
      * @param listener listener
@@ -1897,6 +1961,10 @@ public class ChessGame {
         for (ChessGameListener listener : listeners) {
             listener.onHistoryChanged();
         }
+    }
+
+    public long getPolyglotHash() {
+        return PolyglotHashUtils.getPolyglotHash(this.chessboard);
     }
 
     /**

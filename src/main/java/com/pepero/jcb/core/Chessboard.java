@@ -34,9 +34,6 @@ public class Chessboard {
     // init to no square
     public int enpassant = BoardSquares.no_sq;
 
-    // history hashes
-    public long[] historyHashes = new long[1024];
-
     // ply
     public int ply = 0;
 
@@ -172,7 +169,6 @@ public class Chessboard {
         this.king_side_rook_file = source.king_side_rook_file;
         this.queen_side_rook_file = source.queen_side_rook_file;
 
-        System.arraycopy(source.historyHashes, 0, this.historyHashes, 0, 1024);
         System.arraycopy(source.enpassant_history, 0, this.enpassant_history, 0, MAX_DEPTH);
         System.arraycopy(source.castle_history, 0, this.castle_history, 0, MAX_DEPTH);
         System.arraycopy(source.half_ply_history, 0, this.half_ply_history, 0, MAX_DEPTH);
