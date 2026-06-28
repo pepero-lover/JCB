@@ -1,5 +1,6 @@
 package com.pepero.jcb.api.convert;
 
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 
@@ -33,7 +34,7 @@ public class ConvertTest {
 
     private static long playRandomGames(Random random, int gameCount) {
         long conversionCount = 0;
-        int[] moveList = new int[512];
+        int[] moveList = new int[MoveCache.MAX_MOVE_SIZE];
 
         for (int i = 0; i < gameCount; i++) {
             Chessboard board = new Chessboard(Chessboard.start_position);

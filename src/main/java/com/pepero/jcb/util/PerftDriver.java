@@ -1,5 +1,6 @@
 package com.pepero.jcb.util;
 
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
@@ -18,7 +19,7 @@ public class PerftDriver {
         }
 
         // create move list instance
-        int[] move_list = new int[512];
+        int[] move_list = new int[MoveCache.MAX_MOVE_SIZE];
 
         // generate moves
         int count = MoveGenerator.generateMoves(chessboard,move_list);
@@ -59,7 +60,7 @@ public class PerftDriver {
         nodes = 0;
 
         // create move list instance
-        int[] move_list = new int[512];
+        int[] move_list = new int[MoveCache.MAX_MOVE_SIZE];
 
         // generate moves
         int count = MoveGenerator.generateMoves(chessboard,move_list);

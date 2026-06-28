@@ -14,6 +14,8 @@ import java.util.Map;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.constant.MoveCache.CHESSBOARD_UTIL_CACHE;
+import static com.pepero.jcb.constant.MoveCache.MAX_MOVE_SIZE;
 import static com.pepero.jcb.constant.SideToMove.*;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
 
@@ -416,7 +418,7 @@ public class ChessboardUtils {
      * @return whether this position has legal move(s)
      */
     public static boolean hasLegalMoves(Chessboard chessboard) {
-        int[] move_list = new int[512];
+        int[] move_list = CHESSBOARD_UTIL_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int i = 0; i < move_count; i++) {
@@ -437,7 +439,7 @@ public class ChessboardUtils {
      * @return whether this move is a legal move or not
      */
     public static boolean isLegalMove(Chessboard chessboard, int encoded_move) {
-        int[] move_list = new int[512];
+        int[] move_list = CHESSBOARD_UTIL_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int i = 0; i < move_count; i++) {

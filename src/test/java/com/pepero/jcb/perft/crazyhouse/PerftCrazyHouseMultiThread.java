@@ -1,5 +1,6 @@
 package com.pepero.jcb.perft.crazyhouse;
 
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.perft.bitboard.PerftBitboardMultiThread;
@@ -19,7 +20,7 @@ public class PerftCrazyHouseMultiThread {
         }
 
         long nodes = 0;
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         for (int i = 0; i < moveCount; i++) {
@@ -46,7 +47,7 @@ public class PerftCrazyHouseMultiThread {
     public static void perftTest(Chessboard chessboard, int depth) {
         System.out.println("\n    Performance test (Multi-threaded)    \n");
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         long startTime = TimeUtils.getTimeNt();

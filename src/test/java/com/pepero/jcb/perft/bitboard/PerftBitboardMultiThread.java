@@ -1,6 +1,6 @@
 package com.pepero.jcb.perft.bitboard;
 
-import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Initializer;
@@ -22,7 +22,7 @@ public class PerftBitboardMultiThread {
         }
 
         long nodes = 0;
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         for (int i = 0; i < moveCount; i++) {
@@ -49,7 +49,7 @@ public class PerftBitboardMultiThread {
     public static void perftTest(Chessboard chessboard, int depth) {
         System.out.println("\n    Performance test (Multi-threaded)    \n");
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         long startTime = TimeUtils.getTimeNt();

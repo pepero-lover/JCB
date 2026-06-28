@@ -1,6 +1,7 @@
 package com.pepero.jcb.perft.crazyhouse;
 
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.util.TimeUtils;
@@ -15,7 +16,7 @@ public class PerftCrazyHouse {
             return;
         }
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_SINGLE[chessboard.ply];
 
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
@@ -38,7 +39,7 @@ public class PerftCrazyHouse {
 
         nodes = 0;
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_SINGLE[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         long startTime = TimeUtils.getTimeNt();

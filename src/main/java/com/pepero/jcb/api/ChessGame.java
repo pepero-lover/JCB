@@ -214,32 +214,30 @@ public class ChessGame {
     }
 
     /**
-     * Make move on this ChessGame (LAN MOVE)
+     * Make move for internal make move methods
      *
-     * @param moveString move like e2e4, e7e5 (LAN move string)
-     *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @param encodedMove encoded move data
+     * @param originalMoveString original move string (null allowed)
      */
-    public void makeMove(String moveString) {
+    private void internalMakeMove(int encodedMove, String originalMoveString) {
         MoveInfo moveData;
         boolean shouldNotifyGameOver = false;
         boolean historyChanged;
 
         writeLock.lock();
         try {
-            int encoded_move = ConvertStringMoveUtils.parseLanToEncodedMove(
-                    this.chessboard, moveString
-            );
+            if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
+                String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
+                throw new IllegalMoveException(errorStr, this.getFEN());
+            }
 
-            if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
-                throw new IllegalMoveException(moveString, this.getFEN());
+            boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
+            if(!isSuccess) {
+                String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
+                throw new IllegalMoveException(errorStr, this.getFEN());
+            }
 
-            boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
-            if(!isSuccess) throw new IllegalMoveException(moveString, this.getFEN());
-
-            moveData = new MoveInfo(encoded_move);
-
+            moveData = new MoveInfo(encodedMove);
             historyChanged = addMoveHistory(moveData);
 
             if(autoChangeGameOver) {
@@ -256,6 +254,27 @@ public class ChessGame {
         if(historyChanged) {
             notifyHistoryChanged();
         }
+    }
+
+    /**
+     * Make move on this ChessGame (LAN MOVE)
+     *
+     * @param moveString move like e2e4, e7e5 (LAN move string)
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
+    public void makeMove(String moveString) {
+        int encodedMove;
+
+        readLock.lock();
+        try {
+            encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
+        } finally {
+            readLock.unlock();
+        }
+
+        internalMakeMove(encodedMove, moveString);
     }
 
     /**
@@ -279,35 +298,7 @@ public class ChessGame {
      * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(int encodedMove) {
-        MoveInfo moveData;
-        boolean shouldNotifyGameOver = false;
-        boolean historyChanged;
-
-        writeLock.lock();
-        try {
-            if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove))
-                throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString(), this.getFEN());
-
-            boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
-            if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encodedMove).toLanString(), this.getFEN());
-
-            moveData = new MoveInfo(encodedMove);
-            historyChanged = addMoveHistory(moveData);
-
-            if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
-            }
-        } finally {
-            writeLock.unlock();
-        }
-
-        notifyMoveMade(moveData);
-        if (shouldNotifyGameOver) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if(historyChanged) {
-            notifyHistoryChanged();
-        }
+        internalMakeMove(encodedMove, null);
     }
 
     /**
@@ -358,54 +349,32 @@ public class ChessGame {
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
         if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
-                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT)
+                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT) {
             throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
+        }
 
-        MoveInfo moveData;
-        boolean shouldNotifyGameOver = false;
-        boolean historyChanged;
+        int encodedMove;
+        String errorString = BoardSquares.square_to_coordinates[sourceSquare.getIndex()]
+                + BoardSquares.square_to_coordinates[targetSquare.getIndex()]
+                + ((promotionType != PieceType.NONE) ? String.valueOf(ChessboardUtils.promotion_pieces[promotionType.getPieceType()]) : "");
 
-        writeLock.lock();
+        readLock.lock();
         try {
             int isLegal = MoveGenerator.isLegalMove(this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(),
                     promotionType.getPieceType());
 
             if(isLegal == ILLEGAL_MOVE){
-                String promoChar = (promotionType != PieceType.NONE) ?
-                        String.valueOf(ChessboardUtils.promotion_pieces[promotionType.getPieceType()]) : "";
-                throw new IllegalMoveException(BoardSquares.square_to_coordinates[sourceSquare.getIndex()]
-                        + BoardSquares.square_to_coordinates[targetSquare.getIndex()]
-                        + promoChar, ChessboardUtils.getFen(chessboard));
+                throw new IllegalMoveException(errorString, ChessboardUtils.getFen(chessboard));
             }
 
-            int encoded_move = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
+            encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
-
-            if(!ChessboardUtils.isLegalMove(this.chessboard, encoded_move))
-                throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString(), ChessboardUtils.getFen(chessboard));
-
-            boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encoded_move);
-            if(!isSuccess) throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString()
-                    , ChessboardUtils.getFen(chessboard));
-
-            moveData = new MoveInfo(encoded_move);
-            historyChanged = addMoveHistory(moveData);
-
-            if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
-            }
         } finally {
-            writeLock.unlock();
+            readLock.unlock();
         }
 
-        notifyMoveMade(moveData);
-        if (shouldNotifyGameOver) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if(historyChanged) {
-            notifyHistoryChanged();
-        }
+        internalMakeMove(encodedMove, errorString);
     }
 
     /**
@@ -429,35 +398,7 @@ public class ChessGame {
      * @throws IllegalMoveException - if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
-        MoveInfo moveData;
-        boolean shouldNotifyGameOver = false;
-        boolean historyChanged;
-
-        writeLock.lock();
-        try {
-            if(!ChessboardUtils.isLegalMove(this.chessboard, moveInfo.originEncodedData()))
-                throw new IllegalMoveException(moveInfo.toLanString(), ChessboardUtils.getFen(chessboard));
-
-            boolean isSuccess = MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-            if(!isSuccess) throw new IllegalMoveException(moveInfo.toString(), ChessboardUtils.getFen(chessboard));
-
-            moveData = new MoveInfo(moveInfo.originEncodedData());
-            historyChanged = addMoveHistory(moveData);
-
-            if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
-            }
-        } finally {
-            writeLock.unlock();
-        }
-
-        notifyMoveMade(moveData);
-        if (shouldNotifyGameOver) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if(historyChanged) {
-            notifyHistoryChanged();
-        }
+        internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
     }
 
     /**

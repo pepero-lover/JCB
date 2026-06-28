@@ -1,6 +1,7 @@
 package com.pepero.jcb.perft.bitboard;
 
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Initializer;
@@ -18,7 +19,7 @@ public class PerftBitboardTest {
             return;
         }
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_SINGLE[chessboard.ply];
 
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
@@ -41,7 +42,7 @@ public class PerftBitboardTest {
 
         nodes = 0;
 
-        int[] moveList = new int[512];
+        int[] moveList = MoveCache.SEARCH_MOVE_SINGLE[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
         long startTime = TimeUtils.getTimeNt();
