@@ -17,6 +17,7 @@ public record MoveInfo(
         boolean pawnDoublePush,
         boolean enpassant,
         boolean castling,
+        boolean isDrop,
         int originEncodedData
 ) {
     public MoveInfo(int moveData) {
@@ -30,6 +31,7 @@ public record MoveInfo(
                 EncodeMove.getMoveDouble(moveData),
                 EncodeMove.getMoveEnpassant(moveData),
                 EncodeMove.getMoveCastling(moveData),
+                EncodeMove.getMoveDrop(moveData),
                 moveData
         );
     }
@@ -44,8 +46,6 @@ public record MoveInfo(
     }
 
     public String toLanString(GameVariants variants) {
-        boolean promotion = promotionPiece != PieceType.NONE;
-
         if (castling && variants == GameVariants.STANDARD) {
             if (sourceSquare == Square.e1 && targetSquare == Square.h1) return "e1g1";
             if (sourceSquare == Square.e1 && targetSquare == Square.a1) return "e1c1";
@@ -53,7 +53,7 @@ public record MoveInfo(
             if (sourceSquare == Square.e8 && targetSquare == Square.a8) return "e8c8";
         }
 
-        return String.valueOf(sourceSquare) + targetSquare + (promotion ? promotionPiece.toString().toLowerCase() : "");
+        return EncodeMove.moveToString(originEncodedData);
     }
 
     @Override

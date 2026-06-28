@@ -468,4 +468,59 @@ public class ChessGameTest {
         assertTrue(pgn.contains("e4 {[%clk 0:04:55]}"));
         assertTrue(pgn.contains("e5 {[%clk 0:04:52]}"));
     }
+
+    @Test
+    @DisplayName("크레이지하우스: API 메서드(makeDropMove)로 포켓의 기물을 드랍할 수 있어야 한다")
+    void testMakeDropMoveAPI() {
+        // 백 포켓에 Q, 흑 포켓에 p 가 있는 상태
+        String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[Qp] w KQkq - 0 1";
+        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+
+        // API 메서드를 이용한 퀸 드랍
+        chessGame.makeDropMove(PieceType.QUEEN, Square.e4);
+
+        assertEquals(Piece.WHITE_QUEEN, chessGame.getPieceOnSquare(Square.e4));
+        assertEquals(0, chessGame.getCapturedPieces(true).getOrDefault(PieceType.QUEEN, 0), "백의 퀸이 포켓에서 소모되어 0개가 되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("크레이지하우스: 문자열로 드랍 이동이 정상 파싱 및 처리되어야 한다")
+    void testDropMoveFromString() {
+        String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
+        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+
+        chessGame.makeMove("P@e4");
+
+        assertEquals(Piece.WHITE_PAWN, chessGame.getPieceOnSquare(Square.e4));
+        assertTrue(chessGame.getMoveHistory().getFirst().isDrop(), "히스토리에 기록된 DTO의 isDrop 플래그가 true여야 합니다.");
+    }
+
+    @Test
+    @DisplayName("크레이지하우스: 폰을 1랭크나 8랭크에 드랍하려고 하면 예외가 발생해야 한다")
+    void testIllegalPawnDrop() {
+        String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
+        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e8"), "8랭크 폰 드랍은 불법수입니다.");
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e1"), "1랭크 폰 드랍은 불법수입니다.");
+    }
+
+    @Test
+    @DisplayName("크레이지하우스: 포켓 기물이 기물 점수에 정상적으로 합산되어야 한다")
+    void testPocketPieceScore() {
+        String fen = "8/8/8/8/8/8/8/k6K[Q] w - - 0 1";
+        ChessGame chessGame = new ChessGame(fen, GameVariants.CRAZY_HOUSE);
+
+        assertEquals(9, chessGame.getPieceScore());
+    }
+
+    @Test
+    @DisplayName("크레이지하우스: 포켓에 기물이 있으면 기물 부족 무승부가 발생하지 않아야 한다")
+    void testPocketPreventsInsufficientMaterial() {
+        String fen = "8/8/8/8/8/8/8/k6K[P] w - - 0 1";
+        ChessGame chessGame = new ChessGame(fen, GameVariants.CRAZY_HOUSE);
+
+        assertFalse(chessGame.isInsufficientMaterial(), "포켓에 기물이 있으므로 기물 부족이 아닙니다.");
+        assertNotEquals(GameOverReason.INSUFFICIENTMATERIAL, chessGame.isGameOver());
+    }
 }

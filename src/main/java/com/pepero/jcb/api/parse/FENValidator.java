@@ -25,7 +25,24 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: FEN must contain exactly 6 parts separated by spaces.");
         }
 
-        String board = parts[0];
+        String boardPart = parts[0];
+        String board = boardPart;
+
+        // crazy house
+        if (boardPart.contains("[")) {
+            int openIdx = boardPart.indexOf('[');
+            int closeIdx = boardPart.indexOf(']');
+
+            if (openIdx == -1 || closeIdx == -1 || closeIdx < openIdx || closeIdx != boardPart.length() - 1) {
+                throw new FENConvertException("Invalid FEN: Unexpected Crazyhouse pocket format. Expected '[...]' at the end of the board string.");
+            }
+
+            String pocket = boardPart.substring(openIdx + 1, closeIdx);
+            validatePocket(pocket);
+
+            board = boardPart.substring(0, openIdx);
+        }
+
         String turn = parts[1];
         String castling = parts[2];
         String enPassant = parts[3];
@@ -137,6 +154,16 @@ public class FENValidator {
 
         if (MoveGenerator.isSquareAttacked(chessboard, oppositeKingSquare, chessboard.side)) {
             throw new FENConvertException("Invalid FEN: The side not to move is in check. (Impossible game state)");
+        }
+    }
+
+    private static void validatePocket(String pocket) {
+        if (pocket.isEmpty()) return;
+
+        for (char c : pocket.toCharArray()) {
+            if ("pPnNbBrRqQ".indexOf(c) == -1) {
+                throw new FENConvertException("Invalid FEN: Invalid or impossible piece '" + c + "' found in pocket.");
+            }
         }
     }
 }

@@ -38,6 +38,22 @@ public class ConvertStringMoveUtils {
      * @throws IllegalMoveException - if move is illegal
      */
     private static TranslateResult parseLan(Chessboard chessboard, String lan){
+        // if crazy house
+        if (lan.contains("@")) {
+            int encoded_move = parseLanToEncodedMove(chessboard, lan);
+
+            StringBuilder sb = new StringBuilder(lan);
+
+            boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
+            if (!isSuccess) throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
+
+            if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
+            else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
+
+            MoveGenerator.unmakeMove(chessboard, encoded_move);
+            return new TranslateResult(sb.toString(), encoded_move);
+        }
+
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
@@ -188,6 +204,22 @@ public class ConvertStringMoveUtils {
      */
     private static TranslateResult parseLan(Chessboard chessboard, MoveInfo moveInfo) {
         int encoded_move = moveInfo.originEncodedData();
+
+        // when drop move (crazy house)
+        if (moveInfo.isDrop()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(encodedPieceToString(EncodeMove.getMovePiece(encoded_move)).toUpperCase());
+            sb.append("@");
+            sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
+
+            boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
+            if (!isSuccess) throw new IllegalMoveException(moveInfo.toLanString(), ChessboardUtils.getFen(chessboard));
+            if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
+            else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
+            MoveGenerator.unmakeMove(chessboard, encoded_move);
+
+            return new TranslateResult(sb.toString(), encoded_move);
+        }
 
         int source_square = EncodeMove.getMoveSource(encoded_move);
         int target_square = EncodeMove.getMoveTarget(encoded_move);
@@ -373,6 +405,25 @@ public class ConvertStringMoveUtils {
      * @throws IllegalMoveException - if move is illegal
      */
     public static int parseLanToEncodedMove(Chessboard chessboard, String lan){
+        // check crazy house
+        if (lan.contains("@")) {
+            String[] parts = lan.split("@");
+            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", lan);
+
+            char pieceChar = parts[0].charAt(0);
+            int target_square = Square.fromString(parts[1]).getIndex();
+            if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan);
+
+            int piece_type = ChessboardUtils.char_to_encoded_piece.get(pieceChar);
+            if (chessboard.side == black && piece_type <= K) piece_type += 6;
+            else if (chessboard.side == white && piece_type > K) piece_type -= 6;
+
+            int isLegal = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
+            if (isLegal != ILLEGAL_MOVE) return isLegal;
+
+            throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
+        }
+
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
@@ -446,6 +497,25 @@ public class ConvertStringMoveUtils {
         boolean isCapture = san.contains("x");
         if(isCapture) san = san.replace("x", "");
         san = san.replace("+", "").replace("#", "");
+
+        // when crazy house
+        if (san.contains("@")) {
+            String[] parts = san.split("@");
+            char pieceChar = parts[0].charAt(0);
+            target_square = BoardSquares.coordinates_to_square(parts[1]);
+
+            int piece_type = ChessboardUtils.char_to_encoded_piece.get(pieceChar);
+            if (chessboard.side == black && piece_type <= K) piece_type += 6;
+            else if (chessboard.side == white && piece_type > K) piece_type -= 6;
+
+            int move_result = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
+
+            if (move_result == ILLEGAL_MOVE) {
+                throw new ConvertMoveException("Illegal drop move! ( FEN : " + ChessboardUtils.getFen(chessboard) + " )");
+            }
+
+            return new TranslateResult(parts[0] + "@" + parts[1], move_result);
+        }
 
         if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
             boolean isKingSide = san.equals("O-O") || san.equals("0-0");

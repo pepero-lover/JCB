@@ -1,6 +1,5 @@
 package com.pepero.jcb.util;
 
-import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
@@ -19,7 +18,7 @@ public class PerftDriver {
         }
 
         // create move list instance
-        int[] move_list = new int[255];
+        int[] move_list = new int[512];
 
         // generate moves
         int count = MoveGenerator.generateMoves(chessboard,move_list);
@@ -60,7 +59,7 @@ public class PerftDriver {
         nodes = 0;
 
         // create move list instance
-        int[] move_list = new int[255];
+        int[] move_list = new int[512];
 
         // generate moves
         int count = MoveGenerator.generateMoves(chessboard,move_list);
@@ -94,10 +93,7 @@ public class PerftDriver {
 
             sb.append("    move: ");
 
-            sb.append(BoardSquares.square_to_coordinates[EncodeMove.getMoveSource(move)]);
-            sb.append(BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)]);
-            sb.append(EncodeMove.promoted_pieces.get(EncodeMove.getMovePromoted(move)) != null ?
-                    EncodeMove.promoted_pieces.get(EncodeMove.getMovePromoted(move)) : "");
+            sb.append(EncodeMove.moveToString(move));
 
             sb.append("  nodes: ").append(old_nodes);
 

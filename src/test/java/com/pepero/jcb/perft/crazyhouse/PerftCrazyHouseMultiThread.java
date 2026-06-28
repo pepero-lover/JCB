@@ -1,11 +1,8 @@
-package com.pepero.jcb.perft.bitboard;
+package com.pepero.jcb.perft.crazyhouse;
 
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.Initializer;
-import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.perft.bitboard.PerftBitboardMultiThread;
 import com.pepero.jcb.util.TimeUtils;
 
 import java.util.ArrayList;
@@ -15,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class PerftBitboardMultiThread {
+public class PerftCrazyHouseMultiThread {
     public static long perftDriver(Chessboard chessboard, int depth) {
         if (depth == 0) {
             return 1;
@@ -108,13 +105,13 @@ public class PerftBitboardMultiThread {
     public static void main(String[] args) {
         Initializer.init();
 
-        Chessboard chessboard = new Chessboard();
+        Chessboard chessboard = new Chessboard(GameVariants.CRAZY_HOUSE);
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
         System.out.println("Preheating...");
-        perftDriver(chessboard, 6);
+        perftDriver(chessboard, 5);
         System.out.println("Preheating complete!");
 
-        perftTest(chessboard, 7);
+        perftTest(chessboard, 5);
     }
 }

@@ -3,6 +3,17 @@ package com.pepero.jcb.bitboard;
 public class BitBoardUtils {
     // The bitboard type is just 'long'
 
+    // Rank constants
+
+    public static final long RANK_1 = 0x00000000000000FFL;
+    public static final long RANK_2 = 0x000000000000FF00L;
+    public static final long RANK_3 = 0x0000000000FF0000L;
+    public static final long RANK_4 = 0x00000000FF000000L;
+    public static final long RANK_5 = 0x000000FF00000000L;
+    public static final long RANK_6 = 0x0000FF0000000000L;
+    public static final long RANK_7 = 0x00FF000000000000L;
+    public static final long RANK_8 = 0xFF00000000000000L;
+
     // -----------------
     // BIT MANIPULATIONS
     // -----------------

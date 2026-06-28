@@ -139,7 +139,7 @@ public class ChessboardUtils {
 
     public static void parseFen(Chessboard chessboard, String fen) {
         // reset chessboard
-        chessboard.resetBoard();
+        chessboard.resetBoard(chessboard.gameVariants);
 
         // divide fen
         String[] fenDivided = fen.split(" ");
@@ -148,7 +148,36 @@ public class ChessboardUtils {
         int rank = 0;
         int file = 0;
 
+        // for crazy house
+        Arrays.fill(chessboard.pocket, 0);
+
         String fenBoard = fenDivided[0];
+
+        if (fenBoard.contains("[")) {
+            int start = fenBoard.indexOf('[');
+            int end = fenBoard.indexOf(']');
+
+            if (start != -1 && end != -1 && end > start) {
+                String pocketStr = fenBoard.substring(start + 1, end);
+
+                fenBoard = fenBoard.substring(0, start);
+
+                for (char c : pocketStr.toCharArray()) {
+                    switch (c) {
+                        case 'P': chessboard.pocket[P]++; break;
+                        case 'N': chessboard.pocket[N]++; break;
+                        case 'B': chessboard.pocket[B]++; break;
+                        case 'R': chessboard.pocket[R]++; break;
+                        case 'Q': chessboard.pocket[Q]++; break;
+                        case 'p': chessboard.pocket[p]++; break;
+                        case 'n': chessboard.pocket[n]++; break;
+                        case 'b': chessboard.pocket[b]++; break;
+                        case 'r': chessboard.pocket[r]++; break;
+                        case 'q': chessboard.pocket[q]++; break;
+                    }
+                }
+            }
+        }
 
         // loop over FEN string
         for (int i = 0; i < fenBoard.length(); i++) {
@@ -424,7 +453,7 @@ public class ChessboardUtils {
      * @return whether this position has legal move(s)
      */
     public static boolean hasLegalMoves(Chessboard chessboard) {
-        int[] move_list = new int[255];
+        int[] move_list = new int[512];
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int i = 0; i < move_count; i++) {
@@ -445,7 +474,7 @@ public class ChessboardUtils {
      * @return whether this move is a legal move or not
      */
     public static boolean isLegalMove(Chessboard chessboard, int encoded_move) {
-        int[] move_list = new int[255];
+        int[] move_list = new int[512];
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         for (int i = 0; i < move_count; i++) {

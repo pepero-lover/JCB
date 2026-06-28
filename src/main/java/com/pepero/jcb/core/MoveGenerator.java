@@ -49,6 +49,9 @@ public class MoveGenerator {
         chessboard.half_ply_history[chessboard.ply] = chessboard.half_ply;
         chessboard.hash_key_history[chessboard.ply] = chessboard.hash_key;
         chessboard.captured_piece_history[chessboard.ply] = -1;
+        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            chessboard.promoted_captured_history[chessboard.ply] = false;
+        }
 
         // parse move
         int source_square = EncodeMove.getMoveSource(move);
@@ -59,12 +62,27 @@ public class MoveGenerator {
         boolean double_push = EncodeMove.getMoveDouble(move);
         boolean enpass = EncodeMove.getMoveEnpassant(move);
         boolean castling = EncodeMove.getMoveCastling(move);
+        boolean is_drop = EncodeMove.getMoveDrop(move);
 
         // castling
-        if(!castling) {
+        if (is_drop) {
+            chessboard.pocket[piece]--;
+
+            chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], target_square);
+
+            chessboard.hash_key ^= Zobrist.piece_keys[piece][target_square];
+
+        } else if(!castling) {
             // move piece
             chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], source_square);
             chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], target_square);
+
+            // crazy house
+            if (BitBoardUtils.getBit(chessboard.promoted_pieces, source_square) &&
+                    chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, source_square);
+                chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, target_square);
+            }
 
             // hash piece
             chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square]; // remove piece from source square in hash key
@@ -137,6 +155,18 @@ public class MoveGenerator {
                     // if move is capture
                     chessboard.captured_piece_history[chessboard.ply] = bb_piece;
 
+                    // crazy house
+                    if(chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                        if (BitBoardUtils.getBit(chessboard.promoted_pieces, target_square)) {
+                            int pawnToPocket = chessboard.side == white ? P : p;
+                            chessboard.pocket[pawnToPocket]++;
+                            chessboard.promoted_captured_history[chessboard.ply] = true;
+                            chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
+                        } else {
+                            chessboard.pocket[chessboard.side == white ? bb_piece - 6 : bb_piece + 6]++;
+                        }
+                    }
+
                     break;
                 }
             }
@@ -171,6 +201,9 @@ public class MoveGenerator {
             chessboard.bitboards[promoted_piece] =
                     BitBoardUtils.setBit(chessboard.bitboards[promoted_piece], target_square);
 
+            if(chessboard.gameVariants == GameVariants.CRAZY_HOUSE)
+                chessboard.promoted_pieces |= (1L << target_square);
+
             // add promoted piece into the hash key
             chessboard.hash_key ^= Zobrist.piece_keys[promoted_piece][target_square];
         }
@@ -182,6 +215,8 @@ public class MoveGenerator {
                 // remove captured pawn
                 chessboard.bitboards[p] = BitBoardUtils.popBit(chessboard.bitboards[p], target_square + 8);
 
+                chessboard.pocket[P]++;
+
                 // remove pawn from hash key
                 chessboard.hash_key ^= Zobrist.piece_keys[p][target_square + 8];
             }
@@ -190,6 +225,8 @@ public class MoveGenerator {
             else {
                 // remove captured pawn
                 chessboard.bitboards[P] = BitBoardUtils.popBit(chessboard.bitboards[P], target_square - 8);
+
+                chessboard.pocket[p]++;
 
                 // remove pawn from hash key
                 chessboard.hash_key ^= Zobrist.piece_keys[P][target_square - 8];
@@ -341,9 +378,15 @@ public class MoveGenerator {
         boolean capture = EncodeMove.getMoveCapture(move);
         boolean enpass = EncodeMove.getMoveEnpassant(move);
         boolean castling = EncodeMove.getMoveCastling(move);
+        boolean is_drop = EncodeMove.getMoveDrop(move);
 
         // unmake castling
-        if (castling) {
+        if (is_drop) {
+            chessboard.pocket[piece]++;
+
+            chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
+
+        } else if (castling) {
             int k_target, r_target, rook_piece;
             if (chessboard.side == white) {
                 rook_piece = R;
@@ -377,23 +420,46 @@ public class MoveGenerator {
             // unmake piece
             if (promoted_piece != 0) {
                 chessboard.bitboards[promoted_piece] = BitBoardUtils.popBit(chessboard.bitboards[promoted_piece], target_square);
+
+                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                    chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
+                }
             } else {
                 chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
+
+                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE &&
+                        BitBoardUtils.getBit(chessboard.promoted_pieces, target_square)) {
+                    chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
+                    chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, source_square);
+                }
             }
             chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], source_square);
         }
 
         // if normal capture move
         if (capture && !enpass) {
-            chessboard.bitboards[captured_piece] = BitBoardUtils.setBit(chessboard.bitboards[captured_piece], target_square);
+            chessboard.bitboards[captured_piece] = BitBoardUtils.setBit(chessboard.bitboards[captured_piece],
+                    target_square);
+
+            if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                boolean was_promoted = chessboard.promoted_captured_history[chessboard.ply];
+                if (was_promoted) {
+                    chessboard.pocket[(chessboard.side == white) ? P : p]--;
+                    chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, target_square);
+                } else {
+                    chessboard.pocket[(chessboard.side == white) ? (captured_piece - 6) : (captured_piece + 6)]--;
+                }
+            }
         }
 
         // if enpassant
         if (enpass) {
             if (chessboard.side == white) {
                 chessboard.bitboards[p] = BitBoardUtils.setBit(chessboard.bitboards[p], target_square + 8);
+                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) chessboard.pocket[P]--;
             } else {
                 chessboard.bitboards[P] = BitBoardUtils.setBit(chessboard.bitboards[P], target_square - 8);
+                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) chessboard.pocket[p]--;
             }
         }
 
@@ -489,8 +555,51 @@ public class MoveGenerator {
     }
 
     /**
+     * Generate Moves (drop moves on crazy house)
+     * @param chessboard chess board
+     * @param moveArray the result array
+     * @param currentMoveCount start move count
+     * @return move counts
+     */
+    public static int generateDropMoves(Chessboard chessboard, int[] moveArray, int currentMoveCount) {
+        if (chessboard.gameVariants != GameVariants.CRAZY_HOUSE) return currentMoveCount;
+
+        int moveCount = currentMoveCount;
+
+        int mySide = chessboard.side;
+        int startPiece = (mySide == white) ? P : p;
+        int endPiece   = (mySide == white) ? Q : q;
+
+        long emptySquares = ~chessboard.occupancies[both];
+
+        for (int piece = startPiece; piece <= endPiece; piece++) {
+            if (chessboard.pocket[piece] > 0) {
+
+                long dropTargets = emptySquares;
+
+                if (piece == P || piece == p) {
+                    dropTargets &= ~(BitBoardUtils.RANK_1 | BitBoardUtils.RANK_8);
+                }
+
+                long targetsCopy = dropTargets;
+                while (targetsCopy != 0) {
+                    int target_square = BitBoardUtils.getLS1BIndex(targetsCopy);
+
+                    int dropMove = EncodeMove.encodeDropMove(piece, target_square);
+
+                    moveCount = addMove(moveArray, moveCount, dropMove);
+
+                    targetsCopy = BitBoardUtils.popBit(targetsCopy, target_square);
+                }
+            }
+        }
+
+        return moveCount;
+    }
+
+    /**
      * Add move into move array and ++ the moveCount
-     *
+     * <p>
      * Usage : moveCount = addMove(int[] moveArray, int moveCount, int moveData);
      *
      * @param moveArray move array
@@ -542,9 +651,8 @@ public class MoveGenerator {
                         if (!(target_square < a8) && !BitBoardUtils.getBit(occupancy, target_square)) {
                             // pawn promotion
                             if (source_square >= a7 && source_square <= h7) {
-                                addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
+                                moveCount = addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
                                         piece, false);
-                                moveCount+=4;
                             } else {
                                 // one square ahead pawn move
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_square, piece, 0,
@@ -567,9 +675,8 @@ public class MoveGenerator {
 
                             // pawn promotion capture
                             if (source_square >= a7 && source_square <= h7) {
-                                addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
+                                moveCount = addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
                                         piece, true);
-                                moveCount+=4;
                             } else {
                                 // normal pawn capture
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_square, piece, 0,
@@ -716,10 +823,8 @@ public class MoveGenerator {
                         if (!(target_square > h1) && !BitBoardUtils.getBit(occupancy, target_square)) {
                             // pawn promotion
                             if (source_square >= a2 && source_square <= h2) {
-                                addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
+                                moveCount = addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
                                         piece, false);
-                                moveCount+=4;
-
                             } else {
                                 // one square ahead pawn move
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_square, piece, 0,
@@ -742,9 +847,8 @@ public class MoveGenerator {
 
                             // pawn promotion capture
                             if (source_square >= a2 && source_square <= h2) {
-                                addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
+                                moveCount = addPawnPromotionMoves(moveArray, moveCount, source_square, target_square,
                                         piece, true);
-                                moveCount+=4;
                             } else {
                                 // normal pawn capture
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_square, piece, 0,
@@ -981,6 +1085,8 @@ public class MoveGenerator {
             }
         }
 
+        moveCount = generateDropMoves(chessboard, moveArray, moveCount);
+
         return moveCount;
     }
 
@@ -1011,7 +1117,8 @@ public class MoveGenerator {
             int possible_move = move_list[count];
             if (EncodeMove.getMoveSource(possible_move) == EncodeMove.getMoveSource(move)
                     && EncodeMove.getMoveTarget(possible_move) == EncodeMove.getMoveTarget(move)
-                    && (EncodeMove.getMovePromoted(possible_move) == EncodeMove.getMovePromoted(move))) {
+                    && (EncodeMove.getMovePromoted(possible_move) == EncodeMove.getMovePromoted(move))
+                    && EncodeMove.getMoveDrop(possible_move) == EncodeMove.getMoveDrop(move)) {
                 if (!MoveGenerator.makeMove(chessboard, possible_move)) {
                     return false;
                 }
@@ -1036,6 +1143,28 @@ public class MoveGenerator {
             if (EncodeMove.getMoveSource(possible_move) == source_square
                     && EncodeMove.getMoveTarget(possible_move) == target_square
                     && EncodeMove.getMovePromoted(possible_move) == promotion_type) {
+                if (!MoveGenerator.makeMove(chessboard, possible_move)) {
+                    return ILLEGAL_MOVE;
+                }
+
+                unmakeMove(chessboard, possible_move);
+                return possible_move;
+            }
+        }
+
+        return ILLEGAL_MOVE;
+    }
+
+    public static int isLegalDrop(Chessboard chessboard, int target_square, int piece_type) {
+        int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        for (int count = 0; count < move_count; count++) {
+            int possible_move = move_list[count];
+
+            if (EncodeMove.getMoveTarget(possible_move) == target_square
+                    && EncodeMove.getMoveDrop(possible_move)
+                    && EncodeMove.getMovePiece(possible_move) == piece_type) {
                 if (!MoveGenerator.makeMove(chessboard, possible_move)) {
                     return ILLEGAL_MOVE;
                 }

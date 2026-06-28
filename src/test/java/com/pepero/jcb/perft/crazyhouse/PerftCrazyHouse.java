@@ -1,14 +1,11 @@
-package com.pepero.jcb.perft.bitboard;
+package com.pepero.jcb.perft.crazyhouse;
 
 import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.Initializer;
-import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.util.TimeUtils;
 
-public class PerftBitboardTest {
+public class PerftCrazyHouse {
 
     public static long nodes;
 
@@ -57,21 +54,7 @@ public class PerftBitboardTest {
                 long old_nodes = nodes - cumulative_nodes;
                 MoveGenerator.unmakeMove(chessboard, move);
 
-                int source = EncodeMove.getMoveSource(move);
-                int target = EncodeMove.getMoveTarget(move);
-                int promoted = EncodeMove.getMovePromoted(move);
-
-                String moveStr = BoardSquares.square_to_coordinates[source] +
-                        BoardSquares.square_to_coordinates[target];
-
-                if (promoted != 0) {
-                    Character promoChar = ChessboardUtils.encoded_piece_to_char.get(promoted);
-                    if (promoChar != null) {
-                        moveStr += promoChar.toString().toLowerCase();
-                    }
-                }
-
-                System.out.println("    move: " + moveStr + "  nodes: " + old_nodes);
+                System.out.println("    move: " + EncodeMove.moveToString(move) + "  nodes: " + old_nodes);
             }
         }
 
@@ -94,15 +77,15 @@ public class PerftBitboardTest {
     public static void main(String[] args) {
         Initializer.init();
 
-        Chessboard chessboard = new Chessboard();
+        Chessboard chessboard = new Chessboard(GameVariants.CRAZY_HOUSE);
 
-        ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
+        ChessboardUtils.parseFen(chessboard, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1");
 
         // JVM preheat
         System.out.println("Preheating...");
-        perftDriver(chessboard, 6);
+        perftDriver(chessboard, 2);
         System.out.println("Preheating complete!");
 
-        perftTest(chessboard, 6);
+        perftTest(chessboard, 2);
     }
 }

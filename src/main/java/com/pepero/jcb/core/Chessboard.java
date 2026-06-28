@@ -70,6 +70,14 @@ public class Chessboard {
     // queen side rook on chess 960
     public int queen_side_rook_file = -1;
 
+    // For crazy house
+
+    // captured piece pocket
+    public int[] pocket = new int[12];
+
+    public long promoted_pieces = 0L;
+
+
     public GameVariants gameVariants;
 
     public static final int MAX_DEPTH = 1024;
@@ -80,6 +88,9 @@ public class Chessboard {
     public long[] hash_key_history = new long[MAX_DEPTH];
 
     public int[] captured_piece_history = new int[MAX_DEPTH];
+
+    // crazy house
+    public boolean[] promoted_captured_history = new boolean[MAX_DEPTH];
 
     public Chessboard() {
         this(GameVariants.STANDARD);

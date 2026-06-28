@@ -718,7 +718,7 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this move legal move
+     * Get whether this move legal move (not crazy house. for moving piece)
      *
      * @param source source square
      * @param target target square
@@ -744,6 +744,30 @@ public class ChessGame {
             return false;
         } finally {
             readLock.unlock();
+        }
+    }
+
+    /**
+     * Make drop move (crazy house)
+     *
+     * @param pieceType dropping piece type
+     * @param targetSquare target square
+     */
+    public void makeDropMove(PieceType pieceType, Square targetSquare) {
+        Objects.requireNonNull(pieceType, "Piece type cannot be null!");
+        Objects.requireNonNull(targetSquare, "Target square cannot be null!");
+
+        writeLock.lock();
+        try {
+            int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
+
+            if (encodedMove == ILLEGAL_MOVE) {
+                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove), getFEN());
+            }
+
+            makeMove(new MoveInfo(encodedMove));
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -807,32 +831,47 @@ public class ChessGame {
         readLock.lock();
         try {
             Map<PieceType, Integer> captured = new EnumMap<>(PieceType.class);
-
-            if (isWhite) {
-                captured.put(PieceType.PAWN,
-                        initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
-                captured.put(PieceType.KNIGHT,
-                        initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.getBitboardPiece(n)));
-                captured.put(PieceType.BISHOP,
-                        initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.getBitboardPiece(b)));
-                captured.put(PieceType.ROOK,
-                        initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.getBitboardPiece(r)));
-                captured.put(PieceType.QUEEN,
-                        initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(q)));
+            if(getGameVariants() == GameVariants.CRAZY_HOUSE) {
+                if (isWhite) {
+                    captured.put(PieceType.PAWN, chessboard.pocket[p]);
+                    captured.put(PieceType.KNIGHT, chessboard.pocket[n]);
+                    captured.put(PieceType.BISHOP, chessboard.pocket[b]);
+                    captured.put(PieceType.ROOK, chessboard.pocket[r]);
+                    captured.put(PieceType.QUEEN, chessboard.pocket[q]);
+                } else {
+                    captured.put(PieceType.PAWN, chessboard.pocket[P]);
+                    captured.put(PieceType.KNIGHT, chessboard.pocket[N]);
+                    captured.put(PieceType.BISHOP, chessboard.pocket[B]);
+                    captured.put(PieceType.ROOK, chessboard.pocket[R]);
+                    captured.put(PieceType.QUEEN, chessboard.pocket[Q]);
+                }
             } else {
-                captured.put(PieceType.PAWN,
-                        initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
-                captured.put(PieceType.KNIGHT,
-                        initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
-                captured.put(PieceType.BISHOP,
-                        initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
-                captured.put(PieceType.ROOK,
-                        initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
-                captured.put(PieceType.QUEEN,
-                        initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
+                if (isWhite) {
+                    captured.put(PieceType.PAWN,
+                            initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
+                    captured.put(PieceType.KNIGHT,
+                            initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.getBitboardPiece(n)));
+                    captured.put(PieceType.BISHOP,
+                            initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.getBitboardPiece(b)));
+                    captured.put(PieceType.ROOK,
+                            initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.getBitboardPiece(r)));
+                    captured.put(PieceType.QUEEN,
+                            initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(q)));
+                } else {
+                    captured.put(PieceType.PAWN,
+                            initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
+                    captured.put(PieceType.KNIGHT,
+                            initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
+                    captured.put(PieceType.BISHOP,
+                            initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
+                    captured.put(PieceType.ROOK,
+                            initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
+                    captured.put(PieceType.QUEEN,
+                            initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
+                }
             }
-
             captured.values().removeIf(count -> count <= 0);
+
             return captured;
         } finally {
             readLock.unlock();
@@ -873,6 +912,21 @@ public class ChessGame {
                 };
 
                 piece_score -= BitBoardUtils.countBits(this.chessboard.getBitboardPiece(black_piece)) * multiply;
+            }
+
+            // crazy house pocket
+            if (this.chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                piece_score += this.chessboard.pocket[P] * 1;
+                piece_score += this.chessboard.pocket[N] * 3;
+                piece_score += this.chessboard.pocket[B] * 3;
+                piece_score += this.chessboard.pocket[R] * 5;
+                piece_score += this.chessboard.pocket[Q] * 9;
+
+                piece_score -= this.chessboard.pocket[p] * 1;
+                piece_score -= this.chessboard.pocket[n] * 3;
+                piece_score -= this.chessboard.pocket[b] * 3;
+                piece_score -= this.chessboard.pocket[r] * 5;
+                piece_score -= this.chessboard.pocket[q] * 9;
             }
 
             return piece_score;
@@ -1158,6 +1212,12 @@ public class ChessGame {
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
+            if (this.chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                int totalPocketPieces = 0;
+                for (int piece = P; piece <= k; piece++) totalPocketPieces += this.chessboard.pocket[piece];
+                if (totalPocketPieces > 0) return false;
+            }
+
             if(chessboard.bitboards[P] != 0 || chessboard.bitboards[p] != 0) return false;
             if(chessboard.bitboards[R] != 0 || chessboard.bitboards[r] != 0) return false;
             if(chessboard.bitboards[Q] != 0 || chessboard.bitboards[q] != 0) return false;

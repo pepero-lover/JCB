@@ -33,7 +33,7 @@ public class ConvertTest {
 
     private static long playRandomGames(Random random, int gameCount) {
         long conversionCount = 0;
-        int[] moveList = new int[255];
+        int[] moveList = new int[512];
 
         for (int i = 0; i < gameCount; i++) {
             Chessboard board = new Chessboard(Chessboard.start_position);

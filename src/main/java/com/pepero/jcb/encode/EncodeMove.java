@@ -1,6 +1,7 @@
 package com.pepero.jcb.encode;
 
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.core.ChessboardUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,21 +19,36 @@ public class EncodeMove {
     1 = use on this flag or something
     0 = not use on this flag or something
 
-    binary                 hex
+    binary                         hex
 
     0000 0000 0000 0000 0011 1111  0x3f      source square      the 6 bits are square code (com/pepero/bitboard/constant/BoardSquares.java)
     0000 0000 0000 1111 1100 0000  0xfc0     target square      this too,
-    0000 0000 1111 0000 0000 0000  0xf000    piece              4 bits cuz the amount of piece is 12. 4 bits can handle 16 numbers so this is enough to storage
+    0000 0000 1111 0000 0000 0000  0xf000    piece              4 bits because the amount of piece is 12. 4 bits can handle 16 numbers so this is enough to storage
     0000 1111 0000 0000 0000 0000  0xf0000   promoted piece     this too,
     0001 0000 0000 0000 0000 0000  0x100000  capture flag       true / false ( 1 bit )
     0010 0000 0000 0000 0000 0000  0x200000  double push flag   true / false ( 1 bit )
     0100 0000 0000 0000 0000 0000  0x400000  enpassant flag     true / false ( 1 bit )
     1000 0000 0000 0000 0000 0000  0x800000  castling flag      true / false ( 1 bit )
 
+    and additionally, crazy house :
+    0000 0000 0000 0000 0000 0000 1111  0x3f       dropping piece type
+    0000 0000 0000 0000 1111 1100 0000  0xfc0      target square (drop location)
+    0001 0000 0000 0000 0000 0000 0000  0x1000000  dropping flag
      */
 
+    /**
+     * Encode crazy house dropping move
+     *
+     * @param pieceToDrop piece to drop type
+     * @param target target square (drop location)
+     * @return encoded move (int)
+     */
+    public static int encodeDropMove(int pieceToDrop, int target) {
+        return (target << 6) | (pieceToDrop << 12) | (1 << 24);
+    }
 
     /**
+     * Encode move to 32 bit int data
      *
      * @param source piece start position
      * @param target piece destination
@@ -138,6 +154,33 @@ public class EncodeMove {
     }
 
     /**
+     * Extract encoded move and get drop flag
+     * @param move encoded move (that can be generated on encodeMove() method)
+     * @return move drop flag
+     */
+    public static boolean getMoveDrop(int move){
+        return ((move & 0x1000000) >>> 24) == 1;
+    }
+
+    /**
+     * Get encoded move string
+     *
+     * @param move encoded move (that can be generated on encodeMove() method)
+     * @return encoded move string
+     */
+    public static String moveToString(int move) {
+        if (EncodeMove.getMoveDrop(move)) {
+            char pieceChar = ChessboardUtils.ascii_pieces[EncodeMove.getMovePiece(move)];
+            String target = BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)];
+            return Character.toUpperCase(pieceChar) + "@" + target;
+        } else {
+            return BoardSquares.square_to_coordinates[EncodeMove.getMoveSource(move)] +
+                    BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)] +
+                    (EncodeMove.getMovePromoted(move) != 0 ? EncodeMove.promoted_pieces.get(EncodeMove.getMovePromoted(move)) : "");
+        }
+    }
+
+    /**
      * Print move data (for UCI purposes)
      * @param move encoded move
      */
@@ -171,10 +214,16 @@ public class EncodeMove {
 
             // print move
             sb.append("    ");
-            sb.append(BoardSquares.square_to_coordinates[getMoveSource(move)]);
-            sb.append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
-            sb.append(promoted_pieces.get(getMovePromoted(move)) != null
-                    ? promoted_pieces.get(getMovePromoted(move)) : "");
+            if (getMoveDrop(move)) {
+                // if drop move
+                sb.append(ascii_pieces[getMovePiece(move)]).append("@")
+                        .append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
+            } else {
+                sb.append(BoardSquares.square_to_coordinates[getMoveSource(move)]);
+                sb.append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
+                sb.append(promoted_pieces.get(getMovePromoted(move)) != null
+                        ? promoted_pieces.get(getMovePromoted(move)) : "");
+            }
             sb.append("  ").append(getMovePromoted(move) != 0 ? "" : " ");
             sb.append(ascii_pieces[getMovePiece(move)]);
             sb.append("       ");
