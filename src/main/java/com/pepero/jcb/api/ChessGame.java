@@ -2463,61 +2463,7 @@ public class ChessGame {
     public String toAscii() {
         readLock.lock();
         try {
-            StringBuilder sb = new StringBuilder(256);
-            char[] board = new char[64];
-
-            // initialize board with dots
-            Arrays.fill(board, '.');
-
-            // loop over all piece types
-            for (int piece = P; piece <= k; piece++) {
-                long bitboardPiece = chessboard.getBitboardPiece(piece);
-                char pieceChar = ascii_pieces[piece];
-
-                // a bit scanning: find all set bits for this piece type
-                while (bitboardPiece != 0L) {
-                    int square = BitBoardUtils.getLS1BIndex(bitboardPiece);
-                    board[square] = pieceChar;
-                    bitboardPiece = BitBoardUtils.popBit(bitboardPiece,square);
-                }
-            }
-
-            sb.append('\n');
-
-            // loop over board ranks
-            for (int rank = 0; rank < 8; rank++) {
-                // append ranks
-                sb.append("  ").append(8 - rank).append("  ");
-
-                // loop over board files
-                for (int file = 0; file < 8; file++) {
-                    int square = rank * 8 + file;
-                    // prints char piece from our mapped board
-                    sb.append(" ").append(board[square]);
-                }
-                // print new line every rank
-                sb.append('\n');
-            }
-
-            // print board files
-            sb.append("\n      a b c d e f g h \n\n");
-
-            // print side to move
-            sb.append("      Side:     ").append(chessboard.side == white ? "white" : "black").append("\n");
-
-            // print enpassant square
-            sb.append("      Enpassant:   ").append((chessboard.enpassant != no_sq) ?
-                    BoardSquares.square_to_coordinates[chessboard.enpassant] : "no").append("\n");
-
-            // print castling rights
-            sb.append("      Castling:  ")
-                    .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')
-                    .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
-                    .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
-                    .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
-                    .append("\n");
-
-            return sb.toString();
+            return ChessboardUtils.toStringChessboard(this.chessboard);
         } finally {
             readLock.unlock();
         }

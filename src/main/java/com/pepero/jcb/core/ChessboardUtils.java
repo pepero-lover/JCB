@@ -76,65 +76,7 @@ public class ChessboardUtils {
      * print this chessboard
      */
     public static void printChessBoard(Chessboard chessboard) {
-        StringBuilder sb = new StringBuilder(256);
-        char[] board = new char[64];
-
-        // initialize board with dots
-        Arrays.fill(board, '.');
-
-        // loop over all piece types
-        for (int piece = P; piece <= k; piece++) {
-            long bitboardPiece = chessboard.getBitboardPiece(piece);
-            char pieceChar = ascii_pieces[piece];
-
-            // a bit scanning: find all set bits for this piece type
-            while (bitboardPiece != 0L) {
-                int square = BitBoardUtils.getLS1BIndex(bitboardPiece);
-                board[square] = pieceChar;
-                bitboardPiece = BitBoardUtils.popBit(bitboardPiece,square);
-            }
-        }
-
-        sb.append('\n');
-
-        // loop over board ranks
-        for (int rank = 0; rank < 8; rank++) {
-            // append ranks
-            sb.append("  ").append(8 - rank).append("  ");
-
-            // loop over board files
-            for (int file = 0; file < 8; file++) {
-                int square = rank * 8 + file;
-                // prints char piece from our mapped board
-                sb.append(" ").append(board[square]);
-            }
-            // print new line every rank
-            sb.append('\n');
-        }
-
-        // print board files
-        sb.append("\n      a b c d e f g h \n\n");
-
-        // print side to move
-        sb.append("      Side:     ").append(chessboard.side == SideToMove.white ? "white" : "black").append("\n");
-
-        // print enpassant square
-        sb.append("      Enpassant:   ").append((chessboard.enpassant != no_sq) ?
-                BoardSquares.square_to_coordinates[chessboard.enpassant] : "no").append("\n");
-
-        // print castling rights
-        sb.append("      Castling:  ")
-                .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')
-                .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
-                .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
-                .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
-                .append("\n");
-
-        sb.append("      Hash key:  ")
-                .append(Long.toHexString(chessboard.hash_key))
-                .append("\n");
-
-        System.out.print(sb);
+        System.out.println(toStringChessboard(chessboard));
     }
 
     public static void parseFen(Chessboard chessboard, String fen) {
@@ -321,6 +263,11 @@ public class ChessboardUtils {
                 }
 
                 fen.append(encoded_piece_to_char.get(type));
+
+                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE &&
+                        BitBoardUtils.getBit(chessboard.promoted_pieces, square)) {
+                    fen.append("~");
+                }
             }
 
             if(empty_square > 0) {
@@ -330,6 +277,22 @@ public class ChessboardUtils {
             if (rank < 7){
                 fen.append("/");
             }
+        }
+
+        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            String pocketStr =
+                    "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
+                    "R".repeat(Math.max(0, chessboard.pocket[R])) +
+                    "B".repeat(Math.max(0, chessboard.pocket[B])) +
+                    "N".repeat(Math.max(0, chessboard.pocket[N])) +
+                    "P".repeat(Math.max(0, chessboard.pocket[P])) +
+                    "q".repeat(Math.max(0, chessboard.pocket[q])) +
+                    "r".repeat(Math.max(0, chessboard.pocket[r])) +
+                    "b".repeat(Math.max(0, chessboard.pocket[b])) +
+                    "n".repeat(Math.max(0, chessboard.pocket[n])) +
+                    "p".repeat(Math.max(0, chessboard.pocket[p]));
+
+            fen.append("[").append(pocketStr).append("]");
         }
 
         // side to move
@@ -703,5 +666,79 @@ public class ChessboardUtils {
         }
 
         return false;
+    }
+
+    public static String toStringChessboard(Chessboard chessboard) {
+        StringBuilder sb = new StringBuilder(256);
+        char[] board = new char[64];
+
+        // initialize board with dots
+        Arrays.fill(board, '.');
+
+        // loop over all piece types
+        for (int piece = P; piece <= k; piece++) {
+            long bitboardPiece = chessboard.getBitboardPiece(piece);
+            char pieceChar = ascii_pieces[piece];
+
+            // a bit scanning: find all set bits for this piece type
+            while (bitboardPiece != 0L) {
+                int square = BitBoardUtils.getLS1BIndex(bitboardPiece);
+                board[square] = pieceChar;
+                bitboardPiece = BitBoardUtils.popBit(bitboardPiece,square);
+            }
+        }
+
+        sb.append('\n');
+
+        // loop over board ranks
+        for (int rank = 0; rank < 8; rank++) {
+            // append ranks
+            sb.append("  ").append(8 - rank).append("  ");
+
+            // loop over board files
+            for (int file = 0; file < 8; file++) {
+                int square = rank * 8 + file;
+                // prints char piece from our mapped board
+                sb.append(" ").append(board[square]);
+            }
+            // print new line every rank
+            sb.append('\n');
+        }
+
+        // print board files
+        sb.append("\n      a b c d e f g h \n\n");
+
+        // print side to move
+        sb.append("      Side:     ").append(chessboard.side == white ? "white" : "black").append("\n");
+
+        // print enpassant square
+        sb.append("      Enpassant:   ").append((chessboard.enpassant != no_sq) ?
+                BoardSquares.square_to_coordinates[chessboard.enpassant] : "no").append("\n");
+
+        // print castling rights
+        sb.append("      Castling:  ")
+                .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')
+                .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
+                .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
+                .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
+                .append("\n");
+
+        if(chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            sb
+                    .append("      Pocket:  [")
+                    .append("Q".repeat(Math.max(0, chessboard.pocket[Q])))
+                    .append("R".repeat(Math.max(0, chessboard.pocket[R])))
+                    .append("B".repeat(Math.max(0, chessboard.pocket[B])))
+                    .append("N".repeat(Math.max(0, chessboard.pocket[N])))
+                    .append("P".repeat(Math.max(0, chessboard.pocket[P])))
+                    .append("q".repeat(Math.max(0, chessboard.pocket[q])))
+                    .append("r".repeat(Math.max(0, chessboard.pocket[r])))
+                    .append("b".repeat(Math.max(0, chessboard.pocket[b])))
+                    .append("n".repeat(Math.max(0, chessboard.pocket[n])))
+                    .append("p".repeat(Math.max(0, chessboard.pocket[p])))
+                    .append("]\n");
+        }
+
+        return sb.toString();
     }
 }
