@@ -86,47 +86,38 @@ public class ChessboardUtils {
         chessboard.resetBoard(chessboard.gameVariants);
 
         // divide fen
-        String[] fenDivided = fen.split(" ");
+        String[] fenDivided = fen.trim().split("\\s+");
+
+        String boardPart = fenDivided[0];
+        Arrays.fill(chessboard.pocket, 0);
+
+        // pocket parsing
+        int pocketStart = boardPart.indexOf('[');
+        if (pocketStart != -1) {
+            int pocketEnd = boardPart.indexOf(']');
+            if (pocketEnd > pocketStart) {
+                String pocketStr = boardPart.substring(pocketStart + 1, pocketEnd);
+                for (int i = 0; i < pocketStr.length(); i++) {
+                    char c = pocketStr.charAt(i);
+                    Integer piece = char_to_encoded_piece.get(c);
+                    if (piece != null) {
+                        chessboard.pocket[piece]++;
+                    }
+                }
+            }
+            // remove pocket on board part
+            boardPart = boardPart.substring(0, pocketStart);
+        }
 
         // init rank and file
         int rank = 0;
         int file = 0;
-
-        // for crazy house
-        Arrays.fill(chessboard.pocket, 0);
-
-        String fenBoard = fenDivided[0];
-
-        if (fenBoard.contains("[")) {
-            int start = fenBoard.indexOf('[');
-            int end = fenBoard.indexOf(']');
-
-            if (start != -1 && end != -1 && end > start) {
-                String pocketStr = fenBoard.substring(start + 1, end);
-
-                fenBoard = fenBoard.substring(0, start);
-
-                for (char c : pocketStr.toCharArray()) {
-                    switch (c) {
-                        case 'P': chessboard.pocket[P]++; break;
-                        case 'N': chessboard.pocket[N]++; break;
-                        case 'B': chessboard.pocket[B]++; break;
-                        case 'R': chessboard.pocket[R]++; break;
-                        case 'Q': chessboard.pocket[Q]++; break;
-                        case 'p': chessboard.pocket[p]++; break;
-                        case 'n': chessboard.pocket[n]++; break;
-                        case 'b': chessboard.pocket[b]++; break;
-                        case 'r': chessboard.pocket[r]++; break;
-                        case 'q': chessboard.pocket[q]++; break;
-                    }
-                }
-            }
-        }
+        int last_square = -1; // for '~' parsing
 
         // loop over FEN string
-        for (int i = 0; i < fenBoard.length(); i++) {
+        for (int i = 0; i < boardPart.length(); i++) {
             // get one fen char
-            char fenChar = fenBoard.charAt(i);
+            char fenChar = boardPart.charAt(i);
 
             // match space char (end of board config)
             if (fenChar == ' ') {
@@ -146,21 +137,22 @@ public class ChessboardUtils {
                 // adjust file counter
                 file += (fenChar - '0');
             }
+            // if last square was promoted piece
+            else if(fenChar == '~') {
+                if (last_square != -1 && chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                    chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, last_square);
+                }
+            }
             // match char pieces within FEN string
             else if ((fenChar >= 'a' && fenChar <= 'z') || (fenChar >= 'A' && fenChar <= 'Z')) {
-                // init current square
-                int square = rank * 8 + file;
+                Integer piece = char_to_encoded_piece.get(fenChar);
+                if (piece != null && file < 8) {
+                    last_square = rank * 8 + file;
 
-                // init piece type
-                Integer piece = ChessboardUtils.char_to_encoded_piece.get(fenChar);
+                    chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], last_square);
 
-                if (piece != null) {
-                    // set piece on the corresponding bitboard
-                    chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], square);
+                    file++;
                 }
-
-                // increment file counter
-                file++;
             }
         }
 
@@ -186,37 +178,30 @@ public class ChessboardUtils {
 
 
         // parse side to move
-        String sideFen = fenDivided[1];
-        chessboard.side = 'w' == sideFen.charAt(0) ? white : black;
+        chessboard.side = (fenDivided.length > 1 && fenDivided[1].equals("b")) ? black : white;
 
         // parse castling rights
-        String castlingFen = fenDivided[2];
-
-        for(char c : castlingFen.toCharArray()){
-            switch (c){
-                case 'K' : chessboard.castle |= CastlingRights.WK; break;
-                case 'Q' : chessboard.castle |= CastlingRights.WQ; break;
-                case 'k' : chessboard.castle |= CastlingRights.BK; break;
-                case 'q' : chessboard.castle |= CastlingRights.BQ; break;
-                case '-' :
-                default: break;
+        if (fenDivided.length > 2 && !fenDivided[2].equals("-")) {
+            for(char c : fenDivided[2].toCharArray()){
+                switch (c){
+                    case 'K' : chessboard.castle |= CastlingRights.WK; break;
+                    case 'Q' : chessboard.castle |= CastlingRights.WQ; break;
+                    case 'k' : chessboard.castle |= CastlingRights.BK; break;
+                    case 'q' : chessboard.castle |= CastlingRights.BQ; break;
+                }
             }
         }
 
         // parse enpassant square
-        String enpassantFen = fenDivided[3];
+        chessboard.enpassant = no_sq;
 
-        if(!enpassantFen.equals("-")){
-            // parse enpassant file & rank
-            int fileInt = enpassantFen.charAt(0) - 'a';
-            int rankInt = 8 - (enpassantFen.charAt(1) - '0');
-
-            // init enpassant square
-            chessboard.enpassant = rankInt * 8 + fileInt;
+        if (fenDivided.length > 3 && !fenDivided[3].equals("-") && fenDivided[3].length() >= 2) {
+            int fileInt = fenDivided[3].charAt(0) - 'a';
+            int rankInt = 8 - (fenDivided[3].charAt(1) - '0');
+            if (fileInt >= 0 && fileInt <= 7 && rankInt >= 0 && rankInt <= 7) {
+                chessboard.enpassant = rankInt * 8 + fileInt;
+            }
         }
-
-        else // no enpassant square
-            chessboard.enpassant = no_sq;
 
         // loop over white pieces bitboards
         for (int piece = P; piece <= K; piece++){
@@ -231,10 +216,11 @@ public class ChessboardUtils {
         }
 
         // init half ply
-        chessboard.half_ply = Integer.parseInt(fenDivided[4]);
+        chessboard.half_ply = (fenDivided.length > 4) ? Integer.parseInt(fenDivided[4]) : 0;
+        int full_move = (fenDivided.length > 5) ? Integer.parseInt(fenDivided[5]) : 1;
 
         // init ply
-        chessboard.ply = (Integer.parseInt(fenDivided[5]) - 1) * 2 + chessboard.side == white ? 0 : 1;
+        chessboard.ply = (full_move - 1) * 2 + (chessboard.side == white ? 0 : 1);
 
         // init all occupancies
         chessboard.occupancies[both] |= chessboard.occupancies[white];
@@ -294,7 +280,9 @@ public class ChessboardUtils {
                     "n".repeat(Math.max(0, chessboard.pocket[n])) +
                     "p".repeat(Math.max(0, chessboard.pocket[p]));
 
-            fen.append("[").append(pocketStr).append("]");
+            if (!pocketStr.isEmpty()) {
+                fen.append("[").append(pocketStr).append("]");
+            }
         }
 
         // side to move

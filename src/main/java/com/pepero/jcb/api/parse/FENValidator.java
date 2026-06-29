@@ -21,8 +21,8 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: FEN string cannot be null or empty!");
 
         String[] parts = fen.trim().split("\\s+");
-        if (parts.length != 6) {
-            throw new FENConvertException("Invalid FEN: FEN must contain exactly 6 parts separated by spaces.");
+        if (parts.length < 4 || parts.length > 6) {
+            throw new FENConvertException("Invalid FEN: FEN must contain between 4 and 6 parts.");
         }
 
         String boardPart = parts[0];
@@ -46,14 +46,15 @@ public class FENValidator {
         String turn = parts[1];
         String castling = parts[2];
         String enPassant = parts[3];
-        String halfMoveClock = parts[4];
-        String fullMoveNumber = parts[5];
 
         validateBoard(board);
         validateTurn(turn);
         validateCastling(castling);
         validateEnPassant(turn, enPassant);
-        validateCounters(halfMoveClock, fullMoveNumber);
+        if (parts.length > 4) {
+            String fullMove = parts.length > 5 ? parts[5] : "1";
+            validateCounters(parts[4], fullMove);
+        }
     }
 
     private static void validateBoard(String board) {
@@ -77,7 +78,9 @@ public class FENValidator {
                         throw new FENConvertException("FEN: Number out of bounds in board representation.");
                     }
                     squareCount += emptySquares;
-                } else if ("pPnNbBrRqQkK".indexOf(c) != -1) {
+                }
+                else if (c == '~') {}
+                else if ("pPnNbBrRqQkK".indexOf(c) != -1) {
                     squareCount++;
                     if (c == 'K') whiteKingCount++;
                     if (c == 'k') blackKingCount++;
@@ -151,6 +154,10 @@ public class FENValidator {
         int oppositeKingSquare = BitBoardUtils.getLS1BIndex(
                 chessboard.getBitboardPiece(oppositeSide == white ? K : k)
         );
+
+        if (oppositeKingSquare == -1) {
+            throw new FENConvertException("Invalid FEN: The side not to move is missing their King.");
+        }
 
         if (MoveGenerator.isSquareAttacked(chessboard, oppositeKingSquare, chessboard.side)) {
             throw new FENConvertException("Invalid FEN: The side not to move is in check. (Impossible game state)");

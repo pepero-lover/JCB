@@ -147,6 +147,11 @@ public class Chessboard {
 
         // reset half ply
         this.half_ply = 0;
+
+        // reset pocket and promoted pieces
+        this.promoted_pieces = 0L;
+
+        Arrays.fill(this.pocket, 0);
     }
 
     public void resetBoard(GameVariants gameVariants) {
@@ -185,6 +190,11 @@ public class Chessboard {
         System.arraycopy(source.half_ply_history, 0, this.half_ply_history, 0, MAX_DEPTH);
         System.arraycopy(source.hash_key_history, 0, this.hash_key_history, 0, MAX_DEPTH);
         System.arraycopy(source.captured_piece_history, 0, this.captured_piece_history, 0, MAX_DEPTH);
+
+        // crazy house
+        System.arraycopy(source.pocket, 0, this.pocket, 0, 12);
+        this.promoted_pieces = source.promoted_pieces;
+        System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
     }
 
     /**

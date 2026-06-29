@@ -3,6 +3,7 @@ package com.pepero.jcb.hash;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.util.Random;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
@@ -21,6 +22,14 @@ public class Zobrist {
 
     // random side key
     public static long side_key;
+
+    // for crazy house
+
+    // promoted pawn keys
+    public static final long[] promoted_keys = new long[64];
+
+    // pocket key [piece][count]
+    public static final long[][] pocket_keys = new long[12][64];
 
     /**
      * Init random hash keys
@@ -52,6 +61,18 @@ public class Zobrist {
 
         // init random side key
         side_key = Random.getRandom64BitsNumber();
+
+        // init promotion keys
+        for (int square = 0; square < 64; square++) {
+            promoted_keys[square] = Random.getRandom64BitsNumber();
+        }
+
+        // init pocket piece key
+        for (int piece = P; piece <= k; piece++) {
+            for (int count = 0; count < 64; count++) {
+                pocket_keys[piece][count] = Random.getRandom64BitsNumber();
+            }
+        }
     }
 
     /**
@@ -96,6 +117,24 @@ public class Zobrist {
 
         // hash the side only if black is to move
         if (chessboard.side == black) final_key ^= side_key;
+
+        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            // hash promoted piece
+            long promoted = chessboard.promoted_pieces;
+            while (promoted != 0) {
+                int square = BitBoardUtils.getLS1BIndex(promoted);
+                final_key ^= promoted_keys[square];
+                promoted = BitBoardUtils.popBit(promoted, square);
+            }
+
+            // hash pocket piece
+            for (int piece = P; piece <= k; piece++) {
+                int count = chessboard.pocket[piece];
+                if (count > 0) {
+                    final_key ^= pocket_keys[piece][count];
+                }
+            }
+        }
 
         // return generated hash key
         return final_key;
