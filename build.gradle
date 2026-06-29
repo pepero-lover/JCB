@@ -16,6 +16,8 @@ sourceSets {
         }
     }
 }
+
+version = 'b-only-1.3.0'
  */
 
 java {
