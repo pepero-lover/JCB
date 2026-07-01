@@ -26,10 +26,10 @@ public class PerftBitboardTest {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
+            if (MoveGenerator.makeStandardMove(chessboard, move)) {
                 perftDriver(chessboard, depth - 1);
 
-                MoveGenerator.unmakeMove(chessboard, move);
+                MoveGenerator.unmakeStandardMove(chessboard, move);
             }
         }
     }
@@ -50,13 +50,13 @@ public class PerftBitboardTest {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
+            if (MoveGenerator.makeStandardMove(chessboard, move)) {
                 long cumulative_nodes = nodes;
 
                 perftDriver(chessboard, depth - 1);
 
                 long old_nodes = nodes - cumulative_nodes;
-                MoveGenerator.unmakeMove(chessboard, move);
+                MoveGenerator.unmakeStandardMove(chessboard, move);
 
                 int source = EncodeMove.getMoveSource(move);
                 int target = EncodeMove.getMoveTarget(move);
