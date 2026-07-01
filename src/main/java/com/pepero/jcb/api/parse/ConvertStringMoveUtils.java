@@ -444,28 +444,6 @@ public class ConvertStringMoveUtils {
             throw new ConvertMoveException("Square string is not correct!", lan);
         }
 
-        int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
-
-        if (chessboard.gameVariants == GameVariants.STANDARD) {
-            if (type == K && chessboard.side == white && source_square == BoardSquares.e1) {
-                if (target_square == BoardSquares.g1 && chessboard.king_side_rook_file != -1 &&
-                        (chessboard.castle & CastlingRights.WK) != 0) {
-                    target_square = chessboard.king_side_rook_file + 56;
-                } else if (target_square == BoardSquares.c1 && chessboard.queen_side_rook_file != -1
-                        && (chessboard.castle & CastlingRights.WQ) != 0) {
-                    target_square = chessboard.queen_side_rook_file + 56;
-                }
-            } else if (type == k && chessboard.side == black && source_square == BoardSquares.e8) {
-                if (target_square == BoardSquares.g8 && chessboard.king_side_rook_file != -1 &&
-                        (chessboard.castle & CastlingRights.BK) != 0) {
-                    target_square = chessboard.king_side_rook_file;
-                } else if (target_square == BoardSquares.c8 && chessboard.queen_side_rook_file != -1 &&
-                        (chessboard.castle & CastlingRights.BQ) != 0) {
-                    target_square = chessboard.queen_side_rook_file;
-                }
-            }
-        }
-
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
 
         if(isLegal != ILLEGAL_MOVE){

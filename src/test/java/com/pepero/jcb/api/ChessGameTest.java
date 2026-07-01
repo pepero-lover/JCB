@@ -304,28 +304,6 @@ public class ChessGameTest {
     }
 
     @Test
-    @DisplayName("e1g1 (킹사이드 캐슬링) 입력 시 e1h1 으로 변환해야 한다.")
-    public void testCastling() {
-        Initializer.init();
-
-        Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
-
-        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e1g1");
-
-        assertTrue(EncodeMove.getMoveCastling(encodedMove), "캐슬링 플래그가 켜져 있어야 합니다.");
-
-        assertEquals(BoardSquares.h1, EncodeMove.getMoveTarget(encodedMove), "갈 위치가 h1이여야 합니다.");
-
-        MoveGenerator.makeMove(board, encodedMove);
-
-        encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e8g8");
-
-        assertTrue(EncodeMove.getMoveCastling(encodedMove), "캐슬링 플래그가 켜져 있어야 합니다.");
-
-        assertEquals(BoardSquares.h8, EncodeMove.getMoveTarget(encodedMove), "갈 위치가 h1이여야 합니다.");
-    }
-
-    @Test
     @DisplayName("Chess 960 에서 e1h1 입력시 정상적으로 파싱되어야 한다")
     public void testChess960Castling() {
         Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1",

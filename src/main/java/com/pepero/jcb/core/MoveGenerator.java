@@ -70,26 +70,32 @@ public class MoveGenerator {
             chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square]; // remove piece from source square in hash key
             chessboard.hash_key ^= Zobrist.piece_keys[piece][target_square]; // set piece to the target square in hash key
         } else {
-            int king_target, rook_target, rook_piece;
+            int king_target, rook_target, rook_piece, rook_source;
+            rook_source = target_square; // 체스960의 경우 룩의 시작 위치가 target_square에 담겨있음
+
             if (chessboard.side == white) {
                 rook_piece = R;
                 if (target_square > source_square) {
                     king_target = g1;
                     rook_target = f1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
                 }
                 else {
                     king_target = c1;
                     rook_target = d1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) {
                     king_target = g8;
                     rook_target = f8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
                 }
                 else {
                     king_target = c8;
                     rook_target = d8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
                 }
             }
 
@@ -100,9 +106,9 @@ public class MoveGenerator {
             chessboard.hash_key ^= Zobrist.piece_keys[piece][king_target];
 
             // rook
-            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], target_square);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], rook_source);
             chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], rook_target);
-            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][target_square];
+            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][rook_source];
             chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][rook_target];
         }
 
@@ -286,25 +292,32 @@ public class MoveGenerator {
 
         // unmake castling
         if (castling) {
-            int k_target, r_target, rook_piece;
+            int k_target, r_target, rook_piece, rook_source;
+            rook_source = target_square;
+
             if (chessboard.side == white) {
                 rook_piece = R;
                 if (target_square > source_square) { // king side castling
                     k_target = g1;
                     r_target = f1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
                 }
                 else { // queen side castling
                     k_target = c1;
                     r_target = d1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) { // king side castling
-                    k_target = g8; r_target = f8;
+                    k_target = g8;
+                    r_target = f8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
                 }
                 else { // queen side castling
                     k_target = c8;
                     r_target = d8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
                 }
             }
 
@@ -314,7 +327,7 @@ public class MoveGenerator {
 
             // unmake rook
             chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], r_target);
-            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], target_square);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], rook_source);
         } else {
             // unmake piece
             if (promoted_piece != 0) {
@@ -415,26 +428,32 @@ public class MoveGenerator {
             chessboard.hash_key ^= Zobrist.piece_keys[piece][source_square]; // remove piece from source square in hash key
             chessboard.hash_key ^= Zobrist.piece_keys[piece][target_square]; // set piece to the target square in hash key
         } else {
-            int king_target, rook_target, rook_piece;
+            int king_target, rook_target, rook_piece, rook_source;
+            rook_source = target_square; // 체스960의 경우 룩의 시작 위치가 target_square에 담겨있음
+
             if (chessboard.side == white) {
                 rook_piece = R;
                 if (target_square > source_square) {
                     king_target = g1;
                     rook_target = f1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
                 }
                 else {
                     king_target = c1;
                     rook_target = d1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) {
                     king_target = g8;
                     rook_target = f8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
                 }
                 else {
                     king_target = c8;
                     rook_target = d8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
                 }
             }
 
@@ -445,9 +464,9 @@ public class MoveGenerator {
             chessboard.hash_key ^= Zobrist.piece_keys[piece][king_target];
 
             // rook
-            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], target_square);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], rook_source);
             chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], rook_target);
-            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][target_square];
+            chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][rook_source];
             chessboard.hash_key ^= Zobrist.piece_keys[rook_piece][rook_target];
         }
 
@@ -731,25 +750,32 @@ public class MoveGenerator {
 
             chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
         } else if (castling) {
-            int k_target, r_target, rook_piece;
+            int k_target, r_target, rook_piece, rook_source;
+            rook_source = target_square;
+
             if (chessboard.side == white) {
                 rook_piece = R;
                 if (target_square > source_square) { // king side castling
                     k_target = g1;
                     r_target = f1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
                 }
                 else { // queen side castling
                     k_target = c1;
                     r_target = d1;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) { // king side castling
-                    k_target = g8; r_target = f8;
+                    k_target = g8;
+                    r_target = f8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
                 }
                 else { // queen side castling
                     k_target = c8;
                     r_target = d8;
+                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
                 }
             }
 
@@ -759,7 +785,7 @@ public class MoveGenerator {
 
             // unmake rook
             chessboard.bitboards[rook_piece] = BitBoardUtils.popBit(chessboard.bitboards[rook_piece], r_target);
-            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], target_square);
+            chessboard.bitboards[rook_piece] = BitBoardUtils.setBit(chessboard.bitboards[rook_piece], rook_source);
         } else {
             // unmake piece
             if (promoted_piece != 0) {
@@ -1097,7 +1123,8 @@ public class MoveGenerator {
                                 }
                             }
                             if (safe) {
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                int target_sq = (chessboard.gameVariants == GameVariants.CHESS960) ? r_sq : g1;
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_sq,
                                         piece, 0, false, false, false, true));
                             }
                         }
@@ -1144,7 +1171,8 @@ public class MoveGenerator {
                                 }
                             }
                             if (safe) {
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                int target_sq = (chessboard.gameVariants == GameVariants.CHESS960) ? r_sq : c1;
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_sq,
                                         piece, 0, false, false, false, true));
                             }
                         }
@@ -1269,7 +1297,8 @@ public class MoveGenerator {
                                 }
                             }
                             if (safe) {
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                int target_sq = (chessboard.gameVariants == GameVariants.CHESS960) ? r_sq : g8;
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_sq,
                                         piece, 0, false, false, false, true));
                             }
                         }
@@ -1316,7 +1345,8 @@ public class MoveGenerator {
                                 }
                             }
                             if (safe) {
-                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, r_sq,
+                                int target_sq = (chessboard.gameVariants == GameVariants.CHESS960) ? r_sq : c8;
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(source_square, target_sq,
                                         piece, 0, false, false, false, true));
                             }
                         }
