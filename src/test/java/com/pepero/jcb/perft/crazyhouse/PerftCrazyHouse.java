@@ -55,7 +55,8 @@ public class PerftCrazyHouse {
                 long old_nodes = nodes - cumulative_nodes;
                 MoveGenerator.unmakeMove(chessboard, move);
 
-                System.out.println("    move: " + EncodeMove.moveToString(move) + "  nodes: " + old_nodes);
+                System.out.println("    move: " + EncodeMove.moveToString(move,
+                        chessboard.gameVariants == GameVariants.CHESS960) + "  nodes: " + old_nodes);
             }
         }
 

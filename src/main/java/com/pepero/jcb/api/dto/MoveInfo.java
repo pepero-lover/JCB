@@ -46,14 +46,8 @@ public record MoveInfo(
     }
 
     public String toLanString(GameVariants variants) {
-        if (castling && variants == GameVariants.STANDARD) {
-            if (sourceSquare == Square.e1 && targetSquare == Square.h1) return "e1g1";
-            if (sourceSquare == Square.e1 && targetSquare == Square.a1) return "e1c1";
-            if (sourceSquare == Square.e8 && targetSquare == Square.h8) return "e8g8";
-            if (sourceSquare == Square.e8 && targetSquare == Square.a8) return "e8c8";
-        }
-
-        return EncodeMove.moveToString(originEncodedData);
+        return EncodeMove.moveToString(originEncodedData,
+                variants == GameVariants.CHESS960);
     }
 
     @Override

@@ -105,6 +105,6 @@ public class PerftMultiThread {
         chessGame = new ChessGame();
         chessGame.setAutoChangingGameOver(false);
 
-        perftTest(chessGame, 5);
+        perftTest(chessGame, 6);
     }
 }

@@ -1,10 +1,7 @@
 package com.pepero.jcb.perft.bitboard;
 
 import com.pepero.jcb.constant.MoveCache;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.Initializer;
-import com.pepero.jcb.core.MoveGenerator;
+import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.util.TimeUtils;
 
@@ -67,7 +64,8 @@ public class PerftBitboardMultiThread {
 
                 MoveGenerator.unmakeMove(chessboard, move);
 
-                String finalMoveStr = EncodeMove.moveToString(move);
+                String finalMoveStr = EncodeMove.moveToString(move,
+                        chessboard.gameVariants == GameVariants.CHESS960);
                 Callable<PerftResult> task = () -> {
                     long branchNodes = perftDriver(clonedBoard, depth - 1);
                     return new PerftResult(finalMoveStr, branchNodes);

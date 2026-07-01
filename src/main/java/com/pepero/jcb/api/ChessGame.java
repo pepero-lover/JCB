@@ -703,7 +703,8 @@ public class ChessGame {
             int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
 
             if (encodedMove == ILLEGAL_MOVE) {
-                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove), getFEN());
+                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
+                        chessboard.gameVariants == GameVariants.CHESS960), getFEN());
             }
 
             makeMove(new MoveInfo(encodedMove));

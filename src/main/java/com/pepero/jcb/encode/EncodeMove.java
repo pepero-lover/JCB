@@ -6,6 +6,7 @@ import com.pepero.jcb.core.ChessboardUtils;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.core.ChessboardUtils.ascii_pieces;
 
@@ -168,15 +169,31 @@ public class EncodeMove {
      * @param move encoded move (that can be generated on encodeMove() method)
      * @return encoded move string
      */
-    public static String moveToString(int move) {
+    public static String moveToString(int move, boolean isChess960) {
         if (EncodeMove.getMoveDrop(move)) {
             char pieceChar = ChessboardUtils.ascii_pieces[EncodeMove.getMovePiece(move)];
             String target = BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)];
             return Character.toUpperCase(pieceChar) + "@" + target;
         } else {
-            return BoardSquares.square_to_coordinates[EncodeMove.getMoveSource(move)] +
-                    BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)] +
-                    (EncodeMove.getMovePromoted(move) != 0 ? EncodeMove.promoted_pieces.get(EncodeMove.getMovePromoted(move)) : "");
+            int source = EncodeMove.getMoveSource(move);
+            int target = EncodeMove.getMoveTarget(move);
+            int piece = EncodeMove.getMovePiece(move);
+
+            if (!isChess960) {
+                if (piece == K || piece == k) {
+                    if ((source == e1 && target == h1) || (source == e8 && target == h8)) {
+                        target = (source == e1) ? g1 : g8;
+                    }
+                    else if ((source == e1 && target == a1) || (source == e8 && target == a8)) {
+                        target = (source == e1) ? c1 : c8;
+                    }
+                }
+            }
+
+            return BoardSquares.square_to_coordinates[source] +
+                    BoardSquares.square_to_coordinates[target] +
+                    (EncodeMove.getMovePromoted(move) != 0 ?
+                            EncodeMove.promoted_pieces.get(EncodeMove.getMovePromoted(move)) : "");
         }
     }
 

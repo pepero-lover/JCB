@@ -2,6 +2,7 @@ package com.pepero.jcb.util;
 
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -94,7 +95,8 @@ public class PerftDriver {
 
             sb.append("    move: ");
 
-            sb.append(EncodeMove.moveToString(move));
+            sb.append(EncodeMove.moveToString(move,
+                    chessboard.gameVariants == GameVariants.CHESS960));
 
             sb.append("  nodes: ").append(old_nodes);
 
