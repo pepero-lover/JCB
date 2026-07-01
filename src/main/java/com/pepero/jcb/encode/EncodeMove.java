@@ -167,6 +167,7 @@ public class EncodeMove {
      * Get encoded move string
      *
      * @param move encoded move (that can be generated on encodeMove() method)
+     * @param isChess960 is chess board chess 960
      * @return encoded move string
      */
     public static String moveToString(int move, boolean isChess960) {
@@ -200,64 +201,10 @@ public class EncodeMove {
     /**
      * Print move data (for UCI purposes)
      * @param move encoded move
+     * @param isChess960 is chess board chess 960
      */
-    public static void printMove(int move){
-        StringBuilder sb = new StringBuilder();
-        sb.append(BoardSquares.square_to_coordinates[getMoveSource(move)]);
-        sb.append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
-        sb.append(promoted_pieces.get(getMovePromoted(move)) != null ?
-                promoted_pieces.get(getMovePromoted(move)) : "");
-
-        System.out.println(sb);
-    }
-
-    /**
-     * Print move list
-     * @param moveList move list on chessboard class
-     */
-    public static void printMoveList(int[] moveList, int moveCount){
-        if(moveCount == 0){
-            System.out.println("\n    No move in the move list!\n");
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("\n    move   piece   capture   double   enpassant   castling\n");
-
-        for(int i = 0; i < moveCount; i++) {
-            // init move
-            int move = moveList[i];
-
-            // print move
-            sb.append("    ");
-            if (getMoveDrop(move)) {
-                // if drop move
-                sb.append(ascii_pieces[getMovePiece(move)]).append("@")
-                        .append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
-            } else {
-                sb.append(BoardSquares.square_to_coordinates[getMoveSource(move)]);
-                sb.append(BoardSquares.square_to_coordinates[getMoveTarget(move)]);
-                sb.append(promoted_pieces.get(getMovePromoted(move)) != null
-                        ? promoted_pieces.get(getMovePromoted(move)) : "");
-            }
-            sb.append("  ").append(getMovePromoted(move) != 0 ? "" : " ");
-            sb.append(ascii_pieces[getMovePiece(move)]);
-            sb.append("       ");
-            sb.append(getMoveCapture(move) ? 1 : 0);
-            sb.append("         ");
-            sb.append(getMoveDouble(move) ? 1 : 0);
-            sb.append("        ");
-            sb.append(getMoveEnpassant(move) ? 1 : 0);
-            sb.append("           ");
-            sb.append(getMoveCastling(move) ? 1 : 0);
-
-            sb.append("\n\n");
-        }
-
-        sb.append("    Total number of moves: ").append(moveCount).append("\n");
-
-        System.out.println(sb);
+    public static void printMove(int move, boolean isChess960){
+        System.out.println(moveToString(move, isChess960));
     }
 
     // promoted pieces
