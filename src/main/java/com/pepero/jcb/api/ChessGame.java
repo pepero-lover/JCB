@@ -13,22 +13,20 @@ import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.api.parse.pgn.TokenType;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.pepero.jcb.constant.BoardSquares.no_sq;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.white;
-import static com.pepero.jcb.core.ChessboardUtils.ascii_pieces;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 import static com.pepero.jcb.core.MoveGenerator.generateMoves;
 
@@ -56,15 +54,13 @@ public class ChessGame {
         GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
 
         MoveNode() {
-            this.id = ++nodeCounter;
-
+            this.id = nodeCounter.incrementAndGet();
             this.moveData = null;
             this.parent = null;
         }
 
         MoveNode(MoveInfo moveData, MoveNode parent) {
-            this.id = ++nodeCounter;
-
+            this.id = nodeCounter.incrementAndGet();
             this.moveData = moveData;
             this.parent = parent;
         }
@@ -83,7 +79,18 @@ public class ChessGame {
         }
     }
 
-    private long nodeCounter = 0L;
+    private static final int[] PIECE_VALUES = new int[12];
+    static {
+        PIECE_VALUES[P] = 1;  PIECE_VALUES[p] = -1;
+        PIECE_VALUES[N] = 3;  PIECE_VALUES[n] = -3;
+        PIECE_VALUES[B] = 3;  PIECE_VALUES[b] = -3;
+        PIECE_VALUES[R] = 5;  PIECE_VALUES[r] = -5;
+        PIECE_VALUES[Q] = 9;  PIECE_VALUES[q] = -9;
+        PIECE_VALUES[K] = 100; PIECE_VALUES[k] = -100;
+    }
+
+
+    private final AtomicLong nodeCounter = new AtomicLong(0L);
     private static final int MAX_ENTRIES = 65536;
 
     private final Map<Long, MoveNode> nodeCache = new LinkedHashMap<>(16, 0.75f, true) {
@@ -192,7 +199,6 @@ public class ChessGame {
 
         System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
 
-        this.nodeCounter = 0L;
         this.moveHistoryRoot = new MoveNode();
         this.currentNode = this.moveHistoryRoot;
         this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
@@ -257,6 +263,44 @@ public class ChessGame {
     }
 
     /**
+     * Make move for internal make move methods (not locking multi=thread)
+     *
+     * @param encodedMove encoded move data
+     * @param originalMoveString original move string (null allowed)
+     */
+    private void internalMakeMoveLocked(int encodedMove, String originalMoveString) {
+        MoveInfo moveData;
+        boolean shouldNotifyGameOver = false;
+        boolean historyChanged;
+
+        if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
+            String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
+            throw new IllegalMoveException(errorStr, this.getFEN());
+        }
+
+        boolean isSuccess = MoveGenerator.makeMove(this.chessboard, encodedMove);
+        if(!isSuccess) {
+            String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
+            throw new IllegalMoveException(errorStr, this.getFEN());
+        }
+
+        moveData = new MoveInfo(encodedMove);
+        historyChanged = addMoveHistory(moveData);
+
+        if(autoChangeGameOver) {
+            shouldNotifyGameOver = evaluateGameState();
+        }
+
+        notifyMoveMade(moveData);
+        if (shouldNotifyGameOver) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+        if(historyChanged) {
+            notifyHistoryChanged();
+        }
+    }
+
+    /**
      * Make move on this ChessGame (LAN MOVE)
      *
      * @param moveString move like e2e4, e7e5 (LAN move string)
@@ -265,16 +309,13 @@ public class ChessGame {
      * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(String moveString) {
-        int encodedMove;
-
-        readLock.lock();
+        writeLock.lock();
         try {
-            encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
+            int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
+            internalMakeMoveLocked(encodedMove, moveString);
         } finally {
-            readLock.unlock();
+            writeLock.unlock();
         }
-
-        internalMakeMove(encodedMove, moveString);
     }
 
     /**
@@ -748,17 +789,25 @@ public class ChessGame {
      * @param fen this chess game fen
      */
     private void calculateInitialPieces(String fen) {
-        String boardFen = fen.split(" ")[0];
-        for (int i = 0; i < boardFen.length(); i++) {
-            char c = boardFen.charAt(i);
-            switch (c) {
-                case 'P' -> initialPieceCounts[P]++; case 'N' -> initialPieceCounts[N]++;
-                case 'B' -> initialPieceCounts[B]++; case 'R' -> initialPieceCounts[R]++;
-                case 'Q' -> initialPieceCounts[Q]++;
+        int spaceIndex = fen.indexOf(' ');
+        int limit = (spaceIndex != -1) ? spaceIndex : fen.length();
 
-                case 'p' -> initialPieceCounts[p]++; case 'n' -> initialPieceCounts[n]++;
-                case 'b' -> initialPieceCounts[b]++; case 'r' -> initialPieceCounts[r]++;
+        for (int i = 0; i < limit; i++) {
+            char c = fen.charAt(i);
+            switch (c) {
+                case 'P' -> initialPieceCounts[P]++;
+                case 'N' -> initialPieceCounts[N]++;
+                case 'B' -> initialPieceCounts[B]++;
+                case 'R' -> initialPieceCounts[R]++;
+                case 'Q' -> initialPieceCounts[Q]++;
+                case 'K' -> initialPieceCounts[K]++;
+
+                case 'p' -> initialPieceCounts[p]++;
+                case 'n' -> initialPieceCounts[n]++;
+                case 'b' -> initialPieceCounts[b]++;
+                case 'r' -> initialPieceCounts[r]++;
                 case 'q' -> initialPieceCounts[q]++;
+                case 'k' -> initialPieceCounts[k]++;
             }
         }
     }
@@ -830,30 +879,9 @@ public class ChessGame {
         try {
             int piece_score = 0;
 
-            for(int white_piece = P; white_piece <= K; white_piece++) {
-                int multiply = switch (white_piece) {
-                    case P -> 1;
-                    case N, B -> 3;
-                    case R -> 5;
-                    case Q -> 9;
-                    case K -> 100;
-                    default -> 0;
-                };
-
-                piece_score += BitBoardUtils.countBits(this.chessboard.getBitboardPiece(white_piece)) * multiply;
-            }
-
-            for(int black_piece = p; black_piece <= k; black_piece++) {
-                int multiply = switch (black_piece) {
-                    case p -> 1;
-                    case n, b -> 3;
-                    case r -> 5;
-                    case q -> 9;
-                    case k -> 100;
-                    default -> 0;
-                };
-
-                piece_score -= BitBoardUtils.countBits(this.chessboard.getBitboardPiece(black_piece)) * multiply;
+            for(int piece = P; piece <= k; piece++) {
+                piece_score += BitBoardUtils.countBits(this.chessboard.getBitboardPiece(piece))
+                        * PIECE_VALUES[piece];
             }
 
             // crazy house pocket
@@ -901,28 +929,23 @@ public class ChessGame {
      * @return legal moves
      */
     public List<MoveInfo> getLegalMoves() {
-        Chessboard tempBoard;
-
-        readLock.lock();
+        writeLock.lock();
         try {
-            tempBoard = new Chessboard(this.chessboard);
+            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[chessboard.ply];
+            int move_count = generateMoves(chessboard, move_list);
+            List<MoveInfo> result = new ArrayList<>(move_count);
+
+            for (int count = 0; count < move_count; count++){
+                int encodedMove = move_list[count];
+                if (!MoveGenerator.makeMove(chessboard, encodedMove)) continue;
+
+                result.add(new MoveInfo(encodedMove));
+                MoveGenerator.unmakeMove(chessboard, encodedMove);
+            }
+            return result;
         } finally {
-            readLock.unlock();
+            writeLock.unlock();
         }
-
-        int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[tempBoard.ply];
-        int move_count = generateMoves(tempBoard, move_list);
-        List<MoveInfo> result = new ArrayList<>(move_count);
-
-        for (int count = 0; count < move_count; count++){
-            int encodedMove = move_list[count];
-            if(!MoveGenerator.makeMove(tempBoard ,encodedMove))
-                continue;
-            MoveGenerator.unmakeMove(tempBoard, encodedMove);
-            result.add(new MoveInfo(encodedMove));
-        }
-
-        return result;
     }
 
     /**
