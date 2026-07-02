@@ -26,10 +26,11 @@ public class PerftCrazyHouseMultiThread {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
-                nodes += perftDriver(chessboard, depth - 1);
-                MoveGenerator.unmakeMove(chessboard, move);
-            }
+            MoveGenerator.makeMove(chessboard, move);
+
+            nodes += perftDriver(chessboard, depth - 1);
+
+            MoveGenerator.unmakeMove(chessboard, move);
         }
         return nodes;
     }
@@ -59,20 +60,19 @@ public class PerftCrazyHouseMultiThread {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
+            MoveGenerator.makeMove(chessboard, move);
 
-                final Chessboard clonedBoard = new Chessboard(chessboard);
+            final Chessboard clonedBoard = new Chessboard(chessboard);
 
-                MoveGenerator.unmakeMove(chessboard, move);
+            MoveGenerator.unmakeMove(chessboard, move);
 
-                String finalMoveStr = EncodeMove.moveToString(move,
-                        chessboard.gameVariants == GameVariants.CHESS960);
-                Callable<PerftResult> task = () -> {
-                    long branchNodes = perftDriver(clonedBoard, depth - 1);
-                    return new PerftResult(finalMoveStr, branchNodes);
-                };
-                futures.add(executor.submit(task));
-            }
+            String finalMoveStr = EncodeMove.moveToString(move,
+                    chessboard.gameVariants == GameVariants.CHESS960);
+            Callable<PerftResult> task = () -> {
+                long branchNodes = perftDriver(clonedBoard, depth - 1);
+                return new PerftResult(finalMoveStr, branchNodes);
+            };
+            futures.add(executor.submit(task));
         }
 
         long totalNodes = 0;

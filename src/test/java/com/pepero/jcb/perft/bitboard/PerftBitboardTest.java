@@ -26,11 +26,11 @@ public class PerftBitboardTest {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeStandardMove(chessboard, move)) {
-                perftDriver(chessboard, depth - 1);
+            MoveGenerator.makeStandardMove(chessboard, move);
 
-                MoveGenerator.unmakeStandardMove(chessboard, move);
-            }
+            perftDriver(chessboard, depth - 1);
+
+            MoveGenerator.unmakeStandardMove(chessboard, move);
         }
     }
 
@@ -50,30 +50,30 @@ public class PerftBitboardTest {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeStandardMove(chessboard, move)) {
-                long cumulative_nodes = nodes;
+            MoveGenerator.makeStandardMove(chessboard, move);
 
-                perftDriver(chessboard, depth - 1);
+            long cumulative_nodes = nodes;
 
-                long old_nodes = nodes - cumulative_nodes;
-                MoveGenerator.unmakeStandardMove(chessboard, move);
+            perftDriver(chessboard, depth - 1);
 
-                int source = EncodeMove.getMoveSource(move);
-                int target = EncodeMove.getMoveTarget(move);
-                int promoted = EncodeMove.getMovePromoted(move);
+            long old_nodes = nodes - cumulative_nodes;
+            MoveGenerator.unmakeStandardMove(chessboard, move);
 
-                String moveStr = BoardSquares.square_to_coordinates[source] +
-                        BoardSquares.square_to_coordinates[target];
+            int source = EncodeMove.getMoveSource(move);
+            int target = EncodeMove.getMoveTarget(move);
+            int promoted = EncodeMove.getMovePromoted(move);
 
-                if (promoted != 0) {
-                    Character promoChar = ChessboardUtils.encoded_piece_to_char.get(promoted);
-                    if (promoChar != null) {
-                        moveStr += promoChar.toString().toLowerCase();
-                    }
+            String moveStr = BoardSquares.square_to_coordinates[source] +
+                    BoardSquares.square_to_coordinates[target];
+
+            if (promoted != 0) {
+                Character promoChar = ChessboardUtils.encoded_piece_to_char.get(promoted);
+                if (promoChar != null) {
+                    moveStr += promoChar.toString().toLowerCase();
                 }
-
-                System.out.println("    move: " + moveStr + "  nodes: " + old_nodes);
             }
+
+            System.out.println("    move: " + moveStr + "  nodes: " + old_nodes);
         }
 
         long endTime = TimeUtils.getTimeNt();

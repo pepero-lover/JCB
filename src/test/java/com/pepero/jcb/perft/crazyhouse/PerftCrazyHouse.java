@@ -23,11 +23,11 @@ public class PerftCrazyHouse {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
-                perftDriver(chessboard, depth - 1);
+            MoveGenerator.makeMove(chessboard, move);
 
-                MoveGenerator.unmakeMove(chessboard, move);
-            }
+            perftDriver(chessboard, depth - 1);
+
+            MoveGenerator.unmakeMove(chessboard, move);
         }
     }
 
@@ -47,17 +47,17 @@ public class PerftCrazyHouse {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            if (MoveGenerator.makeMove(chessboard, move)) {
-                long cumulative_nodes = nodes;
+            MoveGenerator.makeMove(chessboard, move);
 
-                perftDriver(chessboard, depth - 1);
+            long cumulative_nodes = nodes;
 
-                long old_nodes = nodes - cumulative_nodes;
-                MoveGenerator.unmakeMove(chessboard, move);
+            perftDriver(chessboard, depth - 1);
 
-                System.out.println("    move: " + EncodeMove.moveToString(move,
-                        chessboard.gameVariants == GameVariants.CHESS960) + "  nodes: " + old_nodes);
-            }
+            long old_nodes = nodes - cumulative_nodes;
+            MoveGenerator.unmakeMove(chessboard, move);
+
+            System.out.println("    move: " + EncodeMove.moveToString(move,
+                    chessboard.gameVariants == GameVariants.CHESS960) + "  nodes: " + old_nodes);
         }
 
         long endTime = TimeUtils.getTimeNt();

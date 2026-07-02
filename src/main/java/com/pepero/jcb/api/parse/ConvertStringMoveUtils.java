@@ -44,8 +44,7 @@ public class ConvertStringMoveUtils {
 
             StringBuilder sb = new StringBuilder(lan);
 
-            boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
-            if (!isSuccess) throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
+            MoveGenerator.makeMove(chessboard, encoded_move);
 
             if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
             else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
@@ -140,15 +139,12 @@ public class ConvertStringMoveUtils {
 
                         if (EncodeMove.getMovePiece(move) == type &&
                                 EncodeMove.getMoveTarget(move) == target_square) {
-                            if (MoveGenerator.makeMove(chessboard, move)) {
-                                going_piece_count++;
-                                int other_src = EncodeMove.getMoveSource(move);
+                            going_piece_count++;
+                            int other_src = EncodeMove.getMoveSource(move);
 
-                                if (other_src != source_square) {
-                                    if (other_src % 8 == source_file) equal_file = true;
-                                    if (other_src / 8 == source_rank) equal_rank = true;
-                                }
-                                MoveGenerator.unmakeMove(chessboard, move);
+                            if (other_src != source_square) {
+                                if (other_src % 8 == source_file) equal_file = true;
+                                if (other_src / 8 == source_rank) equal_rank = true;
                             }
                         }
                     }
@@ -177,10 +173,7 @@ public class ConvertStringMoveUtils {
             sb.append(promotionStr);
         }
 
-        boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
-        if (!isSuccess) {
-            throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
-        }
+        MoveGenerator.makeMove(chessboard, encoded_move);
 
         if(ChessboardUtils.isCheckmate(chessboard)) {
             sb.append("#");
@@ -212,8 +205,7 @@ public class ConvertStringMoveUtils {
             sb.append("@");
             sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
 
-            boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
-            if (!isSuccess) throw new IllegalMoveException(moveInfo.toLanString(), ChessboardUtils.getFen(chessboard));
+            MoveGenerator.makeMove(chessboard, encoded_move);
             if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
             else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
             MoveGenerator.unmakeMove(chessboard, encoded_move);
@@ -278,15 +270,12 @@ public class ConvertStringMoveUtils {
 
                         if (EncodeMove.getMovePiece(move) == type &&
                                 EncodeMove.getMoveTarget(move) == target_square) {
-                            if (MoveGenerator.makeMove(chessboard, move)) {
-                                going_piece_count++;
-                                int other_src = EncodeMove.getMoveSource(move);
+                            going_piece_count++;
+                            int other_src = EncodeMove.getMoveSource(move);
 
-                                if (other_src != source_square) {
-                                    if (other_src % 8 == source_file) equal_file = true;
-                                    if (other_src / 8 == source_rank) equal_rank = true;
-                                }
-                                MoveGenerator.unmakeMove(chessboard, move);
+                            if (other_src != source_square) {
+                                if (other_src % 8 == source_file) equal_file = true;
+                                if (other_src / 8 == source_rank) equal_rank = true;
                             }
                         }
                     }
@@ -313,10 +302,7 @@ public class ConvertStringMoveUtils {
             sb.append(promotionStr);
         }
 
-        boolean isSuccess = MoveGenerator.makeMove(chessboard, encoded_move);
-        if (!isSuccess) {
-            throw new IllegalMoveException(new MoveInfo(encoded_move).toLanString(), ChessboardUtils.getFen(chessboard));
-        }
+        MoveGenerator.makeMove(chessboard, encoded_move);
 
         if(ChessboardUtils.isCheckmate(chessboard)) {
             sb.append("#");

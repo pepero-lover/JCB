@@ -50,19 +50,8 @@ public class ConvertTest {
                     moveList[index] = temp;
                 }
 
-                boolean isLegalMoveFound = false;
-
-                for (int m = 0; m < moveCount; m++) {
-                    int moveData = moveList[m];
-
-                    if (MoveGenerator.makeMove(board, moveData)) {
-                        isLegalMoveFound = true;
-                        conversionCount++;
-                        break;
-                    }
-                }
-
-                if (!isLegalMoveFound) break;
+                MoveGenerator.makeStandardMove(board, moveList[0]);
+                conversionCount++;
             }
         }
 

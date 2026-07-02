@@ -28,10 +28,7 @@ public class PerftDriver {
         // loop over generated moves
         for(int move_count = 0; move_count < count; move_count++){
             // make move
-            boolean isLegal = MoveGenerator.makeMove(chessboard, move_list[move_count]);
-            if(!isLegal)
-                // skip to the next move
-                continue;
+            MoveGenerator.makeMove(chessboard, move_list[move_count]);
 
             // call perft driver recursively
             perftDriver(chessboard, depth - 1);
@@ -73,10 +70,7 @@ public class PerftDriver {
         for(int move_count = 0; move_count < count; move_count++){
             int move = move_list[move_count];
 
-            // make move
-            if(!MoveGenerator.makeMove(chessboard ,move))
-                // skip to the next move
-                continue;
+            MoveGenerator.makeMove(chessboard ,move);
 
             // cumulative nodes
             long cumulative_nodes = nodes; // noes
