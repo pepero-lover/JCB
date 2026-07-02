@@ -113,7 +113,7 @@ public class MoveGenerator {
 
     private static boolean isEnPassantSafe(Chessboard chessboard, int kingSq, int sourceSq, int targetSq, int side) {
         int oppSide = side ^ 1;
-        int capturedPawnSq = (side == white) ? targetSq - 8 : targetSq + 8;
+        int capturedPawnSq = (side == white) ? targetSq + 8 : targetSq - 8;
 
         long tempOccupancy = chessboard.occupancies[both];
         tempOccupancy = BitBoardUtils.popBit(tempOccupancy, sourceSq);
