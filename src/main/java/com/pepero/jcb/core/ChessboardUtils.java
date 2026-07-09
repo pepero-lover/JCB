@@ -478,6 +478,39 @@ public class ChessboardUtils {
         return count;
     }
 
+    /**
+     * Get whether this position is repetition draw (starts at 'rootPly')
+     * <p>
+     * if the whole history repetition count is more than 2, return true, <br>
+     * if after root ply history repetition count is more than 1, return true. <br>
+     * if neither, return false.
+     *
+     * @param chessboard chessboard
+     * @param rootPly start counting ply
+     * @return whether this position is repetition draw
+     */
+    public static boolean isRepetitionDraw(Chessboard chessboard, int rootPly) {
+        int count = 1;
+
+        int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
+
+        for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
+            if (chessboard.hash_key_history[i] == chessboard.hash_key) {
+                if (i >= rootPly) {
+                    return true;
+                }
+
+                count++;
+
+                if (count >= 3) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public static String toStringChessboard(Chessboard chessboard) {
         StringBuilder sb = new StringBuilder(256);
         char[] board = new char[64];
