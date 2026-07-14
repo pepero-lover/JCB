@@ -27,6 +27,8 @@ public class MatchConfig {
 
     private final PolyglotBookReader openingBook;
 
+    private final boolean randomBookMove = false;
+
     private MatchConfig(Builder builder) {
         this.rounds = builder.rounds;
         this.variant = builder.variant;
@@ -45,6 +47,7 @@ public class MatchConfig {
     public int getMultiPv() { return multiPv; }
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean hasOpeningBook() { return openingBook != null; }
+    public boolean isRandomBookMove() { return randomBookMove; }
 
     public static class Builder {
         private int rounds = 1;
@@ -55,6 +58,8 @@ public class MatchConfig {
         private EngineLimit engine2Limit = new EngineLimit(0, 0, 0);
 
         private int multiPv = 1;
+
+        private boolean randomBookMove = false;
 
         private PolyglotBookReader openingBook = null;
 
@@ -108,6 +113,11 @@ public class MatchConfig {
 
         public Builder multiPv(int multiPv) {
             this.multiPv = multiPv;
+            return this;
+        }
+
+        public Builder randomBookMove(boolean randomBookMove) {
+            this.randomBookMove = randomBookMove;
             return this;
         }
 

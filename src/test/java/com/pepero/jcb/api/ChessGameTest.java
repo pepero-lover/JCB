@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.dto.PGNGame;
@@ -500,5 +501,12 @@ public class ChessGameTest {
 
         assertFalse(chessGame.isInsufficientMaterial(), "포켓에 기물이 있으므로 기물 부족이 아닙니다.");
         assertNotEquals(GameOverReason.INSUFFICIENTMATERIAL, chessGame.isGameOver());
+    }
+
+    @Test
+    @DisplayName("Polyglot 이 제대로 생성되어야 한다")
+    void polyglot() {
+        assertEquals("463b96181691fc9c",
+                Long.toHexString(PolyglotHashUtils.getPolyglotHash(new Chessboard(Chessboard.start_position))));
     }
 }

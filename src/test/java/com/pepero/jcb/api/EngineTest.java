@@ -7,11 +7,11 @@ import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
 public class EngineTest {
     public static void main(String[] args) {
-        // 외부 UCI 엔진 파일의 경로를 입력하여 Wrapper 를 생성합니다.
+        // 프로세스 빌더를 이용하여 Wrapper 를 생성합니다.
         UCIEngineWrapper engine1 = new UCIEngineWrapper(
                 new ProcessBuilder(
                 "java",
-                "-Xmx1024m", // (선택사항) 최대 메모리 할당량
+                "-Xmx1024m",
                 "-jar",
                 "my_engine.jar"
                 ),
@@ -20,14 +20,17 @@ public class EngineTest {
         UCIEngineWrapper engine2 = new UCIEngineWrapper(
                 new ProcessBuilder(
                         "java",
-                        "-Xmx1024m", // (선택사항) 최대 메모리 할당량
+                        "-Xmx1024m",
                         "-jar",
                         "my_engine.jar"
-                ), 100, null);
+                ),
+                100,
+                null);
 
         // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
         MatchConfig config = new MatchConfig.Builder()
                 .openingBook("opening/path/opening.bin") // 오프닝 북도 가져올 수 있습니다.
+                .randomBookMove(false) // 오프닝 북의 랜덤성을 제거합니다.
                 .depthLimit(10) // 고정 깊이 탐색
                 //.timeControl(300_000, 2_000) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
                 // 300_000 밀리 세컨드 = 300초 = 5분
@@ -51,7 +54,7 @@ public class EngineTest {
                 // 여기까지는 이전과 같지만 여기에서 MatchResult 로 DTO 를 받습니다
 
                 // 대전을 시작합니다.
-                MatchResult matchResult = arena.startMatch(); // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
+                MatchResult matchResult = arena.startMatch(i + 1); // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
                 System.out.println("경기 결과: " + matchResult.result());
                 System.out.println("기보(PGN):\n" + matchResult.pgn());
             } catch (Exception e) {

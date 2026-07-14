@@ -223,9 +223,7 @@ public class ConvertStringMoveUtils {
         // castling
         boolean castle = EncodeMove.getMoveCastling(encoded_move);
         if (castle) {
-            boolean isKingSide = (chessboard.side == white) ?
-                    (target_square == chessboard.king_side_rook_file + 56) :
-                    (target_square == chessboard.king_side_rook_file);
+            boolean isKingSide = (source_square < target_square);
 
             if (isKingSide) sb.append("O-O");
             else sb.append("O-O-O");
@@ -423,6 +421,17 @@ public class ConvertStringMoveUtils {
         if(lan.length() == 5){
             promotion_type = ChessboardUtils.char_to_encoded_piece.get(lan.charAt(4));
             if(chessboard.side == white) promotion_type -= 6;
+        }
+
+        if(chessboard.gameVariants == GameVariants.STANDARD) {
+            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
+            if(pieceType == K && targetType == R) {
+                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            }
+            if(pieceType == k && targetType == r) {
+                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            }
         }
 
         // lan is not correct

@@ -10,6 +10,22 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
 public class PolyglotHashUtils {
+    private static int toPolyglotPiece(int enginePiece) {
+        if (enginePiece == p) return 0;
+        if (enginePiece == P) return 1;
+        if (enginePiece == n) return 2;
+        if (enginePiece == N) return 3;
+        if (enginePiece == b) return 4;
+        if (enginePiece == B) return 5;
+        if (enginePiece == r) return 6;
+        if (enginePiece == R) return 7;
+        if (enginePiece == q) return 8;
+        if (enginePiece == Q) return 9;
+        if (enginePiece == k) return 10;
+        if (enginePiece == K) return 11;
+        return -1;
+    }
+
     /**
      * Get polyglot hashed data
      *
@@ -21,9 +37,13 @@ public class PolyglotHashUtils {
 
         // piece
         for (int square = 0; square < 64; square++) {
-            int pieceType = ChessboardUtils.getPieceTypeOnSquare(board, square);
+            int enginePiece = ChessboardUtils.getPieceTypeOnSquare(board, square);
+            int pieceType = toPolyglotPiece(enginePiece);
+
             if (pieceType != -1) {
-                int index = (pieceType * 64) + square;
+                int polyglotSquare = square ^ 56;
+
+                int index = (pieceType * 64) + polyglotSquare;
                 hash ^= PolyglotConstant.POLYGLOT_RAND[index];
             }
         }

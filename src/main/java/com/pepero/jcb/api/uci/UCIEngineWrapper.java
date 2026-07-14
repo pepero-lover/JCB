@@ -37,6 +37,7 @@ public class UCIEngineWrapper {
     public interface EngineAnalysisListener {
         void onAnalysisBundled(List<EngineLine> bundledLines);
         void onBestMoveFound(String bestMove);
+        default void onEngineLog(String direction, String log) {}
     }
 
     private final EngineAnalysisListener listener;
@@ -131,6 +132,10 @@ public class UCIEngineWrapper {
                 String line;
 
                 while (!Thread.currentThread().isInterrupted() && (line = reader.readLine()) != null) {
+                    if (listener != null) {
+                        listener.onEngineLog("IN", line);
+                    }
+
                     if (line.equals("uciok")) {
                         // when uciok
 
@@ -296,6 +301,10 @@ public class UCIEngineWrapper {
      * Send command to engine
      */
     public void sendCommand(String command) {
+        if (listener != null) {
+            listener.onEngineLog("OUT", command);
+        }
+
         try {
             writer.write(command + "\n");
             writer.flush();

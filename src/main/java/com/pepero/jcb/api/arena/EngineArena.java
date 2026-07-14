@@ -27,6 +27,10 @@ public class EngineArena {
     }
 
     public MatchResult startMatch() {
+        return startMatch(1);
+    }
+
+    public MatchResult startMatch(int roundNumber) {
         UCIEngineWrapper whiteEngine = isEngine1White ? engine1 : engine2;
         UCIEngineWrapper blackEngine = isEngine1White ? engine2 : engine1;
 
@@ -52,7 +56,11 @@ public class EngineArena {
             if (matchConfig.hasOpeningBook()) {
                 long currentHash = chessGame.getPolyglotHash();
 
-                bestMoveLan = matchConfig.getOpeningBook().pickRandomMove(currentHash);
+                if (matchConfig.isRandomBookMove()) {
+                    bestMoveLan = matchConfig.getOpeningBook().pickRandomMove(currentHash);
+                } else {
+                    bestMoveLan = matchConfig.getOpeningBook().pickSequentialMove(currentHash, roundNumber);
+                }
             }
 
             if (bestMoveLan != null) {
