@@ -42,16 +42,14 @@ public class UCIEngineWrapper {
     private final EngineAnalysisListener listener;
     private final int tickRateMs;
 
-    public UCIEngineWrapper(String enginePath, int tickRateMs, EngineAnalysisListener listener) {
+    public UCIEngineWrapper(ProcessBuilder engine, int tickRateMs, EngineAnalysisListener listener) {
         this.tickRateMs = tickRateMs;
         this.listener = listener;
 
         try {
-            ProcessBuilder pb = new ProcessBuilder(enginePath.split(" "));
-
-            pb.redirectErrorStream(true); 
+            engine.redirectErrorStream(true);
             
-            this.engineProcess = pb.start();
+            this.engineProcess = engine.start();
             this.reader = new BufferedReader(new InputStreamReader(engineProcess.getInputStream()));
             this.writer = new BufferedWriter(new OutputStreamWriter(engineProcess.getOutputStream()));
             
@@ -69,15 +67,15 @@ public class UCIEngineWrapper {
             startBroadcastingThread();
 
             sendCommand("uci");
-            if (!uciokLatch.await(5, TimeUnit.SECONDS)) throw new RuntimeException("uciok Timeout!");
+            if (!uciokLatch.await(15, TimeUnit.SECONDS)) throw new RuntimeException("uciok Timeout!");
             
             sendCommand("isready");
-            if (!readyokLatch.await(5, TimeUnit.SECONDS)) throw new RuntimeException("readyok Timeout!");
+            if (!readyokLatch.await(15, TimeUnit.SECONDS)) throw new RuntimeException("readyok Timeout!");
 
             System.out.println("Engine started / synchronized!");
 
         } catch (Exception e) {
-            throw new RuntimeException("Engine initialization failed: " + enginePath, e);
+            throw new RuntimeException("Engine initialization failed.", e);
         }
     }
 

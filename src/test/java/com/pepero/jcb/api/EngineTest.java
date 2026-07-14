@@ -8,8 +8,22 @@ import com.pepero.jcb.api.uci.UCIEngineWrapper;
 public class EngineTest {
     public static void main(String[] args) {
         // 외부 UCI 엔진 파일의 경로를 입력하여 Wrapper 를 생성합니다.
-        UCIEngineWrapper engine1 = new UCIEngineWrapper("engine1/path/engine.exe", 100, null);
-        UCIEngineWrapper engine2 = new UCIEngineWrapper("engine2/path/engine.exe", 100, null);
+        UCIEngineWrapper engine1 = new UCIEngineWrapper(
+                new ProcessBuilder(
+                "java",
+                "-Xmx1024m", // (선택사항) 최대 메모리 할당량
+                "-jar",
+                "my_engine.jar"
+                ),
+                100,
+                null);
+        UCIEngineWrapper engine2 = new UCIEngineWrapper(
+                new ProcessBuilder(
+                        "java",
+                        "-Xmx1024m", // (선택사항) 최대 메모리 할당량
+                        "-jar",
+                        "my_engine.jar"
+                ), 100, null);
 
         // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
         MatchConfig config = new MatchConfig.Builder()
