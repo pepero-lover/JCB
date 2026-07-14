@@ -1310,48 +1310,6 @@ public class MoveGenerator {
     }
 
     /**
-     * Generate Moves (drop moves on crazy house)
-     * @param chessboard chess board
-     * @param moveArray the result array
-     * @param currentMoveCount start move count
-     * @return move counts
-     */
-    public static int generateDropMoves(Chessboard chessboard, int[] moveArray, int currentMoveCount) {
-        if (chessboard.gameVariants != GameVariants.CRAZY_HOUSE) return currentMoveCount;
-
-        int moveCount = currentMoveCount;
-
-        int mySide = chessboard.side;
-        int startPiece = (mySide == white) ? P : p;
-        int endPiece   = (mySide == white) ? Q : q;
-
-        long emptySquares = ~chessboard.occupancies[both];
-
-        for (int piece = startPiece; piece <= endPiece; piece++) {
-            if (chessboard.pocket[piece] > 0) {
-                long dropTargets = emptySquares;
-
-                if (piece == P || piece == p) {
-                    dropTargets &= ~(BitBoardUtils.RANK_1 | BitBoardUtils.RANK_8);
-                }
-
-                long targetsCopy = dropTargets;
-                while (targetsCopy != 0) {
-                    int target_square = BitBoardUtils.getLS1BIndex(targetsCopy);
-
-                    int dropMove = EncodeMove.encodeDropMove(piece, target_square);
-
-                    moveCount = addMove(moveArray, moveCount, dropMove);
-
-                    targetsCopy = BitBoardUtils.popBit(targetsCopy, target_square);
-                }
-            }
-        }
-
-        return moveCount;
-    }
-
-    /**
      * Add move into move array and ++ the moveCount
      * <p>
      * Usage : moveCount = addMove(int[] moveArray, int moveCount, int moveData);
