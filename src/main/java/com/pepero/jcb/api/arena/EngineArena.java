@@ -15,11 +15,22 @@ public class EngineArena {
 
     private boolean isEngine1White = true;
 
+    public interface ArenaListener {
+        void onMovePlayed(ChessGame game, String move, long timeSpent);
+        void onMatchFinished(ChessGame game, GameResult gameResult, GameOverReason gameOverReason);
+    }
+
+    private ArenaListener listener;
+
     public EngineArena(ChessGame chessGame, UCIEngineWrapper engine1, UCIEngineWrapper engine2, MatchConfig config) {
         this.chessGame = chessGame;
         this.engine1 = engine1;
         this.engine2 = engine2;
         this.matchConfig = config;
+    }
+
+    public void setArenaListener(ArenaListener listener) {
+        this.listener = listener;
     }
 
     public void swapEngine() {
@@ -87,10 +98,20 @@ public class EngineArena {
             if (whiteLimit.hasTimeLimit() && clock.isTimeUp(isWhiteTurn)) {
                 chessGame.forceEndGameExternal(isWhiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
                         GameOverReason.TIMEOVER);
+
+                if (listener != null) {
+                    listener.onMatchFinished(chessGame, isWhiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
+                            GameOverReason.TIMEOVER);
+                }
+
                 break;
             }
 
             chessGame.makeMove(bestMoveLan);
+
+            if (listener != null) {
+                listener.onMovePlayed(chessGame, bestMoveLan, timeSpent);
+            }
         }
 
         return new MatchResult(
