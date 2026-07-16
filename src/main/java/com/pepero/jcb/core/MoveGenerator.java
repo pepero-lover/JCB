@@ -339,20 +339,21 @@ public class MoveGenerator {
             if ((chessboard.castle & CastlingRights.WK) != 0 && chessboard.king_side_rook_file != -1) {
                 int r_sq = chessboard.king_side_rook_file + 56;
 
-                long betweenMask = RAY_BETWEEN[kingSq][r_sq];
-                long finalMask = (1L << g1) | (1L << f1);
-                finalMask &= ~((1L << kingSq) | (1L << r_sq));
+                // ★ 추가: 그 자리에 실제로 '백 룩'이 있는지 검증
+                if (BitBoardUtils.getBit(chessboard.bitboards[R], r_sq)) {
+                    long betweenMask = RAY_BETWEEN[kingSq][r_sq];
+                    long finalMask = (1L << g1) | (1L << f1);
+                    finalMask &= ~((1L << kingSq) | (1L << r_sq));
 
-                if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
-                    boolean safe = true;
-                    for (int sq = Math.min(kingSq, g1); sq <= Math.max(kingSq, g1); sq++) {
-                        if (isSquareAttacked(chessboard, sq, oppSide)) {
-                            safe = false; break;
+                    if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
+                        boolean safe = true;
+                        for (int sq = Math.min(kingSq, g1); sq <= Math.max(kingSq, g1); sq++) {
+                            if (isSquareAttacked(chessboard, sq, oppSide)) { safe = false; break; }
                         }
-                    }
-                    if (safe) {
-                        int targetSq = is960 ? r_sq : g1;
-                        moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                        if (safe) {
+                            int targetSq = is960 ? r_sq : g1;
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                        }
                     }
                 }
             }
@@ -360,20 +361,21 @@ public class MoveGenerator {
             if ((chessboard.castle & CastlingRights.WQ) != 0 && chessboard.queen_side_rook_file != -1) {
                 int r_sq = chessboard.queen_side_rook_file + 56;
 
-                long betweenMask = RAY_BETWEEN[kingSq][r_sq];
-                long finalMask = (1L << c1) | (1L << d1);
-                finalMask &= ~((1L << kingSq) | (1L << r_sq));
+                // ★ 추가: 실제 룩 존재 검증
+                if (BitBoardUtils.getBit(chessboard.bitboards[R], r_sq)) {
+                    long betweenMask = RAY_BETWEEN[kingSq][r_sq];
+                    long finalMask = (1L << c1) | (1L << d1);
+                    finalMask &= ~((1L << kingSq) | (1L << r_sq));
 
-                if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
-                    boolean safe = true;
-                    for (int sq = Math.min(kingSq, c1); sq <= Math.max(kingSq, c1); sq++) {
-                        if (isSquareAttacked(chessboard, sq, oppSide)) {
-                            safe = false; break;
+                    if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
+                        boolean safe = true;
+                        for (int sq = Math.min(kingSq, c1); sq <= Math.max(kingSq, c1); sq++) {
+                            if (isSquareAttacked(chessboard, sq, oppSide)) { safe = false; break; }
                         }
-                    }
-                    if (safe) {
-                        int targetSq = is960 ? r_sq : c1;
-                        moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                        if (safe) {
+                            int targetSq = is960 ? r_sq : c1;
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                        }
                     }
                 }
             }
@@ -381,20 +383,20 @@ public class MoveGenerator {
             if ((chessboard.castle & CastlingRights.BK) != 0 && chessboard.king_side_rook_file != -1) {
                 int r_sq = chessboard.king_side_rook_file;
 
-                long betweenMask = RAY_BETWEEN[kingSq][r_sq];
-                long finalMask = (1L << g8) | (1L << f8);
-                finalMask &= ~((1L << kingSq) | (1L << r_sq));
+                if (BitBoardUtils.getBit(chessboard.bitboards[r], r_sq)) {
+                    long betweenMask = RAY_BETWEEN[kingSq][r_sq];
+                    long finalMask = (1L << g8) | (1L << f8);
+                    finalMask &= ~((1L << kingSq) | (1L << r_sq));
 
-                if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
-                    boolean safe = true;
-                    for (int sq = Math.min(kingSq, g8); sq <= Math.max(kingSq, g8); sq++) {
-                        if (isSquareAttacked(chessboard, sq, oppSide)) {
-                            safe = false; break;
+                    if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
+                        boolean safe = true;
+                        for (int sq = Math.min(kingSq, g8); sq <= Math.max(kingSq, g8); sq++) {
+                            if (isSquareAttacked(chessboard, sq, oppSide)) { safe = false; break; }
                         }
-                    }
-                    if (safe) {
-                        int targetSq = is960 ? r_sq : g8;
-                        moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                        if (safe) {
+                            int targetSq = is960 ? r_sq : g8;
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                        }
                     }
                 }
             }
@@ -402,20 +404,20 @@ public class MoveGenerator {
             if ((chessboard.castle & CastlingRights.BQ) != 0 && chessboard.queen_side_rook_file != -1) {
                 int r_sq = chessboard.queen_side_rook_file;
 
-                long betweenMask = RAY_BETWEEN[kingSq][r_sq];
-                long finalMask = (1L << c8) | (1L << d8);
-                finalMask &= ~((1L << kingSq) | (1L << r_sq));
+                if (BitBoardUtils.getBit(chessboard.bitboards[r], r_sq)) {
+                    long betweenMask = RAY_BETWEEN[kingSq][r_sq];
+                    long finalMask = (1L << c8) | (1L << d8);
+                    finalMask &= ~((1L << kingSq) | (1L << r_sq));
 
-                if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
-                    boolean safe = true;
-                    for (int sq = Math.min(kingSq, c8); sq <= Math.max(kingSq, c8); sq++) {
-                        if (isSquareAttacked(chessboard, sq, oppSide)) {
-                            safe = false; break;
+                    if ((betweenMask & occupancy) == 0 && (finalMask & occupancy) == 0) {
+                        boolean safe = true;
+                        for (int sq = Math.min(kingSq, c8); sq <= Math.max(kingSq, c8); sq++) {
+                            if (isSquareAttacked(chessboard, sq, oppSide)) { safe = false; break; }
                         }
-                    }
-                    if (safe) {
-                        int targetSq = is960 ? r_sq : c8;
-                        moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                        if (safe) {
+                            int targetSq = is960 ? r_sq : c8;
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                        }
                     }
                 }
             }

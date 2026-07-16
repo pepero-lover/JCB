@@ -509,4 +509,17 @@ public class ChessGameTest {
         assertEquals("463b96181691fc9c",
                 Long.toHexString(PolyglotHashUtils.getPolyglotHash(new Chessboard(Chessboard.start_position))));
     }
+
+    @Test
+    @DisplayName("Move Generator 가 정상 작동 해야한다")
+    void moveGenerating() {
+        Chessboard chessboard = new Chessboard("r1b2rk1/p3pp1p/n1pp1np1/8/qp1PP3/5PN1/PPPQ2PP/R3KB1R w KQ - 0 13");
+        ChessboardUtils.printChessBoard(chessboard);
+
+        int[] move_list = new int[255];
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+        for(int i=0;i<move_count;i++) {
+            System.out.println(EncodeMove.moveToString(move_list[i], false));
+        }
+    }
 }
