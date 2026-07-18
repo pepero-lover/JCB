@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.constant.SideToMove.black;
 import static com.pepero.jcb.constant.SideToMove.white;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 import static com.pepero.jcb.core.MoveGenerator.generateMoves;
@@ -440,6 +441,136 @@ public class ChessGame {
      */
     public void makeMove(MoveInfo moveInfo) {
         internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception (LAN MOVE)
+     *
+     * @param moveString move like e2e4, e7e5 (LAN move string)
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMove(String moveString) {
+        try {
+            makeMove(moveString);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make a move on this ChessGame without throwing an exception (San string)
+     *
+     * @param sanString san string
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMoveSan(String sanString) {
+        try {
+            makeMoveSan(sanString);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make a move on this ChessGame without throwing an exception (ENCODED MOVE)
+     *
+     * @param encodedMove encoded move
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMove(int encodedMove) {
+        try {
+            makeMove(encodedMove);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make moves on this ChessGame without throwing an exception (San string)
+     * <p>
+     * If a move in the middle of the string is illegal, the moves made before it stay applied.
+     *
+     * @param sanString san string like "e4 e5 Nf3 Nc6"
+     *
+     * @return true if all moves were legal and applied, false if it stopped partway through
+     */
+    public boolean tryMakeMoveSanAll(String sanString) {
+        try {
+            makeMoveSanAll(sanString);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make moves on this ChessGame without throwing an exception (Lan string)
+     * <p>
+     * If a move in the middle of the string is illegal, the moves made before it stay applied.
+     *
+     * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
+     *
+     * @return true if all moves were legal and applied, false if it stopped partway through
+     */
+    public boolean tryMakeMoveAll(String lanString) {
+        try {
+            makeMoveAll(lanString);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception (Source square, Target square, Promotion Type)
+     *
+     * @param sourceSquare Source square (you can make square on BoardSquares.java)
+     * @param targetSquare Target square (you can make square on BoardSquares.java)
+     * @param promotionType Promotion type like queen, rook, bishop and knight (PieceType.QUEEN, PieceType.ROOK ... )
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType) {
+        try {
+            makeMove(sourceSquare, targetSquare, promotionType);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception (Source square, Target square)
+     *
+     * @param sourceSquare Source square (you can make square on BoardSquares.java)
+     * @param targetSquare Target square (you can make square on BoardSquares.java)
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMove(Square sourceSquare, Square targetSquare) {
+        return tryMakeMove(sourceSquare, targetSquare, PieceType.NONE);
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception (MoveInfo)
+     *
+     * @param moveInfo MoveInfo class
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMove(MoveInfo moveInfo) {
+        try {
+            makeMove(moveInfo);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
     }
 
     /**
@@ -1082,6 +1213,23 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this square is attacked
+     *
+     * @param square square
+     * @param side attacking side (if true, white is attacking, black otherwise)
+     * @return true if square is attacked, false otherwise
+     */
+    public boolean isSquareAttacked(Square square, boolean side) {
+        Objects.requireNonNull(square, "Square cannot be null!");
+        readLock.lock();
+        try {
+            return MoveGenerator.isSquareAttacked(this.chessboard, square.getIndex(), side ? white : black);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get whether this position is checkmate
      *
      * @return whether this position is checkmate
@@ -1282,7 +1430,7 @@ public class ChessGame {
     public int getFullMove() {
         readLock.lock();
         try {
-            return this.chessboard.ply;
+            return this.chessboard.ply / 2 + 1;
         } finally {
             readLock.unlock();
         }
@@ -2437,8 +2585,35 @@ public class ChessGame {
         }
     }
 
+    /**
+     * Return String FEN
+     *
+     * @return fen
+     */
     @Override
     public String toString() {
         return this.getFEN();
+    }
+
+    /**
+     * Get whether this Chessboard and obj is equal "position"
+     *
+     * @return whether this Chessboard and obj is equal "position"
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof ChessGame other)) return false;
+        return this.getPolyglotHash() == other.getPolyglotHash();
+    }
+
+    /**
+     * Hash key for deciding equal position
+     *
+     * @return hash key
+     */
+    @Override
+    public int hashCode() {
+        return Long.hashCode(this.getPolyglotHash());
     }
 }
