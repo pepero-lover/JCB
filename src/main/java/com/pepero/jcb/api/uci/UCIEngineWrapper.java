@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class UCIEngineWrapper {
+public class UCIEngineWrapper implements AutoCloseable {
     private Process engineProcess;
     private BufferedReader reader;
     private BufferedWriter writer;
@@ -313,10 +313,15 @@ public class UCIEngineWrapper {
         }
     }
 
+    private volatile boolean isClosed = false;
+
     /**
      * Safe closing engine
      */
     public void close() {
+        if (isClosed) return;
+        isClosed = true;
+
         sendCommand("quit");
 
         if (broadcastingThread != null) broadcastingThread.interrupt();
