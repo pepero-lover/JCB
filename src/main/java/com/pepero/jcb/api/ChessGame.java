@@ -32,6 +32,15 @@ import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 import static com.pepero.jcb.core.MoveGenerator.generateMoves;
 
 public class ChessGame {
+    // start position constant
+    /**
+     * You don't have to use this constant on standard ChessGame initialization <br>
+     * because <b>'new ChessGame()' == 'new ChessGame(ChessGame.START_POSITION)'</b>
+     */
+    public static final String START_POSITION = Chessboard.start_position;
+
+
+
     // Chessboard class
     private final Chessboard chessboard;
 
@@ -2398,6 +2407,55 @@ public class ChessGame {
             }
 
             return lastNode;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get mainline move data
+     * <p>
+     * Example : <br>
+     * history -> <b>e4 e5 Nf3 (Nc3) Nc6</b> <br>
+     * and the result is <br>
+     * <b>e4 e5 Nf3 Nc6</b>
+     */
+    public List<MoveDataDTO> getMainlineData() {
+        List<MoveDataDTO> result = new ArrayList<>();
+
+        readLock.lock();
+        try {
+            Chessboard tempBoard = new Chessboard(startPositionFEN);
+
+            MoveNode lastNode = moveHistoryRoot;
+
+            // add first node
+            result.add(
+                    new MoveDataDTO(
+                            lastNode.id,
+                            startPositionFEN,
+                            lastNode.moveData,
+                            lastNode.annotation
+                    )
+            );
+
+            while (!lastNode.children.isEmpty()) {
+                lastNode = lastNode.children.getFirst();
+
+                // make move
+                MoveGenerator.makeMove(tempBoard, lastNode.moveData.originEncodedData());
+
+                result.add(
+                        new MoveDataDTO(
+                                lastNode.id,
+                                ChessboardUtils.getFen(tempBoard),
+                                lastNode.moveData,
+                                lastNode.annotation
+                        )
+                );
+            }
+
+            return result;
         } finally {
             readLock.unlock();
         }

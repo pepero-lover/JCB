@@ -1,6 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.book.PolyglotHashUtils;
+import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.dto.PGNGame;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -514,12 +516,33 @@ public class ChessGameTest {
     @DisplayName("Move Generator 가 정상 작동 해야한다")
     void moveGenerating() {
         Chessboard chessboard = new Chessboard("r1b2rk1/p3pp1p/n1pp1np1/8/qp1PP3/5PN1/PPPQ2PP/R3KB1R w KQ - 0 13");
-        ChessboardUtils.printChessBoard(chessboard);
 
         int[] move_list = new int[255];
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
         for(int i=0;i<move_count;i++) {
-            System.out.println(EncodeMove.moveToString(move_list[i], false));
+            int move = move_list[i];
+            if(EncodeMove.getMoveSource(move) == BoardSquares.e1
+                && EncodeMove.getMoveTarget(move) == BoardSquares.g1) fail();
         }
+    }
+
+    @Test
+    @DisplayName("getMainlineData 에서 메인라인 데이터들이 정상적으로 생성되어야 한다")
+    void getMainlineData() {
+        ChessGame chessGame = new ChessGame();
+
+        chessGame.makeMoveSanAll("e4 e5 Nf3 Nc6 Bc4 Bc5");
+
+        assertEquals(List.of(
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+                "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+                "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+                "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+                "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3",
+                "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"),
+                chessGame.getMainlineData().stream()
+                        .map(MoveDataDTO::fen)
+                        .collect(Collectors.toList()));
     }
 }

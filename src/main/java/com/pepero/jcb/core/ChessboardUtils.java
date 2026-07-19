@@ -4,7 +4,6 @@ import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.constant.SideToMove;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
@@ -15,7 +14,6 @@ import java.util.Map;
 import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.MoveCache.CHESSBOARD_UTIL_CACHE;
-import static com.pepero.jcb.constant.MoveCache.MAX_MOVE_SIZE;
 import static com.pepero.jcb.constant.SideToMove.*;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
 
@@ -308,7 +306,7 @@ public class ChessboardUtils {
 
         fen.append((chessboard.ply / 2) + 1);
 
-        return fen.toString();
+        return fen.toString().trim();
     }
 
     /**
