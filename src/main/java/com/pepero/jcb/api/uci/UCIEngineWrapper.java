@@ -15,29 +15,40 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class UCIEngineWrapper implements AutoCloseable {
     private Process engineProcess;
     private BufferedReader reader;
+    private BufferedReader errorReader;
     private BufferedWriter writer;
 
     private Thread parsingThread;
+    private Thread errorDrainThread;
     private Thread broadcastingThread;
 
-    private CountDownLatch uciokLatch;
-    private CountDownLatch readyokLatch;
+    private volatile CountDownLatch uciokLatch;
+    private volatile CountDownLatch readyokLatch;
 
-    private CompletableFuture<String> currentMoveFuture;
+    private final AtomicReference<CompletableFuture<String>> currentMoveFuture = new AtomicReference<>();
 
     private final ConcurrentHashMap<Integer, EngineLine> latestAnalysisMap = new ConcurrentHashMap<>();
     private volatile boolean isAnalyzing = false;
 
-    public record EngineLine(int depth, int pvNumber, String score, String pv) {}
+    private Thread shutdownHook;
+
+    private static final long DEFAULT_SYNC_TIMEOUT_SEC = 120;
+    private static final long HANDSHAKE_TIMEOUT_SEC = 15;
+
+    public record EngineLine(int depth, int pvNumber, String score, String pv, boolean isBound) {}
 
     public interface EngineAnalysisListener {
         void onAnalysisBundled(List<EngineLine> bundledLines);
         void onBestMoveFound(String bestMove);
         default void onEngineLog(String direction, String log) {}
+        default void onEngineInfo(int depth, String score, String pv) {}
+        default void onEngineCrashed(Throwable cause) {}
     }
 
     private final EngineAnalysisListener listener;
@@ -48,30 +59,43 @@ public class UCIEngineWrapper implements AutoCloseable {
         this.listener = listener;
 
         try {
-            engine.redirectErrorStream(true);
-            
+            // keep stderr separate so debug logs from the engine
+            // can't get interleaved with UCI protocol lines on stdout
+            engine.redirectErrorStream(false);
+
             this.engineProcess = engine.start();
             this.reader = new BufferedReader(new InputStreamReader(engineProcess.getInputStream()));
+            this.errorReader = new BufferedReader(new InputStreamReader(engineProcess.getErrorStream()));
             this.writer = new BufferedWriter(new OutputStreamWriter(engineProcess.getOutputStream()));
-            
+
             this.uciokLatch = new CountDownLatch(1);
             this.readyokLatch = new CountDownLatch(1);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // keep the hook reference so it can be removed again in close()
+            this.shutdownHook = new Thread(() -> {
                 if (engineProcess != null && engineProcess.isAlive()) {
                     engineProcess.destroy();
                 }
-            }));
+            });
+            Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+
+            // if the engine process dies mid-analysis, fail the
+            // pending future instead of blocking startAnalysisSync() forever
+            engineProcess.onExit().thenRun(this::handleProcessExit);
 
             startParsingThread();
-
+            startErrorDrainThread();
             startBroadcastingThread();
 
             sendCommand("uci");
-            if (!uciokLatch.await(15, TimeUnit.SECONDS)) throw new RuntimeException("uciok Timeout!");
-            
+            if (!uciokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                throw new RuntimeException("uciok Timeout!");
+            }
+
             sendCommand("isready");
-            if (!readyokLatch.await(15, TimeUnit.SECONDS)) throw new RuntimeException("readyok Timeout!");
+            if (!readyokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                throw new RuntimeException("readyok Timeout!");
+            }
 
             System.out.println("Engine started / synchronized!");
 
@@ -81,14 +105,71 @@ public class UCIEngineWrapper implements AutoCloseable {
     }
 
     /**
-     * Start engine analysis
+     * Tell the engine a new game is starting so it drops hash tables,
+     * history heuristics, etc. from the previous game.
+     * Must be awaited (isready/readyok) before the next "go".
+     */
+    public void newGame() {
+        readyokLatch = new CountDownLatch(1);
+        sendCommand("ucinewgame");
+        sendCommand("isready");
+        awaitReady();
+    }
+
+    /**
+     * Set an UCI option and block until the engine confirms it processed
+     * it, via isready/readyok Some engines apply options
+     * asynchronously, so firing "go" right after "setoption" can race.
+     */
+    public void setOptionSync(String name, String value) {
+        readyokLatch = new CountDownLatch(1);
+        sendCommand("setoption name " + name + " value " + value);
+        sendCommand("isready");
+        awaitReady();
+    }
+
+    private void awaitReady() {
+        try {
+            if (!readyokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                throw new RuntimeException("readyok Timeout!");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for readyok", e);
+        }
+    }
+
+    /**
+     * Start engine analysis.
+     * depth <= 0 means "go infinite" - useful for a live,
+     * ever-updating eval bar; call stopAnalysis() to end it.
      */
     public void startAnalysis(ChessGame chessGame, int depth, int multiPv) {
         latestAnalysisMap.clear();
         isAnalyzing = true;
 
-        sendCommand("setoption name MultiPV value " + multiPv);
+        setOptionSync("MultiPV", String.valueOf(multiPv));
 
+        sendCommand(buildPositionCommand(chessGame));
+
+        if (depth > 0) {
+            sendCommand("go depth " + depth);
+        } else {
+            sendCommand("go infinite");
+        }
+    }
+
+    /**
+     * Stop engine analysis
+     */
+    public void stopAnalysis() {
+        if (isAnalyzing) {
+            sendCommand("stop");
+            isAnalyzing = false;
+        }
+    }
+
+    private String buildPositionCommand(ChessGame chessGame) {
         StringBuilder positionCmd = new StringBuilder();
 
         String startFen = chessGame.getStartPositionFEN();
@@ -108,19 +189,7 @@ public class UCIEngineWrapper implements AutoCloseable {
             }
         }
 
-        sendCommand(positionCmd.toString());
-
-        sendCommand("go depth " + depth);
-    }
-
-    /**
-     * Stop engine analysis
-     */
-    public void stopAnalysis() {
-        if (isAnalyzing) {
-            sendCommand("stop");
-            isAnalyzing = false;
-        }
+        return positionCmd.toString();
     }
 
     /**
@@ -137,17 +206,10 @@ public class UCIEngineWrapper implements AutoCloseable {
                     }
 
                     if (line.equals("uciok")) {
-                        // when uciok
-
                         uciokLatch.countDown();
                     } else if (line.equals("readyok")) {
-                        // when readyok
-
                         readyokLatch.countDown();
                     } else if (line.startsWith("bestmove")) {
-                        // best move
-
-                        // get latest info
                         if (!latestAnalysisMap.isEmpty() && listener != null) {
                             List<EngineLine> finalBundle = latestAnalysisMap.values().stream()
                                     .sorted(Comparator.comparingInt(EngineLine::pvNumber))
@@ -159,8 +221,9 @@ public class UCIEngineWrapper implements AutoCloseable {
                         String bestMove = line.split(" ")[1];
                         if (listener != null) listener.onBestMoveFound(bestMove);
 
-                        if (currentMoveFuture != null && !currentMoveFuture.isDone()) {
-                            currentMoveFuture.complete(bestMove);
+                        CompletableFuture<String> future = currentMoveFuture.get();
+                        if (future != null && !future.isDone()) {
+                            future.complete(bestMove);
                         }
                     } else if (line.startsWith("info") && line.contains("score") && line.contains(" pv ")) {
                         parseInfoLine(line);
@@ -169,8 +232,29 @@ public class UCIEngineWrapper implements AutoCloseable {
             } catch (IOException e) {
                 System.err.println("Stopped parsing stream");
             }
-        });
+        }, "uci-parsing-thread");
         parsingThread.start();
+    }
+
+    /**
+     * Drain stderr so it never blocks the process and never gets mixed
+     * into stdout protocol parsing
+     */
+    private void startErrorDrainThread() {
+        errorDrainThread = new Thread(() -> {
+            try {
+                String line;
+                while (!Thread.currentThread().isInterrupted() && (line = errorReader.readLine()) != null) {
+                    if (listener != null) {
+                        listener.onEngineLog("ERR", line);
+                    }
+                }
+            } catch (IOException ignored) {
+                // stream closed on shutdown
+            }
+        }, "uci-stderr-thread");
+        errorDrainThread.setDaemon(true);
+        errorDrainThread.start();
     }
 
     /**
@@ -183,23 +267,23 @@ public class UCIEngineWrapper implements AutoCloseable {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     if (isAnalyzing && !latestAnalysisMap.isEmpty() && listener != null) {
-                        
+
                         List<EngineLine> currentBundle = latestAnalysisMap.values().stream()
                                 .sorted(Comparator.comparingInt(EngineLine::pvNumber))
                                 .toList();
-                        
+
                         if (!currentBundle.equals(lastSentBundle)) {
                             listener.onAnalysisBundled(currentBundle);
                             lastSentBundle = currentBundle;
                         }
                     }
-                    
+
                     Thread.sleep(tickRateMs);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        });
+        }, "uci-broadcast-thread");
         broadcastingThread.start();
     }
 
@@ -208,6 +292,12 @@ public class UCIEngineWrapper implements AutoCloseable {
      */
     private void parseInfoLine(String infoLine) {
         try {
+            // skip upperbound lowerbound
+            boolean isBound = infoLine.contains(" upperbound") || infoLine.contains(" lowerbound");
+            if (isBound) {
+                return;
+            }
+
             int pvNumber = 1;
             if (infoLine.contains(" multipv ")) {
                 int mpvIndex = infoLine.indexOf(" multipv ") + 9;
@@ -241,41 +331,40 @@ public class UCIEngineWrapper implements AutoCloseable {
             int pvIndex = infoLine.indexOf(" pv ") + 4;
             String pvStr = infoLine.substring(pvIndex).trim();
 
-            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, scoreStr, pvStr));
+            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, scoreStr, pvStr, false));
 
+            if (listener != null) {
+                listener.onEngineInfo(depth, scoreStr, pvStr);
+            }
         } catch (Exception e) {
             // ignore format exception
         }
     }
 
+    /**
+     * Same as before, but with a bounded wait instead of an
+     * unconditional get() that can hang forever if the engine dies or
+     * never returns a bestmove.
+     */
     public String startAnalysisSync(ChessGame chessGame, int depthLimit,
                                     long wtimeMs, long btimeMs,
                                     long wincMs, long bincMs,
                                     int multiPv) {
-        this.currentMoveFuture = new CompletableFuture<>();
-        this.latestAnalysisMap.clear();
-        this.isAnalyzing = true;
+        return startAnalysisSync(chessGame, depthLimit, wtimeMs, btimeMs, wincMs, bincMs, multiPv, DEFAULT_SYNC_TIMEOUT_SEC);
+    }
 
-        sendCommand("setoption name MultiPV value " + multiPv);
+    public String startAnalysisSync(ChessGame chessGame, int depthLimit,
+                                    long wtimeMs, long btimeMs,
+                                    long wincMs, long bincMs,
+                                    int multiPv, long timeoutSeconds) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        currentMoveFuture.set(future);
+        latestAnalysisMap.clear();
+        isAnalyzing = true;
 
-        StringBuilder positionCmd = new StringBuilder();
-        String startFen = chessGame.getStartPositionFEN();
+        setOptionSync("MultiPV", String.valueOf(multiPv));
 
-        if (startFen.equals(Chessboard.start_position)) {
-            positionCmd.append("position startpos");
-        } else {
-            positionCmd.append("position fen ").append(startFen);
-        }
-
-        List<MoveInfo> history = chessGame.getMoveHistory();
-        if (history != null && !history.isEmpty()) {
-            positionCmd.append(" moves");
-            for (MoveInfo move : history) {
-                positionCmd.append(" ").append(move.toLanString(chessGame.getGameVariants()));
-            }
-        }
-
-        sendCommand(positionCmd.toString());
+        sendCommand(buildPositionCommand(chessGame));
 
         StringBuilder goCmd = new StringBuilder("go");
 
@@ -291,9 +380,24 @@ public class UCIEngineWrapper implements AutoCloseable {
         sendCommand(goCmd.toString());
 
         try {
-            return currentMoveFuture.get();
+            return future.get(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new RuntimeException("Engine did not return bestmove within " + timeoutSeconds + "s", e);
         } catch (Exception e) {
             throw new RuntimeException("Sync failed while waiting engine's response", e);
+        }
+    }
+
+    private void handleProcessExit() {
+        isAnalyzing = false;
+        CompletableFuture<String> future = currentMoveFuture.get();
+        IllegalStateException cause = new IllegalStateException("Engine process exited unexpectedly");
+        if (future != null && !future.isDone()) {
+            future.completeExceptionally(cause);
+        }
+        if (listener != null) {
+            listener.onEngineCrashed(cause);
         }
     }
 
@@ -326,9 +430,11 @@ public class UCIEngineWrapper implements AutoCloseable {
 
         if (broadcastingThread != null) broadcastingThread.interrupt();
         if (parsingThread != null) parsingThread.interrupt();
+        if (errorDrainThread != null) errorDrainThread.interrupt();
 
         try {
             if (reader != null) reader.close();
+            if (errorReader != null) errorReader.close();
             if (writer != null) writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -336,6 +442,12 @@ public class UCIEngineWrapper implements AutoCloseable {
 
         if (engineProcess != null) {
             engineProcess.destroy();
+        }
+
+        if (shutdownHook != null) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (IllegalStateException ignored) {}
         }
 
         System.out.println("Engine closed!");
