@@ -143,12 +143,14 @@ public class GameStateExample {
 ### 4. 엔진끼리 대결하기
 
 ```java
+package com.pepero.jcb.api;
+
 import com.pepero.jcb.api.arena.EngineArena;
 import com.pepero.jcb.api.arena.MatchConfig;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
-public class EngineExample {
+public class EngineTest {
     public static void main(String[] args) {
         // 프로세스 빌더를 이용하여 Wrapper 를 생성합니다.
         try (
@@ -159,8 +161,9 @@ public class EngineExample {
                                 "-jar",
                                 "my_engine.jar"
                         ),
-                        100,
-                        null);
+                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
+                        null // 리스너
+                );
                 UCIEngineWrapper engine2 = new UCIEngineWrapper(
                         new ProcessBuilder(
                                 "java",
@@ -168,8 +171,9 @@ public class EngineExample {
                                 "-jar",
                                 "my_engine.jar"
                         ),
-                        100,
-                        null)
+                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
+                        null // 리스너
+                )
         ) {
             // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
             MatchConfig config = new MatchConfig.Builder()
@@ -195,9 +199,13 @@ public class EngineExample {
                 System.out.println("엔진 매치를 시작합니다.");
 
                 // 대전을 시작합니다.
-                MatchResult matchResult = arena.startMatch(i + 1); // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
+                // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
+                MatchResult matchResult = arena.startMatch(); // 만약 라운드 수를 정하고 싶다면 arena.startMatch(roundNum)
+
                 System.out.println("경기 결과: " + matchResult.result());
                 System.out.println("기보(PGN):\n" + matchResult.pgn());
+
+                arena.swapEngine(); // 백흑 바꿔서 진행
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

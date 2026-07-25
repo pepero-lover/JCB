@@ -15,6 +15,9 @@ public class EngineArena {
 
     private boolean isEngine1White = true;
 
+    // round number
+    private int roundNumber = 1;
+
     public interface ArenaListener {
         void onMovePlayed(ChessGame game, String move, long timeSpent);
         void onMatchFinished(ChessGame game, GameResult gameResult, GameOverReason gameOverReason);
@@ -33,14 +36,28 @@ public class EngineArena {
         this.listener = listener;
     }
 
+    /**
+     * Swap engine white and black
+     */
     public void swapEngine() {
         isEngine1White = !isEngine1White;
     }
 
+    /**
+     * Start Engine match
+     *
+     * @return Match result
+     */
     public MatchResult startMatch() {
-        return startMatch(1);
+        return startMatch(roundNumber++);
     }
 
+    /**
+     * Start Engine match
+     *
+     * @param roundNumber round number (1 ~ inf)
+     * @return Match result
+     */
     public MatchResult startMatch(int roundNumber) {
         UCIEngineWrapper whiteEngine = isEngine1White ? engine1 : engine2;
         UCIEngineWrapper blackEngine = isEngine1White ? engine2 : engine1;
