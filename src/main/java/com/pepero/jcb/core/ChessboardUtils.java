@@ -154,38 +154,54 @@ public class ChessboardUtils {
             }
         }
 
-        long rooks = chessboard.bitboards[r];
-
-        int queen_rook_square = BitBoardUtils.getLS1BIndex(rooks);
-
-        if(queen_rook_square != -1) {
-            chessboard.queen_side_rook_file = queen_rook_square;
-
-            rooks = BitBoardUtils.popBit(rooks, queen_rook_square);
-            int king_rook_square = BitBoardUtils.getLS1BIndex(rooks);
-
-            if (king_rook_square != -1) {
-                chessboard.king_side_rook_file = king_rook_square % 8;
-            } else {
-                chessboard.king_side_rook_file = -1;
-            }
-        } else {
-            chessboard.king_side_rook_file = -1;
-            chessboard.queen_side_rook_file = -1;
-        }
-
-
         // parse side to move
         chessboard.side = (fenDivided.length > 1 && fenDivided[1].equals("b")) ? black : white;
 
         // parse castling rights
+        chessboard.king_side_rook_file = -1;
+        chessboard.queen_side_rook_file = -1;
+
         if (fenDivided.length > 2 && !fenDivided[2].equals("-")) {
-            for(char c : fenDivided[2].toCharArray()){
-                switch (c){
-                    case 'K' : chessboard.castle |= CastlingRights.WK; break;
-                    case 'Q' : chessboard.castle |= CastlingRights.WQ; break;
-                    case 'k' : chessboard.castle |= CastlingRights.BK; break;
-                    case 'q' : chessboard.castle |= CastlingRights.BQ; break;
+            for (char c : fenDivided[2].toCharArray()) {
+                switch (c) {
+                    case 'K':
+                        chessboard.castle |= CastlingRights.WK;
+                        chessboard.king_side_rook_file = 7; // h-file
+                        break;
+                    case 'Q':
+                        chessboard.castle |= CastlingRights.WQ;
+                        chessboard.queen_side_rook_file = 0; // a-file
+                        break;
+                    case 'k':
+                        chessboard.castle |= CastlingRights.BK;
+                        chessboard.king_side_rook_file = 7; // h-file
+                        break;
+                    case 'q':
+                        chessboard.castle |= CastlingRights.BQ;
+                        chessboard.queen_side_rook_file = 0; // a-file
+                        break;
+                    default:
+                        // when Chess 960
+                        if (chessboard.gameVariants == GameVariants.CHESS960) {
+                            if (c >= 'A' && c <= 'H') {
+                                int white_king_sq = BitBoardUtils.getLS1BIndex(chessboard.bitboards[K]);
+                                int king_file = white_king_sq % 8;
+
+                                int f = c - 'A';
+                                chessboard.castle |= (f > king_file) ? CastlingRights.WK : CastlingRights.WQ;
+                                if (f > king_file) chessboard.king_side_rook_file = f;
+                                else chessboard.queen_side_rook_file = f;
+                            } else if (c >= 'a' && c <= 'h') {
+                                int black_king_sq = BitBoardUtils.getLS1BIndex(chessboard.bitboards[k]);
+                                int king_file = black_king_sq % 8;
+
+                                int f = c - 'a';
+                                chessboard.castle |= (f > king_file) ? CastlingRights.BK : CastlingRights.BQ;
+                                if (f > king_file) chessboard.king_side_rook_file = f;
+                                else chessboard.queen_side_rook_file = f;
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -342,7 +358,7 @@ public class ChessboardUtils {
     /**
      * Get checkers square <br>
      * if return is <b>00101010001010</b>, <br>
-     * the first checker square is '<b>001010</b>', and second checker is '<b>100010</b>' <br>
+     * the first checker square is '<b>001010</b>', and the second checker is '<b>100010</b>' <br>
      * and attacking piece count is '<b>11</b>' and count is 2.
      *
      * @param chessboard chessboard
