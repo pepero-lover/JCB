@@ -16,6 +16,7 @@ import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.hash.Zobrist;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -2662,7 +2663,7 @@ public class ChessGame {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof ChessGame other)) return false;
-        return this.getPolyglotHash() == other.getPolyglotHash();
+        return this.chessboard.hash_key == other.chessboard.hash_key;
     }
 
     /**
@@ -2672,6 +2673,6 @@ public class ChessGame {
      */
     @Override
     public int hashCode() {
-        return Long.hashCode(this.getPolyglotHash());
+        return Long.hashCode(this.chessboard.hash_key);
     }
 }
