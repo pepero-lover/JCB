@@ -1,16 +1,24 @@
 package com.pepero.jcb.api.syzygy;
 
+import java.util.Arrays;
+
 import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
  * Map piece and parse
  */
 public class SyzygyMaterial {
+    private final int[] whiteCounts; // index 1~6 : P N B R Q K
+    private final int[] blackCounts; // index 1~6 : p n b r q k
     private final int totalPieceCount;
     private final boolean hasPawns;
     private final int[] pawnCount;
 
-    private SyzygyMaterial(int totalPieceCount, boolean hasPawns, int[] pawnCount) {
+    private static final char[] pieceArray = new char[]{'P', 'N', 'B', 'R', 'Q', 'K'};
+
+    private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount, boolean hasPawns, int[] pawnCount) {
+        this.whiteCounts = whiteCounts;
+        this.blackCounts = blackCounts;
         this.totalPieceCount = totalPieceCount;
         this.hasPawns = hasPawns;
         this.pawnCount = pawnCount;
@@ -47,23 +55,31 @@ public class SyzygyMaterial {
         String whitePiece = sidePiece[0].trim();
         String blackPiece = sidePiece[1].trim();
 
+        int[] whitePieceCount = new int[7];
+        int[] blackPieceCount = new int[7];
+        for (int i = 1; i <= pieceArray.length; i++) {
+            char target = pieceArray[i - 1];
+            whitePieceCount[i] = (int) whitePiece.chars().filter(c -> c == target).count();
+            blackPieceCount[i] = (int) blackPiece.chars().filter(c -> c == target).count();
+        }
+
         int totalPiece = whitePiece.length() + blackPiece.length();
         boolean hasPawns = whitePiece.contains("P") || blackPiece.contains("P");
         int[] pawnCount = new int[2];
 
-        long whitePawnCount = whitePiece.chars().filter(c -> c == 'P').count();
-        long blackPawnCount = blackPiece.chars().filter(c -> c == 'P').count();
+        int whitePawnCount = whitePieceCount[1];
+        int blackPawnCount = blackPieceCount[1];
 
         // sort pawn count
         if(blackPawnCount > 0 && (whitePawnCount == 0 || whitePawnCount > blackPawnCount)) {
-            pawnCount[0] = (int) blackPawnCount;
-            pawnCount[1] = (int) whitePawnCount;
+            pawnCount[0] = blackPawnCount;
+            pawnCount[1] = whitePawnCount;
         } else {
-            pawnCount[0] = (int) whitePawnCount;
-            pawnCount[1] = (int) blackPawnCount;
+            pawnCount[0] = whitePawnCount;
+            pawnCount[1] = blackPawnCount;
         }
 
-        return new SyzygyMaterial(totalPiece, hasPawns, pawnCount);
+        return new SyzygyMaterial(whitePieceCount, blackPieceCount, totalPiece, hasPawns, pawnCount);
     }
 
     // magic(4 bytes) + flags(1 byte) = 5, per-table info starts right after
@@ -131,7 +147,7 @@ public class SyzygyMaterial {
      *
      * @return Syzygy Pairs Header
      */
-    public SyzygyPairsHeader[][] parsePairsHeaders(byte[] header, int startOffset, boolean split, SyzygyType syzygyType) {
+    public SyzygyPairsHeadersResult parsePairsHeaders(byte[] header, int startOffset, boolean split, SyzygyType syzygyType) {
         int subTableCount = getSubTableCount();
         int sides = split ? 2 : 1;
 
@@ -146,7 +162,7 @@ public class SyzygyMaterial {
             }
         }
 
-        return result;
+        return new SyzygyPairsHeadersResult(result, offset);
     }
 
     /**
@@ -160,12 +176,27 @@ public class SyzygyMaterial {
         if((header[startOffset] & 0x80) == 0x80) {
             return new SyzygyPairsHeader(
                     true, (syzygyType == SyzygyType.WDL) ? readU8(header, startOffset + 1) : 0,
-                    readU8(header, startOffset),0,0,0,0,0,0,0
+                    readU8(header, startOffset),0,0,0,0,0,0,
+                    null
             );
         }
 
         int maxLen = readU8(header, startOffset + 8);
         int minLen = readU8(header, startOffset + 9);
+
+        int h = maxLen - minLen + 1;
+
+        int numSyms = readU16(header, startOffset + 10 + 2 * h);
+
+        // calculate symPat offset and get data
+        int symPatOffset = startOffset + 12 + 2 * h;
+        byte[] symPat = Arrays.copyOfRange(header, symPatOffset, symPatOffset + 3 * numSyms);
+
+        // raw offset
+        int[] rawOffset = new int[h];
+        for (int i = 0; i < h; i++) {
+            rawOffset[i] = readU16(header, startOffset + 10 + 2 * i);
+        }
 
         return new SyzygyPairsHeader(
                 false, 0,
@@ -177,7 +208,7 @@ public class SyzygyMaterial {
                 maxLen, // maxLen 1 byte
                 minLen, // minLen 1 byte
                 // later, huffman will be added
-                readU16(header, startOffset + 10 + 2 * (maxLen - minLen + 1)) // numSyms 2 byte
+                SyzygyHuffmanTable.build(symPat, numSyms, rawOffset, minLen) // huffman table
         );
     }
 
@@ -199,5 +230,64 @@ public class SyzygyMaterial {
     public int computePairsHeaderStartOffset() {
         int offset = computeSubTablesEndOffset();
         return (offset % 2 == 1) ? offset + 1 : offset;
+    }
+
+    /**
+     * Calculate Combination nCk
+     * <p>
+     * Example : subfactor(2,5) = 5_C_2 = 5_P_2 / 2! = 5 * 4 / 2 = 10
+     *
+     * @param k k value (n_C_'r' <---)
+     * @param n n value ('n'<---_C_r)
+     * @return result of Combination nCk
+     */
+    public static long subfactor(long k, long n) {
+        // when nC0 : return 1
+        if(k == 0) return 1;
+
+        if (k > n - k) {
+            k = n - k;  // C(n,k) = C(n,n-k)
+        }
+
+        long f = n;
+        long l = 1;
+        for (long i = 1; i < k; i++) {
+            f *= (n - i);
+            l *= (i + 1);
+        }
+        return f / l;
+    }
+
+    public int[] getWhiteCounts() {
+        return whiteCounts;
+    }
+
+    public int[] getBlackCounts() {
+        return blackCounts;
+    }
+
+    /**
+     * Get kk evc value
+     *
+     * @return kk evc value
+     */
+    public boolean isKkEnc() {
+        if (hasPawns) {
+            return false;
+        }
+
+        int count = 0;
+        for (int i = 1; i <= 6; i++) {
+            if (whiteCounts[i] == 1) {
+                count++;
+                if(count > 2) return false;
+            }
+            if (blackCounts[i] == 1) {
+                count++;
+                if(count > 2) return false;
+            }
+        }
+
+        return count == 2;
     }
 }
