@@ -16,6 +16,16 @@ public class SyzygyMaterial {
 
     private static final char[] pieceArray = new char[]{'P', 'N', 'B', 'R', 'Q', 'K'};
 
+    public static final long[][] binomial = new long[7][64];
+
+    static {
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 64; j++) {
+                binomial[i][j] = (i > j) ? 0 : subfactor(i, j);
+            }
+        }
+    }
+
     private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount, boolean hasPawns, int[] pawnCount) {
         this.whiteCounts = whiteCounts;
         this.blackCounts = blackCounts;
