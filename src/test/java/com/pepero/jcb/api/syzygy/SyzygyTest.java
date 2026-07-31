@@ -1,31 +1,20 @@
 package com.pepero.jcb.api.syzygy;
 
+import com.pepero.jcb.api.syzygy.logics.*;
+import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.Chessboard;
+
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 
-import static com.pepero.jcb.api.syzygy.SyzygyFile.readHeader;
+import static com.pepero.jcb.constant.EncodedPieces.P;
 
 public class SyzygyTest {
     public static void main(String[] args) throws IOException {
-        String syzygyFileName = "KPvK";
+        Chessboard board = new Chessboard("4k3/8/4K3/4P3/8/8/8/8 w - - 0 1");
 
-        Path KRvKPath = Path.of("syzygy/" + syzygyFileName +".rtbw");
-        SyzygyFile KRvK_WDL = SyzygyFile.open(KRvKPath);
-        SyzygyMaterial KRvK_Material = SyzygyMaterial.parse("KRRvK");
+        Path path = Path.of("syzygy/");
 
-        SyzygyPairsHeadersResult headersResult = KRvK_Material.parsePairsHeaders(readHeader(KRvKPath),
-                KRvK_Material.computePairsHeaderStartOffset(),
-                KRvK_WDL.isSplit(), SyzygyType.WDL);
-
-        SyzygyPairsHeader header = headersResult.headers()[0][0];
-
-        System.out.println(KRvK_Material.isKkEnc());
-
-        System.out.println(header.minLen());
-        System.out.println(header.maxLen());
-        System.out.println(Arrays.toString(header.huffmanTable().getOffset()));
-        System.out.println(Arrays.toString(header.huffmanTable().getBase()));
-        System.out.println(headersResult.nextOffset());
+        System.out.println(SyzygyProbe.probeWdl(board, path));
     }
 }

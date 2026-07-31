@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy;
+package com.pepero.jcb.api.syzygy.logics;
 
 public class SyzygyHuffmanTable {
     private byte[] symPat;

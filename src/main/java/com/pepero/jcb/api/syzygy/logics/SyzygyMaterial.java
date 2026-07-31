@@ -1,8 +1,8 @@
-package com.pepero.jcb.api.syzygy;
+package com.pepero.jcb.api.syzygy.logics;
 
 import java.util.Arrays;
 
-import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
+import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
 
 /**
  * Map piece and parse
@@ -118,30 +118,32 @@ public class SyzygyMaterial {
             int orderByte = header[offset] & 0xff;
 
             int orderWtm = orderByte & 0x0f;
+            int orderBtm = (orderByte >> 4) & 0x0f;
 
-            // orderBtm not stored separately here since SyzygySubTable only keeps one 'order'
-            // field for now — extend later if btm order is needed.
+            boolean morePawns = hasPawns && pawnCount[1] > 0;
+            int pieceStartOffset = offset + 1 + (morePawns ? 1 : 0);
 
             int[] wtmPieces = new int[totalPieceCount];
             int[] btmPieces = new int[totalPieceCount];
 
             for (int i = 0; i < totalPieceCount; i++) {
-                int pieceByte = header[offset + 1 + i] & 0xff;
+                int pieceByte = header[pieceStartOffset + i] & 0xff;
                 wtmPieces[i] = pieceByte & 0x0f;
                 btmPieces[i] = (pieceByte >> 4) & 0x0f;
             }
 
-            result[t] = new SyzygySubTable(orderWtm, wtmPieces, btmPieces);
+            int order2Wtm = 0x0f;
+            int order2Btm = 0x0f;
+            if (morePawns) {
+                int order2Byte = header[offset + 1] & 0xff;
+                order2Wtm = order2Byte & 0x0f;
+                order2Btm = (order2Byte >> 4) & 0x0f;
+            }
+
+            result[t] = new SyzygySubTable(orderWtm, orderBtm, order2Wtm, order2Btm, wtmPieces, btmPieces);
 
             // go to the next sub-table
             offset += bytesPerTable;
-
-            // align offset to even number
-            if(offset % 2 == 1) offset += 1;
-
-            System.out.println(offset);
-
-
         }
 
         return result;
@@ -274,6 +276,18 @@ public class SyzygyMaterial {
 
     public int[] getBlackCounts() {
         return blackCounts;
+    }
+
+    public boolean isHasPawns() {
+        return hasPawns;
+    }
+
+    public int[] getPawnCount() {
+        return pawnCount;
+    }
+
+    public int getTotalPieceCount() {
+        return totalPieceCount;
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy;
+package com.pepero.jcb.api.syzygy.logics;
 
 /**
  * Syzygy tablebase file type (WDL / DTZ) <p>

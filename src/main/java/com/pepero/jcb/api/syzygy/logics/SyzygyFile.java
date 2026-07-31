@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy;
+package com.pepero.jcb.api.syzygy.logics;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
