@@ -11,6 +11,7 @@ import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 import com.pepero.jcb.api.parse.pgn.PGNLexer;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.api.parse.pgn.TokenType;
+import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
@@ -18,6 +19,7 @@ import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -2581,6 +2583,45 @@ public class ChessGame {
             readLock.unlock();
         }
     }
+
+    /**
+     * Get WDL result on this chess position <br>
+     * not supports other variants
+     *
+     * @param tablebase table base class
+     * @return WDL result
+     */
+    public int probeSyzygyWdl(SyzygyTablebase tablebase) throws IOException{
+        if(getGameVariants() != GameVariants.STANDARD)
+            throw new VariantNotMatchException("Variant should be Standard chess!");
+
+        readLock.lock();
+        try {
+            return tablebase.probeWdl(this.chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get DTZ result on this chess position <br>
+     * not supports other variants
+     *
+     * @param tablebase table base class
+     * @return DTZ result
+     */
+    public int probeSyzygyDtz(SyzygyTablebase tablebase) throws IOException {
+        if(getGameVariants() != GameVariants.STANDARD)
+            throw new VariantNotMatchException("Variant should be Standard chess!");
+
+        readLock.lock();
+        try {
+            return tablebase.probeDtz(this.chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
 
     /**
      * Get this board to ascii

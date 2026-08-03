@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.syzygy;
 
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.exception.SyzygyUnsupportedMaterialException;
 import com.pepero.jcb.api.syzygy.logics.*;
 import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzMapEntry;
 import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzMapParser;
@@ -46,8 +48,17 @@ public class SyzygyTablebase {
     private final Map<String, WdlTable> wdlCache = new ConcurrentHashMap<>();
     private final Map<String, DtzTable> dtzCache = new ConcurrentHashMap<>();
 
+    private static final int DEFAULT_MAX_PIECES = 7; // Syzygy가 현재 지원하는 최대치
+
+    private final int maxPieces;
+
     public SyzygyTablebase(Path syzygyDir) {
+        this(syzygyDir, DEFAULT_MAX_PIECES);
+    }
+
+    public SyzygyTablebase(Path syzygyDir, int maxPieces) {
         this.syzygyDir = syzygyDir;
+        this.maxPieces = maxPieces;
     }
 
     /**
@@ -84,7 +95,14 @@ public class SyzygyTablebase {
      * @param board chess board
      * @return wdl result
      */
-    public int probeWdl(Chessboard board) {
+    public int probeWdl(Chessboard board) throws IOException {
+        if(BitBoardUtils.countBits(board.occupancies[both]) > maxPieces)
+            throw new SyzygyUnsupportedMaterialException(
+                    "This Syzygy tablebase's supporting piece count is less than this board's piece count! " +
+                            "(supporting : " + maxPieces +
+                            ", chess board : " + BitBoardUtils.countBits(board.occupancies[both]) + ")"
+            );
+
         String materialName = buildMaterialString(board);
         WdlTable table = wdlCache.computeIfAbsent(materialName, this::loadWdlTable);
 

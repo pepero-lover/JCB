@@ -1,24 +1,20 @@
 package com.pepero.jcb.api.syzygy;
 
+import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.syzygy.logics.*;
-import com.pepero.jcb.bitboard.BitBoardUtils;
-import com.pepero.jcb.core.Chessboard;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
-import static com.pepero.jcb.constant.EncodedPieces.P;
-import static com.pepero.jcb.constant.EncodedPieces.b;
-
 public class SyzygyTest {
     public static void main(String[] args) throws IOException {
-        Chessboard board = new Chessboard("4k3/8/8/8/2BN4/8/8/4K3 w - - 0 1");
+        ChessGame game = new ChessGame("4k3/8/8/8/2BN4/8/8/4K3 w - - 0 1");
 
         Path path = Path.of("syzygy/");
 
-        SyzygyTablebase syzygy = new SyzygyTablebase(path);
+        SyzygyTablebase syzygy = new SyzygyTablebase(path, 5);
 
-        System.out.println(syzygy.probeWdl(board));
-        System.out.println(syzygy.probeDtz(board));
+        System.out.println(game.probeSyzygyWdl(syzygy));
+        System.out.println(game.probeSyzygyDtz(syzygy));
     }
 }
