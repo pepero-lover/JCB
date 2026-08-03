@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static com.pepero.jcb.constant.EncodedPieces.P;
+import static com.pepero.jcb.constant.EncodedPieces.b;
 
 public class SyzygyTest {
     public static void main(String[] args) throws IOException {
@@ -15,7 +16,9 @@ public class SyzygyTest {
 
         Path path = Path.of("syzygy/");
 
-        System.out.println(SyzygyProbe.probeWdl(board, path));
-        System.out.println(SyzygyProbe.probeDtz(board, path));
+        SyzygyTablebase syzygy = new SyzygyTablebase(path);
+
+        System.out.println(syzygy.probeWdl(board));
+        System.out.println(syzygy.probeDtz(board));
     }
 }
