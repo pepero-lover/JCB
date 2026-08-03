@@ -9,6 +9,7 @@ import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzPostProcess;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -19,6 +20,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.pepero.jcb.constant.BoardSquares.a1;
+import static com.pepero.jcb.constant.BoardSquares.h8;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
@@ -89,13 +92,49 @@ public class SyzygyTablebase {
             boolean colorFlipped
     ) {}
 
-    /**
-     * Probe the WDL result on this board
-     *
-     * @param board chess board
-     * @return wdl result
-     */
     public int probeWdl(Chessboard board) throws IOException {
+        int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
+        int moveCount = MoveGenerator.generateMoves(board, moveArray);
+
+        if (moveCount == 0) {
+            boolean inCheck = ChessboardUtils.isCheck(board);
+            return inCheck ? 0 : 2;
+        }
+
+        int bestWdl = 0;
+
+        for (int i = 0; i < moveCount; i++) {
+            int move = moveArray[i];
+
+            boolean isCapture = EncodeMove.getMoveCapture(move);
+            int turn = (EncodeMove.getMovePiece(move) == P) ? white : black;
+            int piece = EncodeMove.getMovePiece(move);
+            boolean isPromotion = (piece == P || piece == p) &&
+                    ((turn == white && EncodeMove.getMoveTarget(move) <= h8)
+                            || (turn == black && EncodeMove.getMoveTarget(move) >= a1));
+
+            if (isCapture || isPromotion) {
+                Chessboard child = new Chessboard(board);
+                MoveGenerator.makeMove(child, move);
+
+                int childWdl = probeWdl(child);
+                int ourWdl = 4 - childWdl;
+
+                if (ourWdl > bestWdl) {
+                    bestWdl = ourWdl;
+                    if (bestWdl == 4) {
+                        return 4;
+                    }
+                }
+            }
+        }
+
+        int tableWdl = probeWdlTable(board);
+
+        return Math.max(bestWdl, tableWdl);
+    }
+
+    private int probeWdlTable(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
         if(boardPiece == 2) return 2;
 
@@ -234,11 +273,15 @@ public class SyzygyTablebase {
             return 0; // drawn positions report DTZ 0
         }
 
-        int requiredChildWdl = 4 - wdlResult;
-        boolean weAreWinning = wdlResult > 2;
-
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
+
+        if (moveCount == 0) {
+            return 0;
+        }
+
+        int requiredChildWdl = 4 - wdlResult;
+        boolean weAreWinning = wdlResult > 2;
 
         Integer best = null;
 
