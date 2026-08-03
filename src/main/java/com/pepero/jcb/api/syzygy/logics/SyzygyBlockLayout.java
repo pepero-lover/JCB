@@ -36,15 +36,29 @@ public class SyzygyBlockLayout {
     ) {}
 
     private final Entry[] entries;
+    private final int[][] entryIndexOf; // [t][s] -> index into entries[], or -1 if that (t,s) was constant
     private final int nextOffset; // file offset right after everything (start of next material's data, if any)
 
-    private SyzygyBlockLayout(Entry[] entries, int nextOffset) {
+    private SyzygyBlockLayout(Entry[] entries, int[][] entryIndexOf, int nextOffset) {
         this.entries = entries;
+        this.entryIndexOf = entryIndexOf;
         this.nextOffset = nextOffset;
     }
 
     public Entry[] getEntries() {
         return entries;
+    }
+
+    /**
+     * Map a (sub-table, side) pair to its position in {@link #getEntries()}.
+     * Constant sub-tables (see {@code SyzygyPairsHeader.isConstant()}) contribute no
+     * index/size/data region at all, so naive {@code t * sides + side} arithmetic breaks
+     * as soon as ANY earlier (t,s) entry was constant (it shifts every later index down).
+     * Callers must check isConstant() themselves BEFORE calling this — this returns -1
+     * for constant entries since there's no corresponding Entry to return.
+     */
+    public int getEntryIndex(int t, int s) {
+        return entryIndexOf[t][s];
     }
 
     public int getNextOffset() {
@@ -82,10 +96,18 @@ public class SyzygyBlockLayout {
                 long blockDataSize = numBlocks * (1L << h.blockSize());
 
                 // offsets filled in below, in three passes
+                indexPositions.add(new int[]{t, s});
                 entryList.add(new Entry(tbSize, h.idxBits(), numBlocks, h.blockSize(),
                         indexTableSize, sizeTableSize, blockDataSize,
                         -1, -1, -1));
             }
+        }
+
+        int[][] entryIndexOf = new int[subTableCount][sides];
+        for (int[] row : entryIndexOf) java.util.Arrays.fill(row, -1);
+        for (int i = 0; i < indexPositions.size(); i++) {
+            int[] ts = indexPositions.get(i);
+            entryIndexOf[ts[0]][ts[1]] = i; // list order == final entries[] order, unaffected by later offset computation
         }
 
         int n = entryList.size();
@@ -122,7 +144,7 @@ public class SyzygyBlockLayout {
                     indexOffsets[i], sizeOffsets[i], dataOffsets[i]);
         }
 
-        return new SyzygyBlockLayout(finalEntries, offset);
+        return new SyzygyBlockLayout(finalEntries, entryIndexOf, offset);
     }
 
     private static int alignUp64(int offset) {

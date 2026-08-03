@@ -34,11 +34,11 @@ import static com.pepero.jcb.constant.SideToMove.*;
  * one of those calls. Here, each material's parsed structure is computed once
  * (on first use) and cached for the lifetime of this object.
  * <p>
- * KNOWN LIMITATIONS (not yet handled, flagged for later):
- * - Doesn't yet handle "no split" materials that require mentally color-flipping
- *   the position to reuse a single stored side's data for the other side to move
- *   WITHIN a single (non-mirrored) file. (Mirrored-material color-flip, e.g.
- *   KRvKQ reusing KQvKR's file, IS handled — see {@link #mirrorMaterialString}.)
+ * "No split" materials (symmetric materials, e.g. KRvKR, that only ever store one
+ * side's data) are handled in {@link #probeWdl} by mentally color-flipping the
+ * position ONE MORE TIME to reuse the single stored side — combined via XOR with
+ * the separate cross-file mirror color-flip (e.g. KRvKQ reusing KQvKR's file, see
+ * {@link #mirrorMaterialString}).
  */
 public class SyzygyTablebase {
 
@@ -96,11 +96,14 @@ public class SyzygyTablebase {
      * @return wdl result
      */
     public int probeWdl(Chessboard board) throws IOException {
-        if(BitBoardUtils.countBits(board.occupancies[both]) > maxPieces)
+        int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
+        if(boardPiece == 2) return 2;
+
+        if(boardPiece > maxPieces)
             throw new SyzygyUnsupportedMaterialException(
                     "This Syzygy tablebase's supporting piece count is less than this board's piece count! " +
                             "(supporting : " + maxPieces +
-                            ", chess board : " + BitBoardUtils.countBits(board.occupancies[both]) + ")"
+                            ", chess board : " + boardPiece + ")"
             );
 
         String materialName = buildMaterialString(board);
@@ -114,15 +117,40 @@ public class SyzygyTablebase {
         // XOR the flip flag against the real side to move to get which slot the
         // file actually stores this position's data under.
         boolean actualWtm = (board.side == white);
-        boolean isWtm = table.colorFlipped() != actualWtm;
+        boolean mirrorFlip = table.colorFlipped();
+        boolean isWtm = mirrorFlip != actualWtm;
+
+        // "no split" files (symmetric materials, e.g. KRvKR) only ever store side=0
+        // (wtm) data — side=1 doesn't exist. When isWtm resolves to false here but
+        // there's no second side to read, mentally color-flip the position ONE MORE
+        // TIME so it can be probed as if it were white to move, reusing the single
+        // stored side. The two flips (cross-file mirror + this same-file reuse) are
+        // independent booleans, so they combine via XOR.
+        boolean noSplitReuse = (table.sides() == 1) && !isWtm;
+        if (noSplitReuse) {
+            isWtm = true;
+        }
+        boolean effectiveColorFlip = mirrorFlip ^ noSplitReuse;
+
         int side = isWtm ? 0 : 1;
-        int flatIndex = t * table.sides() + side;
+
+        SyzygyPairsHeader ph = table.pairsHeaders()[t][side];
+
+        // constant sub-tables store no huffman/block data at all — every position in
+        // this (sub-table, side) has the same WDL result, so skip decompression entirely.
+        if (ph.isConstant()) {
+            return ph.constValue();
+        }
 
         SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, table.colorFlipped());
+        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, effectiveColorFlip);
         long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
-        SyzygyHuffmanTable huffman = table.pairsHeaders()[t][side].huffmanTable();
+        // NOTE: naive t*sides+side arithmetic breaks the moment ANY earlier (t,s) entry
+        // was constant (it shifts every later entries[] index down), so this MUST go
+        // through getEntryIndex() rather than being computed directly.
+        int flatIndex = table.layout().getEntryIndex(t, side);
+        SyzygyHuffmanTable huffman = ph.huffmanTable();
         SyzygyBlockLayout.Entry entry = table.layout().getEntries()[flatIndex];
 
         return SyzygyDecompressor.decompressPairs(table.header(), entry, huffman, idx);
@@ -135,6 +163,9 @@ public class SyzygyTablebase {
      * @return dtz result
      * */
     public int probeDtz(Chessboard board) throws IOException {
+        int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
+        if(boardPiece == 2) return 0;
+
         int wdlResult = probeWdl(board);
 
         Integer direct = tryDirectDtz(board, wdlResult);
@@ -167,14 +198,31 @@ public class SyzygyTablebase {
             return null; // wrong side stored in this file — caller must search instead
         }
 
-        SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, table.colorFlipped());
-        long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
+        SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
 
-        SyzygyHuffmanTable huffman = table.pairsHeaders()[t][0].huffmanTable();
-        SyzygyBlockLayout.Entry entry = table.layout().getEntries()[t]; // sides=1, so flatIndex == t
+        int[] raw;
+        if (ph.isConstant()) {
+            // constant DTZ sub-table: no huffman/block data to decompress at all.
+            // (constValue isn't populated for DTZ during parsing — see SyzygyMaterial
+            // .readOnePairsHeader — so this just falls through with w0=w1=0. If real
+            // Syzygy files ever hit this branch, readOnePairsHeader needs to actually
+            // capture the constant DTZ value too; flagging this rather than guessing.)
+            raw = new int[]{0, 0};
+        } else {
+            SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
+            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, table.colorFlipped());
+            long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
-        int[] raw = SyzygyDecompressor.decompressPairsRaw(table.header(), entry, huffman, idx);
+            // NOTE: naive flatIndex==t breaks if any earlier sub-table (t' < t) was
+            // constant (it shifts every later entries[] index down) — must go through
+            // getEntryIndex() rather than assuming sides=1 means flatIndex==t.
+            int flatIndex = table.layout().getEntryIndex(t, 0);
+            SyzygyHuffmanTable huffman = ph.huffmanTable();
+            SyzygyBlockLayout.Entry entry = table.layout().getEntries()[flatIndex];
+
+            raw = SyzygyDecompressor.decompressPairsRaw(table.header(), entry, huffman, idx);
+        }
+
         SyzygyDtzMapEntry mapEntry = table.dtzMapPerTable()[t];
 
         return SyzygyDtzPostProcess.postProcess(table.header(), raw[0], raw[1], wdlResult, flags, mapEntry);
