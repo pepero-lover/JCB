@@ -30,38 +30,53 @@ public class SyzygyFillSquares {
      * @return int[] of board squares (0~63), one per piece, in subTable's order
      */
     public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable, boolean isWtm) {
+        return fillSquares(chessboard, subTable, isWtm, false);
+    }
+
+    /**
+     * Build the square array for encode(), matching subTable's declared piece order.
+     *
+     * @param chessboard   current board position
+     * @param subTable     the sub-table whose piece order we must follow
+     * @param isWtm        true to use the white-to-move piece order, false for black-to-move
+     * @param colorFlipped is color flipped
+     * @return int[] of board squares (0~63), one per piece, in subTable's order
+     */
+    public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
+                                    boolean isWtm, boolean colorFlipped) {
         int[] pieceCodes = isWtm ? subTable.wtmPieces() : subTable.btmPieces();
         int n = pieceCodes.length;
         int[] squares = new int[n];
 
-        // Multiple pieces can share the same type code (e.g. two rooks), and they
-        // all come from the same bitboard — pop squares off one at a time as we
-        // consume them, so the same square is never reused twice.
         Map<Integer, Long> remainingBitboards = new HashMap<>();
 
         for (int i = 0; i < n; i++) {
-            int code = pieceCodes[i];
+            int fileCode = pieceCodes[i];
+            int actualCode = colorFlipped ? flipColor(fileCode) : fileCode;
 
-            long bb = remainingBitboards.computeIfAbsent(code,
+            long bb = remainingBitboards.computeIfAbsent(actualCode,
                     c -> chessboard.getBitboardPiece(syzygyCodeToBitboardIndex(c)));
 
             if (bb == 0L) {
                 throw new IllegalStateException(
-                        "Board doesn't have enough pieces of Syzygy piece code " + code
-                                + " to match this sub-table's expected material");
+                        "Board doesn't have enough pieces of Syzygy piece code " + actualCode
+                                + " (file code " + fileCode + ", colorFlipped=" + colorFlipped
+                                + ") to match this sub-table's expected material");
             }
 
             int square = BitBoardUtils.getLS1BIndex(bb);
             squares[i] = square;
 
-            // consume that square so the next same-type piece (if any) gets a different one.
-            // Which specific square goes to which "slot" doesn't matter here — encode()
-            // re-sorts same-type groups internally anyway.
             bb = BitBoardUtils.popBit(bb, square);
-            remainingBitboards.put(code, bb);
+            remainingBitboards.put(actualCode, bb);
         }
 
         return squares;
+    }
+
+    private static int flipColor(int code) {
+        if (code == 0) return 0;
+        return (code <= 6) ? code + 8 : code - 8;
     }
 
     /**

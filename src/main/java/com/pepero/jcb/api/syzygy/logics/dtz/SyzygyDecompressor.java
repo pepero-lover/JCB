@@ -1,4 +1,7 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy.logics.dtz;
+
+import com.pepero.jcb.api.syzygy.logics.SyzygyBlockLayout;
+import com.pepero.jcb.api.syzygy.logics.SyzygyHuffmanTable;
 
 import java.nio.ByteBuffer;
 
@@ -43,17 +46,18 @@ public class SyzygyDecompressor {
      */
     public static int[] decompressPairsRaw(ByteBuffer data, SyzygyBlockLayout.Entry entry,
                                            SyzygyHuffmanTable huffman, long idx) {
+
         int idxBits = entry.idxBits();
 
+        // --- 1. locate which block this idx falls into ---
         long mainIdx = idx >>> idxBits;
         long litIdx = (idx & ((1L << idxBits) - 1)) - (1L << (idxBits - 1));
 
         int indexEntryOffset = entry.indexTableOffset() + (int) (mainIdx * 6);
-        long block = readU32(data, indexEntryOffset);
-        int idxOffset = readU16(data, indexEntryOffset + 4);
+        long block = readU32(data, indexEntryOffset);          // 4-byte LE
+        int idxOffset = readU16(data, indexEntryOffset + 4);   // 2-byte LE
 
         litIdx += idxOffset;
-
 
         int sizeTableOffset = entry.sizeTableOffset();
         if (litIdx < 0) {
@@ -71,9 +75,10 @@ public class SyzygyDecompressor {
             }
         }
 
+        // --- 2. set up the Huffman decode state ---
         int minLen = huffman.getMinLen();
-        long[] base = huffman.getBase();
-        int[] offset = huffman.getOffset();
+        long[] base = huffman.getBase();      // indexed [0..h-1] == code lengths [minLen..maxLen]
+        int[] offset = huffman.getOffset();   // same indexing
         int[] symLen = huffman.getSymLen();
         byte[] symPat = huffman.getSymPat();
 
@@ -82,9 +87,10 @@ public class SyzygyDecompressor {
         long code = readBEU64(data, blockDataOffset);
         int ptr = blockDataOffset + 8;
 
-        int bitCnt = 0;
+        int bitCnt = 0; // number of "empty" bits already consumed from `code`
         int sym;
 
+        // --- 3. read canonical-Huffman symbols one by one until we reach litIdx ---
         while (true) {
             int l = minLen;
             while (Long.compareUnsigned(code, base[l - minLen]) < 0) {
@@ -107,6 +113,7 @@ public class SyzygyDecompressor {
             }
         }
 
+        // --- 4. expand the RePair symbol tree down to a leaf, guided by litIdx ---
         while (symLen[sym] != 0) {
             int w0 = symPat[3 * sym] & 0xff;
             int w1 = symPat[3 * sym + 1] & 0xff;
@@ -122,6 +129,8 @@ public class SyzygyDecompressor {
             }
         }
 
+        // for a leaf, the 3-byte record's first two bytes ARE the stored value
+        // (WDL only uses byte0; DTZ combines byte0 + low nibble of byte1)
         return new int[]{symPat[3 * sym] & 0xff, symPat[3 * sym + 1] & 0xff};
     }
 }

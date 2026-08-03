@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.syzygy.logics;
 
+import java.nio.ByteBuffer;
+
 import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
 
 /**
@@ -131,7 +133,7 @@ public class SyzygyBlockLayout {
     /**
      * Read one indexTable entry (6 bytes: little-endian 48-bit value) for the given Entry.
      */
-    public long readIndexEntry(byte[] header, Entry entry, int entryIdx) {
+    public long readIndexEntry(ByteBuffer header, Entry entry, int entryIdx) {
         int off = entry.indexTableOffset() + entryIdx * 6;
         long lo = readU32(header, off);
         long hi = readU16(header, off + 4);
@@ -141,7 +143,7 @@ public class SyzygyBlockLayout {
     /**
      * Read one sizeTable entry (2 bytes, little-endian) for the given Entry.
      */
-    public int readSizeEntry(byte[] header, Entry entry, int blockIdx) {
+    public int readSizeEntry(ByteBuffer header, Entry entry, int blockIdx) {
         int off = entry.sizeTableOffset() + blockIdx * 2;
         return readU16(header, off);
     }

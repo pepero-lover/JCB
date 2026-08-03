@@ -4,87 +4,65 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Helper methods for reading unsigned integer values from Syzygy header bytes.
- * All multi-byte values in the Syzygy format are stored little-endian.
+ * Helper methods for reading unsigned integer values from a ByteBuffer
+ * (typically a MappedByteBuffer backing the whole file, so large tablebase
+ * files never need to be fully loaded into a Java byte[]).
+ * <p>
+ * All these methods use ABSOLUTE positioning (an explicit offset), so they
+ * never touch the buffer's position/limit — safe to call repeatedly on a
+ * shared buffer without any of the usual ByteBuffer position bookkeeping.
+ * <p>
+ * Most Syzygy header fields are little-endian; the compressed bit-stream
+ * itself (used only by SyzygyDecompressor) is big-endian — each method here
+ * sets the buffer's byte order explicitly right before reading, so mixing
+ * both kinds of reads on the same buffer is always safe.
  */
 public class SyzygyByteReader {
 
-    /**
-     * Read 1 byte as an unsigned value (0~255)
-     *
-     * @param header header bytes
-     * @param offset offset
-     * @return unsigned 1-byte value
-     */
-    public static int readU8(byte[] header, int offset) {
-        // byte is signed in Java (-128~127), so mask with 0xFF to treat it as unsigned
-        return header[offset] & 0xFF;
+    public static int readU8(ByteBuffer buf, int offset) {
+        return buf.get(offset) & 0xFF;
     }
 
-    /**
-     * Read 2 bytes (little-endian) as an unsigned value (0~65535)
-     *
-     * @param header header bytes
-     * @param offset offset
-     * @return unsigned 2-byte value
-     */
-    public static int readU16(byte[] header, int offset) {
-        // wrap(array, offset, length) -> length is in BYTES, not bits
-        short raw = ByteBuffer.wrap(header, offset, 2)
-                .order(ByteOrder.LITTLE_ENDIAN) // Syzygy format is little-endian;
-                // ByteBuffer defaults to BIG_ENDIAN
-                .getShort();
-
-        // getShort() returns a signed short; mask to drop sign extension
-        return raw & 0xFFFF;
+    public static int readU16(ByteBuffer buf, int offset) {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        return buf.getShort(offset) & 0xFFFF;
     }
 
-    /**
-     * Read 4 bytes (little-endian) as an unsigned value (0~4294967295), returned as long
-     * since a plain int can't hold the full unsigned 32-bit range.
-     *
-     * @param header header bytes
-     * @param offset offset
-     * @return unsigned 4-byte value
-     */
-    public static long readU32(byte[] header, int offset) {
-        int raw = ByteBuffer.wrap(header, offset, 4)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .getInt();
-
-        // getInt() returns a signed int; mask with 0xFFFFFFFFL (note the L suffix,
-        // otherwise 0xFFFFFFFF would be interpreted as int -1 before widening)
-        return raw & 0xFFFFFFFFL;
+    public static long readU32(ByteBuffer buf, int offset) {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        return buf.getInt(offset) & 0xFFFFFFFFL;
     }
 
     /**
      * Read 4 bytes BIG-endian as an unsigned value, returned as long.
-     * Used only for the compressed bit-stream in decompress_pairs — unlike every
-     * other header field, the raw bit-stream itself is stored big-endian.
-     *
-     * @param data byte array (file data)
-     * @param offset offset
-     * @return unsigned 4-byte value
+     * Used only for the compressed bit-stream in decompress_pairs.
      */
-    public static long readBEU32(byte[] data, int offset) {
-        int raw = ByteBuffer.wrap(data, offset, 4)
-                .order(ByteOrder.BIG_ENDIAN) // explicit for clarity, this is BIG_ENDIAN's default anyway
-                .getInt();
-        return raw & 0xFFFFFFFFL;
+    public static long readBEU32(ByteBuffer buf, int offset) {
+        buf.order(ByteOrder.BIG_ENDIAN);
+        return buf.getInt(offset) & 0xFFFFFFFFL;
     }
 
     /**
-     * Read 8 bytes BIG-endian as a 64-bit value (kept as a signed Java long,
-     * but treated as an unsigned bit pattern by callers via Long.compareUnsigned etc.
-     * No masking needed here since long IS the full 64-bit width already).
-     *
-     * @param data byte array (file data)
-     * @param offset offset
-     * @return the 8-byte value, bit-identical to the unsigned 64-bit source value
+     * Read 8 bytes BIG-endian as a 64-bit value. No masking needed since
+     * long already IS the full 64-bit width (the bit pattern is treated as
+     * unsigned by callers via Long.compareUnsigned etc, not by this method).
      */
-    public static long readBEU64(byte[] data, int offset) {
-        return ByteBuffer.wrap(data, offset, 8)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getLong();
+    public static long readBEU64(ByteBuffer buf, int offset) {
+        buf.order(ByteOrder.BIG_ENDIAN);
+        return buf.getLong(offset);
+    }
+
+    /**
+     * Copy `length` raw bytes starting at `offset` into a plain byte[].
+     * Used for the few places (e.g. symPat) that need an actual standalone
+     * array rather than repeated offset-based reads. Uses duplicate() so it
+     * never disturbs the shared buffer's position or byte order.
+     */
+    public static byte[] readBytes(ByteBuffer buf, int offset, int length) {
+        ByteBuffer dup = buf.duplicate();
+        dup.position(offset);
+        byte[] dst = new byte[length];
+        dup.get(dst);
+        return dst;
     }
 }

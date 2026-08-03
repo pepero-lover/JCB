@@ -66,33 +66,67 @@ public class SyzygyHuffmanTable {
     }
 
     /**
-     * Calculate Sym Length
+     * Calculate Sym Length (iterative version)
+     * <p>
+     * This was originally a recursive function, but DTZ files can have much deeper
+     * RePair symbol chains than WDL (more distinct distance values -> richer alphabet
+     * -> deeper pairing trees), which can exceed Java's default thread stack size
+     * even though the equivalent C recursion never overflowed (C's default stack
+     * is usually much larger). Using an explicit heap-allocated stack instead of
+     * the JVM call stack avoids that limit entirely, with identical results.
      *
-     * @param s s value
+     * @param startS starting symbol index
      * @param symPat symPat array
      * @param symLen result symLen array
      * @param visited visited array
      */
-    private static void calcSymLen(int s, byte[] symPat, int[] symLen, boolean[] visited) {
-        int w0 = symPat[3*s] & 0xFF;
-        int w1 = symPat[3*s+1] & 0xFF;
-        int w2 = symPat[3*s+2] & 0xFF;
+    private static void calcSymLen(int startS, byte[] symPat, int[] symLen, boolean[] visited) {
+        java.util.Deque<Integer> stack = new java.util.ArrayDeque<>();
+        stack.push(startS);
 
-        // calculate s2 (child)
-        int s2 = (w2 << 4) | (w1 >> 4);
+        while (!stack.isEmpty()) {
+            int s = stack.peek();
 
-        if(s2 == 0x0FFF) { // when leaf node found
-            symLen[s] = 0;
-        } else {
+            if (visited[s]) {
+                stack.pop();
+                continue;
+            }
+
+            int w0 = symPat[3 * s] & 0xFF;
+            int w1 = symPat[3 * s + 1] & 0xFF;
+            int w2 = symPat[3 * s + 2] & 0xFF;
+
+            // calculate s2 (child)
+            int s2 = (w2 << 4) | (w1 >> 4);
+
+            if (s2 == 0x0FFF) { // leaf node
+                symLen[s] = 0;
+                visited[s] = true;
+                stack.pop();
+                continue;
+            }
+
             // calculate s1 (child)
             int s1 = ((w1 & 0x0F) << 8) | w0;
 
-            // when not visited s1, s2, visit
-            if(!visited[s1]) calcSymLen(s1, symPat, symLen, visited);
-            if(!visited[s2]) calcSymLen(s2, symPat, symLen, visited);
-            symLen[s] = symLen[s1] + symLen[s2] + 1;
-        }
+            // if either child isn't resolved yet, push it and come back to `s` later
+            // (both get pushed if both unresolved; whichever is processed first will
+            // still leave `s` on the stack until BOTH children are done)
+            boolean waitingOnChild = false;
+            if (!visited[s1]) {
+                stack.push(s1);
+                waitingOnChild = true;
+            }
+            if (!visited[s2]) {
+                stack.push(s2);
+                waitingOnChild = true;
+            }
 
-        visited[s] = true;
+            if (!waitingOnChild) {
+                symLen[s] = symLen[s1] + symLen[s2] + 1;
+                visited[s] = true;
+                stack.pop();
+            }
+        }
     }
 }

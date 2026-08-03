@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.syzygy.logics;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
 
@@ -59,7 +59,7 @@ public class SyzygyMaterial {
         pieceString = pieceString.trim();
         // KRvK
         String[] sidePiece = pieceString.split("v");
-        if(sidePiece.length != 2) throw new IllegalArgumentException("There must be 2 piece info aside 'v'!");
+        if (sidePiece.length != 2) throw new IllegalArgumentException("There must be 2 piece info aside 'v'!");
 
         // KR K
         String whitePiece = sidePiece[0].trim();
@@ -81,7 +81,7 @@ public class SyzygyMaterial {
         int blackPawnCount = blackPieceCount[1];
 
         // sort pawn count
-        if(blackPawnCount > 0 && (whitePawnCount == 0 || whitePawnCount > blackPawnCount)) {
+        if (blackPawnCount > 0 && (whitePawnCount == 0 || whitePawnCount > blackPawnCount)) {
             pawnCount[0] = blackPawnCount;
             pawnCount[1] = whitePawnCount;
         } else {
@@ -101,10 +101,10 @@ public class SyzygyMaterial {
      * where the first byte is the "order" value and the rest are piece type codes,
      * each byte packing a wtm nibble (low 4 bits) and a btm nibble (high 4 bits).
      *
-     * @param header header byte array read from the file (must be long enough)
+     * @param header mapped file buffer (must be long enough)
      * @return one SyzygySubTable per sub-table, in file order
      */
-    public SyzygySubTable[] parseSubTables(byte[] header) {
+    public SyzygySubTable[] parseSubTables(ByteBuffer header) {
         int subTableCount = getSubTableCount();
 
         // calculate bytes per table
@@ -115,7 +115,7 @@ public class SyzygyMaterial {
         int offset = PER_TABLE_INFO_OFFSET;
         for (int t = 0; t < subTableCount; t++) {
             // byte[0] of this sub-table = order info (low nibble = wtm, high nibble = btm)
-            int orderByte = header[offset] & 0xff;
+            int orderByte = readU8(header, offset);
 
             int orderWtm = orderByte & 0x0f;
             int orderBtm = (orderByte >> 4) & 0x0f;
@@ -127,7 +127,7 @@ public class SyzygyMaterial {
             int[] btmPieces = new int[totalPieceCount];
 
             for (int i = 0; i < totalPieceCount; i++) {
-                int pieceByte = header[pieceStartOffset + i] & 0xff;
+                int pieceByte = readU8(header, pieceStartOffset + i);
                 wtmPieces[i] = pieceByte & 0x0f;
                 btmPieces[i] = (pieceByte >> 4) & 0x0f;
             }
@@ -135,7 +135,7 @@ public class SyzygyMaterial {
             int order2Wtm = 0x0f;
             int order2Btm = 0x0f;
             if (morePawns) {
-                int order2Byte = header[offset + 1] & 0xff;
+                int order2Byte = readU8(header, offset + 1);
                 order2Wtm = order2Byte & 0x0f;
                 order2Btm = (order2Byte >> 4) & 0x0f;
             }
@@ -152,14 +152,13 @@ public class SyzygyMaterial {
     /**
      * Parse pairs headers
      *
-     * @param header header array (should long enough
-     * @param startOffset start offset (should even number)
-     * @param split should split or not
-     * @param syzygyType syzygy type
-     *
+     * @param header      mapped file buffer (must be long enough)
+     * @param startOffset start offset (should be even number)
+     * @param split       should split or not
+     * @param syzygyType  syzygy type
      * @return Syzygy Pairs Header
      */
-    public SyzygyPairsHeadersResult parsePairsHeaders(byte[] header, int startOffset, boolean split, SyzygyType syzygyType) {
+    public SyzygyPairsHeadersResult parsePairsHeaders(ByteBuffer header, int startOffset, boolean split, SyzygyType syzygyType) {
         int subTableCount = getSubTableCount();
         int sides = split ? 2 : 1;
 
@@ -180,15 +179,15 @@ public class SyzygyMaterial {
     /**
      * Parse one pairs header
      *
-     * @param header header
+     * @param header      mapped file buffer
      * @param startOffset start offset
      * @return one pairs header
      */
-    public SyzygyPairsHeader readOnePairsHeader(byte[] header, int startOffset, SyzygyType syzygyType){
-        if((header[startOffset] & 0x80) == 0x80) {
+    public SyzygyPairsHeader readOnePairsHeader(ByteBuffer header, int startOffset, SyzygyType syzygyType) {
+        if ((readU8(header, startOffset) & 0x80) == 0x80) {
             return new SyzygyPairsHeader(
                     true, (syzygyType == SyzygyType.WDL) ? readU8(header, startOffset + 1) : 0,
-                    readU8(header, startOffset),0,0,0,0,0,0,
+                    readU8(header, startOffset), 0, 0, 0, 0, 0, 0,
                     null
             );
         }
@@ -198,11 +197,18 @@ public class SyzygyMaterial {
 
         int h = maxLen - minLen + 1;
 
+        int flags = readU8(header, startOffset);
+        int blockSize = readU8(header, startOffset + 1);
+        int idxBits = readU8(header, startOffset + 2);
+
         int numSyms = readU16(header, startOffset + 10 + 2 * h);
 
-        // calculate symPat offset and get data
+        // calculate symPat offset and copy that slice out as a standalone byte[]
+        // (symPat is small — numSyms*3 bytes — so copying it out of the mapped
+        // buffer here is fine; everything else stays as offset-based reads
+        // directly against the buffer, no full-file copy involved)
         int symPatOffset = startOffset + 12 + 2 * h;
-        byte[] symPat = Arrays.copyOfRange(header, symPatOffset, symPatOffset + 3 * numSyms);
+        byte[] symPat = readBytes(header, symPatOffset, 3 * numSyms);
 
         // raw offset
         int[] rawOffset = new int[h];
@@ -212,14 +218,13 @@ public class SyzygyMaterial {
 
         return new SyzygyPairsHeader(
                 false, 0,
-                readU8(header, startOffset), // flags 1 byte
-                readU8(header, startOffset + 1), // block size 1 byte
-                readU8(header, startOffset + 2), // idxBits 1 byte
+                flags, // flags 1 byte
+                blockSize, // block size 1 byte
+                idxBits, // idxBits 1 byte
                 readU8(header, startOffset + 3), // delta 1 byte
                 readU32(header, startOffset + 4), // realNumBlocks 4 byte
                 maxLen, // maxLen 1 byte
                 minLen, // minLen 1 byte
-                // later, huffman will be added
                 SyzygyHuffmanTable.build(symPat, numSyms, rawOffset, minLen) // huffman table
         );
     }
@@ -255,7 +260,7 @@ public class SyzygyMaterial {
      */
     public static long subfactor(long k, long n) {
         // when nC0 : return 1
-        if(k == 0) return 1;
+        if (k == 0) return 1;
 
         if (k > n - k) {
             k = n - k;  // C(n,k) = C(n,n-k)
@@ -304,11 +309,11 @@ public class SyzygyMaterial {
         for (int i = 1; i <= 6; i++) {
             if (whiteCounts[i] == 1) {
                 count++;
-                if(count > 2) return false;
+                if (count > 2) return false;
             }
             if (blackCounts[i] == 1) {
                 count++;
-                if(count > 2) return false;
+                if (count > 2) return false;
             }
         }
 
