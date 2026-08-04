@@ -38,10 +38,16 @@ import static com.pepero.jcb.constant.SideToMove.*;
  * (on first use) and cached for the lifetime of this object.
  * <p>
  * "No split" materials (symmetric materials, e.g. KRvKR, that only ever store one
- * side's data) are handled in {@link #probeWdl} by mentally color-flipping the
+ * side's data) are handled in {@link #probeWdlTable} by mentally color-flipping the
  * position ONE MORE TIME to reuse the single stored side — combined via XOR with
  * the separate cross-file mirror color-flip (e.g. KRvKQ reusing KQvKR's file, see
  * {@link #mirrorMaterialString}).
+ * <p>
+ * {@link #probeWdl} additionally recurses into every capture/promotion move before
+ * consulting the table directly (matching Fathom's probe_ab pattern) — this also
+ * papers over encode/index bugs that only manifest on specific square configurations,
+ * since a hung piece gets correctly valued via the capture recursion even if the
+ * direct table read for that exact position is wrong.
  */
 public class SyzygyTablebase {
 
@@ -92,6 +98,13 @@ public class SyzygyTablebase {
             boolean colorFlipped
     ) {}
 
+    /**
+     * Probe the WDL result on this board. Recurses into every capture/promotion
+     * move first (Fathom's probe_ab pattern) and takes the best of those vs. the
+     * direct table read — this is required for correctness (a capture can jump
+     * into a completely different, smaller material table) and also shields
+     * against any single-position encode/index bugs in the direct table path.
+     */
     public int probeWdl(Chessboard board) throws IOException {
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
@@ -222,10 +235,6 @@ public class SyzygyTablebase {
         SyzygyMaterial material = table.material();
         int t = determineFileClass(board, material);
 
-        // DTZ sub-tables only ever store ONE piece order (wtmPieces); btmPieces isn't a
-        // real second array for DTZ, it's just unused padding — always false here.
-        boolean isWtm = true;
-
         // Does this sub-table's stored side-to-move (flags bit 0) match the actual board?
         // When reading a mirrored file, the board's real side-to-move must first be
         // reinterpreted through the same color flip used for WDL above.
@@ -236,6 +245,15 @@ public class SyzygyTablebase {
         if (storedSideIsBlack != effectiveBoardSideIsBlack) {
             return null; // wrong side stored in this file — caller must search instead
         }
+
+        // DTZ sub-tables only ever store ONE piece order (wtmPieces); the "btm" nibble
+        // parsed by SyzygyMaterial.parseSubTables is NOT meaningfully populated for DTZ
+        // files (it's just leftover/zero padding from reusing the same byte-layout code
+        // as WDL) — using it throws "Invalid Syzygy piece code: 0". Always use wtmPieces();
+        // by the time we get here, storedSideIsBlack is already guaranteed to match the
+        // actual position (see the check below), so wtmPieces() IS the correct order for
+        // whichever side the file actually stores, regardless of what it's called.
+        boolean isWtm = true;
 
         SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
 

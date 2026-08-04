@@ -2622,6 +2622,86 @@ public class ChessGame {
         }
     }
 
+    /**
+     * Get the best move based on Syzygy tablebase <br>
+     * if is checkmate or stalemate, return null
+     *
+     * @param tablebase Syzygy tablebase
+     * @return best move
+     * @throws IOException if tablebase could not find or something
+     */
+    public MoveInfo findBestMoveSyzygy(SyzygyTablebase tablebase) throws IOException {
+        List<SyzygyMoveDTO> bestMoves = findRankedSyzygyMoves(tablebase);
+        if(bestMoves.isEmpty()) return null;
+        return bestMoves.getFirst().move();
+    }
+
+    /**
+     * Get Sorted moves based on Syzygy tablebase (first is best move, last is worst move)
+     *
+     * @param tablebase Syzygy table base
+     * @return sorted moves list
+     * @throws IOException if tablebase could not find or something
+     */
+    public List<SyzygyMoveDTO> findRankedSyzygyMoves(SyzygyTablebase tablebase) throws IOException {
+        if (getGameVariants() != GameVariants.STANDARD)
+            throw new VariantNotMatchException("Variant should be Standard chess!");
+
+        readLock.lock();
+        try {
+            int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
+            int moveCount = MoveGenerator.generateMoves(this.chessboard, moveArray);
+
+            if (moveCount == 0) {
+                return List.of(); // checkmate or stalemate
+            }
+
+            List<SyzygyMoveDTO> ranked = new ArrayList<>();
+            int halfMoveClock = this.getHalfMove();
+
+            for (int i = 0; i < moveCount; i++) {
+                int move = moveArray[i];
+                boolean zeroing = EncodeMove.getMoveCapture(move)
+                        || EncodeMove.getMovePiece(move) == P
+                        || EncodeMove.getMovePiece(move) == p;
+
+                MoveGenerator.makeMove(this.chessboard, move);
+
+                boolean triggersRepetition = ChessboardUtils.getRepetitionCount(this.chessboard) >= 2;
+
+                int childWdl = tablebase.probeWdl(this.chessboard);
+                int ourWdl = triggersRepetition ? 2 : (4 - childWdl);
+
+                int distance = (ourWdl == 2) ? 0 : (zeroing ? 0 : tablebase.probeDtz(this.chessboard));
+
+                if (!zeroing && (halfMoveClock + distance >= 100)) {
+                    if (ourWdl == 4) ourWdl = 3;
+                    else if (ourWdl == 0) ourWdl = 1;
+                }
+
+                ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance));
+
+                MoveGenerator.unmakeMove(this.chessboard, move);
+            }
+
+            ranked.sort((a, b) -> {
+                if (a.ourWdl() != b.ourWdl()) {
+                    return b.ourWdl() - a.ourWdl();
+                }
+                if (a.ourWdl() > 2) {
+                    return a.distance() - b.distance();
+                }
+                if (a.ourWdl() < 2) {
+                    return b.distance() - a.distance();
+                }
+                return 0;
+            });
+
+            return ranked;
+        } finally {
+            readLock.unlock();
+        }
+    }
 
     /**
      * Get this board to ascii

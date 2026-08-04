@@ -13,80 +13,34 @@ import java.util.List;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 
 public class SyzygyBestMoveDebug {
-
-    public static MoveInfo findBestMoveVerbose(SyzygyTablebase tb, ChessGame game, List<String> history) throws IOException {
-        List<MoveInfo> legalMoves = game.getLegalMoves();
-
-        MoveInfo bestMove = null;
-        int bestOurWdl = -1;
-        int bestOurDtz = Integer.MAX_VALUE;
-
-        for (MoveInfo move : legalMoves) {
-            int encoded = move.originEncodedData();
-            boolean zeroing = EncodeMove.getMoveCapture(encoded)
-                    || EncodeMove.getMovePiece(encoded) == P
-                    || EncodeMove.getMovePiece(encoded) == p;
-
-            ChessGame child = new ChessGame(game);
-            child.makeMove(move);
-
-            String childBoardState = child.getFEN().split(" ")[0];
-
-            int childWdl;
-            int ourWdl;
-            int ourDtz;
-
-            if (history.contains(childBoardState)) {
-                childWdl = 2;
-                ourWdl = 2;
-                ourDtz = 0;
-            } else {
-                childWdl = child.probeSyzygyWdl(tb);
-                ourWdl = 4 - childWdl;
-                ourDtz = zeroing ? 1 : 1 + child.probeSyzygyDtz(tb);
-            }
-
-            boolean better;
-            if (bestMove == null) {
-                better = true;
-            } else if (ourWdl != bestOurWdl) {
-                better = ourWdl > bestOurWdl;
-            } else if (ourWdl > 2) {
-                better = ourDtz < bestOurDtz;
-            } else if (ourWdl < 2) {
-                better = ourDtz > bestOurDtz;
-            } else {
-                better = false;
-            }
-
-            if (better) {
-                bestMove = move;
-                bestOurWdl = ourWdl;
-                bestOurDtz = ourDtz;
-            }
-        }
-
-        return bestMove;
-    }
-
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
-        ChessGame game = new ChessGame("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
+        ChessGame game = new ChessGame("8/2B2k2/8/4KB2/8/8/8/8 b - - 0 1");
+        System.out.println("First WDL" + game.probeSyzygyWdl(tb));
+        System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
-        List<String> history = new ArrayList<>();
-        history.add(game.getFEN().split(" ")[0]);
+        int ply = 0;
 
         while (true) {
-            MoveInfo bestMove = findBestMoveVerbose(tb, game, history);
+            MoveInfo bestMove = game.findBestMoveSyzygy(tb);
+
+            if(game.isThreefoldRepetition()) {
+                System.out.println(game.findRankedSyzygyMoves(tb));
+                System.out.println("repetition");
+                break;
+            }
+            if(bestMove == null) break;
 
             game.makeMove(bestMove);
-            game.printBoard();
+            System.out.println("ply : " + ply);
 
-            history.add(game.getFEN().split(" ")[0]);
+            System.out.println("WDL : " + game.probeSyzygyWdl(tb));
+            System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+            System.out.println("FEN : " + game.getFEN());
 
-            if(game.isGameOver() != GameOverReason.NOTGAMEOVER) break;
+            ply++;
         }
     }
 }
