@@ -95,7 +95,12 @@ public class SyzygyTablebase {
             SyzygyBlockLayout layout,
             SyzygyDtzMapEntry[] dtzMapPerTable,
             SyzygyEncType encType,
-            boolean colorFlipped
+            boolean colorFlipped,
+            // true for materials whose piece composition is identical for both
+            // colors (e.g. KRvKR, KNNvKNN) — Fathom's `be->symmetric` (key == key2).
+            // For these, the DTZ file's stored side never needs to match the
+            // board's actual side to move; see tryDirectDtz().
+            boolean symmetric
     ) {}
 
     /**
@@ -241,18 +246,35 @@ public class SyzygyTablebase {
         int flags = table.pairsHeaders()[t][0].flags();
         boolean storedSideIsBlack = (flags & 1) != 0;
         boolean actualBoardSideIsBlack = (board.side == black);
-        boolean effectiveBoardSideIsBlack = table.colorFlipped() != actualBoardSideIsBlack;
-        if (storedSideIsBlack != effectiveBoardSideIsBlack) {
-            return null; // wrong side stored in this file — caller must search instead
+
+        // fillSquares() needs to know whether to mentally swap white<->black pieces
+        // when reading the board, on top of whatever cross-file mirror (colorFlipped)
+        // was already applied when this material's file was chosen.
+        boolean fillColorFlip;
+
+        if (table.symmetric()) {
+            // Symmetric material (e.g. KRvKR, KNNvKNN — identical piece composition
+            // on both sides): matches Fathom's probe_table(), which for be->symmetric
+            // forces bside=false and ignores the stored-side flag entirely, always
+            // reusing the single stored side via an extra flip keyed only on whose
+            // turn it is. Same trick as WDL's noSplitReuse above — just applied to
+            // DTZ, which Fathom always does but this port previously didn't, causing
+            // an unnecessary probeDtzViaSearch() fallback for these materials.
+            fillColorFlip = table.colorFlipped() != actualBoardSideIsBlack;
+        } else {
+            boolean effectiveBoardSideIsBlack = table.colorFlipped() != actualBoardSideIsBlack;
+            if (storedSideIsBlack != effectiveBoardSideIsBlack) {
+                return null; // wrong side stored in this file — caller must search instead
+            }
+            fillColorFlip = table.colorFlipped();
         }
 
         // DTZ sub-tables only ever store ONE piece order (wtmPieces); the "btm" nibble
         // parsed by SyzygyMaterial.parseSubTables is NOT meaningfully populated for DTZ
         // files (it's just leftover/zero padding from reusing the same byte-layout code
         // as WDL) — using it throws "Invalid Syzygy piece code: 0". Always use wtmPieces();
-        // by the time we get here, storedSideIsBlack is already guaranteed to match the
-        // actual position (see the check below), so wtmPieces() IS the correct order for
-        // whichever side the file actually stores, regardless of what it's called.
+        // fillColorFlip (above) already accounts for whichever side the file actually
+        // stores, so wtmPieces() IS the correct order regardless of what it's called.
         boolean isWtm = true;
 
         SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
@@ -260,14 +282,16 @@ public class SyzygyTablebase {
         int[] raw;
         if (ph.isConstant()) {
             // constant DTZ sub-table: no huffman/block data to decompress at all.
-            // (constValue isn't populated for DTZ during parsing — see SyzygyMaterial
-            // .readOnePairsHeader — so this just falls through with w0=w1=0. If real
-            // Syzygy files ever hit this branch, readOnePairsHeader needs to actually
-            // capture the constant DTZ value too; flagging this rather than guessing.)
+            // Verified against Fathom's decompress_pairs(): it short-circuits on
+            // idxBits==0 and returns constValue directly, and constValue[0] is
+            // hardcoded to 0 for DTZ (never read from the file) — the same
+            // map/parity post-processing below still applies afterward either way.
+            // So raw={0,0} here is exactly equivalent to going through the real
+            // decompress path for a constant table, not a placeholder/guess.
             raw = new int[]{0, 0};
         } else {
             SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, table.colorFlipped());
+            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip);
             long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
             // NOTE: naive flatIndex==t breaks if any earlier sub-table (t' < t) was
@@ -391,6 +415,12 @@ public class SyzygyTablebase {
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;
 
+            // Fathom's be->symmetric (key == key2): true when the material's piece
+            // composition is identical for both colors, e.g. KRvKR mirrors to itself.
+            // Purely a property of the material string, independent of which file
+            // (natural or mirrored) ends up being loaded below.
+            boolean symmetric = naturalMaterialName.equals(mirrorMaterialString(naturalMaterialName));
+
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
                 Path mirroredPath = syzygyDir.resolve(mirrored + ".rtbz");
@@ -433,7 +463,7 @@ public class SyzygyTablebase {
                     SyzygyBlockLayout.compute(dtzMapResult.nextOffset(), tbSizes, pairsHeaders);
 
             return new DtzTable(material, header, subTables, pairsHeaders, layout,
-                    dtzMapResult.perTable(), encType, colorFlipped);
+                    dtzMapResult.perTable(), encType, colorFlipped, symmetric);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load DTZ table for material " + naturalMaterialName, e);
         }
