@@ -13,6 +13,7 @@ public class SyzygyMaterial {
     private final int totalPieceCount;
     private final boolean hasPawns;
     private final int[] pawnCount;
+    private final boolean pawnGroup0IsWhite;
 
     private static final char[] pieceArray = new char[]{'P', 'N', 'B', 'R', 'Q', 'K'};
 
@@ -26,12 +27,14 @@ public class SyzygyMaterial {
         }
     }
 
-    private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount, boolean hasPawns, int[] pawnCount) {
+    private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount,
+                          boolean hasPawns, int[] pawnCount, boolean pawnGroup0IsWhite) {
         this.whiteCounts = whiteCounts;
         this.blackCounts = blackCounts;
         this.totalPieceCount = totalPieceCount;
         this.hasPawns = hasPawns;
         this.pawnCount = pawnCount;
+        this.pawnGroup0IsWhite = pawnGroup0IsWhite;
     }
 
     /**
@@ -81,15 +84,19 @@ public class SyzygyMaterial {
         int blackPawnCount = blackPieceCount[1];
 
         // sort pawn count
+        boolean pawnGroup0IsWhite;
         if (blackPawnCount > 0 && (whitePawnCount == 0 || whitePawnCount > blackPawnCount)) {
             pawnCount[0] = blackPawnCount;
             pawnCount[1] = whitePawnCount;
+            pawnGroup0IsWhite = false;
         } else {
             pawnCount[0] = whitePawnCount;
             pawnCount[1] = blackPawnCount;
+            pawnGroup0IsWhite = true;
         }
 
-        return new SyzygyMaterial(whitePieceCount, blackPieceCount, totalPiece, hasPawns, pawnCount);
+        return new SyzygyMaterial(whitePieceCount, blackPieceCount, totalPiece,
+                hasPawns, pawnCount, pawnGroup0IsWhite);
     }
 
     // magic(4 bytes) + flags(1 byte) = 5, per-table info starts right after
@@ -287,6 +294,10 @@ public class SyzygyMaterial {
 
     public int[] getPawnCount() {
         return pawnCount;
+    }
+
+    public boolean isPawnGroup0White() {
+        return pawnGroup0IsWhite;
     }
 
     public int getTotalPieceCount() {

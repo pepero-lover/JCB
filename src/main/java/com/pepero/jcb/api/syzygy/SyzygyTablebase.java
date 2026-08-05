@@ -161,7 +161,8 @@ public class SyzygyTablebase {
         WdlTable table = wdlCache.computeIfAbsent(materialName, this::loadWdlTable);
 
         SyzygyMaterial material = table.material();
-        int t = determineFileClass(board, material);
+        FileClassResult fc = determineFileClass(board, material, table.colorFlipped());
+        int t = fc.fileClass();
 
         // if we're reading a mirrored file, the file's notion of "white to move"
         // corresponds to the board's actual side being black, and vice versa —
@@ -194,7 +195,7 @@ public class SyzygyTablebase {
         }
 
         SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, effectiveColorFlip);
+        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, effectiveColorFlip, fc.anchorSquare());
         long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
         // NOTE: naive t*sides+side arithmetic breaks the moment ANY earlier (t,s) entry
@@ -253,7 +254,8 @@ public class SyzygyTablebase {
         DtzTable table = dtzCache.computeIfAbsent(materialName, this::loadDtzTable);
 
         SyzygyMaterial material = table.material();
-        int t = determineFileClass(board, material);
+        FileClassResult fc = determineFileClass(board, material, table.colorFlipped());
+        int t = fc.fileClass();
 
         // Does this sub-table's stored side-to-move (flags bit 0) match the actual board?
         // When reading a mirrored file, the board's real side-to-move must first be
@@ -306,7 +308,7 @@ public class SyzygyTablebase {
             raw = new int[]{0, 0};
         } else {
             SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip);
+            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip, fc.anchorSquare());
             long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
             // NOTE: naive flatIndex==t breaks if any earlier sub-table (t' < t) was
@@ -484,16 +486,34 @@ public class SyzygyTablebase {
         }
     }
 
-    private static int determineFileClass(Chessboard board, SyzygyMaterial material) {
-        if (!material.isHasPawns()) {
-            return 0;
-        }
-        long pawns = board.getBitboardPiece(P) | board.getBitboardPiece(p);
-        int square = BitBoardUtils.getLS1BIndex(pawns);
-        int fileIdx = square % 8;
-        return (fileIdx >= 4) ? (7 - fileIdx) : fileIdx;
-    }
+    private record FileClassResult(int fileClass, int anchorSquare) {}
 
+    private static FileClassResult determineFileClass(Chessboard board, SyzygyMaterial material, boolean fileColorFlipped) {
+        if (!material.isHasPawns()) {
+            return new FileClassResult(0, -1);
+        }
+
+        boolean group0IsBoardWhite = material.isPawnGroup0White() ^ fileColorFlipped;
+        long pawns = group0IsBoardWhite ? board.getBitboardPiece(P) : board.getBitboardPiece(p);
+
+        int bestSquare = -1;
+        int bestTwist = -1;
+        long bb = pawns;
+        while (bb != 0) {
+            int sq = BitBoardUtils.getLS1BIndex(bb);
+            int syzygySq = sq ^ 0x38;
+            int twist = SyzygyIndexTables.PAWN_TWIST[0][syzygySq];
+            if (twist > bestTwist) {
+                bestTwist = twist;
+                bestSquare = syzygySq;
+            }
+            bb = BitBoardUtils.popBit(bb, sq);
+        }
+
+        int fileIdx = bestSquare % 8;
+        int fileClass = (fileIdx >= 4) ? (7 - fileIdx) : fileIdx;
+        return new FileClassResult(fileClass, bestSquare);
+    }
     private static String buildMaterialString(Chessboard board) {
         return "K" + countedPieces(board, true) + "vK" + countedPieces(board, false);
     }
@@ -527,7 +547,18 @@ public class SyzygyTablebase {
      * @return WDL data
      */
     public int getWdlData(Chessboard board) throws IOException {
-        return probeWdl(board) - 2;
+        int wdl = probeWdl(board) - 2; // -2 ~ 2
+
+        if (wdl == 0) {
+            return 0;
+        }
+
+        int dtz = probeDtz(board);
+        if (board.half_ply + dtz >= 100) {
+            return 0;
+        }
+
+        return wdl > 0 ? 1 : -1;
     }
 
     /**

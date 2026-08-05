@@ -74,6 +74,26 @@ public class SyzygyFillSquares {
         return squares;
     }
 
+    public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
+                                    boolean isWtm, boolean colorFlipped, int anchorSquare) {
+        int[] squares = fillSquares(chessboard, subTable, isWtm, colorFlipped);
+
+        if (anchorSquare >= 0) {
+            for (int i = 0; i < squares.length; i++) {
+                if (squares[i] == anchorSquare) {
+                    if (i != 0) {
+                        int tmp = squares[0];
+                        squares[0] = squares[i];
+                        squares[i] = tmp;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return squares;
+    }
+
     private static int flipColor(int code) {
         if (code == 0) return 0;
         return (code <= 6) ? code + 8 : code - 8;
