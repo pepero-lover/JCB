@@ -27,12 +27,23 @@ public class SyzygyBestMoveDebug {
 
         int ply = 0;
 
+        boolean drawFiftyMoves = false;
+
         while (true) {
             MoveInfo bestMove = game.findBestMoveSyzygy(tb);
 
-            if(game.isThreefoldRepetition()) {
-                System.out.println("repetition");
-                break;
+            GameOverReason reason = game.isGameOver();
+
+            if(reason != GameOverReason.NOTGAMEOVER) {
+                if(drawFiftyMoves) {
+                    System.out.println(reason);
+                    break;
+                } else {
+                    if(reason != GameOverReason.FIFTYMOVES) {
+                        System.out.println(reason);
+                        break;
+                    }
+                }
             }
             if(bestMove == null) break;
 

@@ -238,7 +238,7 @@ public class SyzygyTablebase {
                 MoveGenerator.makeMove(child, move);
                 int childWdl = probeWdl(child);
                 if (childWdl == requiredChildWdl) {
-                    return 1;
+                    return (wdlResult == 3) ? 101 : 1;
                 }
             }
         }
