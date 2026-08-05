@@ -26,10 +26,7 @@ public class SyzygyDtzPostProcess {
      */
     public static int postProcess(ByteBuffer header, int w0, int w1, int wdlResult,
                                   int flags, SyzygyDtzMapEntry mapEntry) {
-
-        // convert our 0~4 scale back to the original -2~2 scale used by the C tables
         int s = wdlResult - 2;
-
         int v = w0 + ((w1 & 0x0f) << 8);
 
         if ((flags & 2) != 0) {
@@ -39,6 +36,10 @@ public class SyzygyDtzPostProcess {
 
         if ((flags & PA_FLAGS[s + 2]) == 0 || (s & 1) != 0) {
             v *= 2;
+        }
+
+        if ((s & 1) != 0) {
+            v += 100;
         }
 
         return v;

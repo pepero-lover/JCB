@@ -19,30 +19,30 @@ public class SyzygyBestMoveDebug {
 
         System.out.println(syzygyDir.toAbsolutePath().toString());
 
-        ChessGame game = new ChessGame("8/k2K4/B7/B7/8/8/8/8 w - - 20 11");
+        ChessGame game = new ChessGame("8/3n4/3k4/8/2BB4/4K3/8/8 w - - 4 3");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
-
-        int ply = 0;
-
-        while (true) {
-            MoveInfo bestMove = game.findBestMoveSyzygy(tb);
-
-            if(game.isThreefoldRepetition()) {
-                System.out.println("repetition");
-                break;
-            }
-            if(bestMove == null) break;
-
-            game.makeMove(bestMove);
-            System.out.println(bestMove);
-            System.out.println("ply : " + ply);
-
-            System.out.println("WDL : " + game.probeSyzygyWdl(tb));
-            System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
-            System.out.println("FEN : " + game.getFEN());
-
-            ply++;
-        }
+//
+//        int ply = 0;
+//
+//        while (true) {
+//            MoveInfo bestMove = game.findBestMoveSyzygy(tb);
+//
+//            if(game.isThreefoldRepetition()) {
+//                System.out.println("repetition");
+//                break;
+//            }
+//            if(bestMove == null) break;
+//
+//            game.makeMove(bestMove);
+//            System.out.println(bestMove);
+//            System.out.println("ply : " + ply);
+//
+//            System.out.println("WDL : " + game.probeSyzygyWdl(tb));
+//            System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+//            System.out.println("FEN : " + game.getFEN());
+//
+//            ply++;
+//        }
     }
 }
