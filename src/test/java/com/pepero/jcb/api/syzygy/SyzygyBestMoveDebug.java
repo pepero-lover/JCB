@@ -17,6 +17,7 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 public class SyzygyBestMoveDebug {
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy/");
+        System.out.println(syzygyDir.toAbsolutePath());
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));

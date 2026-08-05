@@ -362,6 +362,10 @@ public class SyzygyTablebase {
             int childDistance = zeroing ? 0 : probeDtz(child);
             int candidate = 1 + childDistance;
 
+            if (zeroing && wdlResult == 1) {
+                candidate += 100;
+            }
+
             if (best == null
                     || (weAreWinning && candidate < best)
                     || (!weAreWinning && candidate > best)) {
