@@ -142,8 +142,9 @@ public class SyzygyTablebase {
         }
 
         int tableWdl = probeWdlTable(board);
+        int result = Math.max(bestWdl, tableWdl);
 
-        return Math.max(bestWdl, tableWdl);
+        return result;
     }
 
     private int probeWdlTable(Chessboard board) throws IOException {
@@ -547,18 +548,20 @@ public class SyzygyTablebase {
      * @return WDL data
      */
     public int getWdlData(Chessboard board) throws IOException {
-        int wdl = probeWdl(board) - 2; // -2 ~ 2
+        int wdlRaw = probeWdl(board); // 0~4 스케일 (0=Loss,1=BlessedLoss,2=Draw,3=CursedWin,4=Win)
+        int wdl = wdlRaw - 2;
 
         if (wdl == 0) {
             return 0;
         }
 
         int dtz = probeDtz(board);
+
         if (board.half_ply + dtz >= 100) {
-            return 0;
+            return wdl < 0 ? -1 : 1;
         }
 
-        return wdl > 0 ? 1 : -1;
+        return wdl;
     }
 
     /**
