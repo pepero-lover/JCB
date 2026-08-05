@@ -65,7 +65,7 @@ public class SyzygyFillSquares {
             }
 
             int square = BitBoardUtils.getLS1BIndex(bb);
-            squares[i] = square;
+            squares[i] = square ^ 0x38;
 
             bb = BitBoardUtils.popBit(bb, square);
             remainingBitboards.put(actualCode, bb);

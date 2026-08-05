@@ -2597,7 +2597,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            return tablebase.probeWdl(this.chessboard);
+            return tablebase.getWdlData(this.chessboard);
         } finally {
             readLock.unlock();
         }
@@ -2616,7 +2616,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            return tablebase.probeDtz(this.chessboard);
+            return tablebase.getDtzData(this.chessboard);
         } finally {
             readLock.unlock();
         }
@@ -2632,12 +2632,14 @@ public class ChessGame {
      */
     public MoveInfo findBestMoveSyzygy(SyzygyTablebase tablebase) throws IOException {
         List<SyzygyMoveDTO> bestMoves = findRankedSyzygyMoves(tablebase);
-        if(bestMoves.isEmpty()) return null;
+        if (bestMoves.isEmpty()) return null;
         return bestMoves.getFirst().move();
     }
 
     /**
      * Get Sorted moves based on Syzygy tablebase (first is best move, last is worst move)
+     * <p>
+     * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}.
      *
      * @param tablebase Syzygy table base
      * @return sorted moves list
@@ -2669,14 +2671,14 @@ public class ChessGame {
 
                 boolean triggersRepetition = ChessboardUtils.getRepetitionCount(this.chessboard) >= 2;
 
-                int childWdl = tablebase.probeWdl(this.chessboard);
-                int ourWdl = triggersRepetition ? 2 : (4 - childWdl);
+                int childWdl = tablebase.getWdlData(this.chessboard);
+                int ourWdl = triggersRepetition ? 0 : -childWdl;
 
-                int distance = (ourWdl == 2) ? 0 : (zeroing ? 0 : tablebase.probeDtz(this.chessboard));
+                int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(this.chessboard)));
 
                 if (!zeroing && (halfMoveClock + distance >= 100)) {
-                    if (ourWdl == 4) ourWdl = 3;
-                    else if (ourWdl == 0) ourWdl = 1;
+                    if (ourWdl == 2) ourWdl = 1;
+                    else if (ourWdl == -2) ourWdl = -1;
                 }
 
                 ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance));
@@ -2688,10 +2690,10 @@ public class ChessGame {
                 if (a.ourWdl() != b.ourWdl()) {
                     return b.ourWdl() - a.ourWdl();
                 }
-                if (a.ourWdl() > 2) {
+                if (a.ourWdl() > 0) {
                     return a.distance() - b.distance();
                 }
-                if (a.ourWdl() < 2) {
+                if (a.ourWdl() < 0) {
                     return b.distance() - a.distance();
                 }
                 return 0;

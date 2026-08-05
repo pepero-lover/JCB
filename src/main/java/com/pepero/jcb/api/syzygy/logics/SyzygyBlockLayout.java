@@ -93,7 +93,7 @@ public class SyzygyBlockLayout {
                 long numIndices = (tbSize + (1L << h.idxBits()) - 1) >>> h.idxBits();
                 long indexTableSize = 6L * numIndices;
                 long sizeTableSize = 2L * numBlocks;
-                long blockDataSize = numBlocks * (1L << h.blockSize());
+                long blockDataSize = h.realNumBlocks() * (1L << h.blockSize());
 
                 // offsets filled in below, in three passes
                 indexPositions.add(new int[]{t, s});

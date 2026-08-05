@@ -17,7 +17,9 @@ public class SyzygyBestMoveDebug {
         Path syzygyDir = Path.of("syzygy/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
-        ChessGame game = new ChessGame("8/2B2k2/8/4KB2/8/8/8/8 b - - 0 1");
+        System.out.println(syzygyDir.toAbsolutePath().toString());
+
+        ChessGame game = new ChessGame("8/1kr5/3Q4/3K4/8/8/8/8 b - - 25 13");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
@@ -27,13 +29,13 @@ public class SyzygyBestMoveDebug {
             MoveInfo bestMove = game.findBestMoveSyzygy(tb);
 
             if(game.isThreefoldRepetition()) {
-                System.out.println(game.findRankedSyzygyMoves(tb));
                 System.out.println("repetition");
                 break;
             }
             if(bestMove == null) break;
 
             game.makeMove(bestMove);
+            System.out.println(bestMove);
             System.out.println("ply : " + ply);
 
             System.out.println("WDL : " + game.probeSyzygyWdl(tb));

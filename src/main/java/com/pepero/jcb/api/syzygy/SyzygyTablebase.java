@@ -103,14 +103,7 @@ public class SyzygyTablebase {
             boolean symmetric
     ) {}
 
-    /**
-     * Probe the WDL result on this board. Recurses into every capture/promotion
-     * move first (Fathom's probe_ab pattern) and takes the best of those vs. the
-     * direct table read — this is required for correctness (a capture can jump
-     * into a completely different, smaller material table) and also shields
-     * against any single-position encode/index bugs in the direct table path.
-     */
-    public int probeWdl(Chessboard board) throws IOException {
+    private int probeWdl(Chessboard board) throws IOException {
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
@@ -221,16 +214,37 @@ public class SyzygyTablebase {
      * */
     public int probeDtz(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if(boardPiece == 2) return 0;
+        if (boardPiece == 2) return 0;
 
         int wdlResult = probeWdl(board);
+        if (wdlResult == 2) return 0;
 
-        Integer direct = tryDirectDtz(board, wdlResult);
-        if (direct != null) {
-            return direct;
+        if (wdlResult > 2) {
+            int requiredChildWdl = 4 - wdlResult;
+            int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
+            int moveCount = MoveGenerator.generateMoves(board, moveArray);
+
+            for (int i = 0; i < moveCount; i++) {
+                int move = moveArray[i];
+                boolean zeroing = EncodeMove.getMoveCapture(move)
+                        || EncodeMove.getMovePiece(move) == P
+                        || EncodeMove.getMovePiece(move) == p;
+                if (!zeroing) continue;
+
+                Chessboard child = new Chessboard(board);
+                MoveGenerator.makeMove(child, move);
+                int childWdl = probeWdl(child);
+                if (childWdl == requiredChildWdl) {
+                    return 1;
+                }
+            }
         }
 
-        return probeDtzViaSearch(board, wdlResult);
+        Integer direct = tryDirectDtz(board, wdlResult);
+        if (direct != null) return direct;
+
+        int viaSearch = probeDtzViaSearch(board, wdlResult);
+        return viaSearch;
     }
 
     private Integer tryDirectDtz(Chessboard board, int wdlResult) throws IOException {
@@ -501,5 +515,27 @@ public class SyzygyTablebase {
         String whiteSide = materialName.substring(1, vIdx);
         String blackSide = materialName.substring(vIdx + 2);
         return "K" + blackSide + "vK" + whiteSide;
+    }
+
+
+    /**
+     * Get WDL data based on this chess board
+     * (-2~2)
+     *
+     * @param board chess board
+     * @return WDL data
+     */
+    public int getWdlData(Chessboard board) throws IOException {
+        return probeWdl(board) - 2;
+    }
+
+    /**
+     * Get DTZ data based on this chess board
+     *
+     * @param board chess board
+     * @return DTZ data
+     */
+    public int getDtzData(Chessboard board) throws IOException {
+        return probeDtz(board);
     }
 }
