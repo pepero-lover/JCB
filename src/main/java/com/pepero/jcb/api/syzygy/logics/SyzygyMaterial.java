@@ -259,13 +259,11 @@ public class SyzygyMaterial {
      * @return result of Combination nCk
      */
     public static long subfactor(long k, long n) {
-        // when nC0 : return 1
         if (k == 0) return 1;
-
         if (k > n - k) {
-            k = n - k;  // C(n,k) = C(n,n-k)
+            k = n - k;
+            if (k == 0) return 1;
         }
-
         long f = n;
         long l = 1;
         for (long i = 1; i < k; i++) {

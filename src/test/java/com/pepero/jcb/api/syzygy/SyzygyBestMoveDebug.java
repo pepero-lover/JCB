@@ -19,7 +19,7 @@ public class SyzygyBestMoveDebug {
 
         System.out.println(syzygyDir.toAbsolutePath().toString());
 
-        ChessGame game = new ChessGame("8/1kr5/3Q4/3K4/8/8/8/8 b - - 25 13");
+        ChessGame game = new ChessGame("8/k2K4/B7/B7/8/8/8/8 w - - 20 11");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
