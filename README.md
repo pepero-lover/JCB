@@ -11,29 +11,28 @@
 
 ## 설치 방법
 
-### 1. jar 파일 다운로드
-[JCB 릴리스](https://github.com/pepero-lover/JCB/releases) 에서 최신 릴리즈의 
-`JCB-*.jar` 를 다운로드 받습니다.
-
-### 2. 프로젝트에 추가하기
 ### Gradle 프로젝트의 경우
 
-1. `build.gradle` 파일에 JitPack 저장소를 추가합니다.
-2. dependencies 에 라이브러리를 추가합니다.
+1. settings.gradle 에 이 코드를 삽입하세요.
 ```groovy
-repositories {
-    maven { url 'https://jitpack.io' }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
 }
+```
+
+2. 의존성을 build.gradle 에 추가하세요.
+```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:1.3.1'
+    implementation 'com.github.pepero-lover:JCB:v1.4.0'
 }
 ```
 
 ### Maven 프로젝트의 경우
-
-1. `pom.xml`에 JitPack 저장소를 추가합니다.
-2. 그리고 dependency 를 추가합니다.
-
+1. pom.xml 에 이 코드를 삽입하세요.
 ```xml
 <repositories>
     <repository>
@@ -41,13 +40,14 @@ dependencies {
         <url>https://jitpack.io</url>
     </repository>
 </repositories>
-
+```
+2. 의존성을 추가하세요.
+```xml
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>1.3.1</version>
+    <version>v1.4.0</version>
 </dependency>
-```
 ```
 
 ## 사용 예시
