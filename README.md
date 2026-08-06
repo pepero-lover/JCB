@@ -4,7 +4,7 @@
 ## JCB 에 대해
 * 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높이었습니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
-* 빌드된 jar 라이브러리 파일의 크기가 **149KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
+* 빌드된 jar 라이브러리 파일의 크기가 **151KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
 * 코어 비트보드 탐색 성능은 **70 MNPS (초당 7,000만 노드)** 입니다. (cpu i7-14700KF 기준)
 * Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
 * 이 라이브러리에서는 단 하나의 외부 라이브러리를 쓰지 않습니다. (단, 테스트용 JUnit 제외)
@@ -18,30 +18,36 @@
 ### 2. 프로젝트에 추가하기
 ### Gradle 프로젝트의 경우
 
-1. 프로젝트 루트 또는 `libs/` 폴더에 `JCB-*.jar` 파일을 넣습니다.
-2. `build.gradle` 파일의 `dependencies`에 아래 코드를 추가합니다.
+1. `build.gradle` 파일에 JitPack 저장소를 추가합니다.
+2. dependencies 에 라이브러리를 추가합니다.
 ```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
 dependencies {
-    // libs 폴더 안에 JCB.jar 추가
-    implementation files('libs/JCB-1.3.0.jar')
-
-    // 또는 libs 폴더 안의 모든 jar 파일을 한 번에 포함할 경우
-    // implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.github.pepero-lover:JCB:1.3.1'
 }
 ```
 
 ### Maven 프로젝트의 경우
 
-1. 프로젝트 루트에 `libs/` 폴더를 만들고 `JCB-*.jar` 를 넣습니다.
-2. `pom.xml` 파일에 아래와 같이 `system` 스코프로 의존성을 추가합니다.
+1. `pom.xml`에 JitPack 저장소를 추가합니다.
+2. 그리고 dependency 를 추가합니다.
+
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>com.pepero</groupId>
-    <artifactId>jcb</artifactId>
-    <version>1.3.0</version>
-    <scope>system</scope>
-    <systemPath>${project.basedir}/libs/JCB-*.jar</systemPath>
+    <groupId>com.github.pepero-lover</groupId>
+    <artifactId>JCB</artifactId>
+    <version>1.3.1</version>
 </dependency>
+```
 ```
 
 ## 사용 예시
