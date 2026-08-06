@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="JCB:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/JCB_jar</output-path>
-    <root id="archive" name="JCB.jar">
-      <element id="module-output" name="JCB" />
-    </root>
-  </artifact>
-</component>
