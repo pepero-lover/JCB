@@ -225,6 +225,7 @@ public class EngineTest {
 ### 5. Syzygy 테이블베이스 사용하기
 ```java
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 
 import java.io.IOException;
@@ -263,7 +264,6 @@ public class SyzygyExample {
         System.out.println();
 
         // 가능한 수들의 WDL DTZ 결과를 전부 보여주는 메서드도 있습니다.
-        // 물론 최선수 기준으로 정렬된 결과로요.
         for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
             System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
         }

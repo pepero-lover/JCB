@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 
 import java.io.IOException;
