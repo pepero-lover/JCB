@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 /**
  * Ported from Fathom's encode() (tbprobe.c). Converts an array of piece
@@ -16,7 +16,7 @@ package com.pepero.jcb.api.syzygy.logics;
  * p[] IS MUTATED by this method (symmetry transforms + sorting), matching
  * the original C behavior — pass a copy if the caller needs the original order preserved.
  */
-public class SyzygyEncoder {
+class SyzygyEncoder {
 
     public static long encode(int[] p, SyzygyEncInfo ei, SyzygyMaterial material, SyzygyEncType enc) {
         int n = material.getTotalPieceCount();

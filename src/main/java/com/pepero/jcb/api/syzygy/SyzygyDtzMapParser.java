@@ -1,10 +1,8 @@
-package com.pepero.jcb.api.syzygy.logics.dtz;
-
-import com.pepero.jcb.api.syzygy.logics.SyzygyPairsHeader;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
-import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
+import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
  * Ported from the DTZ-specific section of init_table() (tbprobe.c, lines ~1607~1631).
@@ -17,9 +15,9 @@ import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
  *   else ("wide"): align to even offset, then 4 arrays, each [2-byte count][that many u16 values]
  * followed by one final even-alignment for the whole section.
  */
-public class SyzygyDtzMapParser {
+class SyzygyDtzMapParser {
 
-    public record Result(SyzygyDtzMapEntry[] perTable, int nextOffset) {}
+    record Result(SyzygyDtzMapEntry[] perTable, int nextOffset) {}
 
     /**
      * @param header      full file bytes

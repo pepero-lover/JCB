@@ -1,13 +1,13 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
-import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
+import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
  * Map piece and parse
  */
-public class SyzygyMaterial {
+class SyzygyMaterial {
     private final int[] whiteCounts; // index 1~6 : P N B R Q K
     private final int[] blackCounts; // index 1~6 : p n b r q k
     private final int totalPieceCount;

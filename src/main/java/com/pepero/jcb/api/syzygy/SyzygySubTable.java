@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.util.Arrays;
 
@@ -9,7 +9,7 @@ import java.util.Arrays;
  * @param orderWtm  encoding order value
  * @param wtmPieces piece type codes for this sub-table, in board order (1~6 = white P,N,B,R,Q,K / 9~14 = black p,n,b,r,q,k)
  */
-public record SyzygySubTable(int orderWtm, int orderBtm, int order2Wtm, int order2Btm, int[] wtmPieces,
+record SyzygySubTable(int orderWtm, int orderBtm, int order2Wtm, int order2Btm, int[] wtmPieces,
                              int[] btmPieces) {
 
     @Override

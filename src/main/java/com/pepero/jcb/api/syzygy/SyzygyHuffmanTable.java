@@ -1,6 +1,6 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
-public class SyzygyHuffmanTable {
+class SyzygyHuffmanTable {
     private byte[] symPat;
     private int numSyms;
     private int[] symLen;

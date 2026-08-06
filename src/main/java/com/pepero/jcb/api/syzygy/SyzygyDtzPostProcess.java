@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics.dtz;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
  * Ported from the DTZ branch of probe_table() (tbprobe.c, ~line 1885~1892).
  * Takes the raw decompress_pairs() output and turns it into the actual DTZ distance.
  */
-public class SyzygyDtzPostProcess {
+class SyzygyDtzPostProcess {
 
     // WdlToMap[wdlResult + 2] -> which of the 4 dtzMap buckets to use
     private static final int[] WDL_TO_MAP = {1, 3, 0, 2, 0};

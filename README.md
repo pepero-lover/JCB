@@ -6,6 +6,7 @@
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
 * 빌드된 jar 라이브러리 파일의 크기가 **149KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
 * 코어 비트보드 탐색 성능은 **70 MNPS (초당 7,000만 노드)** 입니다. (cpu i7-14700KF 기준)
+* Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
 * 이 라이브러리에서는 단 하나의 외부 라이브러리를 쓰지 않습니다. (단, 테스트용 JUnit 제외)
 
 ## 설치 방법
@@ -212,6 +213,53 @@ public class EngineTest {
         }
 
         // 참고로 예외가 발생하거나 정상종료 됬을 때 try-with-resources 가 engine1/engine2를 자동으로 close() 해줍니다.
+    }
+}
+```
+### 5. Syzygy 테이블베이스 사용하기
+```java
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.dto.SyzygyMoveDTO;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+public class SyzygyExample {
+
+    public static void main(String[] args) throws IOException {
+        // 테이블 베이스 폴더를 가져옵니다.
+        Path syzygyDir = Path.of("syzygy/");
+        // 테이블 베이스를 로드합니다.
+        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
+
+        // 예시 포지션
+        ChessGame game = new ChessGame("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
+
+        game.printBoard();
+
+        // WDL, DTZ 결과를 보입니다.
+
+        // WDL 데이터는 -2 ~ 2 의 범위를 가지고, 각각
+        // -2 는 양쪽 모두 최선의 플레이를 했을 때, 두는 쪽 기준 진다는 것이고,
+        // -1 은 지지만, 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
+        // 0 은 무승부,
+        // 1은 두는 쪽 기준 이기지만 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
+        // 2는 두는 쪽 기준 이긴다는 것입니다.
+
+        // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
+
+        System.out.println("WDL : " + game.probeSyzygyWdl(tb));
+        System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+        System.out.println();
+
+        // 지금 상황에서 최선수도 보일 수 있습니다.
+        System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
+        System.out.println();
+
+        // 가능한 수들의 WDL DTZ 결과를 전부 보여주는 메서드도 있습니다.
+        for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
+            System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
+        }
     }
 }
 ```

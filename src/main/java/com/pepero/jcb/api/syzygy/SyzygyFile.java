@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -17,7 +17,7 @@ import java.nio.file.Path;
  * tablebase files without ever needing that much Java heap. The OS pages
  * in only the parts we actually touch, on demand.
  */
-public class SyzygyFile {
+class SyzygyFile {
 
     // enough bytes to safely read magic(4) + flags(1) without mapping the whole file
     // just to check the type; the real data access later goes through mapFile().

@@ -1,8 +1,8 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.util.Arrays;
 
-public record SyzygyPairsHeader(
+record SyzygyPairsHeader(
         boolean isConstant, // when constant
         int constValue,     // const value
 

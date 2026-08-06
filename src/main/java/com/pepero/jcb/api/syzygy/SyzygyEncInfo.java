@@ -1,6 +1,6 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
-public class SyzygyEncInfo {
+class SyzygyEncInfo {
     private final int[] norm;
     private final long[] factor;
     private final long tbSize;

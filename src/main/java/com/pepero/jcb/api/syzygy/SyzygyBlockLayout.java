@@ -1,8 +1,8 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
-import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
+import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
  * Computes and parses the indexTable / sizeTable / compressed-block region
@@ -19,10 +19,10 @@ import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
  * Each "entry" here corresponds to one (sub-table, side) pair — i.e. one
  * SyzygyPairsHeader (skip constant-flag ones entirely, they have no index/size/data).
  */
-public class SyzygyBlockLayout {
+class SyzygyBlockLayout {
 
     /** Per-entry layout info (one per non-constant sub-table+side). */
-    public record Entry(
+    record Entry(
             long tbSize,
             int idxBits,
             long numBlocks,

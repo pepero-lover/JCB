@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -17,7 +17,7 @@ import java.nio.ByteOrder;
  * sets the buffer's byte order explicitly right before reading, so mixing
  * both kinds of reads on the same buffer is always safe.
  */
-public class SyzygyByteReader {
+class SyzygyByteReader {
 
     public static int readU8(ByteBuffer buf, int offset) {
         return buf.get(offset) & 0xFF;

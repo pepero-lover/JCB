@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
@@ -19,7 +19,7 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
  * later refinement — for now this assumes split data is used directly (true
  * for every case we've tested so far, e.g. KPvK, KRvK).
  */
-public class SyzygyFillSquares {
+class SyzygyFillSquares {
 
     /**
      * Build the square array for encode(), matching subTable's declared piece order.

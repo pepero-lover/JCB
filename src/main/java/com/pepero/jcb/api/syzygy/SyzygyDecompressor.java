@@ -1,8 +1,8 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
-import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
+import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
  * Ported from Fathom's decompress_pairs() (the DECOMP64 variant — Java's long is
@@ -18,7 +18,7 @@ import static com.pepero.jcb.api.syzygy.logics.SyzygyByteReader.*;
  *   but COMPARISONS must use Long.compareUnsigned, and right-shifts must use '>>>'
  *   (which Java already does correctly for both int and long).
  */
-public class SyzygyDecompressor {
+class SyzygyDecompressor {
 
     /**
      * Decode the leaf value at the given within-table index.

@@ -1,11 +1,6 @@
 package com.pepero.jcb.api.syzygy;
 
-import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.exception.SyzygyUnsupportedMaterialException;
-import com.pepero.jcb.api.syzygy.logics.*;
-import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzMapEntry;
-import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzMapParser;
-import com.pepero.jcb.api.syzygy.logics.dtz.SyzygyDtzPostProcess;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -17,7 +12,6 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

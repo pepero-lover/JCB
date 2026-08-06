@@ -1,6 +1,4 @@
-package com.pepero.jcb.api.syzygy.logics.dtz;
-
-import com.pepero.jcb.api.syzygy.logics.SyzygyByteReader;
+package com.pepero.jcb.api.syzygy;
 
 import java.nio.ByteBuffer;
 
@@ -12,7 +10,7 @@ import java.nio.ByteBuffer;
  * <p>
  * "wide" means each entry is 2 bytes (uint16); otherwise each entry is 1 byte.
  */
-public record SyzygyDtzMapEntry(boolean wide, int[] absOffsets) {
+record SyzygyDtzMapEntry(boolean wide, int[] absOffsets) {
 
     /**
      * Look up remapped value #v within bucket m.

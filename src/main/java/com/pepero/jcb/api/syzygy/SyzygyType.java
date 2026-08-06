@@ -1,9 +1,9 @@
-package com.pepero.jcb.api.syzygy.logics;
+package com.pepero.jcb.api.syzygy;
 
 /**
  * Syzygy tablebase file type (WDL / DTZ) <p>
  */
-public enum SyzygyType {
+enum SyzygyType {
     WDL(0x5d23e871, ".rtbw"),
     DTZ(0xa50c66d7, ".rtbz");
 
