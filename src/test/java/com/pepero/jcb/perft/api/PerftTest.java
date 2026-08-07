@@ -87,7 +87,7 @@ public class PerftTest {
     }
 
     public static void main(String[] args) {
-        ChessGame chessGame = new ChessGame(); // set start position
+        ChessGame chessGame = ChessGame.startPosition(); // set start position
         chessGame.setAutoChangingGameOver(false);
 
         // JVM preheat
@@ -95,7 +95,7 @@ public class PerftTest {
         perftDriver(chessGame, 5);
         System.out.println("Preheating complete!");
 
-        chessGame = new ChessGame();
+        chessGame = ChessGame.startPosition();
         chessGame.setAutoChangingGameOver(false); // disable checking game over state ( it is twice as efficient )
 
         // start

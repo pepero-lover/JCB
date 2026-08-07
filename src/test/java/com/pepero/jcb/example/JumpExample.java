@@ -4,7 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 
 public class JumpExample {
     public static void main(String[] args) {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         // 포지션 설정 ...
 

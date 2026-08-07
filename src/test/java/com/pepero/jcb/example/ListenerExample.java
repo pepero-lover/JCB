@@ -7,7 +7,7 @@ import com.pepero.jcb.api.event.ChessGameListener;
 
 public class ListenerExample {
     public static void main(String[] args) {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         chessGame.addChessGameListener(new ChessGameListener() {
             @Override

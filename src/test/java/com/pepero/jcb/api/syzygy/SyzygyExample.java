@@ -16,7 +16,7 @@ public class SyzygyExample {
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
         // 예시 포지션
-        ChessGame game = new ChessGame("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
+        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
 
         game.printBoard();
 

@@ -149,12 +149,13 @@ public class ChessGame {
 
     /**
      * Initialize position with FEN string
-     * @param fen fen string
      *
-     * @throws FENConvertException - if converting fen string failed
+     * @param pgn pgn string
      */
-    public ChessGame(String fen) {
-        this(fen, GameVariants.STANDARD);
+    public static ChessGame fromPGN(String pgn) {
+        ChessGame result = new ChessGame();
+        result.loadPGN(pgn);
+        return result;
     }
 
     /**
@@ -165,7 +166,56 @@ public class ChessGame {
      *
      * @throws FENConvertException - if converting fen string failed
      */
-    public ChessGame(String fen, GameVariants gameVariants) {
+    public static ChessGame fromFEN(String fen, GameVariants gameVariants) {
+        return new ChessGame(fen, gameVariants);
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param fen fen string
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public static ChessGame fromFEN(String fen) {
+        return fromFEN(fen, GameVariants.STANDARD);
+    }
+
+    /**
+     * Initialize position to start position
+     */
+    public static ChessGame startPosition() {
+        return new ChessGame();
+    }
+
+    /**
+     * Initialize position to start position
+     *
+     * @param gameVariants game variants ( standard, chess 960 ... )
+     */
+    public static ChessGame startPosition(GameVariants gameVariants) {
+        return new ChessGame(gameVariants);
+    }
+
+    /**
+     * Lightweight copy constructor
+     * Warning : This doesn't copy event listener and history tree but the position of this ChessGame
+     *
+     * @param other ChessGame class to copy
+     */
+    public static ChessGame lightWeightCopy(ChessGame other) {
+        return new ChessGame(other);
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param fen fen string
+     * @param gameVariants game variants ( standard, chess 960 ... )
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    private ChessGame(String fen, GameVariants gameVariants) {
         FENValidator.validateString(fen);
 
         chessboard = new Chessboard();
@@ -189,10 +239,29 @@ public class ChessGame {
     /**
      * Initialize position to start position
      */
-    public ChessGame() {
+    private ChessGame() {
         this.chessboard = new Chessboard();
 
         ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
+
+        startPositionFEN = Chessboard.start_position;
+
+        nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
+
+        calculateInitialPieces(this.getFEN());
+    }
+
+    /**
+     * Initialize position to start position
+     *
+     * @param gameVariants game variants ( standard, chess 960 ... )
+     */
+    private ChessGame(GameVariants gameVariants) {
+        this.chessboard = new Chessboard();
+
+        ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
+
+        chessboard.gameVariants = gameVariants;
 
         startPositionFEN = Chessboard.start_position;
 
@@ -207,7 +276,7 @@ public class ChessGame {
      *
      * @param other ChessGame class to copy
      */
-    public ChessGame(ChessGame other) {
+    private ChessGame(ChessGame other) {
         this.chessboard = new Chessboard(other.chessboard);
 
         this.startPositionFEN = other.getFEN();
@@ -1374,8 +1443,8 @@ public class ChessGame {
     public String toSan(String lanMove){
         readLock.lock();
         try {
-            ChessGame tempGame = new ChessGame(this.getFEN());
-            return ConvertStringMoveUtils.translateLanSequence(tempGame.chessboard, lanMove).trim();
+            Chessboard tempBoard = new Chessboard(chessboard);
+            return ConvertStringMoveUtils.translateLanSequence(tempBoard, lanMove).trim();
         } finally {
             readLock.unlock();
         }
@@ -1390,14 +1459,14 @@ public class ChessGame {
     public String toSan(List<MoveInfo> moveData){
         readLock.lock();
         try {
-            ChessGame tempGame = new ChessGame(this.getFEN());
+            Chessboard tempBoard = new Chessboard(chessboard);
 
             StringBuilder sb = new StringBuilder();
             for(MoveInfo moveInfo : moveData) {
                 sb.append(moveInfo.toString()).append(" ");
             }
 
-            return ConvertStringMoveUtils.translateLanSequence(tempGame.chessboard, sb.toString()).trim();
+            return ConvertStringMoveUtils.translateLanSequence(tempBoard, sb.toString()).trim();
         } finally {
             readLock.unlock();
         }
@@ -2434,16 +2503,6 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(startPositionFEN);
 
             MoveNode lastNode = moveHistoryRoot;
-
-            // add first node
-            result.add(
-                    new MoveDataDTO(
-                            lastNode.id,
-                            startPositionFEN,
-                            lastNode.moveData,
-                            lastNode.annotation
-                    )
-            );
 
             while (!lastNode.children.isEmpty()) {
                 lastNode = lastNode.children.getFirst();

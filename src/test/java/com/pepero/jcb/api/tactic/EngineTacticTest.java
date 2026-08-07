@@ -1,38 +1,39 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.api.tactic;
 
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.analyze.TacticFinding;
 import com.pepero.jcb.api.arena.EngineArena;
 import com.pepero.jcb.api.arena.MatchConfig;
 import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
-public class EngineTest {
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class EngineTacticTest {
     public static void main(String[] args) {
+        String enginePath = new File("engine/stockfish-18.exe").getAbsolutePath();
+
+        List<String> pgnDatas = new ArrayList<>();
+
         // 프로세스 빌더를 이용하여 Wrapper 를 생성합니다.
         try (
                 UCIEngineWrapper engine1 = new UCIEngineWrapper(
-                        new ProcessBuilder(
-                                "java",
-                                "-Xmx1024m",
-                                "-jar",
-                                "my_engine.jar"
-                        ),
+                        new ProcessBuilder(enginePath),
                         100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
                         null // 리스너
                 );
                 UCIEngineWrapper engine2 = new UCIEngineWrapper(
-                        new ProcessBuilder(
-                                "java",
-                                "-Xmx1024m",
-                                "-jar",
-                                "my_engine.jar"
-                        ),
+                        new ProcessBuilder(enginePath),
                         100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
                         null // 리스너
                 )
         ) {
             // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("opening/path/opening.bin") // 오프닝 북도 가져올 수 있습니다.
+                    .openingBook("engine/opening.bin") // 오프닝 북도 가져올 수 있습니다.
                     .randomBookMove(false) // 오프닝 북의 랜덤성을 제거합니다.
                     .depthLimit(10) // 고정 깊이 탐색
                     //.timeControl(300_000, 2_000) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
@@ -40,8 +41,7 @@ public class EngineTest {
                     // 2_000 밀리 세컨드 = 2초 = 2초 증가분
                     .build();
 
-            // 10 경기를 진행합니다.
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1; i++) {
                 ChessGame chessGame = ChessGame.startPosition();
 
                 EngineArena arena = new EngineArena(
@@ -60,10 +60,28 @@ public class EngineTest {
                 System.out.println("경기 결과: " + matchResult.result());
                 System.out.println("기보(PGN):\n" + matchResult.pgn());
 
+                pgnDatas.add(matchResult.pgn());
+
                 arena.swapEngine(); // 백흑 바꿔서 진행
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+
+        for(String pgn : pgnDatas) {
+            ChessGame chessGame = ChessGame.fromPGN(pgn);
+            System.out.println(chessGame.getMainlineData());
+            for(MoveDataDTO moveDataDTO : chessGame.getMainlineData()) {
+                System.out.println(moveDataDTO);
+                chessGame.makeMove(moveDataDTO.moveData());
+                List<TacticFinding> tactics = chessGame.findTactics(chessGame.getTurn());
+                if(!tactics.isEmpty()) {
+                    chessGame.printBoard();
+                    System.out.println(tactics);
+                    System.out.println();
+                }
+            }
+            break;
         }
 
         // 참고로 예외가 발생하거나 정상종료 됬을 때 try-with-resources 가 engine1/engine2를 자동으로 close() 해줍니다.

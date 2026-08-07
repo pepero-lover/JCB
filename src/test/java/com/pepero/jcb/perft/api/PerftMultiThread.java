@@ -52,7 +52,7 @@ public class PerftMultiThread {
         for (MoveInfo moveInfo : moveList) {
             chessGame.makeMove(moveInfo);
 
-            final ChessGame clonedGame = new ChessGame(chessGame);
+            final ChessGame clonedGame = ChessGame.lightWeightCopy(chessGame);
 
             chessGame.unmakeMove();
 
@@ -95,14 +95,14 @@ public class PerftMultiThread {
     }
 
     public static void main(String[] args) {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.setAutoChangingGameOver(false);
 
         System.out.println("Preheating...");
         perftDriver(chessGame, 5);
         System.out.println("Preheating complete!");
 
-        chessGame = new ChessGame();
+        chessGame = ChessGame.startPosition();
         chessGame.setAutoChangingGameOver(false);
 
         perftTest(chessGame, 6);

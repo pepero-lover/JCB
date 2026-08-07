@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 public class CLIChess {
     public static void main(String[] args) throws IOException {
         // 시작 포지션으로 ChessGame 겍체를 생성합니다.
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 

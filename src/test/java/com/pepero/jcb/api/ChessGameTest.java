@@ -29,7 +29,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("초기 FEN 문자열을 정확히 반환해야 한다")
     void getFEN() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         assertEquals(START_FEN, chessGame.getFEN());
     }
@@ -37,7 +37,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("LAN 문자열로 수를 두면 상태가 변해야 한다")
     void makeMove() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMove("e2e4");
         assertFalse(chessGame.isEmpty(Square.e4));
         assertTrue(chessGame.isEmpty(Square.e2));
@@ -46,7 +46,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("불법수를 두면 IllegalMoveException 이 터져야 한다")
     void testIllegalMove() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("e2f3"));
     }
@@ -54,7 +54,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("Undo 를 하면 기보가 삭제되고 보드가 원상복구되어야 한다")
     void unmakeMove() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMove("e2e4");
         assertEquals(1, chessGame.getMoveHistory().size());
 
@@ -67,14 +67,14 @@ public class ChessGameTest {
     @Test
     @DisplayName("아무 수도 두지 않고 무르기를 하면 예외가 발생해야 한다")
     void unmakeMoveEmpty() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         assertThrows(EmptyMoveUndoException.class, chessGame::unmakeMove);
     }
 
     @Test
     @DisplayName("턴이 번갈아가며 바뀌어야 한다")
     void getTurn() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         assertTrue(chessGame.getTurn());
 
         chessGame.makeMove("e2e4");
@@ -84,7 +84,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("기물을 잡으면 잡힌 기물 목록에 추가되어야 한다")
     void getCapturedPieces() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         chessGame.makeMove("e2e4");
         chessGame.makeMove("d7d5");
@@ -97,7 +97,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("기물 점수가 기물 이득에 따라 변해야 한다")
     void getPieceScore() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         assertEquals(0, chessGame.getPieceScore());
 
         chessGame.makeMove("e2e4");
@@ -110,7 +110,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("특정 칸에 있는 기물을 정확히 가져와야 한다")
     void getPieceOnSquare() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         assertEquals(Piece.WHITE_QUEEN, chessGame.getPieceOnSquare(Square.d1));
         assertEquals(Piece.BLACK_ROOK, chessGame.getPieceOnSquare(Square.h8));
         assertEquals(Piece.NONE, chessGame.getPieceOnSquare(Square.e4));
@@ -119,7 +119,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("초기 상태의 전체 합법수는 정확히 20개여야 한다")
     void getLegalMoves() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         List<MoveInfo> moves = chessGame.getLegalMoves();
         assertEquals(20, moves.size());
     }
@@ -127,7 +127,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("Source Square 에서 합법수만 필터링해서 가져와야 한다")
     void getLegalMovesForSource() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         List<MoveInfo> e2Moves = chessGame.getLegalMovesForSource(Square.e2);
 
         assertEquals(2, e2Moves.size());
@@ -138,7 +138,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("Target Square 에서 합법수만 필터링해서 가져와야 한다")
     void getLegalMovesForTarget() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         List<MoveInfo> e2Moves = chessGame.getLegalMovesForTarget(Square.e4);
 
         assertEquals(1, e2Moves.size());
@@ -148,7 +148,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("초기 보드의 기물 개수는 정확히 32개여야 한다")
     void getBoardStateMap() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         Map<Square, Piece> boardMap = chessGame.getBoardStateMap();
         assertEquals(32, boardMap.size());
     }
@@ -156,7 +156,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("체크메이트 상태를 정확히 판별해야 한다")
     void isCheckmate() {
-        ChessGame chessGame = new ChessGame(SCHOLARS_MATE_FEN);
+        ChessGame chessGame = ChessGame.fromFEN(SCHOLARS_MATE_FEN);
         assertTrue(chessGame.isCheck());
         assertTrue(chessGame.isCheckmate());
         assertEquals(GameOverReason.CHECKMATE, chessGame.isGameOver());
@@ -176,7 +176,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("스테일메이트 상태를 정확히 판별해야 한다")
     void isStalemate() {
-        ChessGame chessGame = new ChessGame(STALEMATE_FEN);
+        ChessGame chessGame = ChessGame.fromFEN(STALEMATE_FEN);
         assertFalse(chessGame.isCheck());
         assertTrue(chessGame.isStalemate());
         assertEquals(GameOverReason.STALEMATE, chessGame.isGameOver());
@@ -185,7 +185,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("3회 동형 반복 무승부를 판별해야 한다")
     void isThreefoldRepetition() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         for (int i = 0; i < 2; i++) {
             chessGame.makeMove("g1f3");
@@ -203,7 +203,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("LAN 을 SAN 으로 정상 변환해야 한다")
     void toSan() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         assertEquals("e4", chessGame.toSan("e2e4"));
         assertEquals("Nf3", chessGame.toSan("g1f3"));
 
@@ -213,7 +213,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("SAN 을 LAN 으로 정상 변환해야 한다")
     void toLan() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         assertEquals("e2e4", chessGame.toLanString("e4"));
         assertEquals("g1f3", chessGame.toLanString("Nf3"));
@@ -227,7 +227,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("되돌리기와 다시 되돌리기가 정상 작동 해야 한다.")
     void undoRedo() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         String start = chessGame.getFEN();
 
@@ -250,7 +250,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("바리에이션이 정확히 작성되어야 한다.")
     void variation() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
         chessGame.unmakeMove();
@@ -260,7 +260,7 @@ public class ChessGameTest {
 
         chessGame.remakeMove(1);
 
-        ChessGame test = new ChessGame();
+        ChessGame test = ChessGame.startPosition();
         test.makeMove("e2e4");
         test.makeMove("d7d5");
 
@@ -277,7 +277,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("FEN 이 정확히 작성되어야 한다.")
     void fenAdvanced(){
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
         chessGame.makeMove("g1f3");
@@ -296,7 +296,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("PGN을 정확히 파싱하고 다시 동일한 텍스트로 내보낼 수 있어야 한다.")
     void pgnConvert() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         String pgnString = """
         \uFEFF[Event "Variation Stress Test"]
         [Result "*"]
@@ -321,7 +321,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("메인 라인 노드 및 노드 아이디를 통한 체스 보드가 잘 불러와져야 한다.")
     public void jumpToNode() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
         chessGame.makeMove("g1f3");
@@ -352,7 +352,7 @@ public class ChessGameTest {
 
                 1.e4!!(1.d4!?{Queen's Pawn}Nf6 2.c4(2.Nf3 d5)2...e6)1...e5?? 2.Nf3!?(2.f4{King's Gambit}exf4 3.Nf3)2...Nc6?! 3.Bb5(3 .Bc4 Bc5(3...Nf6 4.d3)4.c3)3...a6$1 4.Ba4(4.Bxc6 dxc6 5.0-0(5.d3 f6))4...Nf6 *""";
 
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
         PGNGame pgnGame = chessGame.loadPGN(multiversePgn);
         MoveNodeDTO root = pgnGame.rootNode();
 
@@ -390,7 +390,7 @@ public class ChessGameTest {
 
                 1.e4 {[%clk 0:05:00]} 1...e5 {Black responds [%clk 0:04:58]} 2.Nf3!! {[%clk 0:04:45]} (2.f4 {King's Gambit [%clk 0:04:50]} exf4 {[%clk 0:04:48]}) 2...Nc6 {[%clk 0:04:55]} *""";
 
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         PGNGame parsedGame = chessGame.loadPGN(inputPgn);
         MoveNodeDTO root = parsedGame.rootNode();
@@ -430,7 +430,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("외부에서 수동으로 입력한 시계 데이터가 PGN에 올바르게 저장되는지 검증")
     void testManualClockSetting() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         chessGame.makeMove("e2e4");
         chessGame.setCurrentMoveClock(0, 4, 55);
@@ -455,7 +455,7 @@ public class ChessGameTest {
     void testMakeDropMoveAPI() {
         // 백 포켓에 Q, 흑 포켓에 p 가 있는 상태
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[Qp] w KQkq - 0 1";
-        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
 
         // API 메서드를 이용한 퀸 드랍
         chessGame.makeDropMove(PieceType.QUEEN, Square.e4);
@@ -468,7 +468,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 문자열로 드랍 이동이 정상 파싱 및 처리되어야 한다")
     void testDropMoveFromString() {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
-        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
 
         chessGame.makeMove("P@e4");
 
@@ -480,7 +480,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 폰을 1랭크나 8랭크에 드랍하려고 하면 예외가 발생해야 한다")
     void testIllegalPawnDrop() {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
-        ChessGame chessGame = new ChessGame(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
 
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e8"), "8랭크 폰 드랍은 불법수입니다.");
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e1"), "1랭크 폰 드랍은 불법수입니다.");
@@ -490,7 +490,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 포켓 기물이 기물 점수에 정상적으로 합산되어야 한다")
     void testPocketPieceScore() {
         String fen = "8/8/8/8/8/8/8/k6K[Q] w - - 0 1";
-        ChessGame chessGame = new ChessGame(fen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariants.CRAZY_HOUSE);
 
         assertEquals(9, chessGame.getPieceScore());
     }
@@ -499,7 +499,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 포켓에 기물이 있으면 기물 부족 무승부가 발생하지 않아야 한다")
     void testPocketPreventsInsufficientMaterial() {
         String fen = "8/8/8/8/8/8/8/k6K[P] w - - 0 1";
-        ChessGame chessGame = new ChessGame(fen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariants.CRAZY_HOUSE);
 
         assertFalse(chessGame.isInsufficientMaterial(), "포켓에 기물이 있으므로 기물 부족이 아닙니다.");
         assertNotEquals(GameOverReason.INSUFFICIENTMATERIAL, chessGame.isGameOver());
@@ -529,12 +529,11 @@ public class ChessGameTest {
     @Test
     @DisplayName("getMainlineData 에서 메인라인 데이터들이 정상적으로 생성되어야 한다")
     void getMainlineData() {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();ChessGame.startPosition();
 
         chessGame.makeMoveSanAll("e4 e5 Nf3 Nc6 Bc4 Bc5");
 
         assertEquals(List.of(
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                 "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
                 "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
                 "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",

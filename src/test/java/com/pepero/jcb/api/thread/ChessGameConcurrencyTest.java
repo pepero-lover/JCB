@@ -17,7 +17,7 @@ public class ChessGameConcurrencyTest {
     public static void main(String[] args) throws InterruptedException {
         System.out.println("Multi-thread concurrency test");
 
-        ChessGame game = new ChessGame();
+        ChessGame game = ChessGame.startPosition();
 
         AtomicInteger moveMadeCount = new AtomicInteger(0);
         AtomicInteger moveUnmadeCount = new AtomicInteger(0);
