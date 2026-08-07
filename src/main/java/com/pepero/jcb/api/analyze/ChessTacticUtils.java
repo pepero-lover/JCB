@@ -106,12 +106,10 @@ public class ChessTacticUtils {
         boolean behindIsWhite = behindType <= K;
         if (behindIsWhite != frontIsWhite) return -1;
 
-        int attackerType = getPieceTypeOnSquare(chessboard, attackerSq);
-        int attackerValue = PIECE_VALUE[normalize(attackerType)];
         int frontValue = PIECE_VALUE[normalize(frontType)];
         int behindValue = PIECE_VALUE[normalize(behindType)];
 
-        if (frontValue >= behindValue && frontValue >= attackerValue) {
+        if (frontValue >= behindValue) {
             return behindSq;
         }
 
@@ -200,6 +198,9 @@ public class ChessTacticUtils {
                 targets &= pinLine;
             }
         }
+
+       if(Long.bitCount(targets) < 2)
+           return 0L;
 
         return targets;
     }
