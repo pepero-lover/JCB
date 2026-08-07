@@ -982,26 +982,26 @@ public class ChessGame {
             } else {
                 if (isWhite) {
                     captured.put(PieceType.PAWN,
-                            initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.getBitboardPiece(p)));
+                            initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.bitboards[p]));
                     captured.put(PieceType.KNIGHT,
-                            initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.getBitboardPiece(n)));
+                            initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.bitboards[n]));
                     captured.put(PieceType.BISHOP,
-                            initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.getBitboardPiece(b)));
+                            initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.bitboards[b]));
                     captured.put(PieceType.ROOK,
-                            initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.getBitboardPiece(r)));
+                            initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.bitboards[r]));
                     captured.put(PieceType.QUEEN,
-                            initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(q)));
+                            initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.bitboards[q]));
                 } else {
                     captured.put(PieceType.PAWN,
-                            initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.getBitboardPiece(P)));
+                            initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.bitboards[P]));
                     captured.put(PieceType.KNIGHT,
-                            initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.getBitboardPiece(N)));
+                            initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.bitboards[N]));
                     captured.put(PieceType.BISHOP,
-                            initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.getBitboardPiece(B)));
+                            initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.bitboards[B]));
                     captured.put(PieceType.ROOK,
-                            initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.getBitboardPiece(R)));
+                            initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.bitboards[R]));
                     captured.put(PieceType.QUEEN,
-                            initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.getBitboardPiece(Q)));
+                            initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.bitboards[Q]));
                 }
             }
             captured.values().removeIf(count -> count <= 0);
@@ -1023,7 +1023,7 @@ public class ChessGame {
             int piece_score = 0;
 
             for(int piece = P; piece <= k; piece++) {
-                piece_score += BitBoardUtils.countBits(this.chessboard.getBitboardPiece(piece))
+                piece_score += BitBoardUtils.countBits(this.chessboard.bitboards[piece])
                         * PIECE_VALUES[piece];
             }
 

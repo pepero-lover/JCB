@@ -55,7 +55,7 @@ class SyzygyFillSquares {
             int actualCode = colorFlipped ? flipColor(fileCode) : fileCode;
 
             long bb = remainingBitboards.computeIfAbsent(actualCode,
-                    c -> chessboard.getBitboardPiece(syzygyCodeToBitboardIndex(c)));
+                    c -> chessboard.bitboards[syzygyCodeToBitboardIndex(c)]);
 
             if (bb == 0L) {
                 throw new IllegalStateException(

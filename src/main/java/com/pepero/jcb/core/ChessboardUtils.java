@@ -534,7 +534,7 @@ public class ChessboardUtils {
 
         // loop over all piece types
         for (int piece = P; piece <= k; piece++) {
-            long bitboardPiece = chessboard.getBitboardPiece(piece);
+            long bitboardPiece = chessboard.bitboards[piece];
             char pieceChar = ascii_pieces[piece];
 
             // a bit scanning: find all set bits for this piece type

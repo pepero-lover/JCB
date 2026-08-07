@@ -196,14 +196,4 @@ public class Chessboard {
         this.promoted_pieces = source.promoted_pieces;
         System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
     }
-
-    /**
-     * returns bitboard that has only one piece type
-     *
-     * @param index put P or N, ... so on that are on EncodedPieces
-     * @return if index is P, returns only white pawns (P) if index is  n, returns only black knights (n) and so on
-     */
-    public long getBitboardPiece(int index) {
-        return bitboards[index];
-    }
 }

@@ -152,7 +152,7 @@ public class FENValidator {
         int oppositeSide = chessboard.side ^ 1;
 
         int oppositeKingSquare = BitBoardUtils.getLS1BIndex(
-                chessboard.getBitboardPiece(oppositeSide == white ? K : k)
+                chessboard.bitboards[oppositeSide == white ? K : k]
         );
 
         if (oppositeKingSquare == -1) {

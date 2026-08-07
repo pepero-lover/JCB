@@ -493,7 +493,7 @@ public class SyzygyTablebase {
         }
 
         boolean group0IsBoardWhite = material.isPawnGroup0White() ^ fileColorFlipped;
-        long pawns = group0IsBoardWhite ? board.getBitboardPiece(P) : board.getBitboardPiece(p);
+        long pawns = group0IsBoardWhite ? board.bitboards[P] : board.bitboards[p];
 
         int bestSquare = -1;
         int bestTwist = -1;
@@ -522,7 +522,7 @@ public class SyzygyTablebase {
         char[] letters = {'Q', 'R', 'B', 'N', 'P'};
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < codes.length; i++) {
-            int count = BitBoardUtils.countBits(board.getBitboardPiece(codes[i]));
+            int count = BitBoardUtils.countBits(board.bitboards[codes[i]]);
             for (int c = 0; c < count; c++) {
                 sb.append(letters[i]);
             }
