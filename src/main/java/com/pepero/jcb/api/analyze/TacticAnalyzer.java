@@ -27,6 +27,18 @@ public class TacticAnalyzer {
         return findings;
     }
 
+
+    /**
+     * Get Hanging pieces square
+     *
+     * @param chessboard chess board
+     * @param whiteAttacking if true, get black's hanging pieces. otherwise, get white's hanging pieces.
+     * @return hanging pieces square
+     */
+    public static List<Square> findHangingPieces(Chessboard chessboard, boolean whiteAttacking) {
+        return ChessTacticUtils.findHangingPieces(chessboard, whiteAttacking);
+    }
+
     private static List<TacticFinding> findForks(Chessboard chessboard, boolean whiteAttacking) {
         List<TacticFinding> results = new ArrayList<>();
 

@@ -1,9 +1,13 @@
 package com.pepero.jcb.api.analyze;
 
+import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
@@ -451,5 +455,23 @@ public class ChessTacticUtils {
         }
 
         return false;
+    }
+
+    public static List<Square> findHangingPieces(Chessboard chessboard, boolean whiteAttacking) {
+        List<Square> hanging = new ArrayList<>();
+
+        long enemyOccupancy = whiteAttacking ? chessboard.occupancies[black] : chessboard.occupancies[white];
+        while (enemyOccupancy != 0L) {
+            int sq = BitBoardUtils.getLS1BIndex(enemyOccupancy);
+
+            long attackers = ChessTacticUtils.getAttackersTo(chessboard, sq, whiteAttacking);
+            if (attackers != 0L && !ChessTacticUtils.isTacticallyDefended(chessboard, sq)) {
+                hanging.add(Square.fromIndex(sq));
+            }
+
+            enemyOccupancy = BitBoardUtils.popBit(enemyOccupancy, sq);
+        }
+
+        return hanging;
     }
 }

@@ -1,5 +1,8 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.analyze.ChessTacticUtils;
+import com.pepero.jcb.api.analyze.TacticAnalyzer;
+import com.pepero.jcb.api.analyze.TacticFinding;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
@@ -2703,6 +2706,26 @@ public class ChessGame {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Find tactics and return
+     *
+     * @param whiteAttacking is white attacking
+     * @return tactics dto(s)
+     */
+    public List<TacticFinding> findTactics(boolean whiteAttacking) {
+        return TacticAnalyzer.analyze(this.chessboard, whiteAttacking);
+    }
+
+    /**
+     * Get Hanging pieces square
+     *
+     * @param whiteAttacking if true, get black's hanging pieces. otherwise, get white's hanging pieces.
+     * @return hanging pieces square
+     */
+    public List<Square> findHangingPieces(boolean whiteAttacking) {
+        return ChessTacticUtils.findHangingPieces(this.chessboard, whiteAttacking);
     }
 
     /**
