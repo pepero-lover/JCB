@@ -582,8 +582,10 @@ public class ConvertStringMoveUtils {
             if (EncodeMove.getMovePiece(move) == piece_type &&
                     EncodeMove.getMoveTarget(move) == target_square) {
                 int source = EncodeMove.getMoveSource(move);
+                int promotion = EncodeMove.getMovePromoted(move);
+                promotion -= whiteTurn ? 0 : 6;
 
-                if(promotion_type != -1 && EncodeMove.getMovePromoted(move) != promotion_type) continue;
+                if(promotion_type != -1 && promotion != promotion_type) continue;
                 if(expected_file != -1 && source % 8 != expected_file) continue;
                 if(expected_rank != -1 && source / 8 != expected_rank) continue;
 

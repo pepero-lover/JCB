@@ -41,7 +41,7 @@ public class EngineTacticTest {
                     // 2_000 밀리 세컨드 = 2초 = 2초 증가분
                     .build();
 
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 3; i++) {
                 ChessGame chessGame = ChessGame.startPosition();
 
                 EngineArena arena = new EngineArena(
@@ -72,7 +72,6 @@ public class EngineTacticTest {
             ChessGame chessGame = ChessGame.fromPGN(pgn);
             System.out.println(chessGame.getMainlineData());
             for(MoveDataDTO moveDataDTO : chessGame.getMainlineData()) {
-                System.out.println(moveDataDTO);
                 chessGame.makeMove(moveDataDTO.moveData());
                 List<TacticFinding> tactics = chessGame.findImmediateTactics(chessGame.getTurn());
                 if(!tactics.isEmpty()) {
@@ -81,7 +80,6 @@ public class EngineTacticTest {
                     System.out.println();
                 }
             }
-            break;
         }
 
         // 참고로 예외가 발생하거나 정상종료 됬을 때 try-with-resources 가 engine1/engine2를 자동으로 close() 해줍니다.
