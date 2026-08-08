@@ -61,7 +61,7 @@ import com.pepero.jcb.api.ChessGame;
 public class MainExample {
     public static void main(String[] args) {
         // 기본 시작 포지션으로 초기화 합니다.
-        ChessGame chessGame = ChessGame.startPosition();
+        ChessGame chessGame = new ChessGame();
 
         // 수 두기
         chessGame.makeMove("e2e4");
@@ -99,7 +99,7 @@ import java.util.List;
 
 public class GUIExample {
     public static void main(String[] args) {
-        ChessGame chessGame = ChessGame.startPosition();
+        ChessGame chessGame = new ChessGame();
 
         // 사용자가 e2 칸에 있는 백 폰을 클릭했다고 가정합니다.
         Square clickedSquare = Square.e2;
@@ -129,7 +129,7 @@ public class GameStateExample {
         // FEN 스트링으로 게임을 시작할 수 있습니다.
         // 예: 체크메이트 직전 상태의 FEN
         String scholarMateFen = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4";
-        ChessGame game = ChessGame.fromFEN(scholarMateFen);
+        ChessGame game = new ChessGame(scholarMateFen);
 
         // 백이 체크메이트 하는 상황을 가정합니다.
         game.makeMove("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
@@ -150,6 +150,8 @@ public class GameStateExample {
 ### 4. 엔진끼리 대결하기
 
 ```java
+package com.pepero.jcb.api;
+
 import com.pepero.jcb.api.arena.EngineArena;
 import com.pepero.jcb.api.arena.MatchConfig;
 import com.pepero.jcb.api.dto.MatchResult;
@@ -192,7 +194,7 @@ public class EngineTest {
 
             // 10 경기를 진행합니다.
             for (int i = 0; i < 10; i++) {
-                ChessGame chessGame = ChessGame.startPosition();
+                ChessGame chessGame = new ChessGame();
 
                 EngineArena arena = new EngineArena(
                         chessGame, // 체스 게임
@@ -238,7 +240,7 @@ public class SyzygyExample {
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
         // 예시 포지션
-        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
+        ChessGame game = new ChessGame("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
 
         game.printBoard();
 
