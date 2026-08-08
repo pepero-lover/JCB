@@ -74,7 +74,7 @@ public class EngineTacticTest {
             for(MoveDataDTO moveDataDTO : chessGame.getMainlineData()) {
                 System.out.println(moveDataDTO);
                 chessGame.makeMove(moveDataDTO.moveData());
-                List<TacticFinding> tactics = chessGame.findTactics(chessGame.getTurn());
+                List<TacticFinding> tactics = chessGame.findImmediateTactics(chessGame.getTurn());
                 if(!tactics.isEmpty()) {
                     chessGame.printBoard();
                     System.out.println(tactics);

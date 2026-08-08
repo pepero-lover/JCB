@@ -2774,8 +2774,19 @@ public class ChessGame {
      * @return tactics dto(s)
      */
     public List<TacticFinding> findTactics(boolean whiteAttacking) {
-        return TacticAnalyzer.analyze(this.chessboard, whiteAttacking);
+        return TacticAnalyzer.findAllTactics(this.chessboard, whiteAttacking);
     }
+
+    /**
+     * Find immediate tactics and return
+     *
+     * @param whiteAttacking is white attacking
+     * @return tactics dto(s)
+     */
+    public List<TacticFinding> findImmediateTactics(boolean whiteAttacking) {
+        return TacticAnalyzer.findImmediateThreats(this.chessboard, whiteAttacking);
+    }
+
 
     /**
      * Get Hanging pieces square

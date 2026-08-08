@@ -109,11 +109,11 @@ public class ChessTacticUtils {
         int frontValue = PIECE_VALUE[normalize(frontType)];
         int behindValue = PIECE_VALUE[normalize(behindType)];
 
-        if (frontValue >= behindValue) {
-            return behindSq;
-        }
+        if (frontValue < behindValue) return -1;
+        if (see(chessboard, frontSq, attackerSq) <= 0) return -1;
+        if (see(chessboard, behindSq, attackerSq, occupancyWithoutFront) <= 0) return -1;
 
-        return -1;
+        return behindSq;
     }
 
     /**
@@ -147,29 +147,9 @@ public class ChessTacticUtils {
         long straightAttacks = Attacks.getRookAttacks(square, occupancyWithoutBlocker);
         xrayAttackers |= straightAttacks & rookLike & ray;
 
+        xrayAttackers &= ~(1L << blockerSq);
+
         return xrayAttackers;
-    }
-
-    /**
-     * Get piece indirectly attacking the square (xray) on this chess board
-     *
-     * @param chessboard chess board
-     * @param square square
-     * @param white_attacking is white attacking
-     * @return all XRay attacking piece
-     */
-    public static long getAllXrayAttackers(Chessboard chessboard, int square, boolean white_attacking) {
-        long directAttackers = ChessTacticUtils.getAttackersTo(chessboard, square, white_attacking);
-
-        long allXray = 0L;
-        long temp = directAttackers;
-        while (temp != 0L) {
-            int blockerSq = BitBoardUtils.getLS1BIndex(temp);
-            allXray |= getXrayBehind(chessboard, square, blockerSq, white_attacking);
-            temp = BitBoardUtils.popBit(temp, blockerSq);
-        }
-
-        return allXray;
     }
 
     /**
@@ -235,7 +215,7 @@ public class ChessTacticUtils {
             int value = PIECE_VALUE[normalize(type)];
 
             boolean isKing = (type == K || type == k);
-            boolean isUndefended = !ChessTacticUtils.isTacticallyDefended(chessboard, sq);
+            boolean isUndefended = ChessTacticUtils.isHanging(chessboard, sq);
 
             if (isKing) {
                 kingIncluded = true;
@@ -375,11 +355,22 @@ public class ChessTacticUtils {
      * @param white_attacking is white/black attacking
      */
     public static long getAttackersTo(Chessboard chessboard, int square, boolean white_attacking) {
+        return getAttackersTo(chessboard, square, white_attacking, chessboard.occupancies[both]);
+    }
+
+    /**
+     * Get pieces that attacking the square
+     *
+     * @param chessboard chessboard
+     * @param square square
+     * @param white_attacking is white/black attacking
+     * @param occupancy current position occupancy
+     */
+    public static long getAttackersTo(Chessboard chessboard, int square, boolean white_attacking, long occupancy) {
         long attackers = 0L;
-        long occupancy = chessboard.occupancies[both];
 
         long pawns = white_attacking ? chessboard.bitboards[P] : chessboard.bitboards[p];
-        attackers |= Attacks.pawn_attacks[(white_attacking) ? black : white][square] & pawns;
+        attackers |= Attacks.pawn_attacks[white_attacking ? black : white][square] & pawns;
 
         long knights = white_attacking ? chessboard.bitboards[N] : chessboard.bitboards[n];
         attackers |= Attacks.knight_attacks[square] & knights;
@@ -395,7 +386,7 @@ public class ChessTacticUtils {
                 (chessboard.bitboards[r] | chessboard.bitboards[q]);
         attackers |= Attacks.getRookAttacks(square, occupancy) & rook;
 
-        return attackers;
+        return attackers & occupancy;
     }
 
     /**
@@ -458,6 +449,42 @@ public class ChessTacticUtils {
         return false;
     }
 
+    /**
+     * Among the attackers targeting `targetSq`, <br>
+     * identify the starting attacker that yields the maximum SEE from the attacker's perspective.
+     *
+     * @return attacker square
+     */
+    public static int bestSeeAgainst(Chessboard chessboard, int targetSq, boolean attackerIsWhite) {
+        long attackers = getAttackersTo(chessboard, targetSq, attackerIsWhite);
+
+        int best = Integer.MIN_VALUE;
+        while (attackers != 0L) {
+            int sq = BitBoardUtils.getLS1BIndex(attackers);
+            int value = see(chessboard, targetSq, sq);
+            if (value > best) best = value;
+            attackers = BitBoardUtils.popBit(attackers, sq);
+        }
+
+        return best;
+    }
+
+    /**
+     * Get whether this piece on 'square' is hanging or not (by see calculation)
+     *
+     * @param chessboard chess board
+     * @param square square
+     * @return whether the piece on this square is hanging or not
+     */
+    public static boolean isHanging(Chessboard chessboard, int square) {
+        int pieceType = getPieceTypeOnSquare(chessboard, square);
+        if (pieceType == -1) return false;
+
+        boolean targetIsWhite = pieceType <= K;
+        long best = bestSeeAgainst(chessboard, square, !targetIsWhite);
+        return best > 0;
+    }
+
     public static List<Square> findHangingPieces(Chessboard chessboard, boolean whiteAttacking) {
         List<Square> hanging = new ArrayList<>();
 
@@ -466,7 +493,7 @@ public class ChessTacticUtils {
             int sq = BitBoardUtils.getLS1BIndex(enemyOccupancy);
 
             long attackers = ChessTacticUtils.getAttackersTo(chessboard, sq, whiteAttacking);
-            if (attackers != 0L && !ChessTacticUtils.isTacticallyDefended(chessboard, sq)) {
+            if (attackers != 0L && ChessTacticUtils.isHanging(chessboard, sq)) {
                 hanging.add(Square.fromIndex(sq));
             }
 
@@ -474,5 +501,66 @@ public class ChessTacticUtils {
         }
 
         return hanging;
+    }
+
+    private static long leastValuableAttacker(Chessboard chessboard, long attackers, boolean isWhite) {
+        int[] order = isWhite ? new int[]{P, N, B, R, Q, K} : new int[]{p, n, b, r, q, k};
+        for (int type : order) {
+            long bb = chessboard.bitboards[type] & attackers;
+            if (bb != 0L) return bb & -bb;
+        }
+        return 0L;
+    }
+
+    /**
+     * Static Exchange Evaluation
+     *
+     * @return piece evaluation
+     */
+    public static int see(Chessboard chessboard, int targetSq, int attackerSq) {
+        return see(chessboard, targetSq, attackerSq, chessboard.occupancies[both]);
+    }
+
+    /**
+     * Static Exchange Evaluation, starting from a given occupancy
+     * (e.g. a hypothetical position where some blocker has already been removed)
+     *
+     * @param occupancy starting occupancy to simulate the exchange from
+     * @return piece evaluation
+     */
+    public static int see(Chessboard chessboard, int targetSq, int attackerSq, long occupancy) {
+        int targetType = getPieceTypeOnSquare(chessboard, targetSq);
+        int attackerType = getPieceTypeOnSquare(chessboard, attackerSq);
+        if (attackerType == -1) return 0;
+
+        int[] gain = new int[32];
+        int d = 0;
+        gain[0] = (targetType == -1) ? 0 : PIECE_VALUE[normalize(targetType)];
+
+        long fromBit = 1L << attackerSq;
+        int currentType = attackerType;
+        boolean sideIsWhite = currentType <= K;
+
+        while (fromBit != 0L) {
+            d++;
+            gain[d] = PIECE_VALUE[normalize(currentType)] - gain[d - 1];
+
+            if (Math.max(-gain[d - 1], gain[d]) < 0) break;
+
+            occupancy &= ~fromBit;
+            sideIsWhite = !sideIsWhite;
+
+            long attackers = getAttackersTo(chessboard, targetSq, sideIsWhite, occupancy);
+            fromBit = leastValuableAttacker(chessboard, attackers, sideIsWhite);
+            if (fromBit != 0L) {
+                currentType = getPieceTypeOnSquare(chessboard, BitBoardUtils.getLS1BIndex(fromBit));
+            }
+        }
+
+        while (--d > 0) {
+            gain[d - 1] = -Math.max(-gain[d - 1], gain[d]);
+        }
+
+        return gain[0];
     }
 }

@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.constant.SideToMove.black;
+import static com.pepero.jcb.constant.SideToMove.white;
 
 public class TacticAnalyzer {
 
@@ -18,15 +20,21 @@ public class TacticAnalyzer {
      * @param whiteAttacking is white attacking
      * @return tactic dto
      */
-    public static List<TacticFinding> analyze(Chessboard chessboard, boolean whiteAttacking) {
+    public static List<TacticFinding> findAllTactics(Chessboard chessboard, boolean whiteAttacking) {
         List<TacticFinding> findings = new ArrayList<>();
+        findings.addAll(findHanging(chessboard, whiteAttacking));
         findings.addAll(findForks(chessboard, whiteAttacking));
         findings.addAll(findSkewers(chessboard, whiteAttacking));
-        findings.addAll(findXrays(chessboard, whiteAttacking));
+        findings.addAll(findBattery(chessboard, whiteAttacking));
         findings.addAll(findPins(chessboard, whiteAttacking));
         return findings;
     }
 
+    public static List<TacticFinding> findImmediateThreats(Chessboard chessboard, boolean whiteAttacking) {
+        return findAllTactics(chessboard, whiteAttacking).stream()
+                .filter(f -> f.severity() == TacticSeverity.IMMEDIATE)
+                .toList();
+    }
 
     /**
      * Get Hanging pieces square
@@ -63,7 +71,9 @@ public class TacticAnalyzer {
                         targetList.add(Square.fromIndex(t));
                         temp = BitBoardUtils.popBit(temp, t);
                     }
-                    results.add(new TacticFinding(TacticType.FORK, Square.fromIndex(sq), targetList));
+                    results.add(new TacticFinding(TacticType.FORK,
+                            TacticSeverity.IMMEDIATE,
+                            Square.fromIndex(sq), targetList));
                 }
 
                 bitboard = BitBoardUtils.popBit(bitboard, sq);
@@ -101,6 +111,7 @@ public class TacticAnalyzer {
                     if (behindSq != -1) {
                         results.add(new TacticFinding(
                                 TacticType.SKEWER,
+                                TacticSeverity.IMMEDIATE,
                                 Square.fromIndex(attackerSq),
                                 List.of(Square.fromIndex(frontSq), Square.fromIndex(behindSq))
                         ));
@@ -131,7 +142,9 @@ public class TacticAnalyzer {
             if (sq != kingSq) {
                 int pinnerSq = ChessTacticUtils.getPinnerSquare(chessboard, kingSq, sq);
                 if (pinnerSq != -1) {
-                    results.add(new TacticFinding(TacticType.PIN, Square.fromIndex(pinnerSq),
+                    results.add(new TacticFinding(TacticType.PIN,
+                            TacticSeverity.LATENT,
+                            Square.fromIndex(pinnerSq),
                             List.of(Square.fromIndex(sq))));
                 }
             }
@@ -142,7 +155,7 @@ public class TacticAnalyzer {
         return results;
     }
 
-    private static List<TacticFinding> findXrays(Chessboard chessboard, boolean whiteAttacking) {
+    private static List<TacticFinding> findBattery(Chessboard chessboard, boolean whiteAttacking) {
         List<TacticFinding> results = new ArrayList<>();
 
         long myOccupancy = whiteAttacking ? chessboard.occupancies[0] : chessboard.occupancies[1]; // white/black
@@ -166,7 +179,9 @@ public class TacticAnalyzer {
 
                 while (xrayTemp != 0L) {
                     int xraySq = BitBoardUtils.getLS1BIndex(xrayTemp);
-                    results.add(new TacticFinding(TacticType.XRAY, Square.fromIndex(xraySq),
+                    results.add(new TacticFinding(TacticType.BATTERY,
+                            TacticSeverity.LATENT,
+                            Square.fromIndex(xraySq),
                             List.of(Square.fromIndex(blockerSq), Square.fromIndex(targetSq))));
                     xrayTemp = BitBoardUtils.popBit(xrayTemp, xraySq);
                 }
@@ -175,6 +190,26 @@ public class TacticAnalyzer {
             }
 
             targetTemp = BitBoardUtils.popBit(targetTemp, targetSq);
+        }
+
+        return results;
+    }
+
+    private static List<TacticFinding> findHanging(Chessboard chessboard, boolean whiteAttacking) {
+        List<TacticFinding> results = new ArrayList<>();
+
+        long enemyOccupancy = whiteAttacking ? chessboard.occupancies[black] : chessboard.occupancies[white];
+        while (enemyOccupancy != 0L) {
+            int sq = BitBoardUtils.getLS1BIndex(enemyOccupancy);
+
+            if (ChessTacticUtils.isHanging(chessboard, sq)) {
+                results.add(new TacticFinding(TacticType.HANGING,
+                        TacticSeverity.IMMEDIATE,
+                        Square.fromIndex(sq),
+                        List.of(Square.fromIndex(sq))));
+            }
+
+            enemyOccupancy = BitBoardUtils.popBit(enemyOccupancy, sq);
         }
 
         return results;
