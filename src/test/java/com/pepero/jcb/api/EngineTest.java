@@ -40,17 +40,14 @@ public class EngineTest {
                     // 2_000 밀리 세컨드 = 2초 = 2초 증가분
                     .build();
 
+            EngineArena arena = new EngineArena(
+                    engine1, // 엔진 1 Wrapper
+                    engine2, // 엔진 2 Wrapper
+                    config // 대전 환경
+            );
+
             // 10 경기를 진행합니다.
             for (int i = 0; i < 10; i++) {
-                ChessGame chessGame = ChessGame.startPosition();
-
-                EngineArena arena = new EngineArena(
-                        chessGame, // 체스 게임
-                        engine1, // 엔진 1 Wrapper
-                        engine2, // 엔진 2 Wrapper
-                        config // 대전 환경
-                );
-
                 System.out.println("엔진 매치를 시작합니다.");
 
                 // 대전을 시작합니다.

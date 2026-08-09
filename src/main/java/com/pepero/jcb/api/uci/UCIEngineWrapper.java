@@ -96,9 +96,6 @@ public class UCIEngineWrapper implements AutoCloseable {
             if (!readyokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
                 throw new RuntimeException("readyok Timeout!");
             }
-
-            System.out.println("Engine started / synchronized!");
-
         } catch (Exception e) {
             throw new RuntimeException("Engine initialization failed.", e);
         }
@@ -449,7 +446,5 @@ public class UCIEngineWrapper implements AutoCloseable {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             } catch (IllegalStateException ignored) {}
         }
-
-        System.out.println("Engine closed!");
     }
 }

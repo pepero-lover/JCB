@@ -150,14 +150,12 @@ public class GameStateExample {
 ### 4. 엔진끼리 대결하기
 
 ```java
-package com.pepero.jcb.api;
-
 import com.pepero.jcb.api.arena.EngineArena;
 import com.pepero.jcb.api.arena.MatchConfig;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
-public class EngineTest {
+public class EngineExample {
     public static void main(String[] args) {
         // 프로세스 빌더를 이용하여 Wrapper 를 생성합니다.
         try (
@@ -192,17 +190,14 @@ public class EngineTest {
                     // 2_000 밀리 세컨드 = 2초 = 2초 증가분
                     .build();
 
+            EngineArena arena = new EngineArena(
+                    engine1, // 엔진 1 Wrapper
+                    engine2, // 엔진 2 Wrapper
+                    config // 대전 환경
+            );
+
             // 10 경기를 진행합니다.
             for (int i = 0; i < 10; i++) {
-                ChessGame chessGame = new ChessGame();
-
-                EngineArena arena = new EngineArena(
-                        chessGame, // 체스 게임
-                        engine1, // 엔진 1 Wrapper
-                        engine2, // 엔진 2 Wrapper
-                        config // 대전 환경
-                );
-
                 System.out.println("엔진 매치를 시작합니다.");
 
                 // 대전을 시작합니다.

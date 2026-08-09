@@ -26,8 +26,8 @@ public class EngineArena {
 
     private ArenaListener listener;
 
-    public EngineArena(ChessGame chessGame, UCIEngineWrapper engine1, UCIEngineWrapper engine2, MatchConfig config) {
-        this.chessGame = chessGame;
+    public EngineArena(UCIEngineWrapper engine1, UCIEngineWrapper engine2, MatchConfig config) {
+        this.chessGame = ChessGame.startPosition();
         this.engine1 = engine1;
         this.engine2 = engine2;
         this.matchConfig = config;
@@ -148,10 +148,14 @@ public class EngineArena {
             }
         }
 
-        return new MatchResult(
+        MatchResult result = new MatchResult(
                 chessGame.getGameResult(),
                 chessGame.isGameOver(),
                 chessGame.getPGN()
         );
+
+        chessGame = ChessGame.startPosition();
+
+        return result;
     }
 }
