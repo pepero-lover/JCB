@@ -43,7 +43,18 @@ public class UCIEngineWrapper implements AutoCloseable {
     private static final long DEFAULT_SYNC_TIMEOUT_SEC = 120;
     private static final long HANDSHAKE_TIMEOUT_SEC = 15;
 
-    public record EngineLine(int depth, int pvNumber, String score, String pv, boolean isBound) {}
+    public record EngineLine(int depth, int pvNumber, String score, String pv, boolean isBound) {
+        @Override
+        public String toString() {
+            return "EngineLine{" +
+                    "depth=" + depth +
+                    ", pvNumber=" + pvNumber +
+                    ", score='" + score + '\'' +
+                    ", pv='" + pv + '\'' +
+                    ", isBound=" + isBound +
+                    '}';
+        }
+    }
 
     public interface EngineAnalysisListener {
         void onAnalysisBundled(List<EngineLine> bundledLines);
