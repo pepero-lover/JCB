@@ -4,6 +4,8 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.analyze.TacticFinding;
 import com.pepero.jcb.api.arena.EngineArena;
 import com.pepero.jcb.api.arena.MatchConfig;
+import com.pepero.jcb.api.arena.MatchFinishedEvent;
+import com.pepero.jcb.api.arena.MoveEvent;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
@@ -22,21 +24,20 @@ public class EngineTacticTest {
         try (
                 UCIEngineWrapper engine1 = new UCIEngineWrapper(
                         new ProcessBuilder(enginePath),
-                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
-                        null // 리스너
+                        100,
+                        null
                 );
                 UCIEngineWrapper engine2 = new UCIEngineWrapper(
                         new ProcessBuilder(enginePath),
-                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
-                        null // 리스너
+                        100,
+                        null
                 )
         ) {
             // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin") // 오프닝 북도 가져올 수 있습니다.
                     .randomBookMove(false) // 오프닝 북의 랜덤성을 제거합니다.
-                    .depthLimit(10) // 고정 깊이 탐색
-                    //.timeControl(300_000, 2_000) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
+                    .timeControl(10_000, 100) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
                     // 300_000 밀리 세컨드 = 300초 = 5분
                     // 2_000 밀리 세컨드 = 2초 = 2초 증가분
                     .build();
@@ -50,6 +51,19 @@ public class EngineTacticTest {
                         engine2, // 엔진 2 Wrapper
                         config // 대전 환경
                 );
+
+                arena.setArenaListener(new EngineArena.ArenaListener() {
+                    @Override
+                    public void onMovePlayed(MoveEvent event) {
+                        ChessGame.fromFEN(event.fen()).printBoard();
+                        System.out.println(event.moveSan());
+                    }
+
+                    @Override
+                    public void onMatchFinished(MatchFinishedEvent event) {
+
+                    }
+                });
 
                 System.out.println("엔진 매치를 시작합니다.");
 

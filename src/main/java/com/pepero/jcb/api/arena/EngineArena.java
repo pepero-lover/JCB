@@ -4,6 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
+import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 
@@ -19,8 +20,8 @@ public class EngineArena {
     private int roundNumber = 1;
 
     public interface ArenaListener {
-        void onMovePlayed(ChessGame game, String move, long timeSpent);
-        void onMatchFinished(ChessGame game, GameResult gameResult, GameOverReason gameOverReason);
+        void onMovePlayed(MoveEvent event);
+        void onMatchFinished(MatchFinishedEvent event);
     }
 
     private ArenaListener listener;
@@ -117,17 +118,33 @@ public class EngineArena {
                         GameOverReason.TIMEOVER);
 
                 if (listener != null) {
-                    listener.onMatchFinished(chessGame, isWhiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
-                            GameOverReason.TIMEOVER);
+                    listener.onMatchFinished(new MatchFinishedEvent(
+                            chessGame.getGameResult(),
+                            chessGame.getGameoverReason(),
+                            chessGame.getPGN(),
+                            chessGame.getFEN()
+                    ));
                 }
 
                 break;
             }
 
+            String san = "";
+            if(listener != null) san = chessGame.toSan(bestMoveLan);
+
             chessGame.makeMove(bestMoveLan);
 
             if (listener != null) {
-                listener.onMovePlayed(chessGame, bestMoveLan, timeSpent);
+                listener.onMovePlayed(new MoveEvent(
+                        chessGame.getFEN(),
+                        bestMoveLan,
+                        san,
+                        roundNumber,
+                        chessGame.isWhiteTurn(),
+                        timeSpent,
+                        clock.getWhiteTimeMs(),
+                        clock.getBlackTimeMs()
+                ));
             }
         }
 

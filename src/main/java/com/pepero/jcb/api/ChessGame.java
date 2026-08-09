@@ -292,6 +292,20 @@ public class ChessGame {
     }
 
     /**
+     * Get this position's turn
+     *
+     * @return true if it's white turn, otherwise, false
+     */
+    public boolean isWhiteTurn() {
+        readLock.lock();
+        try {
+            return chessboard.side == white;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get FEN on this ChessGame
      * @return fen
      */
