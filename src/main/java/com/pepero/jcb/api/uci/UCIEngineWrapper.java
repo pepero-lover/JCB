@@ -38,6 +38,8 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private Thread shutdownHook;
 
+    private volatile boolean isWhiteToMove = true;
+
     private static final long DEFAULT_SYNC_TIMEOUT_SEC = 120;
     private static final long HANDSHAKE_TIMEOUT_SEC = 15;
 
@@ -53,6 +55,8 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private final EngineAnalysisListener listener;
     private final int tickRateMs;
+
+    private int currentCp = 0;
 
     public UCIEngineWrapper(ProcessBuilder engine, int tickRateMs, EngineAnalysisListener listener) {
         this.tickRateMs = tickRateMs;
@@ -143,6 +147,7 @@ public class UCIEngineWrapper implements AutoCloseable {
      */
     public void startAnalysis(ChessGame chessGame, int depth, int multiPv) {
         latestAnalysisMap.clear();
+        isWhiteToMove = chessGame.isWhiteTurn();
         isAnalyzing = true;
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
@@ -213,7 +218,6 @@ public class UCIEngineWrapper implements AutoCloseable {
                                     .toList();
                             listener.onAnalysisBundled(finalBundle);
                         }
-
                         isAnalyzing = false;
                         String bestMove = line.split(" ")[1];
                         if (listener != null) listener.onBestMoveFound(bestMove);
@@ -316,13 +320,18 @@ public class UCIEngineWrapper implements AutoCloseable {
                 int cpIndex = infoLine.indexOf("score cp ") + 9;
                 int nextSpace = infoLine.indexOf(" ", cpIndex);
                 if (nextSpace == -1) nextSpace = infoLine.length();
-                double eval = Integer.parseInt(infoLine.substring(cpIndex, nextSpace)) / 100.0;
+                int rawCp = Integer.parseInt(infoLine.substring(cpIndex, nextSpace));
+                currentCp = isWhiteToMove ? rawCp : -rawCp;
+                double eval = currentCp / 100.0;
                 scoreStr = (eval > 0 ? "+" : "") + eval;
             } else if (infoLine.contains("score mate ")) {
                 int mateIndex = infoLine.indexOf("score mate ") + 11;
                 int nextSpace = infoLine.indexOf(" ", mateIndex);
                 if (nextSpace == -1) nextSpace = infoLine.length();
-                scoreStr = "M" + infoLine.substring(mateIndex, nextSpace);
+                int mateIn = Integer.parseInt(infoLine.substring(mateIndex, nextSpace));
+                int rawCp = mateIn > 0 ? MATE_SCORE - mateIn : -MATE_SCORE - mateIn;
+                currentCp = isWhiteToMove ? rawCp : -rawCp;
+                scoreStr = "M" + (isWhiteToMove ? mateIn : -mateIn);
             }
 
             int pvIndex = infoLine.indexOf(" pv ") + 4;
@@ -354,6 +363,7 @@ public class UCIEngineWrapper implements AutoCloseable {
                                     long wtimeMs, long btimeMs,
                                     long wincMs, long bincMs,
                                     int multiPv, long timeoutSeconds) {
+        isWhiteToMove = chessGame.isWhiteTurn();
         CompletableFuture<String> future = new CompletableFuture<>();
         currentMoveFuture.set(future);
         latestAnalysisMap.clear();
@@ -446,5 +456,18 @@ public class UCIEngineWrapper implements AutoCloseable {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             } catch (IllegalStateException ignored) {}
         }
+    }
+
+    private final int MATE_SCORE = 100000;
+
+    /**
+     * Get current Analyze CP
+     * <p>
+     * if mate found, return +-100000 -+[mate in N]
+     *
+     * @return current cp
+     */
+    public int getCurrentCp() {
+        return currentCp;
     }
 }

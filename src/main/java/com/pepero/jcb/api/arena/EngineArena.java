@@ -61,6 +61,9 @@ public class EngineArena {
 
             PolyglotBookReader bookReader = matchConfig.getOpeningBook();
 
+            int drawAdjCount = 0;
+            int resignAdjCount = 0;
+
             while (chessGame.getGameoverReason() == GameOverReason.NOTGAMEOVER) {
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
@@ -104,7 +107,8 @@ public class EngineArena {
                         clock.getBlackTimeMs(),
                         clock.getWhiteIncMs(),
                         clock.getBlackIncMs(),
-                        1
+                        1,
+                        whiteTurn ? clock.getWhiteTimeMs() / 1000 + 1 : clock.getBlackTimeMs() / 1000 + 1
                 );
 
                 long stopTime = System.currentTimeMillis();
@@ -117,6 +121,37 @@ public class EngineArena {
                             GameResult.BLACK_WON : GameResult.WHITE_WON,
                             GameOverReason.TIMEOVER);
                     break;
+                }
+                int whiteCp = currentEngine.getCurrentCp();
+                int moverCp = whiteTurn ? whiteCp : -whiteCp;
+                if(matchConfig.getDrawRule() != null) {
+                    AdjudicationRule drawRule = matchConfig.getDrawRule();
+                    if(chessGame.getFullMove() >= drawRule.minMoveNumber()) {
+                        boolean adjust = drawRule.isWithinThreshold(moverCp, false);
+                        if(adjust) drawAdjCount++;
+                        else drawAdjCount = 0;
+
+                        if(drawAdjCount >= drawRule.moveCount()) {
+                            chessGame.forceEndGameExternal(GameResult.DRAW,
+                                    GameOverReason.ADJUDICATION);
+                            break;
+                        }
+                    }
+                }
+                if(matchConfig.getResignRule() != null) {
+                    AdjudicationRule resignRule = matchConfig.getResignRule();
+                    if(chessGame.getFullMove() >= resignRule.minMoveNumber()) {
+                        boolean adjust = resignRule.isWithinThreshold(moverCp, true);
+                        if(adjust) resignAdjCount++;
+                        else resignAdjCount = 0;
+
+                        if(resignAdjCount >= resignRule.moveCount()) {
+                            chessGame.forceEndGameExternal(
+                                    whiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
+                                    GameOverReason.ADJUDICATION);
+                            break;
+                        }
+                    }
                 }
 
                 if(bestMove != null) {

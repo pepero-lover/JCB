@@ -46,6 +46,18 @@ public class EngineMatchTest {
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin")
                     .randomBookMove(false)
+                    .drawRule(new AdjudicationRule(
+                            40,
+                            16,
+                            0,
+                            10
+                    ))
+                    .resignRule(new AdjudicationRule(
+                            40,
+                            16,
+                            700,
+                            50
+                    ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
                     .build();
@@ -65,6 +77,7 @@ public class EngineMatchTest {
 
                 System.out.println(matchResult.pgn());
                 System.out.println(matchResult.engineWinner());
+                System.out.println(matchResult.reason());
                 System.out.println();
             }
         } catch (Exception e) {
