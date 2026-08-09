@@ -16,11 +16,6 @@ public class EngineExample {
         // 엔진의 작업 폴더를 지정합니다.
         String folder = new File("engine/").getAbsolutePath();
 
-        // 예시로 이김과 비김, 그리고 지는 카운트를 engine1 기준으로 세어보겠습니다.
-        int win = 0;
-        int draw = 0;
-        int lose = 0;
-
         try {
             // 엔진 1의 설정을 생성합니다.
             EngineConfig engine1Config = new EngineConfig(
@@ -51,39 +46,34 @@ public class EngineExample {
                     .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
                     .randomBookMove(false) // 오프닝을 고를 때 랜덤성을 제거합니다. 매 판 오프닝이 같은 것이 아닌 라운드 수 기준으로
                     .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
+                    .totalGames(10) // 총 진행할 게임 수
+                    .concurrency(1) // 사용할 스레드 수 (지금은 1개만 설정했습니다.)
                     .engine1Config(engine1Config) // 엔진 1의 설정을 가져옵니다.
                     .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
                     .build();
 
-            EngineArena arena = new EngineArena(config);
+            // 메치 진행 클래스를 생성합니다.
+            ArenaRunner arena = new ArenaRunner(config);
 
-            // 10 경기를 진행합니다.
-            for (int i = 1; i <= 10; i++) {
-                // 메치를 시작합니다.
-                // 내부적으로 게임이 끝나면 MatchResult DTO 를 반환합니다.
-                MatchResult matchResult = arena.startMatch(i);
-
-                if(matchResult.engineWinner() == EngineWinner.ENGINE1) {
-                    win++;
-                } else if(matchResult.engineWinner() == EngineWinner.DRAW) {
-                    draw++;
-                } else {
-                    lose++;
+            // 아레나 메치를 시작합니다.
+            // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
+            MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
+                @Override
+                public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
+                    System.out.println("Round " + roundNumber);
+                    System.out.println("RESULT : " + result.result() + "(" + result.engineWinner() + ")");
+                    System.out.println("PGN : ");
+                    System.out.println(result.pgn());
+                    System.out.println();
                 }
+            });
 
-                System.out.println("PGN : ");
-                System.out.println(matchResult.pgn());
-                System.out.println();
-                System.out.println("Winner : " + matchResult.engineWinner());
-                System.out.println();
-            }
+            System.out.println("Engine 1 WDL");
+            System.out.println("WIN  :  " + statistics.getEngine1Wins());
+            System.out.println("DRAW :  " + statistics.getDraws());
+            System.out.println("LOSE :  " + statistics.getEngine2Wins());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        System.out.println("WDL : ");
-        System.out.println("Engine 1 WIN : " + win);
-        System.out.println("Engine 1 DRAW : " + draw);
-        System.out.println("Engine 1 LOSE : " + lose);
     }
 }

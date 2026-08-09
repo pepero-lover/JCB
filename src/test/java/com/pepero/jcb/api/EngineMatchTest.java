@@ -18,10 +18,6 @@ public class EngineMatchTest {
 
         String folder = new File("engine/").getAbsolutePath();
 
-        int win = 0;
-        int draw = 0;
-        int lose = 0;
-
         try {
             EngineConfig engine1Config = new EngineConfig(
                     "Stockfish 18",
@@ -60,32 +56,19 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
+                    .totalGames(10)
+                    .concurrency(4)
                     .build();
 
-            EngineArena arena = new EngineArena(config);
-
-            for (int i = 1; i <= 300; i++) {
-                MatchResult matchResult = arena.startMatch(i);
-
-                if(matchResult.engineWinner() == EngineWinner.ENGINE1) {
-                    win++;
-                } else if(matchResult.engineWinner() == EngineWinner.DRAW) {
-                    draw++;
-                } else {
-                    lose++;
+            ArenaRunner arena = new ArenaRunner(config);
+            arena.run(new ArenaRunner.RunnerListener() {
+                @Override
+                public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
+                    System.out.println(result.pgn());
                 }
-
-                System.out.println(matchResult.pgn());
-                System.out.println(matchResult.engineWinner());
-                System.out.println(matchResult.reason());
-                System.out.println();
-            }
+            });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        System.out.println(win);
-        System.out.println(draw);
-        System.out.println(lose);
     }
 }

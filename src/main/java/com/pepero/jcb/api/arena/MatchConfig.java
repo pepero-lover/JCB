@@ -102,6 +102,8 @@ public class MatchConfig {
         public MatchConfig build() {
             if(engine1Config == null) throw new IllegalArgumentException("Engine 1 config not found!");
             if(engine2Config == null) throw new IllegalArgumentException("Engine 2 config not found!");
+            if(totalGames <= 0) throw new IllegalArgumentException("Total Games should be exist and positive number!");
+            if(concurrency <= 0) throw new IllegalArgumentException("Concurrency should be positive number!");
 
             return new MatchConfig(this);
         }
