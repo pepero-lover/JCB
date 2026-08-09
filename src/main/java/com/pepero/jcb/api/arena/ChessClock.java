@@ -17,6 +17,10 @@ public class ChessClock {
     public long getWhiteTimeMs() { return whiteTimeMs; }
     public long getBlackTimeMs() { return blackTimeMs; }
 
+    public long getWhiteIncMs() { return whiteIncMs; }
+
+    public long getBlackIncMs() { return blackIncMs; }
+
     public void spendTime(boolean isWhite, long elapsedMs) {
         if (isWhite) {
             whiteTimeMs -= elapsedMs;

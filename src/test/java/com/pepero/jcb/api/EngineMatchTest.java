@@ -8,54 +8,52 @@ import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-        String engine2Path = new File("engine/Peperobot_Cpp.exe").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+
+        String folder = new File("engine/").getAbsolutePath();
 
         int win = 0;
         int draw = 0;
         int lose = 0;
 
-        try (
-                UCIEngineWrapper engine1 = new UCIEngineWrapper(
-                        new ProcessBuilder(engine1Path),
-                        100,
-                        null
-                );
-                UCIEngineWrapper engine2 = new UCIEngineWrapper(
-                        new ProcessBuilder(engine2Path),
-                        100,
-                        null
-                )
-        ) {
-            engine1.setOptionSync("Skill Level","15");
+        try {
+            EngineConfig engine1Config = new EngineConfig(
+                    "Stockfish 18",
+                    engine1Path,
+                    folder,
+                    List.of(),
+                    EngineConfig.Protocol.UCI,
+                    Map.of(),
+                    new EngineLimit(10)
+            );
+
+            EngineConfig engine2Config = new EngineConfig(
+                    "Stockfish 18",
+                    engine2Path,
+                    folder,
+                    List.of(),
+                    EngineConfig.Protocol.UCI,
+                    Map.of(),
+                    new EngineLimit(10)
+            );
 
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin")
                     .randomBookMove(false)
-                    .engine1Config(new EngineConfig())
+                    .engine1Config(engine1Config)
+                    .engine2Config(engine2Config)
                     .build();
 
-            EngineArena arena = new EngineArena(
-                    config
-            );
+            EngineArena arena = new EngineArena(config);
 
-            arena.setArenaListener(new EngineArena.ArenaListener() {
-                @Override
-                public void onMovePlayed(MoveEvent event) {
-
-                }
-
-                @Override
-                public void onMatchFinished(MatchFinishedEvent event) {
-
-                }
-            });
-
-            for (int i = 0; i < 300; i++) {
-                MatchResult matchResult = arena.startMatch();
+            for (int i = 1; i <= 300; i++) {
+                MatchResult matchResult = arena.startMatch(i);
 
                 if(matchResult.engineWinner() == EngineWinner.ENGINE1) {
                     win++;
@@ -68,8 +66,6 @@ public class EngineMatchTest {
                 System.out.println(matchResult.pgn());
                 System.out.println(matchResult.engineWinner());
                 System.out.println();
-
-                arena.swapEngine();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

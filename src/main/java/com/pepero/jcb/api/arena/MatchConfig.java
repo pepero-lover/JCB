@@ -100,19 +100,8 @@ public class MatchConfig {
         }
 
         public MatchConfig build() {
-            boolean whiteHasBoth = engine1Config.limit().hasDepthLimit() && engine1Config.limit().hasTimeLimit();
-            boolean blackHasBoth = engine2Config.limit().hasDepthLimit() && engine2Config.limit().hasTimeLimit();
-
-            if (whiteHasBoth || blackHasBoth) {
-                throw new IllegalStateException("Engine config cannot set both depth limits and time controls.");
-            }
-
-            if (!engine1Config.limit().hasDepthLimit() && !engine1Config.limit().hasTimeLimit() &&
-                    !engine2Config.limit().hasDepthLimit() && !engine2Config.limit().hasTimeLimit()) {
-                throw new IllegalStateException(
-                        "Engine config must be set one of the engine's search limits! (depth or time)"
-                );
-            }
+            if(engine1Config == null) throw new IllegalArgumentException("Engine 1 config not found!");
+            if(engine2Config == null) throw new IllegalArgumentException("Engine 2 config not found!");
 
             return new MatchConfig(this);
         }
