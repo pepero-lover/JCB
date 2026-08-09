@@ -117,15 +117,6 @@ public class EngineArena {
                 chessGame.forceEndGameExternal(isWhiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
                         GameOverReason.TIMEOVER);
 
-                if (listener != null) {
-                    listener.onMatchFinished(new MatchFinishedEvent(
-                            chessGame.getGameResult(),
-                            chessGame.getGameoverReason(),
-                            chessGame.getPGN(),
-                            chessGame.getFEN()
-                    ));
-                }
-
                 break;
             }
 
@@ -150,12 +141,32 @@ public class EngineArena {
 
         MatchResult result = new MatchResult(
                 chessGame.getGameResult(),
+                resolveEngineWinner(chessGame.getGameResult()),
                 chessGame.isGameOver(),
                 chessGame.getPGN()
         );
 
+        if (listener != null) {
+            listener.onMatchFinished(new MatchFinishedEvent(
+                    chessGame.getGameResult(),
+                    resolveEngineWinner(chessGame.getGameResult()),
+                    chessGame.getGameoverReason(),
+                    chessGame.getPGN(),
+                    chessGame.getFEN()
+            ));
+        }
+
         chessGame = ChessGame.startPosition();
 
         return result;
+    }
+
+    private EngineWinner resolveEngineWinner(GameResult gameResult) {
+        if (gameResult == GameResult.DRAW) {
+            return EngineWinner.DRAW;
+        }
+        boolean whiteWon = (gameResult == GameResult.WHITE_WON);
+        boolean engine1Won = whiteWon == isEngine1White;
+        return engine1Won ? EngineWinner.ENGINE1 : EngineWinner.ENGINE2;
     }
 }
