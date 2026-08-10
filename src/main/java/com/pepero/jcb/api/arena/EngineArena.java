@@ -78,8 +78,6 @@ public class EngineArena {
             chessGame = ChessGame.startPosition();
         }
 
-        System.out.println(chessGame);
-
         boolean isEngine1White = roundNumber % 2 == 1;
 
         try(
