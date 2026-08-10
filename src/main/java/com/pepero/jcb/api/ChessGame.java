@@ -20,7 +20,8 @@ import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.hash.Zobrist;
+import com.pepero.jcb.api.perft.PerftDriver;
+import com.pepero.jcb.api.perft.PerftResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -2875,6 +2876,46 @@ public class ChessGame {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Do perft test <br>
+     * (JVM preheat included, using single thread)
+     *
+     * @param depth perft depth
+     * @return perft result dto
+     */
+    public PerftResult perft(int depth) {
+        return perft(depth, 1, true, false);
+    }
+
+    /**
+     * Do perft test <br>
+     * (using single thread)
+     *
+     * @param depth perft depth
+     * @param preheat do preheat JVM
+     * @return perft result dto
+     */
+    public PerftResult perft(int depth, boolean preheat) {
+        return perft(depth, 1, preheat, false);
+    }
+
+    /**
+     * Do perft test
+     *
+     * @param depth perft depth
+     * @param concurrency using this amount of threads
+     * @param preheat do preheat JVM
+     * @param silent don't print any logs
+     * @return perft result dto
+     */
+    public PerftResult perft(int depth, int concurrency, boolean preheat, boolean silent) {
+        if(preheat) {
+            PerftDriver.apiWarmup(silent);
+        }
+
+        return PerftDriver.perftAPITest(this, depth, concurrency, silent);
     }
 
     /**
