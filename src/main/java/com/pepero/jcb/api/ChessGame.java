@@ -39,10 +39,6 @@ import static com.pepero.jcb.core.MoveGenerator.generateMoves;
 
 public class ChessGame {
     // start position constant
-    /**
-     * You don't have to use this constant on standard ChessGame initialization <br>
-     * because <b>'new ChessGame()' == 'new ChessGame(ChessGame.START_POSITION)'</b>
-     */
     public static final String START_POSITION = Chessboard.start_position;
 
 
@@ -941,7 +937,7 @@ public class ChessGame {
             int sourceIndex = source.getIndex();
             int targetIndex = target.getIndex();
 
-            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[this.chessboard.ply];
+            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
             for(int i = 0; i < move_count; i++) {
@@ -1160,7 +1156,7 @@ public class ChessGame {
     public List<MoveInfo> getLegalMoves() {
         writeLock.lock();
         try {
-            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[chessboard.ply];
+            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
             List<MoveInfo> result = new ArrayList<>(move_count);
 
@@ -1186,7 +1182,7 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[chessboard.ply];
+            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
             List<MoveInfo> result = new ArrayList<>(move_count);
 
@@ -1213,7 +1209,7 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get()[chessboard.ply];
+            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
             List<MoveInfo> result = new ArrayList<>(move_count);
 

@@ -674,6 +674,8 @@ public class MoveGenerator {
      * ( if not generated, returns false. otherwise, returns true )
      */
     public static void makeStandardMove(Chessboard chessboard, int move){
+        chessboard.ensureCapacity();
+
         // set chessboard history move data
         chessboard.enpassant_history[chessboard.ply] = chessboard.enpassant;
         chessboard.castle_history[chessboard.ply] = chessboard.castle;
@@ -989,6 +991,8 @@ public class MoveGenerator {
      * ( if not generated, returns false. otherwise, returns true)
      */
     public static void makeMove(Chessboard chessboard, int move){
+        chessboard.ensureCapacity();
+
         // set chessboard history move data
         chessboard.enpassant_history[chessboard.ply] = chessboard.enpassant;
         chessboard.castle_history[chessboard.ply] = chessboard.castle;

@@ -544,4 +544,11 @@ public class ChessGameTest {
                         .map(MoveDataDTO::fen)
                         .collect(Collectors.toList()));
     }
+
+    @Test
+    @DisplayName("Full move 를 설정 했을 때 ply 와 같이 써지지 않아야 한다")
+    void fullMovePly() {
+        ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 10000");
+        chessGame.makeMove("e2e4");
+    }
 }

@@ -84,7 +84,7 @@ public class Chessboard {
 
     public GameVariants gameVariants;
 
-    public static final int MAX_DEPTH = 1024;
+    public int MAX_DEPTH = 1024;
 
     public int[] enpassant_history = new int[MAX_DEPTH];
     public int[] castle_history = new int[MAX_DEPTH];
@@ -203,5 +203,22 @@ public class Chessboard {
         System.arraycopy(source.pocket, 0, this.pocket, 0, 12);
         this.promoted_pieces = source.promoted_pieces;
         System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
+    }
+
+    /**
+     * Resize history if ply is grater than history size
+     */
+    public void ensureCapacity() {
+        if (ply >= MAX_DEPTH) {
+            int newCap = MAX_DEPTH * 2;
+            MAX_DEPTH = newCap;
+
+            enpassant_history = Arrays.copyOf(enpassant_history, newCap);
+            captured_piece_history = Arrays.copyOf(captured_piece_history, newCap);
+            castle_history = Arrays.copyOf(castle_history, newCap);
+            half_ply_history = Arrays.copyOf(half_ply_history, newCap);
+            hash_key_history = Arrays.copyOf(hash_key_history, newCap);
+            promoted_captured_history = Arrays.copyOf(promoted_captured_history, newCap);
+        }
     }
 }
