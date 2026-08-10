@@ -32,21 +32,21 @@ public class SyzygyBestMoveDebug {
 
         while (true) {
             MoveInfo bestMove = game.findBestMoveSyzygy(tb);
-//
-//            GameOverReason reason = game.isGameOver();
-//
-//            if(reason != GameOverReason.NOTGAMEOVER) {
-//                if(drawFiftyMoves) {
-//                    System.out.println(reason);
-//                    break;
-//                } else {
-//                    if(reason != GameOverReason.FIFTYMOVES) {
-//                        System.out.println(reason);
-//                        break;
-//                    }
-//                }
-//            }
-//            if(bestMove == null) break;
+
+            GameOverReason reason = game.isGameOver();
+
+            if(reason != GameOverReason.NOTGAMEOVER) {
+                if(drawFiftyMoves) {
+                    System.out.println(reason);
+                    break;
+                } else {
+                    if(reason != GameOverReason.FIFTYMOVES) {
+                        System.out.println(reason);
+                        break;
+                    }
+                }
+            }
+            if(bestMove == null) break;
 
             game.makeMove(bestMove);
             System.out.println(bestMove);

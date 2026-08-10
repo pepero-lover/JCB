@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.pepero.jcb'
-version = '1.4.1'
+version = '1.5.0'
 base.archivesName = 'JCB'
 
 /*
@@ -17,7 +17,7 @@ sourceSets {
     }
 }
 
-version = 'b-only-1.4.1'
+version = 'bitboard-only-1.5.0'
  */
 
 java {

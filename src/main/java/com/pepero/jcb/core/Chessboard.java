@@ -84,7 +84,7 @@ public class Chessboard {
 
     public GameVariants gameVariants;
 
-    public int MAX_DEPTH = 1024;
+    public int MAX_DEPTH = 256;
 
     public int[] enpassant_history = new int[MAX_DEPTH];
     public int[] castle_history = new int[MAX_DEPTH];
