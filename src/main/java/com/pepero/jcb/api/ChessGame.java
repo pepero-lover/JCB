@@ -2367,6 +2367,13 @@ public class ChessGame {
         try {
             if(this.headers.isEmpty()) setDefaultHeaders();
 
+            if(chessboard.gameVariants != GameVariants.STANDARD) {
+                switch (chessboard.gameVariants) {
+                    case CHESS960 -> this.headers.put("Variant", "Chess960");
+                    case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
+                }
+            }
+
             String currentStartFen = this.startPositionFEN;
             if (!currentStartFen.equals(Chessboard.start_position)) {
                 this.headers.put("SetUp", "1");
