@@ -39,8 +39,8 @@ public class MatchStatistics {
 
     @Override
     public String toString() {
-        return "Engine1: %d, Engine2: %d, Draws: %d, Errors: %d,   White Won : %d, Black Won : %d"
+        return "Engine1: %d, Engine2: %d, Draws: %d, Errors: %d,   White Won : %d, Draws : %d, Black Won : %d"
                 .formatted(getEngine1Wins(), getEngine2Wins(), getDraws(), getErrors(),
-                        getWhiteWins(), getBlackWins());
+                        getWhiteWins(), getDraws(), getBlackWins());
     }
 }

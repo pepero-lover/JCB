@@ -2,6 +2,7 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.core.Chessboard;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class EngineMatchTest {
                     new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
                     new HashMap<>(),
-                    new EngineLimit(100, 10)
+                    new EngineLimit(100, 100)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -34,7 +35,7 @@ public class EngineMatchTest {
                     new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
                     new HashMap<>(),
-                    new EngineLimit(100, 10)
+                    new EngineLimit(10000, 100)
             );
 
             MatchConfig config = new MatchConfig.Builder()
@@ -53,7 +54,7 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
-                    .totalGames(100)
+                    .totalGames(10)
                     .concurrency(4)
                     .build();
 
