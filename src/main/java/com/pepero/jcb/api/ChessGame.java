@@ -1528,7 +1528,7 @@ public class ChessGame {
     public int getFullMove() {
         readLock.lock();
         try {
-            return this.chessboard.ply / 2 + 1;
+            return this.chessboard.full_move / 2 + 1;
         } finally {
             readLock.unlock();
         }

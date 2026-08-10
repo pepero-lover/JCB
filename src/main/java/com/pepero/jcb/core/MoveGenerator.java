@@ -875,6 +875,7 @@ public class MoveGenerator {
         }
 
         chessboard.ply++;
+        chessboard.full_move++;
     }
 
     /**
@@ -886,6 +887,7 @@ public class MoveGenerator {
     public static void unmakeStandardMove(Chessboard chessboard, int move) {
         // decrease ply
         chessboard.ply--;
+        chessboard.full_move--;
         chessboard.side ^= 1;
 
         // get enpassant square, castle, half_ply, hash_key
@@ -1294,6 +1296,7 @@ public class MoveGenerator {
         }
 
         chessboard.ply++;
+        chessboard.full_move++;
 
         // ---------------------------------
         // debug hash key incremental update
@@ -1322,6 +1325,7 @@ public class MoveGenerator {
     public static void unmakeMove(Chessboard chessboard, int move) {
         // decrease ply
         chessboard.ply--;
+        chessboard.full_move--;
         chessboard.side ^= 1;
 
         // get enpassant square, castle, half_ply, hash_key

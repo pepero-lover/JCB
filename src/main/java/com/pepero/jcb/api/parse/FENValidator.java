@@ -110,24 +110,27 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: Turn must be either 'w' or 'b'.");
         }
     }
-
     private static void validateCastling(String castling) {
-        if (castling == null || !castling.matches("^(-|[A-Ha-h]{1,4})$")) {
-            throw new FENConvertException("Invalid FEN: Invalid castling rights string.");
+        if (castling == null || !castling.matches("^(-|[KQkqA-Ha-h]{1,4})$")) {
+            throw new FENConvertException("Invalid FEN: Invalid castling rights string. (" + castling +")");
         }
     }
 
     private static void validateEnPassant(String turn, String enPassant) {
         if (!enPassant.matches("^(-|[a-h][36])$")) {
-            throw new FENConvertException("Invalid FEN: Invalid en passant target square.");
+            throw new FENConvertException("Invalid FEN: Invalid enpassant target square. (" + enPassant + ")");
         }
 
         if (!enPassant.equals("-")) {
             if (turn.equals("w") && enPassant.charAt(1) != '6') {
-                throw new FENConvertException("Invalid FEN: White to move, but en passant square is not on the 6th rank.");
+                throw new FENConvertException(
+                        "Invalid FEN: White to move, but en passant square is not on the 6th rank. (" + enPassant + ")"
+                );
             }
             if (turn.equals("b") && enPassant.charAt(1) != '3') {
-                throw new FENConvertException("Invalid FEN: Black to move, but en passant square is not on the 3rd rank.");
+                throw new FENConvertException(
+                        "Invalid FEN: Black to move, but en passant square is not on the 3rd rank. (" + enPassant + ")"
+                );
             }
         }
     }

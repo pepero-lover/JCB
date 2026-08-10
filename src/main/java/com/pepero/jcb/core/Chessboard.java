@@ -37,6 +37,10 @@ public class Chessboard {
     // ply
     public int ply = 0;
 
+
+    // for storing full move ply
+    public int full_move = 0;
+
     // half ply
     public int half_ply = 0;
 
@@ -145,6 +149,9 @@ public class Chessboard {
         // reset ply
         this.ply = 0;
 
+        // reset full move
+        this.full_move = 0;
+
         // reset half ply
         this.half_ply = 0;
 
@@ -178,6 +185,7 @@ public class Chessboard {
         this.hash_key = source.hash_key;
 
         this.ply = source.ply;
+        this.full_move = source.full_move;
         this.half_ply = source.half_ply;
 
         this.gameVariants = source.gameVariants;

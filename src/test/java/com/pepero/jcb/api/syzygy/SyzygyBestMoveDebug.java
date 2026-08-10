@@ -22,7 +22,7 @@ public class SyzygyBestMoveDebug {
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - -");
+        ChessGame game = ChessGame.fromFEN("8/4k3/8/4K3/4P3/8/8/8 w - - 0 1");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
@@ -32,21 +32,21 @@ public class SyzygyBestMoveDebug {
 
         while (true) {
             MoveInfo bestMove = game.findBestMoveSyzygy(tb);
-
-            GameOverReason reason = game.isGameOver();
-
-            if(reason != GameOverReason.NOTGAMEOVER) {
-                if(drawFiftyMoves) {
-                    System.out.println(reason);
-                    break;
-                } else {
-                    if(reason != GameOverReason.FIFTYMOVES) {
-                        System.out.println(reason);
-                        break;
-                    }
-                }
-            }
-            if(bestMove == null) break;
+//
+//            GameOverReason reason = game.isGameOver();
+//
+//            if(reason != GameOverReason.NOTGAMEOVER) {
+//                if(drawFiftyMoves) {
+//                    System.out.println(reason);
+//                    break;
+//                } else {
+//                    if(reason != GameOverReason.FIFTYMOVES) {
+//                        System.out.println(reason);
+//                        break;
+//                    }
+//                }
+//            }
+//            if(bestMove == null) break;
 
             game.makeMove(bestMove);
             System.out.println(bestMove);

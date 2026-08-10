@@ -21,10 +21,10 @@ public class EngineAnalyzeTest {
             }
         });
         ChessGame chessGame = ChessGame.startPosition();
-        engineWrapper.startAnalysis(chessGame, 20, 5);
+        engineWrapper.startAnalysis(chessGame, 255, 5);
         Thread.sleep(5000);
         engineWrapper.stopAnalysis();
         chessGame.makeMove("e2e4");
-        engineWrapper.startAnalysis(chessGame, 20, 5);
+        engineWrapper.startAnalysis(chessGame, 255, 5);
     }
 }

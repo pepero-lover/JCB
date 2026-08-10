@@ -234,7 +234,10 @@ public class ChessboardUtils {
         int full_move = (fenDivided.length > 5) ? Integer.parseInt(fenDivided[5]) : 1;
 
         // init ply
-        chessboard.ply = (full_move - 1) * 2 + (chessboard.side == white ? 0 : 1);
+        chessboard.ply = 0;
+
+        // init full move
+        chessboard.full_move = (full_move - 1) * 2 + (chessboard.side == white ? 0 : 1);
 
         // init all occupancies
         chessboard.occupancies[both] |= chessboard.occupancies[white];
@@ -332,7 +335,7 @@ public class ChessboardUtils {
 
         fen.append(chessboard.half_ply).append(" ");
 
-        fen.append((chessboard.ply / 2) + 1);
+        fen.append((chessboard.full_move / 2) + 1);
 
         return fen.toString().trim();
     }
