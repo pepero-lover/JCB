@@ -349,8 +349,11 @@ public class SyzygyTablebase {
             MoveGenerator.makeMove(child, move);
 
             int childWdl = probeWdl(child);
-            if (childWdl != requiredChildWdl) {
-                continue; // this move doesn't preserve optimal play
+            boolean consistent = weAreWinning
+                    ? childWdl <= requiredChildWdl
+                    : childWdl >= requiredChildWdl;
+            if (!consistent) {
+                continue;
             }
 
             int childDistance = zeroing ? 0 : probeDtz(child);

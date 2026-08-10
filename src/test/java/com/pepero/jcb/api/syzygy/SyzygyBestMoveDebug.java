@@ -18,11 +18,11 @@ public class SyzygyBestMoveDebug {
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy/");
         System.out.println(syzygyDir.toAbsolutePath());
-        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
+        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 6);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("8/4k3/8/4K3/4P3/8/8/8 w - - 0 1");
+        ChessGame game = ChessGame.fromFEN("3n4/6k1/R7/8/3K1n2/2N5/8/8 b - - 43 22");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
