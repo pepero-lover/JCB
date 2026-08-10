@@ -9,9 +9,12 @@ public class MatchConfig {
     private final EngineConfig engine1Config;
     private final EngineConfig engine2Config;
 
+    private final boolean isChess960;
+
+    private final int seed;
+
     private final PolyglotBookReader openingBook;
     private final boolean repeatOpening;
-    private final boolean randomBookMove;
 
     private final AdjudicationRule resignRule;
     private final AdjudicationRule drawRule;
@@ -21,23 +24,25 @@ public class MatchConfig {
         this.concurrency = builder.concurrency;
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
+        this.isChess960 = builder.isChess960;
         this.openingBook = builder.openingBook;
-        this.randomBookMove = builder.randomBookMove;
         this.repeatOpening = builder.repeatOpening;
         this.resignRule = builder.resignRule;
         this.drawRule = builder.drawRule;
+        this.seed = builder.seed;
     }
 
     public int getTotalGames() { return totalGames; }
     public int getConcurrency() { return concurrency; }
     public EngineConfig getEngine1Config() { return engine1Config; }
     public EngineConfig getEngine2Config() { return engine2Config; }
+    public boolean isChess960() { return isChess960; }
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
-    public boolean isRandomBookMove() { return randomBookMove; }
     public AdjudicationRule getResignRule() { return resignRule; }
     public AdjudicationRule getDrawRule() { return drawRule; }
+    public int getSeed() { return seed; }
 
     public static class Builder {
         private int totalGames;
@@ -46,13 +51,15 @@ public class MatchConfig {
         private EngineConfig engine1Config;
         private EngineConfig engine2Config;
 
-        private boolean randomBookMove = false;
+        private boolean isChess960 = false;
 
         private PolyglotBookReader openingBook = null;
         private boolean repeatOpening = true;
 
         private AdjudicationRule resignRule = null;
         private AdjudicationRule drawRule = null;
+
+        private int seed = 1111;
 
         public Builder totalGames(int totalGames) {
             this.totalGames = totalGames;
@@ -84,8 +91,8 @@ public class MatchConfig {
             return this;
         }
 
-        public Builder randomBookMove(boolean randomBookMove) {
-            this.randomBookMove = randomBookMove;
+        public Builder isChess960(boolean isChess960) {
+            this.isChess960 = isChess960;
             return this;
         }
 
@@ -96,6 +103,11 @@ public class MatchConfig {
 
         public Builder drawRule(AdjudicationRule drawRule) {
             this.drawRule = drawRule;
+            return this;
+        }
+
+        public Builder seed(int seed) {
+            this.seed = seed;
             return this;
         }
 

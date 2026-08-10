@@ -44,7 +44,6 @@ public class EngineExample {
             // 메치의 설정을 생성합니다.
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
-                    .randomBookMove(false) // 오프닝을 고를 때 랜덤성을 제거합니다. 매 판 오프닝이 같은 것이 아닌 라운드 수 기준으로
                     .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
                     .totalGames(10) // 총 진행할 게임 수
                     .concurrency(1) // 사용할 스레드 수 (지금은 1개만 설정했습니다.)

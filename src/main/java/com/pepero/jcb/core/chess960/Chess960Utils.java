@@ -54,15 +54,21 @@ public class Chess960Utils {
 
         placePieceAtEmpty(rank, 'N', kp[1]);
 
-        placePieceAtEmpty(rank, 'R', 0);
+        int qr = placePieceAtEmpty(rank, 'R', 0);
         placePieceAtEmpty(rank, 'K', 0);
-        placePieceAtEmpty(rank, 'R', 0);
+        int kr = placePieceAtEmpty(rank, 'R', 0);
+
+        char queenRook = (char) ('A' + qr);
+        char kingRook = (char) ('A' + kr);
+
+        String whiteRights = String.valueOf(queenRook) + kingRook;
 
         String whiteRank = new String(rank);
         String blackRank = whiteRank.toLowerCase();
 
-        // 완성된 배치를 기반으로 초기 FEN 문자열 조립
-        return blackRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + whiteRank + " w KQkq - 0 1";
+        return blackRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + whiteRank + " w " +
+                whiteRights + whiteRights.toLowerCase()
+                + " - 0 1";
     }
 
     /**
@@ -71,17 +77,21 @@ public class Chess960Utils {
      * @param rank first / last rank
      * @param piece piece
      * @param emptyIndex empty index
+     *
+     * @return placed file
      */
-    private static void placePieceAtEmpty(char[] rank, char piece, int emptyIndex) {
+    private static int placePieceAtEmpty(char[] rank, char piece, int emptyIndex) {
         int emptyCount = 0;
         for (int i = 0; i < 8; i++) {
             if (rank[i] == '-') {
                 if (emptyCount == emptyIndex) {
                     rank[i] = piece;
-                    return;
+                    return i;
                 }
                 emptyCount++;
             }
         }
+
+        return -1;
     }
 }

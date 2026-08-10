@@ -112,7 +112,7 @@ public class FENValidator {
     }
 
     private static void validateCastling(String castling) {
-        if (!castling.matches("^(-|[KQkq]{1,4})$")) {
+        if (castling == null || !castling.matches("^(-|[A-Ha-h]{1,4})$")) {
             throw new FENConvertException("Invalid FEN: Invalid castling rights string.");
         }
     }

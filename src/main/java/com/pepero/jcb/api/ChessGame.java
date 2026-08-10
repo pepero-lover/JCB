@@ -221,13 +221,13 @@ public class ChessGame {
         chessboard = new Chessboard();
         startPositionFEN = fen;
 
+        chessboard.gameVariants = gameVariants;
+
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
         } catch (Exception e) {
             throw new FENConvertException("Could not parse the fen.");
         }
-
-        chessboard.gameVariants = gameVariants;
 
         FENValidator.validateLogicalState(chessboard);
 

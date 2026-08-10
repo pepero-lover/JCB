@@ -2,12 +2,10 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
-import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.uci.UCIEngineWrapper;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.ChessboardUtils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +21,9 @@ public class EngineMatchTest {
                     "Stockfish 18",
                     engine1Path,
                     folder,
-                    List.of(),
+                    new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
-                    Map.of(),
+                    new HashMap<>(),
                     new EngineLimit(10)
             );
 
@@ -33,15 +31,14 @@ public class EngineMatchTest {
                     "Stockfish 18",
                     engine2Path,
                     folder,
-                    List.of(),
+                    new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
-                    Map.of(),
+                    new HashMap<>(),
                     new EngineLimit(10)
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin")
-                    .randomBookMove(false)
+                    //.openingBook("engine/opening.bin")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -54,10 +51,11 @@ public class EngineMatchTest {
                             700,
                             50
                     ))
+                    .isChess960(true)
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
                     .totalGames(10)
-                    .concurrency(4)
+                    .concurrency(1)
                     .build();
 
             ArenaRunner arena = new ArenaRunner(config);
@@ -65,6 +63,15 @@ public class EngineMatchTest {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
                     System.out.println(result.pgn());
+                }
+
+                @Override
+                public void onGameFailed(int roundNumber, Throwable cause) {
+                    try {
+                        throw cause;
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
         } catch (Exception e) {

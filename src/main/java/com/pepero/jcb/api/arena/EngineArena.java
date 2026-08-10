@@ -9,11 +9,17 @@ import com.pepero.jcb.api.exception.EngineArenaException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
+import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.chess960.Chess960Utils;
+
+import java.util.*;
 
 public class EngineArena {
 
     private MatchConfig matchConfig;
     private UCIEngineFactory factory;
+
+    private final int[] chess960Position = new int[960];
 
     public interface ArenaListener {
         void onMovePlayed(MoveEvent event);
@@ -25,6 +31,25 @@ public class EngineArena {
     public EngineArena(MatchConfig config) {
         this.factory = new ProcessUCIEngineFactory();
         this.matchConfig = config;
+
+        if(config.isChess960()) {
+            List<Integer> list = new ArrayList<>();
+            for (int i = 0; i < 960; i++) list.add(i);
+
+            Collections.shuffle(list, new Random(config.getSeed()));
+            for (int i = 0; i < 960; i++) {
+                chess960Position[i] = list.get(i);
+            }
+        }
+    }
+
+    private int getPositionIndex(int roundNum) {
+        if(matchConfig.isRepeatOpening()) {
+            int pairIndex = (roundNum - 1) / 2;
+            return chess960Position[pairIndex % 960];
+        } else {
+            return chess960Position[(roundNum - 1) % 960];
+        }
     }
 
     public void setArenaListener(ArenaListener listener) {
@@ -38,7 +63,22 @@ public class EngineArena {
      * @return Match result
      */
     public MatchResult startMatch(int roundNumber) {
-        ChessGame chessGame = ChessGame.startPosition();
+        ChessGame chessGame;
+        if(matchConfig.isChess960()) {
+            chessGame = ChessGame.fromFEN(
+                    Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
+                    GameVariants.CHESS960
+            );
+
+            matchConfig.getEngine1Config().uciOptions().
+                    put("UCI_Chess960", "true");
+            matchConfig.getEngine2Config().uciOptions().
+                    put("UCI_Chess960", "true");
+        } else {
+            chessGame = ChessGame.startPosition();
+        }
+
+        System.out.println(chessGame);
 
         boolean isEngine1White = roundNumber % 2 == 1;
 
@@ -68,12 +108,12 @@ public class EngineArena {
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
                     String move;
-                    if(matchConfig.isRandomBookMove()) {
-                        move = bookReader.pickRandomMove(polyglotHash);
-                    } else {
-                        int openingSeed = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
-                        move = bookReader.pickSequentialMove(polyglotHash, openingSeed);
-                    }
+
+                    int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
+                    int openingSeed = Objects.hash(matchConfig.getSeed(), effectiveRound);
+
+                    move = bookReader.pickSequentialMove(polyglotHash, openingSeed);
+
                     if(move != null) {
                         String san = chessGame.toSan(move);
 

@@ -304,10 +304,22 @@ public class ChessboardUtils {
 
         // castling rights
         StringBuilder castle = new StringBuilder();
-        if ((chessboard.castle & CastlingRights.WK) != 0) castle.append("K");
-        if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append("Q");
-        if ((chessboard.castle & CastlingRights.BK) != 0) castle.append("k");
-        if ((chessboard.castle & CastlingRights.BQ) != 0) castle.append("q");
+        if(chessboard.gameVariants != GameVariants.CHESS960) {
+            if ((chessboard.castle & CastlingRights.WK) != 0) castle.append("K");
+            if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append("Q");
+            if ((chessboard.castle & CastlingRights.BK) != 0) castle.append("k");
+            if ((chessboard.castle & CastlingRights.BQ) != 0) castle.append("q");
+        } else {
+            char wkr = (char) ('A' + chessboard.king_side_rook_file);
+            char wqr = (char) ('A' + chessboard.queen_side_rook_file);
+            char bkr = (char) ('a' + chessboard.king_side_rook_file);
+            char bqr = (char) ('a' + chessboard.queen_side_rook_file);
+
+            if ((chessboard.castle & CastlingRights.WK) != 0) castle.append(wkr);
+            if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append(wqr);
+            if ((chessboard.castle & CastlingRights.BK) != 0) castle.append(bkr);
+            if ((chessboard.castle & CastlingRights.BQ) != 0) castle.append(bqr);
+        }
 
         fen.append(castle.isEmpty() ? "-" : castle.toString()).append(" ");
 
