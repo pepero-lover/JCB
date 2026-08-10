@@ -24,7 +24,7 @@ public class EngineMatchTest {
                     new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
                     new HashMap<>(),
-                    new EngineLimit(10)
+                    new EngineLimit(100, 10)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -34,11 +34,11 @@ public class EngineMatchTest {
                     new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
                     new HashMap<>(),
-                    new EngineLimit(10)
+                    new EngineLimit(100, 10)
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    //.openingBook("engine/opening.bin")
+                    .openingBook("engine/opening.bin")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -51,18 +51,19 @@ public class EngineMatchTest {
                             700,
                             50
                     ))
-                    .isChess960(true)
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
-                    .totalGames(10)
-                    .concurrency(1)
+                    .totalGames(100)
+                    .concurrency(4)
                     .build();
 
             ArenaRunner arena = new ArenaRunner(config);
-            arena.run(new ArenaRunner.RunnerListener() {
+            MatchStatistics result = arena.run(new ArenaRunner.RunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
+                    System.out.println("ROUND " + roundNumber);
                     System.out.println(result.pgn());
+                    System.out.println();
                 }
 
                 @Override
@@ -74,6 +75,9 @@ public class EngineMatchTest {
                     }
                 }
             });
+            System.out.println();
+            System.out.println();
+            System.out.println(result);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

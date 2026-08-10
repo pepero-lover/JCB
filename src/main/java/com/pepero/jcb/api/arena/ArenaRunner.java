@@ -47,7 +47,7 @@ public class ArenaRunner {
             futures.add(pool.submit(() -> {
                 try {
                     MatchResult result = arena.startMatch(round);
-                    statistics.record(result.engineWinner());
+                    statistics.record(result);
 
                     if (runnerListener != null) {
                         runnerListener.onGameFinished(round, result, statistics);
