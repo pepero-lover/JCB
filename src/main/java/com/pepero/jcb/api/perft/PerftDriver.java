@@ -181,6 +181,7 @@ public class PerftDriver {
             System.out.println();
             System.out.println("Elapsed time : " + durationMs + "ms ( + " + durationNs % 1_000_000 + "ns )");
             System.out.println("NPS : " + String.format("%.2f", nps / 1_000_000.) + "MNPS ( " + nps + " nps )");
+            System.out.println("Total nodes : " + String.format("%,d", totalNodes));
         }
 
         return new PerftResult(
@@ -271,6 +272,7 @@ public class PerftDriver {
             System.out.println();
             System.out.println("Elapsed time : " + durationMs + "ms ( + " + durationNs % 1_000_000 + "ns )");
             System.out.println("NPS : " + String.format("%.2f", nps / 1_000_000.) + "MNPS ( " + nps + " nps )");
+            System.out.println("Total nodes : " + String.format("%,d", totalNodes));
         }
 
         return new PerftResult(

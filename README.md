@@ -1,8 +1,14 @@
 ## 요구 사항
 - Java 21 이상
+서
+## 지원 기능
 
-## 참고 및 출처
-* 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 는 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
+- 체스 변형 지원 (Standard / Chess960 / CrazyHouse)
+- Syzygy tablebase 프로빙 (WDL / DTZ)
+- PGN 파싱 및 export, variation tree
+- 엔진 대전 (EngineArena)
+- Perft (싱글/멀티스레드)
+- 외부 라이브러리 의존성 없음
 
 ## JCB 에 대해
 * 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높이었습니다.
@@ -12,7 +18,13 @@
 * Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
 * 이 라이브러리에서는 단 하나의 외부 라이브러리를 쓰지 않습니다. (단, 테스트용 JUnit 제외)
 
+
+## 참고 및 출처
+* 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 는 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
+
 ## 설치 방법
+
+> ⚠️ 이 문서는 개발 중인 다음 버전 기준입니다. 현재 배포 버전: v1.4.0
 
 ### Gradle 프로젝트의 경우
 
@@ -64,7 +76,7 @@ import com.pepero.jcb.api.ChessGame;
 public class MainExample {
     public static void main(String[] args) {
         // 기본 시작 포지션으로 초기화 합니다.
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         // 수 두기
         chessGame.makeMove("e2e4");
@@ -102,7 +114,7 @@ import java.util.List;
 
 public class GUIExample {
     public static void main(String[] args) {
-        ChessGame chessGame = new ChessGame();
+        ChessGame chessGame = ChessGame.startPosition();
 
         // 사용자가 e2 칸에 있는 백 폰을 클릭했다고 가정합니다.
         Square clickedSquare = Square.e2;
@@ -114,7 +126,7 @@ public class GUIExample {
         for (MoveInfo move : legalMoves) {
             System.out.println("- " + move.toString());
         }
-        
+
         // 현재 체스판의 기물 점수 확인 (백 유리: 양수 / 흑 유리: 음수)
         System.out.println("현재 백 기준 기물 점수: " + chessGame.getPieceScore());
     }
@@ -132,7 +144,7 @@ public class GameStateExample {
         // FEN 스트링으로 게임을 시작할 수 있습니다.
         // 예: 체크메이트 직전 상태의 FEN
         String scholarMateFen = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4";
-        ChessGame game = new ChessGame(scholarMateFen);
+        ChessGame game = ChessGame.fromFEN(scholarMateFen);
 
         // 백이 체크메이트 하는 상황을 가정합니다.
         game.makeMove("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
@@ -142,7 +154,7 @@ public class GameStateExample {
         if (reason != GameOverReason.NOTGAMEOVER) {
             System.out.println("게임 종료! 사유: " + reason);
         }
-        
+
         // 개별 상태 체크도 가능 합니다.
         System.out.println("체크메이트 상태인가? : " + game.isCheckmate());
         System.out.println("체크 상태인가? : " + game.isCheck());
@@ -153,70 +165,80 @@ public class GameStateExample {
 ### 4. 엔진끼리 대결하기
 
 ```java
-import com.pepero.jcb.api.arena.EngineArena;
-import com.pepero.jcb.api.arena.MatchConfig;
+import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
-import com.pepero.jcb.api.uci.UCIEngineWrapper;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 public class EngineExample {
     public static void main(String[] args) {
-        // 프로세스 빌더를 이용하여 Wrapper 를 생성합니다.
-        try (
-                UCIEngineWrapper engine1 = new UCIEngineWrapper(
-                        new ProcessBuilder(
-                                "java",
-                                "-Xmx1024m",
-                                "-jar",
-                                "my_engine.jar"
-                        ),
-                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
-                        null // 리스너
-                );
-                UCIEngineWrapper engine2 = new UCIEngineWrapper(
-                        new ProcessBuilder(
-                                "java",
-                                "-Xmx1024m",
-                                "-jar",
-                                "my_engine.jar"
-                        ),
-                        100, // 분석용 틱 레이트 (여기에서는 그렇게 중요하지 않습니다)
-                        null // 리스너
-                )
-        ) {
-            // 대전 환경을 구성합니다. (단, 시간 제한과 depth 제한은 동시에 설정 할 수 없습니다.)
-            MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("opening/path/opening.bin") // 오프닝 북도 가져올 수 있습니다.
-                    .randomBookMove(false) // 오프닝 북의 랜덤성을 제거합니다.
-                    .depthLimit(10) // 고정 깊이 탐색
-                    //.timeControl(300_000, 2_000) // 만약 시간 제한을 사용하고 싶다면 이렇게 하시면 됩니다.
-                    // 300_000 밀리 세컨드 = 300초 = 5분
-                    // 2_000 밀리 세컨드 = 2초 = 2초 증가분
-                    .build();
+        // 엔진들의 실행 경로를 지정합니다.
+        String engine1Path = new File("engine/stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish").getAbsolutePath();
 
-            EngineArena arena = new EngineArena(
-                    engine1, // 엔진 1 Wrapper
-                    engine2, // 엔진 2 Wrapper
-                    config // 대전 환경
+        // 엔진의 작업 폴더를 지정합니다.
+        String folder = new File("engine/").getAbsolutePath();
+
+        try {
+            // 엔진 1의 설정을 생성합니다.
+            EngineConfig engine1Config = new EngineConfig(
+                    "Stockfish 18", // 엔진 표시용 이름
+                    engine1Path, // 엔진 실행 경로
+                    folder, // 작업 폴더
+                    List.of(), // 엔진의 args 설정
+                    EngineConfig.Protocol.UCI, // 프로토콜 종류
+                    Map.of(), // 옵션 설정
+                    new EngineLimit(10) // 엔진의 제한사항 (타임 컨트롤 및 depth 설정)
+                    // 지금에서는 10 depth 만 하지만 만약 시간 제한을 두고 하고 싶다면
+                    // new EngineLimit(10_000, 300) 으로 한다면 10000 밀리초 에 피셔 300 밀리초로 10+0.3 초 로 설정 할 수 있습니다.
             );
 
-            // 10 경기를 진행합니다.
-            for (int i = 0; i < 10; i++) {
-                System.out.println("엔진 매치를 시작합니다.");
+            // 엔진 2의 설정을 생성합니다.
+            EngineConfig engine2Config = new EngineConfig(
+                    "Stockfish 18",
+                    engine2Path,
+                    folder,
+                    List.of(),
+                    EngineConfig.Protocol.UCI,
+                    Map.of(),
+                    new EngineLimit(10)
+            );
 
-                // 대전을 시작합니다.
-                // 대전이 끝나면 내부적으로 최종 결과 및 PGN 기보를 DTO 로 저장합니다.
-                MatchResult matchResult = arena.startMatch(); // 만약 라운드 수를 정하고 싶다면 arena.startMatch(roundNum)
+            // 메치의 설정을 생성합니다.
+            MatchConfig config = new MatchConfig.Builder()
+                    .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
+                    .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
+                    .totalGames(10) // 총 진행할 게임 수
+                    .concurrency(1) // 사용할 스레드 수 (지금은 1개만 설정했습니다.)
+                    .engine1Config(engine1Config) // 엔진 1의 설정을 가져옵니다.
+                    .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
+                    .build();
 
-                System.out.println("경기 결과: " + matchResult.result());
-                System.out.println("기보(PGN):\n" + matchResult.pgn());
+            // 메치 진행 클래스를 생성합니다.
+            ArenaRunner arena = new ArenaRunner(config);
 
-                arena.swapEngine(); // 백흑 바꿔서 진행
-            }
+            // 아레나 메치를 시작합니다.
+            // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
+            MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
+                @Override
+                public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
+                    System.out.println("Round " + roundNumber);
+                    System.out.println("RESULT : " + result.result() + "(" + result.engineWinner() + ")");
+                    System.out.println("PGN : ");
+                    System.out.println(result.pgn());
+                    System.out.println();
+                }
+            });
+
+            System.out.println("Engine 1 WDL");
+            System.out.println("WIN  :  " + statistics.getEngine1Wins());
+            System.out.println("DRAW :  " + statistics.getDraws());
+            System.out.println("LOSE :  " + statistics.getEngine2Wins());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        // 참고로 예외가 발생하거나 정상종료 됬을 때 try-with-resources 가 engine1/engine2를 자동으로 close() 해줍니다.
     }
 }
 ```
@@ -238,7 +260,7 @@ public class SyzygyExample {
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
         // 예시 포지션
-        ChessGame game = new ChessGame("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
+        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
 
         game.printBoard();
 
@@ -265,6 +287,67 @@ public class SyzygyExample {
         for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
             System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
         }
+    }
+}
+```
+### 6. Perft 사용하기
+```java
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.perft.PerftDriver;
+import com.pepero.jcb.core.Chessboard;
+
+public class PerftExample {
+    public static void main(String[] args) {
+        String fen = ChessGame.START_POSITION;
+
+        ChessGame chessGame = ChessGame.fromFEN(fen);
+
+        System.out.println("--------------------");
+        System.out.println("Perft API 1 threads");
+        System.out.println("--------------------");
+
+        // Perft 를 실행하고 결과를 저장합니다.
+
+        // Javadoc 설명에도 나와 있듯이, perft(int depth) 는 싱글 스레드, JVM warmup 을 적용한 결과입니다.
+        chessGame.perft(5);
+
+        // 이번에는 스레드를 4개로 했을 때의 결과를 출력해보겠습니다.
+        System.out.println();
+        System.out.println("--------------------");
+        System.out.println("Perft API 4 threads");
+        System.out.println("--------------------");
+
+        chessGame.perft(
+                6, // perft 깊이
+                4 // 사용할 스레드 수
+        );
+
+        // 이제는 Chessboard 기준으로 Perft 를 진행해보겠습니다.
+        Chessboard chessboard = new Chessboard(fen);
+
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println("Perft Bitboard 1 threads");
+        System.out.println("-------------------------");
+
+        PerftDriver.perftBitboardTest(
+                chessboard,
+                6, // perft 깊이
+                1, // 사용할 스레드 수
+                false // 테스트 결과 및 출력을 하지 않을 것인지
+                );
+
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println("Perft Bitboard 4 threads");
+        System.out.println("-------------------------");
+
+        PerftDriver.perftBitboardTest(
+                chessboard,
+                7, // perft 깊이
+                4, // 사용할 스레드 수
+                false // 테스트 결과 및 출력을 하지 않을 것인지
+        );
     }
 }
 ```
@@ -299,6 +382,102 @@ JIT warmup과 3회 평균을 낸 결과입니다.*
 > 엔진 개발처럼 성능이 중요한 프로젝트라면 `Chessboard`를 직접 사용하는 걸 권장합니다.
 
 > `ChessGame`은 툴링, 스크립팅, 분석용으로 적합하며, 저수준 API 대비 약 8배 정도의 오버헤드가 있습니다.
+
+<details>
+   <summary>벤치마크 재현 코드 보기</summary>
+
+```java
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.perft.PerftDriver;
+import com.pepero.jcb.api.perft.PerftResult;
+import com.pepero.jcb.core.Chessboard;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class PerftResultTest {
+    public static void main(String[] args) {
+        Chessboard chessboard = new Chessboard(Chessboard.start_position);
+        ChessGame chessGame = ChessGame.startPosition();
+
+        int available_processor = Runtime.getRuntime().availableProcessors();
+
+        System.out.println("Available Processors : " + available_processor);
+
+        int averageCount = 3;
+
+        System.out.println();
+        System.out.println();
+        System.out.println("---- BITBOARD TEST ---- ");
+        System.out.println();
+        System.out.println();
+
+
+        for(int thread : new int[]{1,2,4,8}) {
+            for (int depth : new int[]{6,7}) {
+                if(available_processor < thread) break;
+
+                // nps 의 평균을 구합니다.
+                List<Long> nps = new ArrayList<>();
+                for(int i=1;i<=averageCount;i++) {
+                    PerftResult result =
+                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true);
+                    nps.add(result.nps());
+                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
+                }
+                double npsAverage = nps.stream().mapToLong(Long::longValue)
+                        .average()
+                        .orElse(0.0);
+                
+                
+                System.out.println();
+                System.out.println();
+                System.out.println("Calculated perft(" + depth + ") * " + averageCount
+                        + " with " + thread + " thread(s)");
+                System.out.println("Average NPS : " + String.format(
+                        "%.2f", npsAverage / 1_000_000.
+                ) + "MNPS ( " +
+                        (long) npsAverage + "nps )");
+                System.out.println();
+            }
+        }
+        System.out.println();
+        System.out.println();
+        System.out.println("---- API TEST ---- ");
+        System.out.println();
+        System.out.println();
+
+        for(int thread : new int[]{1,2,4,8}) {
+            for (int depth : new int[]{5,6}) {
+                if(available_processor < thread) break;
+
+                List<Long> nps = new ArrayList<>();
+                for(int i=1;i<=averageCount;i++) {
+                    PerftResult result =
+                            PerftDriver.perftAPITest(chessGame, depth, thread, true);
+                    nps.add(result.nps());
+                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
+                }
+                double npsAverage = nps.stream().mapToLong(Long::longValue)
+                        .average()
+                        .orElse(0.0);
+                
+                
+                System.out.println();
+                System.out.println();
+                System.out.println("Calculated perft(" + depth + ") * " + averageCount
+                        + " with " + thread + " thread(s)");
+                System.out.println("Average NPS : " + String.format(
+                        "%.2f", npsAverage / 1_000_000.
+                ) + "MNPS ( " +
+                        (long) npsAverage + "nps )");
+                System.out.println();
+            }
+        }
+    }
+}
+```
+</details>
 
 ## 라이선스
 이 프로젝트는 MIT License 에 따라 라이선스가 부여됩니다.

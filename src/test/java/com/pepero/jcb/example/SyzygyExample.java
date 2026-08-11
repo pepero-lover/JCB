@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.syzygy;
+package com.pepero.jcb.example;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;

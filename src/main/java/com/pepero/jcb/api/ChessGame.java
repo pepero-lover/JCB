@@ -2946,7 +2946,7 @@ public class ChessGame {
      * @return perft result dto
      */
     public PerftResult perft(int depth) {
-        return perft(depth, 1, true, false);
+        return perft(depth, 1, false);
     }
 
     /**
@@ -2954,11 +2954,11 @@ public class ChessGame {
      * (using single thread)
      *
      * @param depth perft depth
-     * @param preheat do preheat JVM
+     * @param concurrency using this amount of threads
      * @return perft result dto
      */
-    public PerftResult perft(int depth, boolean preheat) {
-        return perft(depth, 1, preheat, false);
+    public PerftResult perft(int depth, int concurrency) {
+        return perft(depth, concurrency, false);
     }
 
     /**
@@ -2966,11 +2966,10 @@ public class ChessGame {
      *
      * @param depth perft depth
      * @param concurrency using this amount of threads
-     * @param preheat do preheat JVM
      * @param silent don't print any logs
      * @return perft result dto
      */
-    public PerftResult perft(int depth, int concurrency, boolean preheat, boolean silent) {
+    public PerftResult perft(int depth, int concurrency, boolean silent) {
         return PerftDriver.perftAPITest(this, depth, concurrency, silent);
     }
 
