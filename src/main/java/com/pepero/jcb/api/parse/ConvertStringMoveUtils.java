@@ -423,7 +423,7 @@ public class ConvertStringMoveUtils {
             if(chessboard.side == white) promotion_type -= 6;
         }
 
-        if(chessboard.gameVariants == GameVariants.STANDARD) {
+        if(chessboard.gameVariants != GameVariants.CHESS960) {
             int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
             int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
             if(pieceType == K && targetType == R) {

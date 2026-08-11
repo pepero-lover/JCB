@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +31,8 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private volatile CountDownLatch uciokLatch;
     private volatile CountDownLatch readyokLatch;
+
+    private final Set<String> availableOptions = ConcurrentHashMap.newKeySet();
 
     private final AtomicReference<CompletableFuture<String>> currentMoveFuture = new AtomicReference<>();
 
@@ -222,6 +225,8 @@ public class UCIEngineWrapper implements AutoCloseable {
                         uciokLatch.countDown();
                     } else if (line.equals("readyok")) {
                         readyokLatch.countDown();
+                    } else if (line.startsWith("option name ")) {
+                        parseOptionLine(line);
                     } else if (line.startsWith("bestmove")) {
                         if (!latestAnalysisMap.isEmpty() && listener != null) {
                             List<EngineLine> finalBundle = latestAnalysisMap.values().stream()
@@ -356,6 +361,25 @@ public class UCIEngineWrapper implements AutoCloseable {
         } catch (Exception e) {
             // ignore format exception
         }
+    }
+
+    private void parseOptionLine(String line) {
+        try {
+            int nameStart = line.indexOf("name ") + 5;
+            int typeIdx = line.indexOf(" type ", nameStart);
+            if (typeIdx == -1) return;
+            String optionName = line.substring(nameStart, typeIdx).trim();
+            availableOptions.add(optionName);
+        } catch (Exception e) {
+        }
+    }
+
+    public boolean hasOption(String name) {
+        return availableOptions.contains(name);
+    }
+
+    public Set<String> getAvailableOptions() {
+        return Set.copyOf(availableOptions);
     }
 
     /**

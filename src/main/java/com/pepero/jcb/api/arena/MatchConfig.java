@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.book.PolyglotBookReader;
+import com.pepero.jcb.core.GameVariants;
 
 public class MatchConfig {
     private final int totalGames;
@@ -9,7 +10,7 @@ public class MatchConfig {
     private final EngineConfig engine1Config;
     private final EngineConfig engine2Config;
 
-    private final boolean isChess960;
+    private final GameVariants variants;
 
     private final int seed;
 
@@ -24,7 +25,7 @@ public class MatchConfig {
         this.concurrency = builder.concurrency;
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
-        this.isChess960 = builder.isChess960;
+        this.variants = builder.variants;
         this.openingBook = builder.openingBook;
         this.repeatOpening = builder.repeatOpening;
         this.resignRule = builder.resignRule;
@@ -36,7 +37,7 @@ public class MatchConfig {
     public int getConcurrency() { return concurrency; }
     public EngineConfig getEngine1Config() { return engine1Config; }
     public EngineConfig getEngine2Config() { return engine2Config; }
-    public boolean isChess960() { return isChess960; }
+    public GameVariants getVariants() { return variants; }
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
@@ -51,7 +52,7 @@ public class MatchConfig {
         private EngineConfig engine1Config;
         private EngineConfig engine2Config;
 
-        private boolean isChess960 = false;
+        private GameVariants variants = GameVariants.STANDARD;
 
         private PolyglotBookReader openingBook = null;
         private boolean repeatOpening = true;
@@ -91,8 +92,8 @@ public class MatchConfig {
             return this;
         }
 
-        public Builder isChess960(boolean isChess960) {
-            this.isChess960 = isChess960;
+        public Builder variants(GameVariants variants) {
+            this.variants = variants;
             return this;
         }
 

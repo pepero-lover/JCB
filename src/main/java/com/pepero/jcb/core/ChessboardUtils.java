@@ -297,9 +297,7 @@ public class ChessboardUtils {
                     "n".repeat(Math.max(0, chessboard.pocket[n])) +
                     "p".repeat(Math.max(0, chessboard.pocket[p]));
 
-            if (!pocketStr.isEmpty()) {
-                fen.append("[").append(pocketStr).append("]");
-            }
+            fen.append("[").append(pocketStr).append("]");
         }
 
         // side to move

@@ -16,8 +16,8 @@ import java.util.*;
 
 public class EngineArena {
 
-    private MatchConfig matchConfig;
-    private UCIEngineFactory factory;
+    private final MatchConfig matchConfig;
+    private final UCIEngineFactory factory;
 
     private final int[] chess960Position = new int[960];
 
@@ -32,7 +32,7 @@ public class EngineArena {
         this.factory = new ProcessUCIEngineFactory();
         this.matchConfig = config;
 
-        if(config.isChess960()) {
+        if(config.getVariants() == GameVariants.CHESS960) {
             List<Integer> list = new ArrayList<>();
             for (int i = 0; i < 960; i++) list.add(i);
 
@@ -64,7 +64,7 @@ public class EngineArena {
      */
     public MatchResult startMatch(int roundNumber) {
         ChessGame chessGame;
-        if(matchConfig.isChess960()) {
+        if(matchConfig.getVariants() == GameVariants.CHESS960) {
             chessGame = ChessGame.fromFEN(
                     Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
                     GameVariants.CHESS960
@@ -75,7 +75,20 @@ public class EngineArena {
             matchConfig.getEngine2Config().uciOptions().
                     put("UCI_Chess960", "true");
         } else {
-            chessGame = ChessGame.startPosition();
+            chessGame = ChessGame.startPosition(matchConfig.getVariants());
+
+            if(matchConfig.getVariants() != GameVariants.STANDARD) {
+                switch (matchConfig.getVariants()) {
+                    case CRAZY_HOUSE:
+                        matchConfig.getEngine1Config().uciOptions().
+                                put("UCI_Variant", "crazyhouse");
+                        matchConfig.getEngine2Config().uciOptions().
+                                put("UCI_Variant", "crazyhouse");
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         boolean isEngine1White = roundNumber % 2 == 1;

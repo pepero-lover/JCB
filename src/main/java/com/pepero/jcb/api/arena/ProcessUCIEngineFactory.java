@@ -1,5 +1,6 @@
 package com.pepero.jcb.api.arena;
 
+import com.pepero.jcb.api.exception.UCIEngineException;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
 import java.io.File;
@@ -24,6 +25,8 @@ public class ProcessUCIEngineFactory implements UCIEngineFactory {
 
         if (config.uciOptions() != null) {
             for (Map.Entry<String, String> entry : config.uciOptions().entrySet()) {
+                if(!result.hasOption(entry.getKey())) throw new UCIEngineException("Option \"" +
+                        entry.getKey() + "\" not found!");
                 result.setOptionSync(entry.getKey(), entry.getValue());
             }
         }

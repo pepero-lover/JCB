@@ -3,6 +3,7 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -12,14 +13,14 @@ import java.util.Map;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+        String engine1Path = new File("engine/fairy-stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/fairy-stockfish").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
         try {
             EngineConfig engine1Config = new EngineConfig(
-                    "Stockfish 18",
+                    "Fairy Stockfish",
                     engine1Path,
                     folder,
                     new ArrayList<>(),
@@ -29,13 +30,13 @@ public class EngineMatchTest {
             );
 
             EngineConfig engine2Config = new EngineConfig(
-                    "Stockfish 18",
+                    "Fairy Stockfish",
                     engine2Path,
                     folder,
                     new ArrayList<>(),
                     EngineConfig.Protocol.UCI,
                     new HashMap<>(),
-                    new EngineLimit(10000, 100)
+                    new EngineLimit(100, 100)
             );
 
             MatchConfig config = new MatchConfig.Builder()
@@ -54,6 +55,7 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
+                    .variants(GameVariants.CRAZY_HOUSE)
                     .totalGames(10)
                     .concurrency(4)
                     .build();
