@@ -14,8 +14,8 @@ import java.util.concurrent.Future;
 public class PerftMultiThread {
     public static void main(String[] args) {
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.perft(5,
-                Runtime.getRuntime().availableProcessors(),
+        chessGame.perft(6,
+                4,
                 true,
                 false
         );

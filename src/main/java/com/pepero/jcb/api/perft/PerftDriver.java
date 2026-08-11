@@ -11,62 +11,87 @@ import com.pepero.jcb.util.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class PerftDriver {
-    public static void apiWarmup(boolean silent) {
-        List<Long> recentNps = new ArrayList<>();
-        int depth = 4;
+    public static void apiExecutorWarmup(ExecutorService service, int concurrency, boolean silent) {
+        if (!silent) System.out.println("Preheating...");
 
-        long nps;
-        double stableValue;
+        List<Future<Void>> warmupFutures = new ArrayList<>();
 
-        if(!silent) System.out.println("Preheating...");
+        for (int i = 0; i < concurrency; i++) {
+            warmupFutures.add(service.submit(() -> {
+                List<Long> recentNps = new ArrayList<>();
+                int depth = 4;
+                double stableValue;
 
-        while (true) {
-            long start = System.nanoTime();
-            long nodes = perftAPIDriver(ChessGame.startPosition(), depth);
-            long elapsed = System.nanoTime() - start;
-            nps = nodes * 1_000_000_000L / elapsed;
+                while (true) {
+                    long start = System.nanoTime();
+                    long nodes = perftAPIDriver(ChessGame.startPosition(), depth);
+                    long elapsed = System.nanoTime() - start;
+                    long nps = nodes * 1_000_000_000L / elapsed;
 
-            recentNps.add(nps);
-            stableValue = getStableValue(recentNps);
+                    recentNps.add(nps);
+                    stableValue = getStableValue(recentNps);
 
-            if (recentNps.size() > 5) recentNps.removeFirst();
-            if (recentNps.size() == 5 && stableValue < 0.03) break;
+                    if (recentNps.size() > 5) recentNps.removeFirst();
+                    if (recentNps.size() == 5 && stableValue < 0.03) break;
+                }
+
+                return null;
+            }));
         }
 
-        if(!silent) System.out.println("Preheat Complete. ( nps : " + nps + " +- " +
-                String.format("%.2f", (stableValue * 100)) + "% )");
+        for (Future<Void> f : warmupFutures) {
+            try {
+                f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!silent) System.out.println("Preheat Complete.");
     }
 
-    public static void bitboardWarmup(boolean silent) {
-        List<Long> recentNps = new ArrayList<>();
-        int depth = 4;
+    private static void bitboardExecutorWarmup(ExecutorService service, int concurrency, boolean silent) {
+        if (!silent) System.out.println("Preheating...");
 
-        long nps;
-        double stableValue;
+        List<Future<Void>> warmupFutures = new ArrayList<>();
 
-        if(!silent) System.out.println("Preheating...");
+        for (int i = 0; i < concurrency; i++) {
+            warmupFutures.add(service.submit(() -> {
+                List<Long> recentNps = new ArrayList<>();
+                int depth = 5;
+                double stableValue;
 
-        while (true) {
-            long start = System.nanoTime();
-            long nodes = perftBitboardDriver(new Chessboard(Chessboard.start_position), depth);
-            long elapsed = System.nanoTime() - start;
-            nps = nodes * 1_000_000_000L / elapsed;
+                while (true) {
+                    long start = System.nanoTime();
+                    long nodes = perftBitboardDriver(new Chessboard(Chessboard.start_position), depth);
+                    long elapsed = System.nanoTime() - start;
+                    long nps = nodes * 1_000_000_000L / elapsed;
 
-            recentNps.add(nps);
-            stableValue = getStableValue(recentNps);
+                    recentNps.add(nps);
+                    stableValue = getStableValue(recentNps);
 
-            if (recentNps.size() > 5) recentNps.removeFirst();
-            if (recentNps.size() == 5 && stableValue < 0.03) break;
+                    if (recentNps.size() > 5) recentNps.removeFirst();
+                    if (recentNps.size() == 5 && stableValue < 0.03) break;
+                }
+
+                return null;
+            }));
         }
 
-        if(!silent) System.out.println("Preheat Complete. ( nps : " + nps + " +- " +
-                String.format("%.2f", (stableValue * 100)) + "% )");
+        for (Future<Void> f : warmupFutures) {
+            try {
+                f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!silent) System.out.println("Preheat Complete.");
     }
 
     private static double getStableValue(List<Long> samples) {
@@ -98,37 +123,41 @@ public class PerftDriver {
     public static PerftResult perftAPITest(ChessGame chessGame, int depth, int concurrency, boolean silent) {
         chessGame = ChessGame.lightWeightCopy(chessGame);
 
-        List<PerftMoveResult> moveResults = new ArrayList<>();
-
         List<MoveInfo> moveList = chessGame.getLegalMoves();
-        long startTime = TimeUtils.getTimeNt();
 
-        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
-        List<Future<PerftMoveResult>> futures = new ArrayList<>();
+        List<ChessGame> clonedGames = new ArrayList<>(moveList.size());
+        List<String> moveStrs = new ArrayList<>(moveList.size());
 
         for (MoveInfo moveInfo : moveList) {
             chessGame.makeMove(moveInfo);
-
-            final ChessGame clonedGame = ChessGame.lightWeightCopy(chessGame);
-
+            clonedGames.add(ChessGame.lightWeightCopy(chessGame));
             chessGame.unmakeMove();
+            moveStrs.add(moveInfo.toString());
+        }
 
-            String moveStr = moveInfo.toString();
+        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+        apiExecutorWarmup(executor, concurrency, silent);
 
-            Callable<PerftMoveResult> task = () -> {
+        List<PerftMoveResult> moveResults = new ArrayList<>();
+        List<Future<PerftMoveResult>> futures = new ArrayList<>();
+
+        long startTime = TimeUtils.getTimeNt();
+
+        for (int i = 0; i < clonedGames.size(); i++) {
+            final ChessGame clonedGame = clonedGames.get(i);
+            final String moveStr = moveStrs.get(i);
+            futures.add(executor.submit(() -> {
                 long branchNodes = perftAPIDriver(clonedGame, depth - 1);
-                if(!silent) System.out.println("  Move " + moveStr + "  nodes : " + branchNodes);
                 return new PerftMoveResult(moveStr, branchNodes);
-            };
-            futures.add(executor.submit(task));
+            }));
         }
 
         long totalNodes = 0;
-
         try {
             for (Future<PerftMoveResult> future : futures) {
                 PerftMoveResult result = future.get();
                 totalNodes += result.nodes();
+                if (!silent) System.out.println("  Move " + result.moveStr() + "  nodes : " + result.nodes());
                 moveResults.add(result);
             }
         } catch (Exception e) {
@@ -185,39 +214,40 @@ public class PerftDriver {
         int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
-        List<PerftMoveResult> moveResults = new ArrayList<>();
-
-        long startTime = TimeUtils.getTimeNt();
-
-        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
-        List<Future<PerftMoveResult>> futures = new ArrayList<>();
+        List<Chessboard> clonedBoards = new ArrayList<>(moveCount);
+        List<String> moveStrs = new ArrayList<>(moveCount);
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
-
             MoveGenerator.makeMove(chessboard, move);
-
-            final Chessboard clonedBoard = new Chessboard(chessboard);
-
+            clonedBoards.add(new Chessboard(chessboard));
             MoveGenerator.unmakeMove(chessboard, move);
+            moveStrs.add(EncodeMove.moveToString(move, chessboard.gameVariants == GameVariants.CHESS960));
+        }
 
-            String finalMoveStr = EncodeMove.moveToString(move,
-                    chessboard.gameVariants == GameVariants.CHESS960);
-            Callable<PerftMoveResult> task = () -> {
+        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+        bitboardExecutorWarmup(executor, concurrency, silent);
+
+        List<PerftMoveResult> moveResults = new ArrayList<>();
+        List<Future<PerftMoveResult>> futures = new ArrayList<>();
+
+        long startTime = TimeUtils.getTimeNt();
+
+        for (int i = 0; i < moveCount; i++) {
+            final Chessboard clonedBoard = clonedBoards.get(i);
+            final String moveStr = moveStrs.get(i);
+            futures.add(executor.submit(() -> {
                 long branchNodes = perftBitboardDriver(clonedBoard, depth - 1);
-                return new PerftMoveResult(finalMoveStr, branchNodes);
-            };
-
-            futures.add(executor.submit(task));
+                return new PerftMoveResult(moveStr, branchNodes);
+            }));
         }
 
         long totalNodes = 0;
-
         try {
             for (Future<PerftMoveResult> future : futures) {
                 PerftMoveResult result = future.get();
                 totalNodes += result.nodes();
-                if(!silent) System.out.println("  Move " + result.moveStr() + "  nodes : " + result.nodes());
+                if (!silent) System.out.println("  Move " + result.moveStr() + "  nodes : " + result.nodes());
                 moveResults.add(result);
             }
         } catch (Exception e) {

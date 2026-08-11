@@ -2911,10 +2911,6 @@ public class ChessGame {
      * @return perft result dto
      */
     public PerftResult perft(int depth, int concurrency, boolean preheat, boolean silent) {
-        if(preheat) {
-            PerftDriver.apiWarmup(silent);
-        }
-
         return PerftDriver.perftAPITest(this, depth, concurrency, silent);
     }
 

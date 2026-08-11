@@ -6,10 +6,9 @@ import com.pepero.jcb.core.*;
 public class PerftBitboardMultiThread {
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(Chessboard.start_position);
-        PerftDriver.bitboardWarmup(false);
         PerftDriver.perftBitboardTest(chessboard,
                 7,
-                Runtime.getRuntime().availableProcessors(),
+                1,
                 false
         );
     }

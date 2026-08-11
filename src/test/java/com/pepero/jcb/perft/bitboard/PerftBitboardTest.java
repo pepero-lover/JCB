@@ -13,7 +13,6 @@ import com.pepero.jcb.util.TimeUtils;
 public class PerftBitboardTest {
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(Chessboard.start_position);
-        PerftDriver.bitboardWarmup(false);
         PerftDriver.perftBitboardTest(chessboard,
                 6,
                 1,
