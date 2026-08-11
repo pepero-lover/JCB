@@ -471,6 +471,66 @@ public class ChessGame {
     }
 
     /**
+     * Make move on this ChessGame <br>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param moveInfo move info
+     */
+    public void makeMoveRaw(MoveInfo moveInfo) {
+        makeMoveRaw(moveInfo.originEncodedData());
+    }
+
+    /**
+     * Make move on this ChessGame <br>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param encodedMove encoded move
+     */
+    public void makeMoveRaw(int encodedMove) {
+        writeLock.lock();
+        try {
+            if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
+                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
+                        chessboard.gameVariants == GameVariants.CHESS960),
+                        this.getFEN());
+            }
+
+            if(chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
+            } else {
+                MoveGenerator.makeMove(this.chessboard, encodedMove);
+            }
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Unmake move on this ChessGame <br>
+     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param moveInfo move info
+     */
+    public void unmakeMoveRaw(MoveInfo moveInfo) {
+        unmakeMoveRaw(moveInfo.originEncodedData());
+    }
+
+    /**
+     * Unmake move on this ChessGame <br>
+     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param encodedMove encoded move
+     */
+    public void unmakeMoveRaw(int encodedMove) {
+        writeLock.lock();
+        try {
+            MoveGenerator.unmakeMove(this.chessboard, encodedMove);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Make move on this ChessGame (Source square, Target square, Promotion Type)
      *
      * @param sourceSquare Source square (you can make square on BoardSquares.java)

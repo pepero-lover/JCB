@@ -112,9 +112,9 @@ public class PerftDriver {
         List<MoveInfo> moveList = chessGame.getLegalMoves();
 
         for (MoveInfo moveInfo : moveList) {
-            chessGame.makeMove(moveInfo);
+            chessGame.makeMoveRaw(moveInfo);
             localNodes += perftAPIDriver(chessGame, depth - 1);
-            chessGame.unmakeMove();
+            chessGame.unmakeMoveRaw(moveInfo);
         }
 
         return localNodes;
