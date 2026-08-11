@@ -24,6 +24,8 @@
 
 ## 설치 방법
 
+> ⚠️ 이 문서는 개발 중인 다음 버전 기준입니다. 현재 배포 버전: v1.4.0
+
 ### Gradle 프로젝트의 경우
 
 1. settings.gradle 에 이 코드를 삽입하세요.
@@ -40,7 +42,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle 에 추가하세요.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.5.0'
+    implementation 'com.github.pepero-lover:JCB:v1.4.0'
 }
 ```
 
@@ -59,7 +61,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.5.0</version>
+    <version>v1.4.0</version>
 </dependency>
 ```
 
