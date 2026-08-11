@@ -1099,7 +1099,8 @@ public class ChessGame {
     }
 
     /**
-     * Get captured piece
+     * Get captured piece <br>
+     * You can also get pocket data on CrazyHouse variant
      *
      * @param isWhite if white, returns black captured piece. if black, returns white captured piece.
      * @return captured piece
@@ -1421,11 +1422,10 @@ public class ChessGame {
         readLock.lock();
         try {
             // zobrist hash
-            return ChessboardUtils.getRepetitionCount(this.chessboard) == 3;
+            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 3;
         } finally {
             readLock.unlock();
         }
-        // because getRepetitionCount method returns 3 if the position is repeated over 3 times
     }
 
     public boolean isInsufficientMaterial() {
