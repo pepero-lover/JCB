@@ -1,6 +1,5 @@
 ## 요구 사항
 - Java 21 이상
-서
 ## 지원 기능
 
 - 체스 변형 지원 (Standard / Chess960 / CrazyHouse)
