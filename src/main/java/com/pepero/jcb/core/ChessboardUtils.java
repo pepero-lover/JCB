@@ -145,7 +145,7 @@ public class ChessboardUtils {
             else if ((fenChar >= 'a' && fenChar <= 'z') || (fenChar >= 'A' && fenChar <= 'Z')) {
                 Integer piece = char_to_encoded_piece.get(fenChar);
                 if (piece != null && file < 8) {
-                    last_square = rank * 8 + file;
+                    last_square = (7 - rank) * 8 + file;
 
                     chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], last_square);
 
@@ -211,7 +211,7 @@ public class ChessboardUtils {
 
         if (fenDivided.length > 3 && !fenDivided[3].equals("-") && fenDivided[3].length() >= 2) {
             int fileInt = fenDivided[3].charAt(0) - 'a';
-            int rankInt = 8 - (fenDivided[3].charAt(1) - '0');
+            int rankInt = fenDivided[3].charAt(1) - '1';
             if (fileInt >= 0 && fileInt <= 7 && rankInt >= 0 && rankInt <= 7) {
                 chessboard.enpassant = rankInt * 8 + fileInt;
             }
@@ -254,7 +254,7 @@ public class ChessboardUtils {
             int empty_square = 0;
 
             for (int file = 0; file < 8; file++){
-                int square = rank * 8 + file;
+                int square = (7 - rank) * 8 + file;
 
                 int type = getPieceTypeOnSquare(chessboard, square);
                 if(type == -1) {
@@ -567,7 +567,7 @@ public class ChessboardUtils {
 
             // loop over board files
             for (int file = 0; file < 8; file++) {
-                int square = rank * 8 + file;
+                int square = (7 - rank) * 8 + file;
                 // prints char piece from our mapped board
                 sb.append(" ").append(board[square]);
             }

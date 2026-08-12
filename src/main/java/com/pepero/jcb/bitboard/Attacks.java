@@ -159,13 +159,13 @@ public class Attacks {
             // Making sure this attacking bit is not overboard,
             // Why is it 7?
             // because 8 is rank change, and -1 is file change
-            attacks |= ((bitboard >>> 7) & not_a_file);
+            attacks |= ((bitboard << 7) & not_h_file);
 
 
             // Making sure this attacking bit is not overboard,
             // Why is it 9?
             // because 8 is rank change, and 1 is file change
-            attacks |= ((bitboard >>> 9) & not_h_file);
+            attacks |= ((bitboard << 9) & not_a_file);
         }
 
         // black pawns
@@ -175,13 +175,13 @@ public class Attacks {
             // Making sure this attacking bit is not overboard,
             // Why is it 7?
             // because 8 is rank change, and -1 is file change
-            attacks |= ((bitboard << 7) & not_h_file);
+            attacks |= ((bitboard >>> 7) & not_a_file);
 
 
             // Making sure this attacking bit is not overboard,
             // Why is it 9?
             // because 8 is rank change, and 1 is file change
-            attacks |= ((bitboard << 9) & not_a_file);
+            attacks |= ((bitboard >>> 9) & not_h_file);
         }
 
         // return attack map
