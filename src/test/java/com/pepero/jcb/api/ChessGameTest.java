@@ -169,7 +169,7 @@ public class ChessGameTest {
 
         int val = ChessboardUtils.getChecker(chessboard);
 
-        assertEquals(13, val & 0x3f);
+        assertEquals(BoardSquares.f7, val & 0x3f);
         assertEquals(1, val >>> 12 & 3);
     }
 

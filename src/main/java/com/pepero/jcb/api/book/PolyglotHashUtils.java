@@ -41,9 +41,7 @@ public class PolyglotHashUtils {
             int pieceType = toPolyglotPiece(enginePiece);
 
             if (pieceType != -1) {
-                int polyglotSquare = square ^ 56;
-
-                int index = (pieceType * 64) + polyglotSquare;
+                int index = (pieceType * 64) + square;
                 hash ^= PolyglotConstant.POLYGLOT_RAND[index];
             }
         }
@@ -60,13 +58,13 @@ public class PolyglotHashUtils {
             boolean canBeCaptured = false;
 
             if (board.side == white) {
-                int pawnRank = 4;
+                int pawnRank = 3;
                 if (epFile > 0 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile - 1)) == P)
                     canBeCaptured = true;
                 if (epFile < 7 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile + 1)) == P)
                     canBeCaptured = true;
             } else {
-                int pawnRank = 3;
+                int pawnRank = 4;
                 if (epFile > 0 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile - 1)) == p)
                     canBeCaptured = true;
                 if (epFile < 7 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile + 1)) == p)

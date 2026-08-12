@@ -83,8 +83,8 @@ public class ConvertStringMoveUtils {
         if (castle) {
             int moveTgt = EncodeMove.getMoveTarget(encoded_move);
             boolean isKingSide = (chessboard.side == white) ?
-                    (moveTgt == chessboard.king_side_rook_file + 56) :
-                    (moveTgt == chessboard.king_side_rook_file);
+                    (moveTgt == chessboard.king_side_rook_file) :
+                    (moveTgt == chessboard.king_side_rook_file + 56);
 
             if (isKingSide) sb.append("O-O");
             else sb.append("O-O-O");
@@ -535,13 +535,13 @@ public class ConvertStringMoveUtils {
                 if(isFile) {
                     expected_file = san.charAt(0) - 'a';
                 } else {
-                    expected_rank = 7 - (san.charAt(0) - '1');
+                    expected_rank = san.charAt(0) - '1';
                 }
 
                 san = san.substring(1);
             } else if(san.length() == 4) {
                 expected_file = san.charAt(0) - 'a';
-                expected_rank = 7 - (san.charAt(1) - '1');
+                expected_rank = san.charAt(1) - '1';
 
                 san = san.substring(2);
             }
@@ -624,7 +624,8 @@ public class ConvertStringMoveUtils {
         }
 
         boolean isWhite = board.side == white;
-        boolean isKingSide = isWhite ? (tgt == board.king_side_rook_file + 56) : (tgt == board.king_side_rook_file);
+        boolean isKingSide = isWhite ? (tgt == board.king_side_rook_file)
+                : (tgt == board.king_side_rook_file + 56);
 
         if (isWhite) return isKingSide ? "e1g1" : "e1c1";
         else return isKingSide ? "e8g8" : "e8c8";

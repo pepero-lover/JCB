@@ -22,7 +22,7 @@ public class SyzygyBestMoveDebug {
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("6k1/5n2/8/8/8/5n2/1RK5/1N6 w - - 0 1");
+        ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 
