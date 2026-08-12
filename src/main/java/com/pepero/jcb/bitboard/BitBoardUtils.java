@@ -109,7 +109,7 @@ public class BitBoardUtils {
 
             for (int file = 0; file < 8; file++) {
                 // init square
-                int square = rank * 8 + file;
+                int square = (7 - rank) * 8 + file;
 
                 // this checks whether this square is 1 or 0
                 long bit = (bitboard >>> square) & 1L;

@@ -15,8 +15,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.pepero.jcb.constant.BoardSquares.a1;
-import static com.pepero.jcb.constant.BoardSquares.h8;
+import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
@@ -116,8 +115,8 @@ public class SyzygyTablebase {
             int turn = (EncodeMove.getMovePiece(move) == P) ? white : black;
             int piece = EncodeMove.getMovePiece(move);
             boolean isPromotion = (piece == P || piece == p) &&
-                    ((turn == white && EncodeMove.getMoveTarget(move) <= h8)
-                            || (turn == black && EncodeMove.getMoveTarget(move) >= a1));
+                    ((turn == white && EncodeMove.getMoveTarget(move) >= a8)
+                            || (turn == black && EncodeMove.getMoveTarget(move) <= h1));
 
             if (isCapture || isPromotion) {
                 Chessboard child = new Chessboard(board);
@@ -503,11 +502,10 @@ public class SyzygyTablebase {
         long bb = pawns;
         while (bb != 0) {
             int sq = BitBoardUtils.getLS1BIndex(bb);
-            int syzygySq = sq ^ 0x38;
-            int twist = SyzygyIndexTables.PAWN_TWIST[0][syzygySq];
+            int twist = SyzygyIndexTables.PAWN_TWIST[0][sq];
             if (twist > bestTwist) {
                 bestTwist = twist;
-                bestSquare = syzygySq;
+                bestSquare = sq;
             }
             bb = BitBoardUtils.popBit(bb, sq);
         }
