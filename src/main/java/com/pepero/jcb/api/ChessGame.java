@@ -1294,7 +1294,8 @@ public class ChessGame {
     public Map<Square, Piece> getBoardStateMap() {
         readLock.lock();
         try {
-            Map<Square, Piece> result = new HashMap<>();
+            Map<Square, Piece> result = new EnumMap<>(Square.class);
+
             for(Square square : Square.values()) {
                 Piece piece = getPieceOnSquare(square);
                 if (piece != Piece.NONE) {
@@ -1302,7 +1303,7 @@ public class ChessGame {
                 }
             }
 
-            return result;
+            return Collections.unmodifiableMap(result);
         } finally {
             readLock.unlock();
         }

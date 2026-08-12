@@ -1,3 +1,8 @@
+# JCB (Java Chess Board)
+![Java](https://img.shields.io/badge/Java-21%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Size](https://img.shields.io/badge/Size-240KB-orange)
+
 ## 요구 사항
 - Java 21 이상
 ## 지원 기능
@@ -10,12 +15,12 @@
 - 외부 라이브러리 의존성 없음
 
 ## JCB 에 대해
-* 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높이었습니다.
+* 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높였습니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
 * 빌드된 jar 라이브러리 파일의 크기가 **240KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
 * 코어 비트보드 탐색 성능은 **70 MNPS (초당 7,000만 노드)** 입니다. (cpu i7-14700KF 기준)
 * Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
-* 이 라이브러리에서는 단 하나의 외부 라이브러리를 쓰지 않습니다. (단, 테스트용 JUnit 제외)
+* 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
 
 
 ## 참고 및 출처
@@ -203,7 +208,7 @@ public class EngineExample {
                     new EngineLimit(10)
             );
 
-            // 메치의 설정을 생성합니다.
+            // 매치의 설정을 생성합니다.
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
                     .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
@@ -213,10 +218,10 @@ public class EngineExample {
                     .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
                     .build();
 
-            // 메치 진행 클래스를 생성합니다.
+            // 매치 진행 클래스를 생성합니다.
             ArenaRunner arena = new ArenaRunner(config);
 
-            // 아레나 메치를 시작합니다.
+            // 아레나 매치를 시작합니다.
             // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
             MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
                 @Override
@@ -263,12 +268,12 @@ public class SyzygyExample {
 
         // WDL, DTZ 결과를 보입니다.
 
-        // WDL 데이터는 -2 ~ 2 의 범위를 가지고, 각각
-        // -2 는 양쪽 모두 최선의 플레이를 했을 때, 두는 쪽 기준 진다는 것이고,
-        // -1 은 지지만, 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
-        // 0 은 무승부,
-        // 1은 두는 쪽 기준 이기지만 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
-        // 2는 두는 쪽 기준 이긴다는 것입니다.
+        // WDL 데이터는 -2 ~ 2의 범위를 가집니다. (두는 쪽 기준)
+        //  2 : 완벽하게 플레이할 경우 승리함
+        //  1 : 승리하지만 50수 규칙에 의해 무승부가 됨
+        //  0 : 무승부
+        // -1 : 패배하지만 50수 규칙에 의해 무승부가 됨
+        // -2 : 완벽하게 플레이해도 패배함
 
         // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
 
@@ -276,7 +281,7 @@ public class SyzygyExample {
         System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
         System.out.println();
 
-        // 지금 상황에서 최선수도 보일 수 있습니다.
+        // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
         System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
         System.out.println();
 
