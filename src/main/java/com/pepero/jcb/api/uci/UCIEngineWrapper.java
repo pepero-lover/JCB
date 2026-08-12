@@ -2,7 +2,9 @@ package com.pepero.jcb.api.uci;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.exception.UCIEngineException;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -166,12 +168,39 @@ public class UCIEngineWrapper implements AutoCloseable {
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
 
+        supportVariant(chessGame.getGameVariants());
+
         sendCommand(buildPositionCommand(chessGame));
 
         if (depth > 0) {
             sendCommand("go depth " + depth);
         } else {
             sendCommand("go infinite");
+        }
+    }
+
+    /**
+     * Throw UCIEngineException if this chess engine doesn't support this variant
+     *
+     * @param variants variant
+     */
+    private void supportVariant(GameVariants variants) {
+        if(variants != GameVariants.STANDARD) {
+            if(variants == GameVariants.CHESS960) {
+                if(!hasOption("UCI_Chess960")) {
+                    throw new UCIEngineException("Chess 960 option not found!");
+                }
+                setOptionSync("UCI_Chess960", "true");
+            } else {
+                switch (variants) {
+                    case CRAZY_HOUSE :
+                        if(!hasOption("UCI_Variant")) {
+                            throw new UCIEngineException("Variant option not found!");
+                        }
+                        setOptionSync("UCI_Variant", "crazyhouse");
+                        break;
+                }
+            }
         }
     }
 
@@ -405,6 +434,8 @@ public class UCIEngineWrapper implements AutoCloseable {
         isAnalyzing = true;
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
+
+        supportVariant(chessGame.getGameVariants());
 
         sendCommand(buildPositionCommand(chessGame));
 
