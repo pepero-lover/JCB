@@ -2,8 +2,6 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
-import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -13,29 +11,29 @@ import java.util.Map;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/fairy-stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/fairy-stockfish").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
         try {
             EngineConfig engine1Config = new EngineConfig(
-                    "Fairy Stockfish",
+                    "Stockfish 18",
                     engine1Path,
                     folder,
-                    new ArrayList<>(),
+                    List.of(),
                     EngineConfig.Protocol.UCI,
-                    new HashMap<>(),
+                    Map.of(),
                     new EngineLimit(100, 100)
             );
 
             EngineConfig engine2Config = new EngineConfig(
-                    "Fairy Stockfish",
+                    "Stockfish 18",
                     engine2Path,
                     folder,
-                    new ArrayList<>(),
+                    List.of(),
                     EngineConfig.Protocol.UCI,
-                    new HashMap<>(),
+                    Map.of("Skill Level","1"),
                     new EngineLimit(100, 100)
             );
 
@@ -55,7 +53,6 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
-                    .variants(GameVariants.CRAZY_HOUSE)
                     .totalGames(10)
                     .concurrency(4)
                     .build();

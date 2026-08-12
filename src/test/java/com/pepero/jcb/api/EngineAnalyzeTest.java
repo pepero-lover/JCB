@@ -21,7 +21,7 @@ public class EngineAnalyzeTest {
 
             }
         });
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.startPosition(GameVariants.CHESS960);
         engineWrapper.startAnalysis(chessGame, 255, 5);
         Thread.sleep(5000);
         engineWrapper.stopAnalysis();
