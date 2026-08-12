@@ -63,35 +63,31 @@ public class EngineArena {
      * @return Match result
      */
     public MatchResult startMatch(int roundNumber) {
+        boolean isEngine1White = roundNumber % 2 == 1;
+
         ChessGame chessGame;
         if(matchConfig.getVariants() == GameVariants.CHESS960) {
-            chessGame = ChessGame.fromFEN(
-                    Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
-                    GameVariants.CHESS960
-            );
-
-            matchConfig.getEngine1Config().uciOptions().
-                    put("UCI_Chess960", "true");
-            matchConfig.getEngine2Config().uciOptions().
-                    put("UCI_Chess960", "true");
+            if(matchConfig.hasFENSetting()) {
+                chessGame = ChessGame.fromFEN(isEngine1White
+                        ? matchConfig.fenSettingConfig().fenWhenEngine1White()
+                        : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
+                        GameVariants.CHESS960);
+            } else {
+                chessGame = ChessGame.fromFEN(
+                        Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
+                        GameVariants.CHESS960
+                );
+            }
         } else {
-            chessGame = ChessGame.startPosition(matchConfig.getVariants());
-
-            if(matchConfig.getVariants() != GameVariants.STANDARD) {
-                switch (matchConfig.getVariants()) {
-                    case CRAZY_HOUSE:
-                        matchConfig.getEngine1Config().uciOptions().
-                                put("UCI_Variant", "crazyhouse");
-                        matchConfig.getEngine2Config().uciOptions().
-                                put("UCI_Variant", "crazyhouse");
-                        break;
-                    default:
-                        break;
-                }
+            if(matchConfig.hasFENSetting()) {
+                chessGame = ChessGame.fromFEN(isEngine1White
+                                ? matchConfig.fenSettingConfig().fenWhenEngine1White()
+                                : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
+                        matchConfig.getVariants());
+            } else {
+                chessGame = ChessGame.startPosition(matchConfig.getVariants());
             }
         }
-
-        boolean isEngine1White = roundNumber % 2 == 1;
 
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());
@@ -111,6 +107,8 @@ public class EngineArena {
             );
 
             PolyglotBookReader bookReader = matchConfig.getOpeningBook();
+
+            Boolean losingSide = null;
 
             int drawAdjCount = 0;
             int resignAdjCount = 0;
@@ -192,13 +190,21 @@ public class EngineArena {
                 if(matchConfig.getResignRule() != null) {
                     AdjudicationRule resignRule = matchConfig.getResignRule();
                     if(chessGame.getFullMove() >= resignRule.minMoveNumber()) {
-                        boolean adjust = resignRule.isWithinThreshold(moverCp, true);
-                        if(adjust) resignAdjCount++;
-                        else resignAdjCount = 0;
+                        boolean isExtreme = Math.abs(whiteCp)
+                                >= resignRule.scoreThresholdCP() + resignRule.scoreToleranceCP();
+                        boolean currentLoser = whiteCp < 0;
 
-                        if(resignAdjCount >= resignRule.moveCount()) {
+                        if (isExtreme && (losingSide == null || losingSide == currentLoser)) {
+                            resignAdjCount++;
+                            losingSide = currentLoser;
+                        } else {
+                            resignAdjCount = 0;
+                            losingSide = null;
+                        }
+
+                        if (resignAdjCount >= resignRule.moveCount()) {
                             chessGame.forceEndGameExternal(
-                                    whiteTurn ? GameResult.BLACK_WON : GameResult.WHITE_WON,
+                                    currentLoser ? GameResult.BLACK_WON : GameResult.WHITE_WON,
                                     GameOverReason.ADJUDICATION);
                             break;
                         }

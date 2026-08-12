@@ -4,8 +4,6 @@ import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +22,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(100, 100)
+                    new EngineLimit(1000, 100)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -33,12 +31,12 @@ public class EngineMatchTest {
                     folder,
                     List.of(),
                     EngineConfig.Protocol.UCI,
-                    Map.of("Skill Level","1"),
-                    new EngineLimit(100, 100)
+                    Map.of(),
+                    new EngineLimit(1000, 100)
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin")
+                    //.openingBook("engine/opening.bin")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -53,6 +51,10 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
+                    .fenSetting(new FENSettingConfig(
+                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
+                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                            ))
                     .totalGames(10)
                     .concurrency(4)
                     .build();
@@ -63,6 +65,8 @@ public class EngineMatchTest {
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
                     System.out.println("ROUND " + roundNumber);
                     System.out.println(result.pgn());
+                    System.out.println(result.engineWinner() + " WON");
+                    System.out.println(result.reason());
                     System.out.println();
                 }
 

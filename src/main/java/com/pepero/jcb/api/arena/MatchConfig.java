@@ -10,6 +10,8 @@ public class MatchConfig {
     private final EngineConfig engine1Config;
     private final EngineConfig engine2Config;
 
+    private final FENSettingConfig fenSettingConfig;
+
     private final GameVariants variants;
 
     private final int seed;
@@ -23,6 +25,7 @@ public class MatchConfig {
     private MatchConfig(Builder builder) {
         this.totalGames = builder.totalGames;
         this.concurrency = builder.concurrency;
+        this.fenSettingConfig = builder.fenSettingConfig;
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
         this.variants = builder.variants;
@@ -41,6 +44,8 @@ public class MatchConfig {
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
+    public FENSettingConfig fenSettingConfig() { return fenSettingConfig; }
+    public boolean hasFENSetting() { return fenSettingConfig != null; }
     public AdjudicationRule getResignRule() { return resignRule; }
     public AdjudicationRule getDrawRule() { return drawRule; }
     public int getSeed() { return seed; }
@@ -51,6 +56,8 @@ public class MatchConfig {
 
         private EngineConfig engine1Config;
         private EngineConfig engine2Config;
+
+        private FENSettingConfig fenSettingConfig;
 
         private GameVariants variants = GameVariants.STANDARD;
 
@@ -92,6 +99,11 @@ public class MatchConfig {
             return this;
         }
 
+        public Builder fenSetting(FENSettingConfig config) {
+            this.fenSettingConfig = config;
+            return this;
+        }
+
         public Builder variants(GameVariants variants) {
             this.variants = variants;
             return this;
@@ -117,6 +129,11 @@ public class MatchConfig {
             if(engine2Config == null) throw new IllegalArgumentException("Engine 2 config not found!");
             if(totalGames <= 0) throw new IllegalArgumentException("Total Games should be exist and positive number!");
             if(concurrency <= 0) throw new IllegalArgumentException("Concurrency should be positive number!");
+            if(resignRule != null && resignRule.scoreThresholdCP() < 0)
+                throw new IllegalArgumentException("Resign rule threshold cp should be positive!");
+            if (fenSettingConfig != null && openingBook != null) {
+                throw new IllegalArgumentException("Fen setting and opening book can't have both!");
+            }
 
             return new MatchConfig(this);
         }
