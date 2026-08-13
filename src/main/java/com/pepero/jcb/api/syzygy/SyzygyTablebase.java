@@ -19,30 +19,6 @@ import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
-/**
- * A Syzygy tablebase directory, opened once and reused across many probes.
- * <p>
- * Replaces the old static {@code SyzygyProbe} methods. The main reason this is
- * now a stateful object rather than static functions: per-material file parsing
- * (opening the file, mmap-ing it, parsing sub-tables/pairs-headers/block-layout)
- * is somewhat expensive, and {@link #probeDtz} recurses into {@link #probeWdl}
- * for every legal move during its 1-ply fallback search — without caching, the
- * SAME material's file header would get re-parsed from scratch on every single
- * one of those calls. Here, each material's parsed structure is computed once
- * (on first use) and cached for the lifetime of this object.
- * <p>
- * "No split" materials (symmetric materials, e.g. KRvKR, that only ever store one
- * side's data) are handled in {@link #probeWdlTable} by mentally color-flipping the
- * position ONE MORE TIME to reuse the single stored side — combined via XOR with
- * the separate cross-file mirror color-flip (e.g. KRvKQ reusing KQvKR's file, see
- * {@link #mirrorMaterialString}).
- * <p>
- * {@link #probeWdl} additionally recurses into every capture/promotion move before
- * consulting the table directly (matching Fathom's probe_ab pattern) — this also
- * papers over encode/index bugs that only manifest on specific square configurations,
- * since a hung piece gets correctly valued via the capture recursion even if the
- * direct table read for that exact position is wrong.
- */
 public class SyzygyTablebase {
 
     private final Path syzygyDir;
@@ -51,7 +27,7 @@ public class SyzygyTablebase {
     private final Map<String, WdlTable> wdlCache = new ConcurrentHashMap<>();
     private final Map<String, DtzTable> dtzCache = new ConcurrentHashMap<>();
 
-    private static final int DEFAULT_MAX_PIECES = 7; // Syzygy가 현재 지원하는 최대치
+    private static final int DEFAULT_MAX_PIECES = 7;
 
     private final int maxPieces;
 
