@@ -9,7 +9,7 @@ import static com.pepero.jcb.constant.BoardSquares.*;
  */
 public class CastlingRights {
     /*
-    If you want to know what these numbers are doing, go to the Bitboard.java class and check the
+    If you want to know what these numbers are doing, go to the Chessboard.java class and check the
     variable named castle
     */
 
