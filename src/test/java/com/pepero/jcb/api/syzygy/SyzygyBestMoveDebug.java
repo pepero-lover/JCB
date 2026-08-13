@@ -17,12 +17,12 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 public class SyzygyBestMoveDebug {
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy/");
-        System.out.println(syzygyDir.toAbsolutePath());
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 6);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
+        //ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
+        ChessGame game = ChessGame.fromFEN(bf.readLine());
         System.out.println("First WDL" + game.probeSyzygyWdl(tb));
         System.out.println("First DTZ" + game.probeSyzygyDtz(tb));
 

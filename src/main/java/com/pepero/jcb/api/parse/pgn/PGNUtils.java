@@ -10,16 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 public class PGNUtils {
-    private static final int MOVE_LIMIT = 4096;
-
     /**
      * Export PGNGame to pgn string
      *
      * @param chessGame chess pgn
      * @param pgn PGN Game data
      * @return Exported pgn string
-     *
-     * @throws PGNConvertException when pgn convert fails (move is too long)
      */
     public static String export(ChessGame chessGame, PGNGame pgn) {
         StringBuilder sb = new StringBuilder();
@@ -60,15 +56,11 @@ public class PGNUtils {
      * @param isWhite is white turn
      * @param moveNumber move number like 1. 1...
      * @param forceMoveNumber if move is variation (like 1. e4 ("1." d4))
-     *
-     * @throws PGNConvertException when pgn convert fails (like too many moves)
      */
     private static void buildMoveText(List<MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite, int moveNumber, boolean forceMoveNumber) {
         if (siblings == null || siblings.isEmpty()) return;
 
         MoveNodeDTO mainMove = siblings.getFirst();
-
-        if(moveNumber >= MOVE_LIMIT) throw new PGNConvertException("Too many moves!");
 
         if (isWhite) {
             sb.append(moveNumber).append(". ");

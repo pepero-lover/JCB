@@ -103,6 +103,7 @@ public class ChessGame {
     }
 
 
+    private static final int MAX_PGN_NODE_COUNT = 2048;
     private final AtomicLong nodeCounter = new AtomicLong(0L);
     private static final int MAX_ENTRIES = 65536;
 
@@ -2564,7 +2565,7 @@ public class ChessGame {
         return new PGNGame(parsedHeaders, rootDTO, parsedGameResult);
     }
 
-    public PGNGame toPGNGame() {
+    public PGNGame toPGNGame(int maxNodes) {
         readLock.lock();
         try {
             if(this.headers.isEmpty()) setDefaultHeaders();
@@ -2591,7 +2592,7 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            MoveNodeDTO rootDTO = buildPGNTreeWithSan(this.moveHistoryRoot, tempBoard);
+            MoveNodeDTO rootDTO = buildPGNTreeWithSan(this.moveHistoryRoot, tempBoard, maxNodes, 0);
 
             return new PGNGame(new LinkedHashMap<>(this.headers), rootDTO, this.gameResult);
         } finally {
@@ -2604,9 +2605,18 @@ public class ChessGame {
      *
      * @param node root node
      * @param tempBoard board
+     * @param maxNodesCount max nodes count
+     * @param currentNodes current nodes (default : 0)
      * @return root node
+     *
+     * @throws NodesOverflowException if move count is more than maxNodesCount
      */
-    private MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard) {
+    private MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard, int maxNodesCount, int currentNodes) {
+        currentNodes++;
+        if(maxNodesCount < currentNodes) throw new NodesOverflowException(
+                "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
+        );
+
         String calculatedSan = null;
 
         if (node.moveData != null) {
@@ -2618,7 +2628,7 @@ public class ChessGame {
         List<MoveNodeDTO> childrenDTOs = new java.util.ArrayList<>();
 
         for (MoveNode child : node.children) {
-            childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard)));
+            childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard), maxNodesCount, currentNodes));
         }
 
         MoveAnnotation nodeAnnotation = node.getAnnotation();
@@ -2638,6 +2648,8 @@ public class ChessGame {
      * Generate new MoveNodeDTO with san move data
      *
      * @return new MoveNodeDTO with san move data
+     *
+     * @throws NodesOverflowException if move count is too large
      */
     public MoveNodeDTO getRootNodeWithSan() {
         readLock.lock();
@@ -2645,19 +2657,58 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            return buildPGNTreeWithSan(moveHistoryRoot, tempBoard);
+            return buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT, 0);
         } finally {
             readLock.unlock();
         }
     }
 
-    public String getPGN() {
+    /**
+     * Generate new MoveNodeDTO with san move data
+     *
+     * @param maxNodesCount max nodes count
+     * @return new MoveNodeDTO with san move data
+     *
+     * @throws NodesOverflowException if move count is more than maxNodesCount
+     */
+    public MoveNodeDTO getRootNodeWithSan(int maxNodesCount) {
         readLock.lock();
         try {
-            return PGNUtils.export(this, toPGNGame());
+            Chessboard tempBoard = new Chessboard(this.startPositionFEN);
+            tempBoard.gameVariants = this.getGameVariants();
+
+            return buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount, 0);
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Get pgn string
+     *
+     * @param maxNodes max nodes count
+     * @return pgn string
+     *
+     * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
+     */
+    public String getPGN(int maxNodes) {
+        readLock.lock();
+        try {
+            return PGNUtils.export(this, toPGNGame(maxNodes));
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get pgn string
+     *
+     * @return pgn string
+     *
+     * @throws PGNConvertException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
+     */
+    public String getPGN() {
+        return getPGN(MAX_PGN_NODE_COUNT);
     }
 
     /**
@@ -3073,11 +3124,27 @@ public class ChessGame {
 
     /**
      * Print history
+     *
+     * @throws NodesOverflowException if move count is too large
      */
     public void printHistory() {
         readLock.lock();
         try {
             printHistory(getRootNodeWithSan(), 0);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Print history
+     *
+     * @throws NodesOverflowException if move count is more than maxNodeSize
+     */
+    public void printHistory(int maxNodeSize) {
+        readLock.lock();
+        try {
+            printHistory(getRootNodeWithSan(maxNodeSize), 0);
         } finally {
             readLock.unlock();
         }
