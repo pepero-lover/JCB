@@ -551,4 +551,20 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 10000");
         chessGame.makeMove("e2e4");
     }
+
+    @Test
+    @DisplayName("Make move all 을 하는 도중 예외가 발생한다면 다시 그 함수를 실행하기 전 포지션으로 돌아가야 한다")
+    void makeMoveAll() {
+        ChessGame chessGame = ChessGame.startPosition();
+        try {
+            chessGame.makeMoveAll("e2e4 e7e5 g1f4");
+        } catch (Exception ignored) {}
+        assertEquals(START_FEN, chessGame.getFEN());
+        try {
+            chessGame.makeMoveSanAll("e4 e5 Nf4");
+        } catch (Exception ignored) {}
+        assertEquals(START_FEN, chessGame.getFEN());
+
+        assertEquals(0, chessGame.getRootNode().children().size());
+    }
 }

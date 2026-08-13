@@ -359,7 +359,7 @@ public class ChessGame {
     }
 
     /**
-     * Make move for internal make move methods (not locking multi=thread)
+     * Make move for internal make move methods (not locking multi-thread)
      *
      * @param encodedMove encoded move data
      * @param originalMoveString original move string (null allowed)
@@ -447,15 +447,43 @@ public class ChessGame {
      * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMoveSanAll(String sanString) {
-        sanString = sanString.trim();
-        String[] sanStrings = sanString.split(" ");
-        for(String san : sanStrings) {
-            makeMoveSan(san);
+        writeLock.lock();
+        try {
+            sanString = sanString.trim();
+            String[] sanStrings = sanString.split(" ");
+
+            List<Integer> appliedMoves = new ArrayList<>(sanStrings.length);
+
+            try {
+                for (String san : sanStrings) {
+                    int encodedMove = ConvertStringMoveUtils.sanToMoveData(this.chessboard, san);
+
+                    if (!tryMakeMoveRaw(encodedMove)) {
+                        throw new IllegalMoveException(san, this.getFEN());
+                    }
+                    appliedMoves.add(encodedMove);
+                }
+            } catch (IllegalMoveException | ConvertMoveException e) {
+                for (int i = appliedMoves.size() - 1; i >= 0; i--) {
+                    unmakeMoveRaw(appliedMoves.get(i));
+                }
+                throw e;
+            }
+
+            for (int i = appliedMoves.size() - 1; i >= 0; i--) {
+                unmakeMoveRaw(appliedMoves.get(i));
+            }
+
+            for (String san : sanStrings) {
+                makeMoveSan(san);
+            }
+        } finally {
+            writeLock.unlock();
         }
     }
 
     /**
-     * Make moves on this ChessGame (Lan string)
+     * Make moves on this ChessGame
      *
      * @param lanString san string like "e2e4 e7e5 g1f3 b8c6"
      *
@@ -463,30 +491,47 @@ public class ChessGame {
      * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMoveAll(String lanString) {
-        lanString = lanString.trim();
-        String[] lanStrings = lanString.split(" ");
-        for(String lan : lanStrings) {
-            makeMove(lan);
+        writeLock.lock();
+        try {
+            lanString = lanString.trim();
+            String[] lanStrings = lanString.split(" ");
+
+            List<Integer> appliedMoves = new ArrayList<>(lanStrings.length);
+
+            try {
+                for (String lan : lanStrings) {
+                    int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, lan);
+
+                    if (!tryMakeMoveRaw(encodedMove)) {
+                        throw new IllegalMoveException(lan, this.getFEN());
+                    }
+                    appliedMoves.add(encodedMove);
+                }
+            } catch (IllegalMoveException | ConvertMoveException e) {
+                for (int i = appliedMoves.size() - 1; i >= 0; i--) {
+                    unmakeMoveRaw(appliedMoves.get(i));
+                }
+                throw e;
+            }
+
+            for (int i = appliedMoves.size() - 1; i >= 0; i--) {
+                unmakeMoveRaw(appliedMoves.get(i));
+            }
+
+            for (String lan : lanStrings) {
+                makeMove(lan);
+            }
+        } finally {
+            writeLock.unlock();
         }
     }
 
     /**
-     * Make move on this ChessGame <br>
-     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     * Make move for internal make move raw methods
      *
-     * @param moveInfo move info
+     * @param encodedMove encoded move data
      */
-    public void makeMoveRaw(MoveInfo moveInfo) {
-        makeMoveRaw(moveInfo.originEncodedData());
-    }
-
-    /**
-     * Make move on this ChessGame <br>
-     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
-     *
-     * @param encodedMove encoded move
-     */
-    public void makeMoveRaw(int encodedMove) {
+    private void internalMakeMoveRaw(int encodedMove) {
         writeLock.lock();
         try {
             if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
@@ -503,6 +548,105 @@ public class ChessGame {
         } finally {
             writeLock.unlock();
         }
+    }
+
+
+    /**
+     * Make move for internal make move raw methods (not locking multi-thread)
+     *
+     * @param encodedMove encoded move data
+     */
+    private void internalMakeMoveRawLocked(int encodedMove) {
+        if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
+            throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
+                    chessboard.gameVariants == GameVariants.CHESS960),
+                    this.getFEN());
+        }
+
+        if(chessboard.gameVariants == GameVariants.STANDARD) {
+            MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
+        } else {
+            MoveGenerator.makeMove(this.chessboard, encodedMove);
+        }
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception
+     *
+     * @param moveInfo move info
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMoveRaw(MoveInfo moveInfo) {
+        try {
+            makeMoveRaw(moveInfo);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception
+     *
+     * @param encoded_move encoded move
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMoveRaw(int encoded_move) {
+        try {
+            makeMoveRaw(encoded_move);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make move on this ChessGame without throwing an exception
+     *
+     * @param lanMove move string like "e2e4", "e7e5"
+     *
+     * @return true if the move was legal and applied, false otherwise
+     */
+    public boolean tryMakeMoveRaw(String lanMove) {
+        try {
+            makeMoveRaw(lanMove);
+            return true;
+        } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Make move on this ChessGame <br>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param moveInfo move info
+     */
+    public void makeMoveRaw(MoveInfo moveInfo) {
+        internalMakeMoveRaw(moveInfo.originEncodedData());
+    }
+
+    /**
+     * Make move on this ChessGame <br>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param moveString lan move string
+     */
+    public void makeMoveRaw(String moveString) {
+        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
+        internalMakeMoveRaw(encodedMove);
+    }
+
+    /**
+     * Make move on this ChessGame <br>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param encodedMove encoded move
+     */
+    public void makeMoveRaw(int encodedMove) {
+        internalMakeMoveRaw(encodedMove);
     }
 
     /**
