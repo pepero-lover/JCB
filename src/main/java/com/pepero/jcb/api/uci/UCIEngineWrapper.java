@@ -31,8 +31,11 @@ public class UCIEngineWrapper implements AutoCloseable {
     private Thread errorDrainThread;
     private Thread broadcastingThread;
 
+    private volatile ChessGame analysisSnapshot;
+
     private volatile CountDownLatch uciokLatch;
     private volatile CountDownLatch readyokLatch;
+    private volatile CountDownLatch stopLatch;
 
     private final Set<String> availableOptions = ConcurrentHashMap.newKeySet();
 
@@ -47,27 +50,7 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private static final long DEFAULT_SYNC_TIMEOUT_SEC = 120;
     private static final long HANDSHAKE_TIMEOUT_SEC = 15;
-
-    public record EngineLine(int depth, int pvNumber, String score, String pv, boolean isBound) {
-        @Override
-        public String toString() {
-            return "EngineLine{" +
-                    "depth=" + depth +
-                    ", pvNumber=" + pvNumber +
-                    ", score='" + score + '\'' +
-                    ", pv='" + pv + '\'' +
-                    ", isBound=" + isBound +
-                    '}';
-        }
-    }
-
-    public interface EngineAnalysisListener {
-        void onAnalysisBundled(List<EngineLine> bundledLines);
-        void onBestMoveFound(String bestMove);
-        default void onEngineLog(String direction, String log) {}
-        default void onEngineInfo(int depth, String score, String pv) {}
-        default void onEngineCrashed(Throwable cause) {}
-    }
+    private static final long STOP_TIMEOUT_SEC = 10;
 
     private final EngineAnalysisListener listener;
     private final int tickRateMs;
@@ -156,6 +139,10 @@ public class UCIEngineWrapper implements AutoCloseable {
         }
     }
 
+    private ChessGame takeSnapshot(ChessGame chessGame) {
+        return ChessGame.lightWeightCopy(chessGame);
+    }
+
     /**
      * Start engine analysis.
      * depth <= 0 means "go infinite" - useful for a live,
@@ -165,6 +152,9 @@ public class UCIEngineWrapper implements AutoCloseable {
         latestAnalysisMap.clear();
         isWhiteToMove = chessGame.isWhiteTurn();
         isAnalyzing = true;
+        stopLatch = new CountDownLatch(1);
+
+        analysisSnapshot = takeSnapshot(chessGame);
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
 
@@ -209,8 +199,19 @@ public class UCIEngineWrapper implements AutoCloseable {
      */
     public void stopAnalysis() {
         if (isAnalyzing) {
-            sendCommand("stop");
             isAnalyzing = false;
+            sendCommand("stop");
+
+            CountDownLatch latch = stopLatch;
+            if (latch != null) {
+                try {
+                    if (!latch.await(STOP_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                        System.err.println("Warning: engine did not confirm stop within timeout");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
 
@@ -270,6 +271,11 @@ public class UCIEngineWrapper implements AutoCloseable {
                         CompletableFuture<String> future = currentMoveFuture.get();
                         if (future != null && !future.isDone()) {
                             future.complete(bestMove);
+                        }
+
+                        CountDownLatch latch = stopLatch;
+                        if (latch != null) {
+                            latch.countDown();
                         }
                     } else if (line.startsWith("info") && line.contains("score") && line.contains(" pv ")) {
                         parseInfoLine(line);
@@ -382,7 +388,17 @@ public class UCIEngineWrapper implements AutoCloseable {
             int pvIndex = infoLine.indexOf(" pv ") + 4;
             String pvStr = infoLine.substring(pvIndex).trim();
 
-            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, scoreStr, pvStr, false));
+            String sanPvStr = pvStr;
+            ChessGame snapshot = analysisSnapshot;
+            if (snapshot != null) {
+                try {
+                    sanPvStr = snapshot.toSan(pvStr);
+                } catch (Exception e) {
+                    sanPvStr = pvStr;
+                }
+            }
+
+            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, scoreStr, pvStr, sanPvStr, false));
 
             if (listener != null) {
                 listener.onEngineInfo(depth, scoreStr, pvStr);
@@ -432,6 +448,9 @@ public class UCIEngineWrapper implements AutoCloseable {
         currentMoveFuture.set(future);
         latestAnalysisMap.clear();
         isAnalyzing = true;
+        stopLatch = new CountDownLatch(1);
+
+        analysisSnapshot = takeSnapshot(chessGame);
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
 

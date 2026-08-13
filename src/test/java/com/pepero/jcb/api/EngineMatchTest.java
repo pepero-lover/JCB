@@ -36,7 +36,7 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    //.openingBook("engine/opening.bin")
+                    .openingBook("engine/opening.bin")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -51,10 +51,10 @@ public class EngineMatchTest {
                     ))
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
-                    .fenSetting(new FENSettingConfig(
-                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
-                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                            ))
+//                    .fenSetting(new FENSettingConfig(
+//                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
+//                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+//                            ))
                     .totalGames(10)
                     .concurrency(4)
                     .build();
