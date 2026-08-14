@@ -17,7 +17,11 @@ public record EngineCp(
             double eval = cp / 100.0;
             return (eval > 0 ? "+" : "") + eval;
         } else {
-            return "M" + cp;
+            if(cp >= 0) {
+                return "+M" + cp;
+            } else {
+                return "-M" + (cp * -1);
+            }
         }
     }
 }

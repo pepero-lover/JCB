@@ -10,7 +10,7 @@ import java.util.List;
 
 public class EngineAnalyzeTest {
     public static void main(String[] args) throws InterruptedException {
-        ChessGame chessGame = ChessGame.fromFEN("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4");
+        ChessGame chessGame = ChessGame.fromFEN("r4rq1/5p1p/p5kn/1RB1Q1b1/6p1/5p2/PNP2P2/1K6 w - - 0 2");
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(
                 new File("engine/stockfish-18.exe").getAbsolutePath()
         ), 100, new EngineAnalysisListener() {
