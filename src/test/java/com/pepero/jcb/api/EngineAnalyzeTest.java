@@ -10,12 +10,13 @@ import java.util.List;
 
 public class EngineAnalyzeTest {
     public static void main(String[] args) throws InterruptedException {
-        ChessGame chessGame = ChessGame.startPosition();
+        ChessGame chessGame = ChessGame.fromFEN("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4");
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(
                 new File("engine/stockfish-18.exe").getAbsolutePath()
         ), 100, new EngineAnalysisListener() {
             @Override
             public void onAnalysisBundled(List<EngineLine> bundledLines) {
+                System.out.println("Depth : " + bundledLines.getFirst().depth());
                 for(EngineLine line : bundledLines) {
                     System.out.printf("Multipv %d : cp %s, pv : %s\n",
                             line.pvNumber(),
@@ -31,10 +32,6 @@ public class EngineAnalyzeTest {
 
             }
         });
-        engineWrapper.startAnalysis(chessGame, 255, 5);
-        Thread.sleep(5000);
-        engineWrapper.stopAnalysis();
-        chessGame.makeMove("e2e4");
         engineWrapper.startAnalysis(chessGame, 255, 5);
     }
 }

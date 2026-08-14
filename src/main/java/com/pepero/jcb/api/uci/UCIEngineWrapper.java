@@ -366,15 +366,20 @@ public class UCIEngineWrapper implements AutoCloseable {
                 depth = Integer.parseInt(infoLine.substring(depthIndex, nextSpace));
             }
 
-            String scoreStr = "N/A";
+            boolean isCurrentCpMate = currentCp > MATE_IDENTIFY || currentCp < -MATE_IDENTIFY;
+
+            EngineCp score = new EngineCp(
+                    currentCp,
+                    isCurrentCpMate
+                    );
+
             if (infoLine.contains("score cp ")) {
                 int cpIndex = infoLine.indexOf("score cp ") + 9;
                 int nextSpace = infoLine.indexOf(" ", cpIndex);
                 if (nextSpace == -1) nextSpace = infoLine.length();
                 int rawCp = Integer.parseInt(infoLine.substring(cpIndex, nextSpace));
                 currentCp = isWhiteToMove ? rawCp : -rawCp;
-                double eval = currentCp / 100.0;
-                scoreStr = (eval > 0 ? "+" : "") + eval;
+                score = new EngineCp(isWhiteToMove ? rawCp : -rawCp, false);
             } else if (infoLine.contains("score mate ")) {
                 int mateIndex = infoLine.indexOf("score mate ") + 11;
                 int nextSpace = infoLine.indexOf(" ", mateIndex);
@@ -382,7 +387,7 @@ public class UCIEngineWrapper implements AutoCloseable {
                 int mateIn = Integer.parseInt(infoLine.substring(mateIndex, nextSpace));
                 int rawCp = mateIn > 0 ? MATE_SCORE - mateIn : -MATE_SCORE - mateIn;
                 currentCp = isWhiteToMove ? rawCp : -rawCp;
-                scoreStr = "M" + (isWhiteToMove ? mateIn : -mateIn);
+                score = new EngineCp(isWhiteToMove ? mateIn : -mateIn, true);
             }
 
             int pvIndex = infoLine.indexOf(" pv ") + 4;
@@ -398,10 +403,10 @@ public class UCIEngineWrapper implements AutoCloseable {
                 }
             }
 
-            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, scoreStr, pvStr, sanPvStr, false));
+            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, score, pvStr, sanPvStr, false));
 
             if (listener != null) {
-                listener.onEngineInfo(depth, scoreStr, pvStr);
+                listener.onEngineInfo(depth, score, pvStr);
             }
         } catch (Exception e) {
             // ignore format exception
@@ -544,6 +549,7 @@ public class UCIEngineWrapper implements AutoCloseable {
     }
 
     private final int MATE_SCORE = 100000;
+    private final int MATE_IDENTIFY = 95000;
 
     /**
      * Get current Analyze CP

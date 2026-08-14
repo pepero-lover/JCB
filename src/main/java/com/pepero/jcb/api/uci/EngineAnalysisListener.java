@@ -6,6 +6,6 @@ public interface EngineAnalysisListener {
         void onAnalysisBundled(List<EngineLine> bundledLines);
         void onBestMoveFound(String bestMove);
         default void onEngineLog(String direction, String log) {}
-        default void onEngineInfo(int depth, String score, String pv) {}
+        default void onEngineInfo(int depth, EngineCp score, String pv) {}
         default void onEngineCrashed(Throwable cause) {}
     }

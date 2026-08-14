@@ -81,10 +81,7 @@ public class ConvertStringMoveUtils {
         boolean castle = EncodeMove.getMoveCastling(encoded_move);
 
         if (castle) {
-            int moveTgt = EncodeMove.getMoveTarget(encoded_move);
-            boolean isKingSide = (chessboard.side == white) ?
-                    (moveTgt == chessboard.king_side_rook_file) :
-                    (moveTgt == chessboard.king_side_rook_file + 56);
+            boolean isKingSide = (source_square < target_square);
 
             if (isKingSide) sb.append("O-O");
             else sb.append("O-O-O");
@@ -624,8 +621,7 @@ public class ConvertStringMoveUtils {
         }
 
         boolean isWhite = board.side == white;
-        boolean isKingSide = isWhite ? (tgt == board.king_side_rook_file)
-                : (tgt == board.king_side_rook_file + 56);
+        boolean isKingSide = (src < tgt);
 
         if (isWhite) return isKingSide ? "e1g1" : "e1c1";
         else return isKingSide ? "e8g8" : "e8c8";
