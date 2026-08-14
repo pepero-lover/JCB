@@ -34,7 +34,7 @@ public class PerftResultTest {
                 List<Long> nps = new ArrayList<>();
                 for(int i=1;i<=averageCount;i++) {
                     PerftResult result =
-                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true);
+                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true, false);
                     nps.add(result.nps());
                     System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
                 }
@@ -67,7 +67,7 @@ public class PerftResultTest {
                 List<Long> nps = new ArrayList<>();
                 for(int i=1;i<=averageCount;i++) {
                     PerftResult result =
-                            PerftDriver.perftAPITest(chessGame, depth, thread, true);
+                            PerftDriver.perftAPITest(chessGame, depth, thread, true, false);
                     nps.add(result.nps());
                     System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
                 }

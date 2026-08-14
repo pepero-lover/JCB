@@ -16,6 +16,7 @@ public class PerftBitboardTest {
         PerftDriver.perftBitboardTest(chessboard,
                 6,
                 1,
+                false,
                 false
         );
     }

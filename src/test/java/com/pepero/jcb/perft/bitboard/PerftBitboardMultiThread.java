@@ -9,6 +9,7 @@ public class PerftBitboardMultiThread {
         PerftDriver.perftBitboardTest(chessboard,
                 7,
                 1,
+                false,
                 false
         );
     }

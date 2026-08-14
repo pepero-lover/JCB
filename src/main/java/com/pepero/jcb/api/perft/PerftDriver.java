@@ -30,7 +30,7 @@ public class PerftDriver {
 
                 while (true) {
                     long start = System.nanoTime();
-                    long nodes = perftAPIDriver(ChessGame.startPosition(), depth);
+                    long nodes = perftAPIDriver(ChessGame.startPosition(), depth, false);
                     long elapsed = System.nanoTime() - start;
                     long nps = nodes * 1_000_000_000L / elapsed;
 
@@ -69,7 +69,7 @@ public class PerftDriver {
 
                 while (true) {
                     long start = System.nanoTime();
-                    long nodes = perftBitboardDriver(new Chessboard(Chessboard.start_position), depth);
+                    long nodes = perftBitboardDriver(new Chessboard(Chessboard.start_position), depth, false);
                     long elapsed = System.nanoTime() - start;
                     long nps = nodes * 1_000_000_000L / elapsed;
 
@@ -104,24 +104,28 @@ public class PerftDriver {
         return (stdDev / mean);
     }
 
-    public static long perftAPIDriver(ChessGame chessGame, int depth) {
+    public static long perftAPIDriver(ChessGame chessGame, int depth, boolean bulkCounting) {
         if (depth == 0) {
             return 1;
         }
 
         long localNodes = 0;
         List<MoveInfo> moveList = chessGame.getLegalMoves();
+        if(bulkCounting && depth == 1) {
+            return moveList.size();
+        }
 
         for (MoveInfo moveInfo : moveList) {
             chessGame.makeMoveRaw(moveInfo);
-            localNodes += perftAPIDriver(chessGame, depth - 1);
+            localNodes += perftAPIDriver(chessGame, depth - 1, bulkCounting);
             chessGame.unmakeMoveRaw(moveInfo);
         }
 
         return localNodes;
     }
 
-    public static PerftResult perftAPITest(ChessGame chessGame, int depth, int concurrency, boolean silent) {
+    public static PerftResult perftAPITest(ChessGame chessGame, int depth, int concurrency, boolean silent,
+                                           boolean bulkCounting) {
         chessGame = ChessGame.lightWeightCopy(chessGame);
 
         List<MoveInfo> moveList = chessGame.getLegalMoves();
@@ -148,7 +152,7 @@ public class PerftDriver {
             final ChessGame clonedGame = clonedGames.get(i);
             final String moveStr = moveStrs.get(i);
             futures.add(executor.submit(() -> {
-                long branchNodes = perftAPIDriver(clonedGame, depth - 1);
+                long branchNodes = perftAPIDriver(clonedGame, depth - 1, bulkCounting);
                 return new PerftMoveResult(moveStr, branchNodes);
             }));
         }
@@ -193,7 +197,7 @@ public class PerftDriver {
         );
     }
 
-    public static long perftBitboardDriver(Chessboard chessboard, int depth) {
+    public static long perftBitboardDriver(Chessboard chessboard, int depth, boolean bulkCounting) {
         if (depth == 0) {
             return 1;
         }
@@ -201,18 +205,22 @@ public class PerftDriver {
         long nodes = 0;
         int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
+        if(bulkCounting && depth == 1) {
+            return moveCount;
+        }
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
             MoveGenerator.makeMove(chessboard, move);
-            nodes += perftBitboardDriver(chessboard, depth - 1);
+            nodes += perftBitboardDriver(chessboard, depth - 1, bulkCounting);
             MoveGenerator.unmakeMove(chessboard, move);
         }
         return nodes;
     }
 
-    public static PerftResult perftBitboardTest(Chessboard chessboard, int depth, int concurrency, boolean silent) {
+    public static PerftResult perftBitboardTest(Chessboard chessboard, int depth, int concurrency, boolean silent,
+                                                boolean bulkCounting) {
         int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];
         int moveCount = MoveGenerator.generateMoves(chessboard, moveList);
 
@@ -239,7 +247,7 @@ public class PerftDriver {
             final Chessboard clonedBoard = clonedBoards.get(i);
             final String moveStr = moveStrs.get(i);
             futures.add(executor.submit(() -> {
-                long branchNodes = perftBitboardDriver(clonedBoard, depth - 1);
+                long branchNodes = perftBitboardDriver(clonedBoard, depth - 1,  bulkCounting);
                 return new PerftMoveResult(moveStr, branchNodes);
             }));
         }

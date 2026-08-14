@@ -1567,7 +1567,7 @@ public class ChessGame {
     public boolean canClaimThreefoldRepetition() {
         readLock.lock();
         try {
-            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 3;
+            return ChessboardUtils.getRepetitionCount(this.chessboard, 3) >= 3;
         } finally {
             readLock.unlock();
         }
@@ -1582,7 +1582,7 @@ public class ChessGame {
         readLock.lock();
         try {
             // zobrist hash
-            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 5;
+            return ChessboardUtils.getRepetitionCount(this.chessboard, 5) >= 5;
         } finally {
             readLock.unlock();
         }
@@ -3067,7 +3067,7 @@ public class ChessGame {
 
                 MoveGenerator.makeMove(this.chessboard, move);
 
-                boolean triggersRepetition = ChessboardUtils.getRepetitionCount(this.chessboard) >= 2;
+                boolean triggersRepetition = ChessboardUtils.getRepetitionCount(this.chessboard, 2) >= 2;
 
                 int childWdl = tablebase.getWdlData(this.chessboard);
                 int ourWdl = triggersRepetition ? 0 : -childWdl;
@@ -3214,25 +3214,39 @@ public class ChessGame {
 
     /**
      * Do perft test <br>
-     * (JVM preheat included, using single thread)
+     * (JVM preheat included, using single thread, bulk counting is enabled by default)
      *
      * @param depth perft depth
      * @return perft result dto
      */
     public PerftResult perft(int depth) {
-        return perft(depth, 1, false);
+        return perft(depth, 1, false, true);
     }
 
     /**
      * Do perft test <br>
-     * (using single thread)
+     * (using single thread, bulk counting is enabled by default)
      *
      * @param depth perft depth
      * @param concurrency using this amount of threads
      * @return perft result dto
      */
     public PerftResult perft(int depth, int concurrency) {
-        return perft(depth, concurrency, false);
+        return perft(depth, concurrency, false, true);
+    }
+
+    /**
+     * Do perft test <br>
+     * (bulk counting is enabled by default)
+     *
+     * @param depth perft depth
+     * @param concurrency using this amount of threads
+     * @param silent don't print any logs
+     *
+     * @return perft result dto
+     */
+    public PerftResult perft(int depth, int concurrency, boolean silent) {
+        return PerftDriver.perftAPITest(this, depth, concurrency, silent, true);
     }
 
     /**
@@ -3241,10 +3255,12 @@ public class ChessGame {
      * @param depth perft depth
      * @param concurrency using this amount of threads
      * @param silent don't print any logs
+     * @param bulkCounting do bulk counting
+     *
      * @return perft result dto
      */
-    public PerftResult perft(int depth, int concurrency, boolean silent) {
-        return PerftDriver.perftAPITest(this, depth, concurrency, silent);
+    public PerftResult perft(int depth, int concurrency, boolean silent, boolean bulkCounting) {
+        return PerftDriver.perftAPITest(this, depth, concurrency, silent, bulkCounting);
     }
 
     /**

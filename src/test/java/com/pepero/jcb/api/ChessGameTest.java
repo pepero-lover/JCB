@@ -196,8 +196,20 @@ public class ChessGameTest {
         chessGame.makeMove("g1f3");
         chessGame.makeMove("g8f6");
 
-        assertTrue(chessGame.isFivefoldRepetition());
-        assertEquals(GameOverReason.FIVEFOLD, chessGame.isGameOver());
+        assertTrue(chessGame.canClaimDraw());
+        assertEquals(GameOverReason.THREEFOLD_CLAIM, chessGame.isGameOver(true));
+
+        chessGame.makeMove("f3g1");
+        chessGame.makeMove("f6g8");
+
+        for (int i = 0; i < 4; i++) {
+            chessGame.makeMove("g1f3");
+            chessGame.makeMove("g8f6");
+            chessGame.makeMove("f3g1");
+            chessGame.makeMove("f6g8");
+        }
+
+        assertEquals(GameOverReason.FIVEFOLD, chessGame.isGameOver(false));
     }
 
     @Test

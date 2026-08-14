@@ -485,9 +485,10 @@ public class ChessboardUtils {
      * Get this position's repetition count
      *
      * @param chessboard chessboard
+     * @param maxCount max repetition count to check (for early function termination)
      * @return this position's repetition count
      */
-    public static int getRepetitionCount(Chessboard chessboard) {
+    public static int getRepetitionCount(Chessboard chessboard, int maxCount) {
         int count = 1;
 
         int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
@@ -495,10 +496,7 @@ public class ChessboardUtils {
         for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
             if (chessboard.hash_key_history[i] == chessboard.hash_key){
                 count++;
-
-                if (count >= 3){
-                    return 3;
-                }
+                if(maxCount <= count) return maxCount;
             }
         }
 

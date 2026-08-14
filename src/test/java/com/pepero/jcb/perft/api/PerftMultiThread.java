@@ -7,6 +7,7 @@ public class PerftMultiThread {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.perft(6,
                 4,
+                false,
                 false
         );
     }

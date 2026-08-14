@@ -42,7 +42,8 @@ public class PerftExample {
                 chessboard,
                 6, // perft 깊이
                 1, // 사용할 스레드 수
-                false // 테스트 결과 및 출력을 하지 않을 것인지
+                false, // 테스트 결과 및 출력을 하지 않을 것인지
+                false // 벌크 카운팅을 할 것인지
                 );
 
         System.out.println();
@@ -54,7 +55,8 @@ public class PerftExample {
                 chessboard,
                 7, // perft 깊이
                 4, // 사용할 스레드 수
-                false // 테스트 결과 및 출력을 하지 않을 것인지
+                false, // 테스트 결과 및 출력을 하지 않을 것인지
+                false // 벌크 카운팅을 할 것인지
         );
     }
 }

@@ -7,6 +7,7 @@ public class PerftTest {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.perft(5,
                 1,
+                false,
                 false
         );
     }

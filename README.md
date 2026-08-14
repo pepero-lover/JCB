@@ -336,8 +336,9 @@ public class PerftExample {
                 chessboard,
                 6, // perft 깊이
                 1, // 사용할 스레드 수
-                false // 테스트 결과 및 출력을 하지 않을 것인지
-                );
+                false, // 테스트 결과 및 출력을 하지 않을 것인지
+                false // 벌크 카운팅을 할 것인지
+        );
 
         System.out.println();
         System.out.println("-------------------------");
@@ -348,7 +349,8 @@ public class PerftExample {
                 chessboard,
                 7, // perft 깊이
                 4, // 사용할 스레드 수
-                false // 테스트 결과 및 출력을 하지 않을 것인지
+                false, // 테스트 결과 및 출력을 하지 않을 것인지
+                false // 벌크 카운팅을 할 것인지
         );
     }
 }
@@ -361,7 +363,7 @@ JCB 에는 2가지 단계의 API가 있습니다.
 - `Chessboard` - 저수준 비트보드로 만들어져 성능이 중요한 프로젝트 (엔진 개발 등) 에 사용됩니다.
 
 *아래 벤치마크 결과는 i7-14700KF CPU, 싱글스레드 기준,
-JIT warmup과 3회 평균을 낸 결과입니다.*
+JIT warmup 을 하고 3회 평균을 낸 결과입니다. (벌크 카운팅 없음)*
 
 *(참고: 얕은 depth 쪽이 캐시 친화적이라 오히려 더 높은 NPS가 나올 수 있습니다.)*
 
@@ -425,15 +427,15 @@ public class PerftResultTest {
                 List<Long> nps = new ArrayList<>();
                 for(int i=1;i<=averageCount;i++) {
                     PerftResult result =
-                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true);
+                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true, false);
                     nps.add(result.nps());
                     System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
                 }
                 double npsAverage = nps.stream().mapToLong(Long::longValue)
                         .average()
                         .orElse(0.0);
-                
-                
+
+
                 System.out.println();
                 System.out.println();
                 System.out.println("Calculated perft(" + depth + ") * " + averageCount
@@ -458,15 +460,15 @@ public class PerftResultTest {
                 List<Long> nps = new ArrayList<>();
                 for(int i=1;i<=averageCount;i++) {
                     PerftResult result =
-                            PerftDriver.perftAPITest(chessGame, depth, thread, true);
+                            PerftDriver.perftAPITest(chessGame, depth, thread, true, false);
                     nps.add(result.nps());
                     System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
                 }
                 double npsAverage = nps.stream().mapToLong(Long::longValue)
                         .average()
                         .orElse(0.0);
-                
-                
+
+
                 System.out.println();
                 System.out.println();
                 System.out.println("Calculated perft(" + depth + ") * " + averageCount

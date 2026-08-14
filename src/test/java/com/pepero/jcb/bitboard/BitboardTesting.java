@@ -13,6 +13,9 @@ import static com.pepero.jcb.constant.SideToMove.*;
 public class BitboardTesting {
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(Chessboard.start_position);
-        System.out.println(PerftDriver.perftBitboardTest(chessboard, 7, 4, false));
+        System.out.println(Runtime.getRuntime().availableProcessors());
+        System.out.println(
+                PerftDriver.perftBitboardTest(chessboard, 8, 10, false, true)
+        );
     }
 }
