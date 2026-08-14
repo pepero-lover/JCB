@@ -196,8 +196,8 @@ public class ChessGameTest {
         chessGame.makeMove("g1f3");
         chessGame.makeMove("g8f6");
 
-        assertTrue(chessGame.isThreefoldRepetition());
-        assertEquals(GameOverReason.THREEFOLD, chessGame.isGameOver());
+        assertTrue(chessGame.isFivefoldRepetition());
+        assertEquals(GameOverReason.FIVEFOLD, chessGame.isGameOver());
     }
 
     @Test

@@ -1560,15 +1560,29 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this position is threefold repetition
+     * Get whether this position allows claiming a draw by threefold repetition
      *
-     * @return whether this position is threefold repetition
+     * @return whether threefold repetition draw can be claimed
      */
-    public boolean isThreefoldRepetition() {
+    public boolean canClaimThreefoldRepetition() {
+        readLock.lock();
+        try {
+            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 3;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether this position is fivefold repetition
+     *
+     * @return whether this position is fivefold repetition
+     */
+    public boolean isFivefoldRepetition() {
         readLock.lock();
         try {
             // zobrist hash
-            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 3;
+            return ChessboardUtils.getRepetitionCount(this.chessboard) >= 5;
         } finally {
             readLock.unlock();
         }
@@ -1614,29 +1628,64 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this position is fifty moves draw
+     * Get whether this position is seventy-five moves draw
      *
-     * @return whether this position is fifty moves draw
+     * @return whether this position is seventy-five moves draw
      */
-    public boolean isFiftyMoves() {
+    public boolean isSeventyFiveMoves() {
         readLock.lock();
         try {
-            return chessboard.half_ply >= 100;
+            return chessboard.half_ply >= 150;
         } finally {
             readLock.unlock();
         }
     }
 
     /**
-     * Get whether this game overed.
-     * If not, return GameOverReason.NOTGAMEOVER.
-     * <p>
-     * Types : CHECKMATE, STALEMATE, THREEFOLD REPETITION, FIFTY MOVES DRAW
+     * Get whether this position can be claimed fifty moves draw
+     *
+     * @return whether this position can be claimed fifty moves draw
+     */
+    public boolean canClaimFiftyMoves() {
+        return chessboard.half_ply >= 100;
+    }
+
+    /**
+     * Get whether this position can be claimed draw
+     *
+     * @return whether this position can be claimed draw
+     */
+    public boolean canClaimDraw() {
+        return canClaimFiftyMoves() || canClaimThreefoldRepetition();
+    }
+
+    /**
+     * Get claimable draw reason <br>
+     * like 50 moves draw claim, threefold draw claim
+     *
+     * @return claimable draw reason
+     */
+    public GameOverReason getClaimableDrawReason() {
+        if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
+        if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+        return GameOverReason.NOTGAMEOVER;
+    }
+
+    /**
+     * Get whether this game overed. <br>
+     * If not, return <b>GameOverReason.NOTGAMEOVER</b>.
+     *
+     * @param includeClaimableDraws include claimable draws like 50 moves draw claim, threefold repetition claim
      *
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
-    public GameOverReason isGameOver() {
+    public GameOverReason isGameOver(boolean includeClaimableDraws) {
         boolean inCheck = isCheck();
+
+        if (includeClaimableDraws) {
+            if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
+            if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+        }
 
         if (inCheck) {
             if (isCheckmate()) return GameOverReason.CHECKMATE;
@@ -1644,11 +1693,24 @@ public class ChessGame {
             if (isStalemate()) return GameOverReason.STALEMATE;
         }
 
-        if(isThreefoldRepetition()) return GameOverReason.THREEFOLD;
-        if(isFiftyMoves()) return GameOverReason.FIFTYMOVES;
+        if(isFivefoldRepetition()) return GameOverReason.FIVEFOLD;
+        if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
         if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
 
         return GameOverReason.NOTGAMEOVER;
+    }
+
+    /**
+     * Get whether this game overed. <br>
+     * If not, return <b>GameOverReason.NOTGAMEOVER</b>.
+     * <br>
+     * this includes claimable draws like fifty moves draw claim, threefold repetition draw claim.
+     *
+     *
+     * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
+     */
+    public GameOverReason isGameOver() {
+        return isGameOver(true);
     }
 
     /**
@@ -2222,7 +2284,7 @@ public class ChessGame {
         if (reason != GameOverReason.NOTGAMEOVER) {
             result = switch (reason) {
                 case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-                case STALEMATE, THREEFOLD, FIFTYMOVES, INSUFFICIENTMATERIAL -> GameResult.DRAW;
+                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
             };
         }

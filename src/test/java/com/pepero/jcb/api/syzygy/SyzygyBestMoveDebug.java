@@ -3,16 +3,11 @@ package com.pepero.jcb.api.syzygy;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
-import com.pepero.jcb.encode.EncodeMove;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.pepero.jcb.constant.EncodedPieces.*;
 
 public class SyzygyBestMoveDebug {
     public static void main(String[] args) throws IOException {
@@ -40,7 +35,7 @@ public class SyzygyBestMoveDebug {
                     System.out.println(reason);
                     break;
                 } else {
-                    if(reason != GameOverReason.FIFTYMOVES) {
+                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
                         System.out.println(reason);
                         break;
                     }
