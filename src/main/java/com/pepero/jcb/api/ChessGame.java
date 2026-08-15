@@ -275,18 +275,22 @@ public class ChessGame {
      * @param other ChessGame class to copy
      */
     private ChessGame(ChessGame other) {
-        this.chessboard = new Chessboard(other.chessboard);
+        other.readLock.lock();
+        try {
+            this.chessboard = new Chessboard(other.chessboard);
+            this.startPositionFEN = other.getFEN();
+            this.autoChangeGameOver = other.autoChangeGameOver;
 
-        this.startPositionFEN = other.getFEN();
-        this.autoChangeGameOver = other.autoChangeGameOver;
+            System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
 
-        System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
+            this.moveHistoryRoot = new MoveNode();
+            this.currentNode = this.moveHistoryRoot;
+            this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
-        this.moveHistoryRoot = new MoveNode();
-        this.currentNode = this.moveHistoryRoot;
-        this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
-
-        setDefaultHeaders();
+            setDefaultHeaders();
+        } finally {
+            other.readLock.unlock();
+        }
     }
 
     /**
@@ -305,12 +309,27 @@ public class ChessGame {
 
     /**
      * Get FEN on this ChessGame
-     * @return fen
+     * @return fen (lichess dialect for 3-check variant)
      */
     public String getFEN() {
         readLock.lock();
         try {
             return ChessboardUtils.getFen(this.chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get FEN on this ChessGame
+     *
+     * @param dialect FEN dialect (affects 3-check variant output format)
+     * @return fen
+     */
+    public String getFEN(FENDialect dialect) {
+        readLock.lock();
+        try {
+            return ChessboardUtils.getFen(this.chessboard, dialect);
         } finally {
             readLock.unlock();
         }
@@ -1073,29 +1092,40 @@ public class ChessGame {
      * @return Get last move (string[])
      */
     public String[] getLastMoveSquares() {
-        if(!canUndo()) return new String[0];
-
+        readLock.lock();
         try {
-            MoveInfo lastMove = getLastMove();
+            if(!canUndo()) return new String[0];
 
-            String source = lastMove.sourceSquare().toString().toLowerCase();
-            String target = lastMove.targetSquare().toString().toLowerCase();
+            try {
+                MoveInfo lastMove = getLastMove();
 
-            return new String[] { source, target };
+                String source = lastMove.sourceSquare().toString().toLowerCase();
+                String target = lastMove.targetSquare().toString().toLowerCase();
 
-        } catch (MoveNotFoundException e) {
-            return new String[0];
+                return new String[] { source, target };
+
+            } catch (MoveNotFoundException e) {
+                return new String[0];
+            }
+        } finally {
+            readLock.unlock();
         }
     }
 
     public MoveType getLastMoveType() {
-        MoveInfo lastMove = getLastMove();
+        readLock.lock();
 
-        if(lastMove.capture()) return MoveType.CAPTURE;
-        if(lastMove.castling()) return MoveType.CASTLING;
-        if(lastMove.promotionPiece() != PieceType.NONE) return MoveType.PROMOTION;
-        if(lastMove.enpassant()) return MoveType.ENPASSANT;
-        return MoveType.NORMAL;
+        try {
+            MoveInfo lastMove = getLastMove();
+
+            if(lastMove.capture()) return MoveType.CAPTURE;
+            if(lastMove.castling()) return MoveType.CASTLING;
+            if(lastMove.promotionPiece() != PieceType.NONE) return MoveType.PROMOTION;
+            if(lastMove.enpassant()) return MoveType.ENPASSANT;
+            return MoveType.NORMAL;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -1560,6 +1590,24 @@ public class ChessGame {
     }
 
     /**
+     * Get whether white or black have been checked three times
+     *
+     * @return whether white or black have been checked three times
+     * @throws VariantNotMatchException if this ChessGame isn't Three check variant
+     */
+    public boolean isThreeChecked() {
+        readLock.lock();
+        try {
+            int white_checked = chessboard.check_count[white];
+            int black_checked = chessboard.check_count[black];
+
+            return white_checked >= 3 || black_checked >= 3;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get whether this position allows claiming a draw by threefold repetition
      *
      * @return whether threefold repetition draw can be claimed
@@ -1647,7 +1695,12 @@ public class ChessGame {
      * @return whether this position can be claimed fifty moves draw
      */
     public boolean canClaimFiftyMoves() {
-        return chessboard.half_ply >= 100;
+        readLock.lock();
+        try {
+            return chessboard.half_ply >= 100;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -1656,7 +1709,13 @@ public class ChessGame {
      * @return whether this position can be claimed draw
      */
     public boolean canClaimDraw() {
-        return canClaimFiftyMoves() || canClaimThreefoldRepetition();
+        readLock.lock();
+
+        try {
+            return canClaimFiftyMoves() || canClaimThreefoldRepetition();
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -1666,9 +1725,15 @@ public class ChessGame {
      * @return claimable draw reason
      */
     public GameOverReason getClaimableDrawReason() {
-        if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
-        if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
-        return GameOverReason.NOTGAMEOVER;
+        readLock.lock();
+
+        try {
+            if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
+            if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+            return GameOverReason.NOTGAMEOVER;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -1680,24 +1745,34 @@ public class ChessGame {
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
     public GameOverReason isGameOver(boolean includeClaimableDraws) {
-        boolean inCheck = isCheck();
+        readLock.lock();
 
-        if (includeClaimableDraws) {
-            if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
-            if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+        try {
+            if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+                if(isThreeChecked()) return GameOverReason.THREE_CHECK;
+            }
+
+            boolean inCheck = isCheck();
+
+            if (includeClaimableDraws) {
+                if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
+                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+            }
+
+            if (inCheck) {
+                if (isCheckmate()) return GameOverReason.CHECKMATE;
+            } else {
+                if (isStalemate()) return GameOverReason.STALEMATE;
+            }
+
+            if(isFivefoldRepetition()) return GameOverReason.FIVEFOLD;
+            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
+            if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
+
+            return GameOverReason.NOTGAMEOVER;
+        } finally {
+            readLock.unlock();
         }
-
-        if (inCheck) {
-            if (isCheckmate()) return GameOverReason.CHECKMATE;
-        } else {
-            if (isStalemate()) return GameOverReason.STALEMATE;
-        }
-
-        if(isFivefoldRepetition()) return GameOverReason.FIVEFOLD;
-        if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
-        if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
-
-        return GameOverReason.NOTGAMEOVER;
     }
 
     /**
@@ -1762,10 +1837,10 @@ public class ChessGame {
         readLock.lock();
         try {
             tempBoard = new Chessboard(this.chessboard);
+            return ConvertStringMoveUtils.toLanString(tempBoard, san);
         } finally {
             readLock.unlock();
         }
-        return ConvertStringMoveUtils.toLanString(tempBoard, san);
     }
 
     /**
@@ -1779,10 +1854,63 @@ public class ChessGame {
         readLock.lock();
         try {
             tempBoard = new Chessboard(this.chessboard);
+            return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(tempBoard, san));
         } finally {
             readLock.unlock();
         }
-        return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(tempBoard, san));
+    }
+
+    /**
+     * Get 3 check 'check count' <br>
+     * first index is white's checked count, <br>
+     * second index is black's checked count.
+     *
+     * @return checked count for each white/black
+     * @throws VariantNotMatchException if variant isn't three check
+     */
+    public int[] getCheckCount() {
+        readLock.lock();
+        try {
+            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+            return new int[]{chessboard.check_count[white], chessboard.check_count[black]};
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get 3 check 'white's checked count' <br>
+     *
+     * @return checked count for white
+     * @throws VariantNotMatchException if variant isn't three check
+     */
+    public int getWhiteCheckCount() {
+        readLock.lock();
+        try {
+            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+            return chessboard.check_count[white];
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get 3 check 'black's checked count' <br>
+     *
+     * @return checked count for black
+     * @throws VariantNotMatchException if variant isn't three check
+     */
+    public int getBlackCheckCount() {
+        readLock.lock();
+        try {
+            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+            return chessboard.check_count[black];
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -1846,14 +1974,14 @@ public class ChessGame {
      * @return game result
      */
     public GameResult getGameResult() {
-        readLock.lock();
+        writeLock.lock();
         try {
             if(evaluateGameState()) {
                 notifyGameOver(this.gameResult, this.gameoverReason);
             }
             return this.gameResult;
         } finally {
-            readLock.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -2628,7 +2756,7 @@ public class ChessGame {
     }
 
     public PGNGame toPGNGame(int maxNodes) {
-        readLock.lock();
+        writeLock.lock();
         try {
             if(this.headers.isEmpty()) setDefaultHeaders();
 
@@ -2636,6 +2764,7 @@ public class ChessGame {
                 switch (chessboard.gameVariants) {
                     case CHESS960 -> this.headers.put("Variant", "Chess960");
                     case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
+                    case THREE_CHECK -> this.headers.put("Variant", "Three-check");
                 }
             }
 
@@ -2658,7 +2787,7 @@ public class ChessGame {
 
             return new PGNGame(new LinkedHashMap<>(this.headers), rootDTO, this.gameResult);
         } finally {
-            readLock.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -2754,12 +2883,7 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPGN(int maxNodes) {
-        readLock.lock();
-        try {
-            return PGNUtils.export(this, toPGNGame(maxNodes));
-        } finally {
-            readLock.unlock();
-        }
+        return PGNUtils.export(this, toPGNGame(maxNodes));
     }
 
     /**

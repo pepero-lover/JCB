@@ -202,7 +202,7 @@ public class ChessGameTest {
         chessGame.makeMove("f3g1");
         chessGame.makeMove("f6g8");
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 3; i++) {
             chessGame.makeMove("g1f3");
             chessGame.makeMove("g8f6");
             chessGame.makeMove("f3g1");
@@ -578,5 +578,41 @@ public class ChessGameTest {
         assertEquals(START_FEN, chessGame.getFEN());
 
         assertEquals(0, chessGame.getRootNode().children().size());
+    }
+
+
+    @Test
+    @DisplayName("3 Check : FEN 을 잘 파싱 해야 한다.")
+    void threeCheckParsing() {
+        ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 +1+1",
+                GameVariants.THREE_CHECK);
+        assertEquals(1, chessGame.getWhiteCheckCount());
+        assertEquals(1, chessGame.getBlackCheckCount());
+        chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 3+3 0 1",
+                GameVariants.THREE_CHECK);
+        assertEquals(0, chessGame.getWhiteCheckCount());
+        assertEquals(0, chessGame.getBlackCheckCount());
+    }
+
+    @Test
+    @DisplayName("3 Check : 체크가 3번 된다면 종료되어야 한다.")
+    void threeCheckGameOver() {
+        ChessGame chessGame = ChessGame.fromFEN("r1b2k1r/p5qp/2pNpp1Q/8/2B5/8/PpP2bPP/R4R1K w - - 1+2 6 20",
+                GameVariants.THREE_CHECK);
+        assertEquals(GameOverReason.NOTGAMEOVER, chessGame.isGameOver());
+        chessGame.makeMoveSan("Qxg7#");
+        assertEquals(GameOverReason.THREE_CHECK, chessGame.isGameOver());
+    }
+
+    @Test
+    @DisplayName("3 Check : 체크 1번 한 것과 체크 2번 한것과 Zobrist 해쉬가 달라야 한다.")
+    void threeCheckRepetition() {
+        ChessGame chessGame = ChessGame.fromFEN(
+                "rnbq1bnr/1ppp1ppp/p2k4/4p2Q/2B1P3/2N5/PPPP1PPP/R1B1K1NR w KQ - 3+3 0 5",
+                GameVariants.THREE_CHECK
+        );
+        int previous = chessGame.hashCode();
+        chessGame.makeMoveSanAll("Qg6+ Ke7 Qh5 Kd6");
+        assertNotEquals(previous, chessGame.hashCode());
     }
 }

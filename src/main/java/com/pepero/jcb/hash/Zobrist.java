@@ -31,6 +31,9 @@ public class Zobrist {
     // pocket key [piece][count]
     public static final long[][] pocket_keys = new long[12][64];
 
+    // for 3 check
+    public static long[][] check_count_keys = new long[2][8];
+
     /**
      * Init random hash keys
      */
@@ -69,9 +72,15 @@ public class Zobrist {
 
         // init pocket piece key
         for (int piece = P; piece <= k; piece++) {
-            for (int count = 0; count < 64; count++) {
-                pocket_keys[piece][count] = Random.getRandom64BitsNumber();
+            for (int square = 0; square < 64; square++) {
+                pocket_keys[piece][square] = Random.getRandom64BitsNumber();
             }
+        }
+
+        // init check keys
+        for (int count = 0; count < 8; count++) {
+            check_count_keys[white][count] = Random.getRandom64BitsNumber();
+            check_count_keys[black][count] = Random.getRandom64BitsNumber();
         }
     }
 
@@ -134,6 +143,12 @@ public class Zobrist {
                     final_key ^= pocket_keys[piece][count];
                 }
             }
+        }
+
+        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            // hash check count
+            final_key ^= check_count_keys[white][chessboard.check_count[white]];
+            final_key ^= check_count_keys[black][chessboard.check_count[black]];
         }
 
         // return generated hash key

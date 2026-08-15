@@ -229,9 +229,50 @@ public class ChessboardUtils {
             chessboard.occupancies[black] |= chessboard.bitboards[piece];
         }
 
+        int checksTokenIndex = -1;
+        for (int i = 4; i < fenDivided.length; i++) {
+            if (fenDivided[i].matches("\\+?\\d+\\+\\d+")) {
+                checksTokenIndex = i;
+                break;
+            }
+        }
+
+        if (chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            int whiteChecksGiven = 0;
+            int blackChecksGiven = 0;
+
+            if (checksTokenIndex != -1) {
+                String token = fenDivided[checksTokenIndex];
+                if (token.startsWith("+")) {
+                    token = token.substring(1);
+                }
+
+                String[] parts = token.split("\\+");
+                int first = Integer.parseInt(parts[0]);
+                int second = Integer.parseInt(parts[1]);
+
+                if (checksTokenIndex == 4) {
+                    // lichess (3+3)
+                    whiteChecksGiven = 3 - first;
+                    blackChecksGiven = 3 - second;
+                } else {
+                    // fairy-stockfish (+0+0)
+                    whiteChecksGiven = first;
+                    blackChecksGiven = second;
+                }
+            }
+
+            chessboard.check_count[black] = whiteChecksGiven;
+            chessboard.check_count[white] = blackChecksGiven;
+        }
+
+        // shift 1 index if there is 3 check info
+        int halfPlyIndex = (checksTokenIndex == 4) ? 5 : 4;
+        int fullMoveIndex = (checksTokenIndex == 4) ? 6 : 5;
+
         // init half ply
-        chessboard.half_ply = (fenDivided.length > 4) ? Integer.parseInt(fenDivided[4]) : 0;
-        int full_move = (fenDivided.length > 5) ? Integer.parseInt(fenDivided[5]) : 1;
+        chessboard.half_ply = (fenDivided.length > halfPlyIndex) ? Integer.parseInt(fenDivided[halfPlyIndex]) : 0;
+        int full_move = (fenDivided.length > fullMoveIndex) ? Integer.parseInt(fenDivided[fullMoveIndex]) : 1;
 
         // init ply
         chessboard.ply = 0;
@@ -247,7 +288,11 @@ public class ChessboardUtils {
         chessboard.hash_key = Zobrist.generateHashKey(chessboard);
     }
 
-    public static String getFen(Chessboard chessboard){
+    public static String getFen(Chessboard chessboard) {
+        return getFen(chessboard, FENDialect.LICHESS);
+    }
+
+    public static String getFen(Chessboard chessboard, FENDialect dialect){
         StringBuilder fen = new StringBuilder();
 
         for (int rank = 0; rank < 8; rank++){
@@ -331,9 +376,22 @@ public class ChessboardUtils {
             fen.append(BoardSquares.square_to_coordinates[chessboard.enpassant]).append(" ");
         }
 
-        fen.append(chessboard.half_ply).append(" ");
+        // lichess 3 check
+        if (chessboard.gameVariants == GameVariants.THREE_CHECK && dialect == FENDialect.LICHESS) {
+            int whiteRemaining = 3 - chessboard.check_count[white];
+            int blackRemaining = 3 - chessboard.check_count[black];
+            fen.append(whiteRemaining).append("+").append(blackRemaining).append(" ");
+        }
 
+        fen.append(chessboard.half_ply).append(" ");
         fen.append((chessboard.full_move / 2) + 1);
+
+        // fairy-stockfish 3 check
+        if (chessboard.gameVariants == GameVariants.THREE_CHECK && dialect == FENDialect.FAIRY_STOCKFISH) {
+            int whiteGiven = chessboard.check_count[black];
+            int blackGiven = chessboard.check_count[white];
+            fen.append(" +").append(whiteGiven).append("+").append(blackGiven);
+        }
 
         return fen.toString().trim();
     }

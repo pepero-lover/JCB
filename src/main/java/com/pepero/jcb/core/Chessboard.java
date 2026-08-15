@@ -6,6 +6,7 @@ import com.pepero.jcb.hash.Zobrist;
 import java.util.Arrays;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
+import static com.pepero.jcb.constant.SideToMove.*;
 
 public class Chessboard {
     static {
@@ -82,6 +83,12 @@ public class Chessboard {
     public long promoted_pieces = 0L;
 
 
+    // For 3 check
+
+    // checked count
+    public int[] check_count = new int[2];
+
+
     public GameVariants gameVariants;
 
     public int MAX_DEPTH = 256;
@@ -92,6 +99,8 @@ public class Chessboard {
     public long[] hash_key_history = new long[MAX_DEPTH];
 
     public int[] captured_piece_history = new int[MAX_DEPTH];
+
+    public int[][] check_count_history = new int[2][MAX_DEPTH];
 
     // crazy house
     public boolean[] promoted_captured_history = new boolean[MAX_DEPTH];
@@ -130,6 +139,8 @@ public class Chessboard {
         Arrays.fill(this.half_ply_history, 0);
         Arrays.fill(this.hash_key_history, 0);
         Arrays.fill(this.captured_piece_history, 0);
+        Arrays.fill(this.check_count_history[white], 0);
+        Arrays.fill(this.check_count_history[black], 0);
 
         // reset game state variables
         this.side = 0;
@@ -159,6 +170,9 @@ public class Chessboard {
         this.promoted_pieces = 0L;
 
         Arrays.fill(this.pocket, 0);
+
+        // reset 3 check counter
+        Arrays.fill(this.check_count, 0);
     }
 
     public void resetBoard(GameVariants gameVariants) {
@@ -175,6 +189,8 @@ public class Chessboard {
     }
 
     public void copyFrom(Chessboard source) {
+        if (source.MAX_DEPTH > this.MAX_DEPTH) this.ensureCapacityTo(source.MAX_DEPTH);
+
         System.arraycopy(source.bitboards, 0, this.bitboards, 0, 12);
         System.arraycopy(source.occupancies, 0, this.occupancies, 0, 3);
 
@@ -203,6 +219,29 @@ public class Chessboard {
         System.arraycopy(source.pocket, 0, this.pocket, 0, 12);
         this.promoted_pieces = source.promoted_pieces;
         System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
+
+        // 3 check
+        System.arraycopy(source.check_count_history[white], 0, this.check_count_history[white], 0, MAX_DEPTH);
+        System.arraycopy(source.check_count_history[black], 0, this.check_count_history[black], 0, MAX_DEPTH);
+    }
+
+    /**
+     * Ensure capacity to 'capacity' param
+     *
+     * @param capacity capacity
+     */
+    private void ensureCapacityTo(int capacity) {
+        MAX_DEPTH = capacity;
+
+        enpassant_history = Arrays.copyOf(enpassant_history, capacity);
+        captured_piece_history = Arrays.copyOf(captured_piece_history, capacity);
+        castle_history = Arrays.copyOf(castle_history, capacity);
+        half_ply_history = Arrays.copyOf(half_ply_history, capacity);
+        hash_key_history = Arrays.copyOf(hash_key_history, capacity);
+        promoted_captured_history = Arrays.copyOf(promoted_captured_history, capacity);
+
+        check_count_history[white] = Arrays.copyOf(check_count_history[white], capacity);
+        check_count_history[black] = Arrays.copyOf(check_count_history[black], capacity);
     }
 
     /**
@@ -210,15 +249,7 @@ public class Chessboard {
      */
     public void ensureCapacity() {
         if (ply >= MAX_DEPTH) {
-            int newCap = MAX_DEPTH * 2;
-            MAX_DEPTH = newCap;
-
-            enpassant_history = Arrays.copyOf(enpassant_history, newCap);
-            captured_piece_history = Arrays.copyOf(captured_piece_history, newCap);
-            castle_history = Arrays.copyOf(castle_history, newCap);
-            half_ply_history = Arrays.copyOf(half_ply_history, newCap);
-            hash_key_history = Arrays.copyOf(hash_key_history, newCap);
-            promoted_captured_history = Arrays.copyOf(promoted_captured_history, newCap);
+            ensureCapacityTo(MAX_DEPTH * 2);
         }
     }
 }

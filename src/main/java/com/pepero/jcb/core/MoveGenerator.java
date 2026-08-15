@@ -211,6 +211,10 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
+        // when 3 check
+        if(chessboard.check_count[white] >= 3) return 0;
+        if(chessboard.check_count[black] >= 3) return 0;
+
         int moveCount = 0;
         int side = chessboard.side;
         int oppSide = side ^ 1;
@@ -671,7 +675,6 @@ public class MoveGenerator {
      * Make a standard move on chess board (CrazyHouse & Chess960 removed)
      * @param chessboard chess board
      * @param move encoded move
-     * ( if not generated, returns false. otherwise, returns true )
      */
     public static void makeStandardMove(Chessboard chessboard, int move){
         chessboard.ensureCapacity();
@@ -988,7 +991,6 @@ public class MoveGenerator {
      * Make a move on chess board
      * @param chessboard chess board
      * @param move encoded move
-     * ( if not generated, returns false. otherwise, returns true)
      */
     public static void makeMove(Chessboard chessboard, int move){
         chessboard.ensureCapacity();
@@ -1273,6 +1275,27 @@ public class MoveGenerator {
         // hash side
         chessboard.hash_key ^= Zobrist.side_key;
 
+        // if three check variant,
+        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            chessboard.check_count_history[white][chessboard.ply] = chessboard.check_count[white];
+            chessboard.check_count_history[black][chessboard.ply] = chessboard.check_count[black];
+
+            // get checker
+            int checkersInfo = ChessboardUtils.getChecker(chessboard);
+
+            // if king is in check, (opponent)
+            boolean inCheck = (checkersInfo & (1 << 12)) != 0;
+
+            if (chessboard.gameVariants == GameVariants.THREE_CHECK && inCheck) {
+                int side = chessboard.side;
+                int oldCount = chessboard.check_count[side];
+
+                chessboard.hash_key ^= Zobrist.check_count_keys[side][oldCount];
+                chessboard.check_count[side]++;
+                chessboard.hash_key ^= Zobrist.check_count_keys[side][oldCount + 1];
+            }
+        }
+
         if (
                 EncodeMove.getMoveCapture(move) ||
                         EncodeMove.getMovePiece(move) == p ||
@@ -1320,6 +1343,12 @@ public class MoveGenerator {
         chessboard.castle = chessboard.castle_history[chessboard.ply];
         chessboard.half_ply = chessboard.half_ply_history[chessboard.ply];
         chessboard.hash_key = chessboard.hash_key_history[chessboard.ply];
+
+        // if 3 check,
+        if (chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            chessboard.check_count[white] = chessboard.check_count_history[white][chessboard.ply];
+            chessboard.check_count[black] = chessboard.check_count_history[black][chessboard.ply];
+        }
 
         // get captured piece
         int captured_piece = chessboard.captured_piece_history[chessboard.ply];

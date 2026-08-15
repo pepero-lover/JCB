@@ -21,8 +21,8 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: FEN string cannot be null or empty!");
 
         String[] parts = fen.trim().split("\\s+");
-        if (parts.length < 4 || parts.length > 6) {
-            throw new FENConvertException("Invalid FEN: FEN must contain between 4 and 6 parts.");
+        if (parts.length < 4 || parts.length > 7) {
+            throw new FENConvertException("Invalid FEN: FEN must contain between 4 and 7 parts.");
         }
 
         String boardPart = parts[0];
@@ -51,9 +51,27 @@ public class FENValidator {
         validateTurn(turn);
         validateCastling(castling);
         validateEnPassant(turn, enPassant);
-        if (parts.length > 4) {
-            String fullMove = parts.length > 5 ? parts[5] : "1";
-            validateCounters(parts[4], fullMove);
+
+        // get 3 check index
+        int checksTokenIndex = -1;
+        for (int i = 4; i < parts.length; i++) {
+            if (parts[i].matches("\\d+\\+\\d+")) {
+                checksTokenIndex = i;
+                break;
+            }
+        }
+
+        if (checksTokenIndex != -1) {
+            validateChecksToken(parts[checksTokenIndex]);
+        }
+
+        // if 3 check index found and it's lichess format, shift half move, full move index
+        int halfMoveIndex = (checksTokenIndex == 4) ? 5 : 4;
+        int fullMoveIndex = (checksTokenIndex == 4) ? 6 : 5;
+
+        if (parts.length > halfMoveIndex) {
+            String fullMove = parts.length > fullMoveIndex ? parts[fullMoveIndex] : "1";
+            validateCounters(parts[halfMoveIndex], fullMove);
         }
     }
 
@@ -174,6 +192,20 @@ public class FENValidator {
             if ("pPnNbBrRqQ".indexOf(c) == -1) {
                 throw new FENConvertException("Invalid FEN: Invalid or impossible piece '" + c + "' found in pocket.");
             }
+        }
+    }
+
+    private static void validateChecksToken(String checksToken) {
+        if (!checksToken.matches("^\\d+\\+\\d+$")) {
+            throw new FENConvertException("Invalid FEN: Invalid check count format. (" + checksToken + ")");
+        }
+
+        String[] parts = checksToken.split("\\+");
+        int first = Integer.parseInt(parts[0]);
+        int second = Integer.parseInt(parts[1]);
+
+        if (first < 0 || first > 3 || second < 0 || second > 3) {
+            throw new FENConvertException("Invalid FEN: Check count must be between 0 and 3. (" + checksToken + ")");
         }
     }
 }
