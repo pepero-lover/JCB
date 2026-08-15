@@ -166,9 +166,7 @@ public class EngineArena {
                 clock.spendTime(whiteTurn, spentTime);
 
                 if (currentLimit.hasTimeLimit() && clock.isTimeUp(whiteTurn)) {
-                    chessGame.forceEndGameExternal(whiteTurn ?
-                            GameResult.BLACK_WON : GameResult.WHITE_WON,
-                            GameOverReason.TIMEOVER);
+                    chessGame.timeOver(whiteTurn);
                     break;
                 }
                 int whiteCp = currentEngine.getCurrentCp();
@@ -181,8 +179,7 @@ public class EngineArena {
                         else drawAdjCount = 0;
 
                         if(drawAdjCount >= drawRule.moveCount()) {
-                            chessGame.forceEndGameExternal(GameResult.DRAW,
-                                    GameOverReason.ADJUDICATION);
+                            chessGame.adjudication(GameResult.DRAW);
                             break;
                         }
                     }
@@ -203,9 +200,7 @@ public class EngineArena {
                         }
 
                         if (resignAdjCount >= resignRule.moveCount()) {
-                            chessGame.forceEndGameExternal(
-                                    currentLoser ? GameResult.BLACK_WON : GameResult.WHITE_WON,
-                                    GameOverReason.ADJUDICATION);
+                            chessGame.adjudication(currentLoser ? GameResult.BLACK_WON : GameResult.WHITE_WON);
                             break;
                         }
                     }
