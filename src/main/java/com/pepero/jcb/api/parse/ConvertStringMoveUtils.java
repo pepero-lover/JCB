@@ -6,13 +6,14 @@ import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
+
+import java.util.Arrays;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.black;
@@ -172,7 +173,9 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(ChessboardUtils.isCheckmate(chessboard)) {
+        if(ChessboardUtils.isCheckmate(chessboard) ||
+                (chessboard.gameVariants == GameVariants.THREE_CHECK &&
+                        ChessboardUtils.isThreeCheck(chessboard))) {
             sb.append("#");
         } else if(ChessboardUtils.isCheck(chessboard)) {
             sb.append("+");
@@ -203,7 +206,9 @@ public class ConvertStringMoveUtils {
             sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
 
             MoveGenerator.makeMove(chessboard, encoded_move);
-            if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
+            if(ChessboardUtils.isCheckmate(chessboard) ||
+                    (chessboard.gameVariants == GameVariants.THREE_CHECK &&
+                    ChessboardUtils.isThreeCheck(chessboard))) sb.append("#");
             else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
             MoveGenerator.unmakeMove(chessboard, encoded_move);
 
@@ -299,7 +304,9 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(ChessboardUtils.isCheckmate(chessboard)) {
+        if(ChessboardUtils.isCheckmate(chessboard) ||
+                (chessboard.gameVariants == GameVariants.THREE_CHECK &&
+                        ChessboardUtils.isThreeCheck(chessboard))) {
             sb.append("#");
         } else if(ChessboardUtils.isCheck(chessboard)) {
             sb.append("+");

@@ -182,13 +182,16 @@ public class UCIEngineWrapper implements AutoCloseable {
                 }
                 setOptionSync("UCI_Chess960", "true");
             } else {
+                if(!hasOption("UCI_Variant")) {
+                    throw new UCIEngineException("Variant option not found!");
+                }
+
                 switch (variants) {
                     case CRAZY_HOUSE :
-                        if(!hasOption("UCI_Variant")) {
-                            throw new UCIEngineException("Variant option not found!");
-                        }
                         setOptionSync("UCI_Variant", "crazyhouse");
                         break;
+                    case THREE_CHECK:
+                        setOptionSync("UCI_Variant", "3check");
                 }
             }
         }
@@ -319,7 +322,6 @@ public class UCIEngineWrapper implements AutoCloseable {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     if (isAnalyzing && !latestAnalysisMap.isEmpty() && listener != null) {
-
                         List<EngineLine> currentBundle = latestAnalysisMap.values().stream()
                                 .sorted(Comparator.comparingInt(EngineLine::pvNumber))
                                 .toList();

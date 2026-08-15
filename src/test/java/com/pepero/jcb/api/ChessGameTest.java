@@ -586,12 +586,12 @@ public class ChessGameTest {
     void threeCheckParsing() {
         ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 +1+1",
                 GameVariants.THREE_CHECK);
-        assertEquals(1, chessGame.getWhiteCheckCount());
-        assertEquals(1, chessGame.getBlackCheckCount());
+        assertEquals(1, chessGame.getWhiteCheckedCount());
+        assertEquals(1, chessGame.getBlackCheckedCount());
         chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 3+3 0 1",
                 GameVariants.THREE_CHECK);
-        assertEquals(0, chessGame.getWhiteCheckCount());
-        assertEquals(0, chessGame.getBlackCheckCount());
+        assertEquals(0, chessGame.getWhiteCheckedCount());
+        assertEquals(0, chessGame.getBlackCheckedCount());
     }
 
     @Test

@@ -221,6 +221,8 @@ public class Chessboard {
         System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
 
         // 3 check
+        System.arraycopy(source.check_count, 0, this.check_count, 0, 2);
+
         System.arraycopy(source.check_count_history[white], 0, this.check_count_history[white], 0, MAX_DEPTH);
         System.arraycopy(source.check_count_history[black], 0, this.check_count_history[black], 0, MAX_DEPTH);
     }

@@ -1596,6 +1596,10 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Three check variant
      */
     public boolean isThreeChecked() {
+        if(chessboard.gameVariants != GameVariants.THREE_CHECK) throw new VariantNotMatchException(
+                "The variant should be three check!"
+        );
+
         readLock.lock();
         try {
             int white_checked = chessboard.check_count[white];
@@ -1885,7 +1889,7 @@ public class ChessGame {
      * @return checked count for white
      * @throws VariantNotMatchException if variant isn't three check
      */
-    public int getWhiteCheckCount() {
+    public int getWhiteCheckedCount() {
         readLock.lock();
         try {
             if (chessboard.gameVariants != GameVariants.THREE_CHECK)
@@ -1902,7 +1906,7 @@ public class ChessGame {
      * @return checked count for black
      * @throws VariantNotMatchException if variant isn't three check
      */
-    public int getBlackCheckCount() {
+    public int getBlackCheckedCount() {
         readLock.lock();
         try {
             if (chessboard.gameVariants != GameVariants.THREE_CHECK)

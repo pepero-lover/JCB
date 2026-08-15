@@ -520,6 +520,21 @@ public class ChessboardUtils {
     }
 
     /**
+     * Get whether this position is three checked <br>
+     * if this position isn't three check variant, returns false.
+     *
+     * @param chessboard chess board
+     * @return whether this position is three checked
+     */
+    public static boolean isThreeCheck(Chessboard chessboard) {
+        if(chessboard.gameVariants != GameVariants.THREE_CHECK) return false;
+
+        if(chessboard.check_count[white] >= 3) return true;
+        if(chessboard.check_count[black] >= 3) return true;
+        return false;
+    }
+
+    /**
      * Get whether this position is checkmate
      *
      * @param chessboard chessboard
