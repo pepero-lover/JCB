@@ -192,6 +192,8 @@ public class UCIEngineWrapper implements AutoCloseable {
                         break;
                     case THREE_CHECK:
                         setOptionSync("UCI_Variant", "3check");
+                    case KING_OF_THE_HILL:
+                        setOptionSync("UCI_Variant", "kingofthehill");
                 }
             }
         }

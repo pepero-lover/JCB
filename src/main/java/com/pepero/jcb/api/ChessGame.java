@@ -1612,6 +1612,28 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this position's white/black king gone to the hill
+     *
+     * @return whether this position's white/black king gone to the hill
+     * @throws VariantNotMatchException if this ChessGame isn't King of the hill variant
+     */
+    public boolean isKingGoneToHill() {
+        if(chessboard.gameVariants != GameVariants.KING_OF_THE_HILL) throw new VariantNotMatchException(
+                "The variant should be king of the hill!"
+        );
+
+        readLock.lock();
+        try {
+            if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return true;
+            if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return true;
+
+            return false;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get whether this position allows claiming a draw by threefold repetition
      *
      * @return whether threefold repetition draw can be claimed
@@ -1754,6 +1776,9 @@ public class ChessGame {
         try {
             if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
                 if(isThreeChecked()) return GameOverReason.THREE_CHECK;
+            }
+            if(chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {
+                if(isKingGoneToHill()) return GameOverReason.KING_OF_THE_HILL;
             }
 
             boolean inCheck = isCheck();
@@ -2021,6 +2046,25 @@ public class ChessGame {
      */
     public void agreeDraw() {
         forceEndGame(GameResult.DRAW, GameOverReason.AGREEMENTDRAW);
+    }
+
+    /**
+     * If one of player time overed
+     *
+     * @param isWhiteFlagged is white time overed
+     */
+    public void timeOver(boolean isWhiteFlagged) {
+        GameResult result = isWhiteFlagged ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+        forceEndGame(result, GameOverReason.TIMEOVER);
+    }
+
+    /**
+     * External adjudication
+     *
+     * @param result result
+     */
+    public void adjudication(GameResult result) {
+        forceEndGame(result, GameOverReason.ADJUDICATION);
     }
 
     /**
@@ -2416,7 +2460,11 @@ public class ChessGame {
         if (reason != GameOverReason.NOTGAMEOVER) {
             result = switch (reason) {
                 case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL -> GameResult.DRAW;
+                case THREE_CHECK -> getWhiteCheckedCount() >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+                case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
+                        ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
+                     SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
             };
         }
@@ -2769,6 +2817,7 @@ public class ChessGame {
                     case CHESS960 -> this.headers.put("Variant", "Chess960");
                     case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
                     case THREE_CHECK -> this.headers.put("Variant", "Three-check");
+                    case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
                 }
             }
 

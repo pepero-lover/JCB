@@ -615,4 +615,15 @@ public class ChessGameTest {
         chessGame.makeMoveSanAll("Qg6+ Ke7 Qh5 Kd6");
         assertNotEquals(previous, chessGame.hashCode());
     }
+
+    @Test
+    @DisplayName("King of the hill : 킹이 중앙안에 들어와 있다면 즉시 게임이 끝나야 한다.")
+    void kingGoneToHill() {
+        ChessGame chessGame = ChessGame.fromFEN(
+                "rnbq1bnr/ppppkppp/8/4p3/4K3/4P3/PPPP1PPP/RNBQ1BNR b - - 1 4",
+                GameVariants.KING_OF_THE_HILL
+        );
+        assertEquals(GameOverReason.KING_OF_THE_HILL, chessGame.isGameOver());
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
+    }
 }

@@ -2,13 +2,11 @@ package com.pepero.jcb.core;
 
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.constant.EncodedPieces;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
-
-import java.util.Arrays;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -214,6 +212,12 @@ public class MoveGenerator {
         // when 3 check
         if(chessboard.check_count[white] >= 3) return 0;
         if(chessboard.check_count[black] >= 3) return 0;
+
+        // when king of the hill
+        if (chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {
+            if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return 0;
+            if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return 0;
+        }
 
         int moveCount = 0;
         int side = chessboard.side;

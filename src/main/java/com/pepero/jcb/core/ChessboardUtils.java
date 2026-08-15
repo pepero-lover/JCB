@@ -535,6 +535,19 @@ public class ChessboardUtils {
     }
 
     /**
+     * Get whether this position's white/black king gone to the hill
+     *
+     * @param chessboard chessboard
+     * @return whether this position's white/black king gone to the hill
+     */
+    public static boolean isKingGoneToHill(Chessboard chessboard) {
+        if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return true;
+        if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return true;
+
+        return false;
+    }
+
+    /**
      * Get whether this position is checkmate
      *
      * @param chessboard chessboard

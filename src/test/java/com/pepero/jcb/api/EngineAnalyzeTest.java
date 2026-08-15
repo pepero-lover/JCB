@@ -11,8 +11,8 @@ import java.util.List;
 public class EngineAnalyzeTest {
     public static void main(String[] args) throws InterruptedException {
         ChessGame chessGame = ChessGame.fromFEN(
-                "8/p5k1/4P3/6R1/4N2n/P7/2P4P/7K b - - 2+3 2 50",
-                GameVariants.THREE_CHECK
+                "rnbq1bnr/ppppkppp/4p3/8/8/4P3/PPPPKPPP/RNBQ1BNR w - - 2 3",
+                GameVariants.KING_OF_THE_HILL
         );
 
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(

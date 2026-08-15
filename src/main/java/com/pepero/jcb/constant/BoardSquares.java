@@ -15,6 +15,11 @@ public class BoardSquares {
     public static final int no_sq = 64;
 
 
+    // for masking king of the hills center squares
+    public static final long CENTER_SQUARES =
+            (1L << d4) | (1L << e4) | (1L << d5) | (1L << e5);
+
+
     public static String[] square_to_coordinates = {
             "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
             "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",

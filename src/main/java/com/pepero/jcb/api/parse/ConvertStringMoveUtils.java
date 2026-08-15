@@ -13,8 +13,6 @@ import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
-import java.util.Arrays;
-
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.black;
 import static com.pepero.jcb.constant.SideToMove.white;
@@ -25,6 +23,18 @@ public class ConvertStringMoveUtils {
             String moveString,
             int moveData
     ) {}
+
+    /**
+     * Get whether this position should show the # symbol (for san move converting)
+     *
+     * @param chessboard chessboard
+     * @return whether this position should show the # symbol
+     */
+    public static boolean shouldShowCheckmateSymbol(Chessboard chessboard) {
+        return ChessboardUtils.isThreeCheck(chessboard) ||
+                ChessboardUtils.isKingGoneToHill(chessboard) ||
+                ChessboardUtils.isCheckmate(chessboard);
+    }
 
     /**
      * Convert lan move to san move
@@ -47,7 +57,7 @@ public class ConvertStringMoveUtils {
 
             MoveGenerator.makeMove(chessboard, encoded_move);
 
-            if(ChessboardUtils.isCheckmate(chessboard)) sb.append("#");
+            if(shouldShowCheckmateSymbol(chessboard)) sb.append("#");
             else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
 
             MoveGenerator.unmakeMove(chessboard, encoded_move);
@@ -173,9 +183,7 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(ChessboardUtils.isCheckmate(chessboard) ||
-                (chessboard.gameVariants == GameVariants.THREE_CHECK &&
-                        ChessboardUtils.isThreeCheck(chessboard))) {
+        if(shouldShowCheckmateSymbol(chessboard)) {
             sb.append("#");
         } else if(ChessboardUtils.isCheck(chessboard)) {
             sb.append("+");
@@ -206,9 +214,7 @@ public class ConvertStringMoveUtils {
             sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
 
             MoveGenerator.makeMove(chessboard, encoded_move);
-            if(ChessboardUtils.isCheckmate(chessboard) ||
-                    (chessboard.gameVariants == GameVariants.THREE_CHECK &&
-                    ChessboardUtils.isThreeCheck(chessboard))) sb.append("#");
+            if(shouldShowCheckmateSymbol(chessboard)) sb.append("#");
             else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
             MoveGenerator.unmakeMove(chessboard, encoded_move);
 
