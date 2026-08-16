@@ -213,7 +213,7 @@ public class ChessGame {
      */
     private static String getDefaultStartPosition(GameVariants gameVariants) {
         return switch (gameVariants) {
-            // case HORDE -> Chessboard.HORDE_START_POSITION; // later
+            case HORDE -> Chessboard.horde_start_position;
             default -> Chessboard.start_position;
         };
     }
@@ -227,7 +227,7 @@ public class ChessGame {
      * @throws FENConvertException - if converting fen string failed
      */
     private ChessGame(String fen, GameVariants gameVariants) {
-        FENValidator.validateString(fen);
+        FENValidator.validateString(fen, gameVariants);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
@@ -240,7 +240,7 @@ public class ChessGame {
             throw new FENConvertException("Could not parse the fen.");
         }
 
-        FENValidator.validateLogicalState(chessboard);
+        FENValidator.validateLogicalState(chessboard, gameVariants);
 
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
 
@@ -1644,6 +1644,20 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this horde position's white pieces is all gone (black won)
+     *
+     * @return whether this horde position's white pieces is all gone
+     * @throws VariantNotMatchException if this ChessGame isn't Horde variant
+     */
+    public boolean isHordePiecesGone() {
+        if(chessboard.gameVariants != GameVariants.HORDE) throw new VariantNotMatchException(
+                "The variant should be horde!"
+        );
+
+        return chessboard.occupancies[white] == 0L;
+    }
+
+    /**
      * Get whether this position allows claiming a draw by threefold repetition
      *
      * @return whether threefold repetition draw can be claimed
@@ -1789,6 +1803,9 @@ public class ChessGame {
             }
             if(chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {
                 if(isKingGoneToHill()) return GameOverReason.KING_OF_THE_HILL;
+            }
+            if(chessboard.gameVariants == GameVariants.HORDE) {
+                if(isHordePiecesGone()) return GameOverReason.HORDE;
             }
 
             boolean inCheck = isCheck();
@@ -2474,6 +2491,7 @@ public class ChessGame {
                 case THREE_CHECK -> getWhiteCheckedCount() >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
                 case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
                         ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+                case HORDE -> GameResult.BLACK_WON;
                 case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
                      SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
@@ -2625,6 +2643,7 @@ public class ChessGame {
             case "crazyhouse" -> GameVariants.CRAZY_HOUSE;
             case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
             case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
+            case "horde", "hord", "hd" -> GameVariants.HORDE;
             default -> GameVariants.STANDARD;
         };
     }
@@ -2850,11 +2869,12 @@ public class ChessGame {
                     case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
                     case THREE_CHECK -> this.headers.put("Variant", "Three-check");
                     case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
+                    case HORDE -> this.headers.put("Variant", "Horde");
                 }
             }
 
             String currentStartFen = this.startPositionFEN;
-            if (!currentStartFen.equals(Chessboard.start_position)) {
+            if (!currentStartFen.equals(getDefaultStartPosition(chessboard.gameVariants))) {
                 this.headers.put("SetUp", "1");
                 this.headers.put("FEN", currentStartFen);
             } else {

@@ -3,6 +3,7 @@ package com.pepero.jcb.api.parse;
 import com.pepero.jcb.api.exception.FENConvertException;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -16,7 +17,7 @@ public class FENValidator {
      *
      * @throws FENConvertException - if this fen string is illegal
      */
-    public static void validateString(String fen) {
+    public static void validateString(String fen, GameVariants variants) {
         if (fen == null || fen.trim().isEmpty())
             throw new FENConvertException("Invalid FEN: FEN string cannot be null or empty!");
 
@@ -47,7 +48,7 @@ public class FENValidator {
         String castling = parts[2];
         String enPassant = parts[3];
 
-        validateBoard(board);
+        validateBoard(board, variants);
         validateTurn(turn);
         validateCastling(castling);
         validateEnPassant(turn, enPassant);
@@ -75,7 +76,7 @@ public class FENValidator {
         }
     }
 
-    private static void validateBoard(String board) {
+    private static void validateBoard(String board, GameVariants variants) {
         String[] ranks = board.split("/");
 
         if (ranks.length != 8) {
@@ -103,8 +104,17 @@ public class FENValidator {
                     if (c == 'K') whiteKingCount++;
                     if (c == 'k') blackKingCount++;
 
-                    if ((c == 'p' || c == 'P') && (i == 0 || i == 7)) {
-                        throw new FENConvertException("Invalid FEN: Pawns cannot exist on the 1st or 8th rank.");
+                    if(variants != GameVariants.HORDE) {
+                        if ((c == 'p' || c == 'P') && (i == 0 || i == 7)) {
+                            throw new FENConvertException("Invalid FEN: Pawns cannot exist on the 1st or 8th rank.");
+                        }
+                    } else {
+                        if(c == 'p' && (i == 0 || i == 7)) {
+                            throw new FENConvertException("Invalid FEN: Black pawns cannot exist on the 1st or 8th rank on horde variant.");
+                        }
+                        if(c == 'P' && i == 7) {
+                            throw new FENConvertException("Invalid FEN: White pawns cannot exist on the 8th rank on horde variant.");
+                        }
                     }
                 } else {
                     throw new FENConvertException("Invalid FEN: Unknown character '" + c + "' in board representation.");
@@ -118,8 +128,14 @@ public class FENValidator {
             }
         }
 
-        if (whiteKingCount != 1 || blackKingCount != 1) {
-            throw new FENConvertException("Invalid FEN: There must be exactly one white king and one black king.");
+        if(variants != GameVariants.HORDE) {
+            if (whiteKingCount != 1 || blackKingCount != 1) {
+                throw new FENConvertException("Invalid FEN: There must be exactly one white king and one black king.");
+            }
+        } else {
+            if(whiteKingCount != 0 && blackKingCount != 1) {
+                throw new FENConvertException("Invalid FEN: There must be exactly zero white king and one black king.");
+            }
         }
     }
 
@@ -169,8 +185,12 @@ public class FENValidator {
         }
     }
 
-    public static void validateLogicalState(Chessboard chessboard) {
+    public static void validateLogicalState(Chessboard chessboard, GameVariants variants) {
         int oppositeSide = chessboard.side ^ 1;
+
+        if(variants == GameVariants.HORDE && oppositeSide == white){
+            return;
+        }
 
         int oppositeKingSquare = BitBoardUtils.getLS1BIndex(
                 chessboard.bitboards[oppositeSide == white ? K : k]

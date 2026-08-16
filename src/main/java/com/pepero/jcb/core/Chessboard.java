@@ -16,6 +16,10 @@ public class Chessboard {
     // start pos
     public static final String start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+    // horde start pos
+    public static final String horde_start_position = "rnbqkbnr/pppppppp/8/1PP2PP1/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP w kq - 0 1";
+
+
     // define bitboards
     public long[] bitboards = new long[12];
 

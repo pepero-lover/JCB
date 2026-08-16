@@ -626,4 +626,13 @@ public class ChessGameTest {
         assertEquals(GameOverReason.KING_OF_THE_HILL, chessGame.isGameOver());
         assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
     }
+
+    @Test
+    @DisplayName("Horde : 백 기물이 모두 없어졌다면 게임이 종료되어야 한다.")
+    void hordePieceGone() {
+        ChessGame chessGame = ChessGame.fromFEN("3q2k1/8/8/6P1/8/7q/8/8 b - - 0 62", GameVariants.HORDE);
+        chessGame.makeMoveSan("Qxg5#");
+        assertEquals(GameResult.BLACK_WON, chessGame.getGameResult());
+        assertEquals(GameOverReason.HORDE, chessGame.isGameOver());
+    }
 }

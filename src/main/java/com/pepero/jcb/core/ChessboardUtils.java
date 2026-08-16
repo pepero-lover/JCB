@@ -419,6 +419,8 @@ public class ChessboardUtils {
      * @return whether king is under attack
      */
     public static boolean isCheck(Chessboard chessboard) {
+        if(chessboard.gameVariants == GameVariants.HORDE && chessboard.side == white) return false;
+
         int kingPos = BitBoardUtils.getLS1BIndex(
                 chessboard.side == white ?
                         chessboard.bitboards[K] : chessboard.bitboards[k]);
