@@ -7,7 +7,7 @@
 - Java 21 이상
 ## 지원 기능
 
-- 체스 변형 지원 (Standard / Chess960 / CrazyHouse)
+- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / Three-check / King of the Hill)
 - Syzygy tablebase 프로빙 (WDL / DTZ)
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
@@ -22,6 +22,14 @@
 * Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
 * 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
 
+## 지원하는 변형 체스들
+| 변형               | FEN | UCI 연동             |
+|------------------|-----|--------------------|
+| Standard         | ✅   | ✅ (기본 UCI 설정)      |
+| Chess960         | ✅   | ✅ (`UCI_Chess960`) |
+| Crazyhouse       | ✅   | ✅ (`UCI_Variant`)  |
+| Three-check      | ✅   | ✅ (`UCI_Variant`)  |
+| King of the Hill | ✅   | ✅ (`UCI_Variant`)  |
 
 ## 참고 및 출처
 * 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 는 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
