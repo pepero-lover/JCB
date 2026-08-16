@@ -167,10 +167,9 @@ public class EncodeMove {
      * Get encoded move string
      *
      * @param move encoded move (that can be generated on encodeMove() method)
-     * @param isChess960 is chess board chess 960
      * @return encoded move string
      */
-    public static String moveToString(int move, boolean isChess960) {
+    public static String moveToString(int move) {
         if (EncodeMove.getMoveDrop(move)) {
             char pieceChar = ChessboardUtils.ascii_pieces[EncodeMove.getMovePiece(move)];
             String target = BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)];
@@ -178,18 +177,6 @@ public class EncodeMove {
         } else {
             int source = EncodeMove.getMoveSource(move);
             int target = EncodeMove.getMoveTarget(move);
-            int piece = EncodeMove.getMovePiece(move);
-
-            if (!isChess960) {
-                if (piece == K || piece == k) {
-                    if ((source == e1 && target == h1) || (source == e8 && target == h8)) {
-                        target = (source == e1) ? g1 : g8;
-                    }
-                    else if ((source == e1 && target == a1) || (source == e8 && target == a8)) {
-                        target = (source == e1) ? c1 : c8;
-                    }
-                }
-            }
 
             return BoardSquares.square_to_coordinates[source] +
                     BoardSquares.square_to_coordinates[target] +
@@ -201,10 +188,9 @@ public class EncodeMove {
     /**
      * Print move data (for UCI purposes)
      * @param move encoded move
-     * @param isChess960 is chess board chess 960
      */
-    public static void printMove(int move, boolean isChess960){
-        System.out.println(moveToString(move, isChess960));
+    public static void printMove(int move){
+        System.out.println(moveToString(move));
     }
 
     // promoted pieces

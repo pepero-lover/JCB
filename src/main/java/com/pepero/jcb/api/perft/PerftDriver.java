@@ -232,7 +232,7 @@ public class PerftDriver {
             MoveGenerator.makeMove(chessboard, move);
             clonedBoards.add(new Chessboard(chessboard));
             MoveGenerator.unmakeMove(chessboard, move);
-            moveStrs.add(EncodeMove.moveToString(move, chessboard.gameVariants == GameVariants.CHESS960));
+            moveStrs.add(EncodeMove.moveToString(move));
         }
 
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);

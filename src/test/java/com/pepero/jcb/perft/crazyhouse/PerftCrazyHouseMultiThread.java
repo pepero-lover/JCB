@@ -66,8 +66,7 @@ public class PerftCrazyHouseMultiThread {
 
             MoveGenerator.unmakeMove(chessboard, move);
 
-            String finalMoveStr = EncodeMove.moveToString(move,
-                    chessboard.gameVariants == GameVariants.CHESS960);
+            String finalMoveStr = EncodeMove.moveToString(move);
             Callable<PerftResult> task = () -> {
                 long branchNodes = perftDriver(clonedBoard, depth - 1);
                 return new PerftResult(finalMoveStr, branchNodes);

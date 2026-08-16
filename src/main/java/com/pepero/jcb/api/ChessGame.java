@@ -568,8 +568,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
-                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
-                        chessboard.gameVariants == GameVariants.CHESS960),
+                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove),
                         this.getFEN());
             }
 
@@ -591,8 +590,7 @@ public class ChessGame {
      */
     private void internalMakeMoveRawLocked(int encodedMove) {
         if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
-            throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
-                    chessboard.gameVariants == GameVariants.CHESS960),
+            throw new IllegalMoveException(EncodeMove.moveToString(encodedMove),
                     this.getFEN());
         }
 
@@ -1218,8 +1216,7 @@ public class ChessGame {
             int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
 
             if (encodedMove == ILLEGAL_MOVE) {
-                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove,
-                        chessboard.gameVariants == GameVariants.CHESS960), getFEN());
+                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove), getFEN());
             }
 
             makeMove(new MoveInfo(encodedMove));
@@ -3202,8 +3199,8 @@ public class ChessGame {
      * @return WDL result
      */
     public int probeSyzygyWdl(SyzygyTablebase tablebase) throws IOException{
-        if(getGameVariants() != GameVariants.STANDARD)
-            throw new VariantNotMatchException("Variant should be Standard chess!");
+        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();
         try {
@@ -3221,8 +3218,8 @@ public class ChessGame {
      * @return DTZ result
      */
     public int probeSyzygyDtz(SyzygyTablebase tablebase) throws IOException {
-        if(getGameVariants() != GameVariants.STANDARD)
-            throw new VariantNotMatchException("Variant should be Standard chess!");
+        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();
         try {
@@ -3256,8 +3253,8 @@ public class ChessGame {
      * @throws IOException if tablebase could not find or something
      */
     public List<SyzygyMoveDTO> findRankedSyzygyMoves(SyzygyTablebase tablebase) throws IOException {
-        if (getGameVariants() != GameVariants.STANDARD)
-            throw new VariantNotMatchException("Variant should be Standard chess!");
+        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();
         try {

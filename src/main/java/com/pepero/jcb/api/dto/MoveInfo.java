@@ -46,8 +46,7 @@ public record MoveInfo(
     }
 
     public String toLanString(GameVariants variants) {
-        return EncodeMove.moveToString(originEncodedData,
-                variants == GameVariants.CHESS960);
+        return EncodeMove.moveToString(originEncodedData);
     }
 
     @Override
