@@ -67,7 +67,7 @@ public class ConvertStringMoveUtils {
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
-            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan);
+            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan, chessboard);
         }
 
         int source_square = BoardSquares.coordinates_to_square(lan.substring(0,2));
@@ -75,7 +75,7 @@ public class ConvertStringMoveUtils {
 
         // lan is not correct
         if(source_square == -1 || target_square == -1) {
-            throw new ConvertMoveException("Square string is not correct!", lan);
+            throw new ConvertMoveException("Square string is not correct!", lan, chessboard);
         }
 
         int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
@@ -310,9 +310,7 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(ChessboardUtils.isCheckmate(chessboard) ||
-                (chessboard.gameVariants == GameVariants.THREE_CHECK &&
-                        ChessboardUtils.isThreeCheck(chessboard))) {
+        if(shouldShowCheckmateSymbol(chessboard)) {
             sb.append("#");
         } else if(ChessboardUtils.isCheck(chessboard)) {
             sb.append("+");
@@ -421,7 +419,7 @@ public class ConvertStringMoveUtils {
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
-            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan);
+            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan, chessboard);
         }
 
         int source_square = Square.fromString(lan.substring(0,2)).getIndex();

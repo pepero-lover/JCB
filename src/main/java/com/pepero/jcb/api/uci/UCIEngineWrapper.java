@@ -4,6 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.UCIEngineException;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.FENDialect;
 import com.pepero.jcb.core.GameVariants;
 
 import java.io.BufferedReader;
@@ -192,8 +193,10 @@ public class UCIEngineWrapper implements AutoCloseable {
                         break;
                     case THREE_CHECK:
                         setOptionSync("UCI_Variant", "3check");
+                        break;
                     case KING_OF_THE_HILL:
                         setOptionSync("UCI_Variant", "kingofthehill");
+                        break;
                 }
             }
         }
@@ -229,6 +232,10 @@ public class UCIEngineWrapper implements AutoCloseable {
         if (startFen.equals(defaultStartFen)) {
             positionCmd.append("position startpos");
         } else {
+            if (chessGame.getGameVariants() == GameVariants.THREE_CHECK) {
+                ChessGame tempForFen = ChessGame.fromFEN(startFen, chessGame.getGameVariants());
+                startFen = tempForFen.getFEN(FENDialect.FAIRY_STOCKFISH);
+            }
             positionCmd.append("position fen ").append(startFen);
         }
 

@@ -210,8 +210,10 @@ public class MoveGenerator {
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
         // when 3 check
-        if(chessboard.check_count[white] >= 3) return 0;
-        if(chessboard.check_count[black] >= 3) return 0;
+        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            if(chessboard.check_count[white] >= 3) return 0;
+            if(chessboard.check_count[black] >= 3) return 0;
+        }
 
         // when king of the hill
         if (chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {

@@ -206,6 +206,19 @@ public class ChessGame {
     }
 
     /**
+     * Get default start position
+     *
+     * @param gameVariants game variant
+     * @return default start position
+     */
+    private static String getDefaultStartPosition(GameVariants gameVariants) {
+        return switch (gameVariants) {
+            // case HORDE -> Chessboard.HORDE_START_POSITION; // later
+            default -> Chessboard.start_position;
+        };
+    }
+
+    /**
      * Initialize position with FEN string
      *
      * @param fen fen string
@@ -256,12 +269,12 @@ public class ChessGame {
      */
     private ChessGame(GameVariants gameVariants) {
         this.chessboard = new Chessboard();
+        this.chessboard.gameVariants = gameVariants;
 
-        ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
+        String startFen = getDefaultStartPosition(gameVariants);
+        ChessboardUtils.parseFen(this.chessboard, startFen);
 
-        chessboard.gameVariants = gameVariants;
-
-        startPositionFEN = Chessboard.start_position;
+        startPositionFEN = startFen;
 
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
 
@@ -343,7 +356,7 @@ public class ChessGame {
      */
     private void internalMakeMove(int encodedMove, String originalMoveString) {
         MoveInfo moveData;
-        boolean shouldNotifyGameOver = false;
+        GameResult gameResult = GameResult.UNKNOWN;
         boolean historyChanged;
 
         writeLock.lock();
@@ -363,14 +376,14 @@ public class ChessGame {
             historyChanged = addMoveHistory(moveData);
 
             if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
+                gameResult = evaluateGameState(currentNode);
             }
         } finally {
             writeLock.unlock();
         }
 
         notifyMoveMade(moveData);
-        if (shouldNotifyGameOver) {
+        if (gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
         if(historyChanged) {
@@ -386,7 +399,7 @@ public class ChessGame {
      */
     private void internalMakeMoveLocked(int encodedMove, String originalMoveString) {
         MoveInfo moveData;
-        boolean shouldNotifyGameOver = false;
+        GameResult gameResult = GameResult.UNKNOWN;
         boolean historyChanged;
 
         if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
@@ -404,11 +417,11 @@ public class ChessGame {
         historyChanged = addMoveHistory(moveData);
 
         if(autoChangeGameOver) {
-            shouldNotifyGameOver = evaluateGameState();
+            gameResult = evaluateGameState(currentNode);
         }
 
         notifyMoveMade(moveData);
-        if (shouldNotifyGameOver) {
+        if (gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
         if(historyChanged) {
@@ -902,7 +915,7 @@ public class ChessGame {
      */
     public MoveInfo unmakeMove() {
         MoveInfo moveInfo;
-        boolean shouldNotifyGameOver = false;
+        GameResult gameResult = GameResult.UNKNOWN;
 
         writeLock.lock();
         try {
@@ -914,14 +927,14 @@ public class ChessGame {
             MoveGenerator.unmakeMove(chessboard, moveInfo.originEncodedData());
 
             if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
+                gameResult = evaluateGameState(currentNode);
             }
         } finally {
             writeLock.unlock();
         }
 
         notifyMoveUnmade(moveInfo);
-        if (shouldNotifyGameOver) {
+        if (gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
 
@@ -957,7 +970,7 @@ public class ChessGame {
      */
     public MoveInfo remakeMove(int variationIndex) {
         MoveInfo moveInfo;
-        boolean shouldNotifyGameOver = false;
+        GameResult gameResult = GameResult.UNKNOWN;
 
         writeLock.lock();
         try {
@@ -974,14 +987,14 @@ public class ChessGame {
             }
 
             if(autoChangeGameOver) {
-                shouldNotifyGameOver = evaluateGameState();
+                gameResult = evaluateGameState(currentNode);
             }
         } finally {
             writeLock.unlock();
         }
 
         notifyMoveRemade(moveInfo);
-        if (shouldNotifyGameOver) {
+        if (gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
 
@@ -2005,7 +2018,7 @@ public class ChessGame {
     public GameResult getGameResult() {
         writeLock.lock();
         try {
-            if(evaluateGameState()) {
+            if(evaluateGameState(getLastMainlineNode(this.moveHistoryRoot)) != GameResult.UNKNOWN) {
                 notifyGameOver(this.gameResult, this.gameoverReason);
             }
             return this.gameResult;
@@ -2022,7 +2035,7 @@ public class ChessGame {
     public GameOverReason getGameoverReason() {
         readLock.lock();
         try {
-            if(evaluateGameState()) {
+            if(evaluateGameState(getLastMainlineNode(this.moveHistoryRoot)) != GameResult.UNKNOWN) {
                 notifyGameOver(this.gameResult, this.gameoverReason);
             }
             return this.gameoverReason;
@@ -2252,7 +2265,7 @@ public class ChessGame {
     public void jumpToNode(long nodeId) {
         writeLock.lock();
 
-        boolean notifyGameOver = false;
+        GameResult gameResult = GameResult.UNKNOWN;
 
         try {
             // get node
@@ -2284,14 +2297,14 @@ public class ChessGame {
 
             this.currentNode = targetNode;
             if(autoChangeGameOver) {
-                notifyGameOver = evaluateGameState();
+                gameResult = evaluateGameState(currentNode);
             }
         } finally {
             writeLock.unlock();
         }
 
         notifyPositionJumped(getFEN());
-        if(notifyGameOver) {
+        if(gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
     }
@@ -2310,7 +2323,7 @@ public class ChessGame {
     public void jumpToMainlinePly(int targetPly) {
         writeLock.lock();
 
-        boolean shouldNotifyGameOver = false;
+        GameResult gameResult;
 
         try {
             if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
@@ -2362,13 +2375,13 @@ public class ChessGame {
                 }
             }
 
-            shouldNotifyGameOver = evaluateGameState();
+            gameResult = evaluateGameState(currentNode);
         } finally {
             writeLock.unlock();
         }
 
         notifyPositionJumped(getFEN());
-        if(shouldNotifyGameOver) {
+        if(gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
     }
@@ -2431,25 +2444,26 @@ public class ChessGame {
     }
 
     /**
-     * Update this current node's game over state.
-     * if this current node's game over state is already there, just return cached value.
+     * Update this node's game over state and return result.
+     * if this node's game over state is already there, just return cached value.
      *
-     * @return true if the game is overed (when game overed position is not cached)
+     * @param node node
+     *
+     * @return Game result
      */
-    private boolean evaluateGameState() {
+    private GameResult evaluateGameState(MoveNode node) {
         // when resign / agreement draw
-        if (this.currentNode.terminalReason != null) {
-            this.gameResult = this.currentNode.terminalResult;
-            this.gameoverReason = this.currentNode.terminalReason;
-            return false;
+        if (node.terminalReason != null) {
+            this.gameResult = node.terminalResult;
+            this.gameoverReason = node.terminalReason;
+            return node.terminalResult;
         }
 
         // when value is already cached
-        if (this.currentNode.isStateEvaluated) {
-            this.gameResult = this.currentNode.calculatedResult;
-            this.gameoverReason = this.currentNode.calculatedReason;
-
-            return false;
+        if (node.isStateEvaluated) {
+            this.gameResult = node.calculatedResult;
+            this.gameoverReason = node.calculatedReason;
+            return node.calculatedResult;
         }
 
         // if value is not cached
@@ -2469,19 +2483,19 @@ public class ChessGame {
             };
         }
 
-        this.currentNode.calculatedReason = reason;
-        this.currentNode.calculatedResult = result;
-        this.currentNode.isStateEvaluated = true;
+        node.calculatedReason = reason;
+        node.calculatedResult = result;
+        node.isStateEvaluated = true;
 
         this.gameoverReason = reason;
         this.gameResult = result;
 
         if (result != GameResult.UNKNOWN) {
             this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
-            return true;
+            return this.gameResult;
         }
 
-        return false;
+        return result;
     }
 
     /**
@@ -2601,6 +2615,24 @@ public class ChessGame {
     }
 
     /**
+     * Parse "Variant" section on PGN header to GameVariant enum
+     *
+     * @param variantValue "Variant" section on PGN header
+     * @return GameVariant enum
+     */
+    private static GameVariants parseVariantHeader(String variantValue) {
+        if (variantValue == null) return GameVariants.STANDARD;
+
+        return switch (variantValue.trim().toLowerCase()) {
+            case "chess960", "fischerandom", "fischerrandom" -> GameVariants.CHESS960;
+            case "crazyhouse" -> GameVariants.CRAZY_HOUSE;
+            case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
+            case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
+            default -> GameVariants.STANDARD;
+        };
+    }
+
+    /**
      * Load PGN on this ChessGame
      *
      * @param pgnString PGN data
@@ -2651,10 +2683,12 @@ public class ChessGame {
         Stack<VariationState> variationStack = new Stack<>();
 
         Chessboard pgnChessboard;
+        GameVariants parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
+
         if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
-            pgnChessboard = new Chessboard(parsedHeaders.get("FEN"));
+            pgnChessboard = new Chessboard(parsedHeaders.get("FEN"), parsedVariant);
         } else {
-            pgnChessboard = new Chessboard(Chessboard.start_position);
+            pgnChessboard = new Chessboard(Chessboard.start_position, parsedVariant);
         }
 
         GameResult parsedGameResult = GameResult.UNKNOWN;
@@ -2787,6 +2821,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             String fenToLoad = parsedHeaders.getOrDefault("FEN", Chessboard.start_position);
+            this.chessboard.gameVariants = parsedVariant;
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
 
             this.moveHistoryRoot = rootNode;
@@ -2830,7 +2865,7 @@ public class ChessGame {
                 this.headers.remove("FEN");
             }
 
-            evaluateGameState();
+            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
             this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
 
             Chessboard tempBoard = new Chessboard(startPositionFEN);
