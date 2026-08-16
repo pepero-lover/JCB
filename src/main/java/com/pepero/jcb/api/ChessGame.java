@@ -135,7 +135,7 @@ public class ChessGame {
     private GameResult gameResult = GameResult.UNKNOWN;
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
 
-    private final String startPositionFEN;
+    private String startPositionFEN;
 
     private final CopyOnWriteArrayList<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -1654,7 +1654,12 @@ public class ChessGame {
                 "The variant should be horde!"
         );
 
-        return chessboard.occupancies[white] == 0L;
+        readLock.lock();
+        try {
+            return chessboard.occupancies[white] == 0L;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -2047,14 +2052,14 @@ public class ChessGame {
      * @return game over reason
      */
     public GameOverReason getGameoverReason() {
-        readLock.lock();
+        writeLock.lock();
         try {
             if(evaluateGameState(getLastMainlineNode(this.moveHistoryRoot)) != GameResult.UNKNOWN) {
                 notifyGameOver(this.gameResult, this.gameoverReason);
             }
             return this.gameoverReason;
         } finally {
-            readLock.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -2704,7 +2709,7 @@ public class ChessGame {
         if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
             pgnChessboard = new Chessboard(parsedHeaders.get("FEN"), parsedVariant);
         } else {
-            pgnChessboard = new Chessboard(Chessboard.start_position, parsedVariant);
+            pgnChessboard = new Chessboard(getDefaultStartPosition(parsedVariant), parsedVariant);
         }
 
         GameResult parsedGameResult = GameResult.UNKNOWN;
@@ -2836,9 +2841,10 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            String fenToLoad = parsedHeaders.getOrDefault("FEN", Chessboard.start_position);
+            String fenToLoad = parsedHeaders.getOrDefault("FEN", getDefaultStartPosition(parsedVariant));
             this.chessboard.gameVariants = parsedVariant;
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
+            this.startPositionFEN = fenToLoad;
 
             this.moveHistoryRoot = rootNode;
             this.currentNode = rootNode;
