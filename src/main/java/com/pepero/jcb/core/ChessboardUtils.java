@@ -570,10 +570,10 @@ public class ChessboardUtils {
         return !isCheck(chessboard) && !hasLegalMoves(chessboard);
     }
 
-    public static int WHITE_WON_VALUE = 0;
-    public static int BLACK_WON_VALUE = 1;
-    public static int DREW_VALUE = 2;
-    public static int ONGOING_VALUE = 3;
+    public static final int WHITE_WON_VALUE = 0;
+    public static final int BLACK_WON_VALUE = 1;
+    public static final int DREW_VALUE = 2;
+    public static final int ONGOING_VALUE = 3;
 
     /**
      * Get game result for king racing <br>
