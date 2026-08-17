@@ -7,7 +7,7 @@
 - Java 21 이상
 ## 지원 기능
 
-- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / Three-check / King of the Hill / Horde)
+- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / Three-check / King of the Hill / Horde / Racing Kings)
 - Syzygy tablebase 프로빙 (WDL / DTZ)
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
@@ -31,6 +31,7 @@
 | Three-check      | ✅   | ✅ (`UCI_Variant`)  |
 | King of the Hill | ✅   | ✅ (`UCI_Variant`)  |
 | Horde            | ✅   | ✅ (`UCI_Variant`)  |
+| Racing Kings     | ✅   | ✅ (`UCI_Variant`)  |
 
 ## 참고 및 출처
 * 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 는 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
