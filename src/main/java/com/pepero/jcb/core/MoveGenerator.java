@@ -297,6 +297,192 @@ public class MoveGenerator {
     }
 
     /**
+     * Generate antichess moves
+     *
+     * @param chessboard chess board
+     * @param moveArray move array
+     * @return move count
+     */
+    public static int generateAntiChessMoves(Chessboard chessboard, int[] moveArray) {
+        int moveCount = 0;
+
+        int side = chessboard.side;
+        int oppSide = chessboard.side ^ 1;
+
+        int start_piece = (side == white) ? P : p;
+        int end_piece = (side == white) ? K : k;
+
+        boolean capture = false;
+
+        for(int piece = start_piece; piece <= end_piece; piece++) {
+            long bitboard = chessboard.bitboards[piece];
+            while (bitboard != 0) {
+                int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
+
+                long pieceAttacks;
+
+                if (piece == N || piece == n) {
+                    pieceAttacks = Attacks.knight_attacks[sourceSq];
+                } else if (piece == B || piece == b) {
+                    pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
+                } else if (piece == R || piece == r) {
+                    pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
+                } else if (piece == Q || piece == q) {
+                    pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
+                } else if (piece == P || piece == p) {
+                    pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
+                    if (chessboard.enpassant != no_sq) {
+                        pieceAttacks |= (1L << chessboard.enpassant);
+                    }
+                } else {
+                    pieceAttacks = Attacks.king_attacks[sourceSq];
+                }
+
+                boolean hasCapture = (pieceAttacks & chessboard.occupancies[oppSide]) != 0L;
+                if (!hasCapture && (piece == P || piece == p) && chessboard.enpassant != no_sq) {
+                    hasCapture = (Attacks.pawn_attacks[side][sourceSq] & (1L << chessboard.enpassant)) != 0L;
+                }
+                if (hasCapture) {
+                    capture = true;
+                    break;
+                }
+
+                bitboard &= (bitboard - 1);
+            }
+
+            if(capture) break;
+        }
+
+        for(int piece = start_piece; piece <= end_piece; piece++) {
+            long bitboard = chessboard.bitboards[piece];
+
+            if(piece == P || piece == p) {
+                while (bitboard != 0) {
+                    int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
+
+                    if(!capture) {
+                        int pushDir = (side == white) ? 8 : -8;
+                        int pushSq = sourceSq + pushDir;
+
+                        if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
+                            moveCount = addAntiChessPawnMoves(moveArray, moveCount, sourceSq,
+                                    pushSq, piece, false);
+
+                            // when double push
+                            int doublePushSq = sourceSq + (pushDir * 2);
+
+                            // make sure double push pawn is on 2 rank
+                            boolean isStartRank = (side == white) ? (sourceSq >= a2 && sourceSq <= h2) : (sourceSq >= a7 && sourceSq <= h7);
+                            if (isStartRank &&
+                                    !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
+                                moveCount = addAntiChessPawnMoves(moveArray, moveCount,
+                                        sourceSq, doublePushSq, piece, false);
+                            }
+                        }
+                    }
+
+                    // pawn attacks
+                    long pawnAttacks = Attacks.pawn_attacks[side][sourceSq] & chessboard.occupancies[oppSide];
+
+                    // add all pawn moves
+                    while (pawnAttacks != 0) {
+                        int targetSq = BitBoardUtils.getLS1BIndex(pawnAttacks);
+
+                        moveCount = addAntiChessPawnMoves(moveArray, moveCount, sourceSq,
+                                targetSq, piece, true);
+
+                        pawnAttacks = BitBoardUtils.popBit(pawnAttacks, targetSq);
+                    }
+
+                    // if enpassant square is not 'no_sq'
+                    if (chessboard.enpassant != no_sq) {
+                        // get enpassant attack
+                        long epAttacks = Attacks.pawn_attacks[side][sourceSq] & (1L << chessboard.enpassant);
+                        if (epAttacks != 0) {
+                            int targetSq = BitBoardUtils.getLS1BIndex(epAttacks);
+
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                    sourceSq, targetSq, piece, 0, true, false,
+                                    true, false));
+                        }
+                    }
+
+                    bitboard &= (bitboard - 1);
+                }
+            } else {
+                while (bitboard != 0) {
+                    int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
+
+                    long pieceAttacks = getPieceAttacks(chessboard, piece, side, sourceSq);
+
+                    // if capture only,
+                    if(capture) {
+                        // get capture attacks only
+                        if ((pieceAttacks & chessboard.occupancies[oppSide]) != 0L) {
+                            long tempOccupancy = pieceAttacks & chessboard.occupancies[oppSide];
+
+                            // add move all
+                            while (tempOccupancy != 0L) {
+                                int targetSq = BitBoardUtils.getLS1BIndex(tempOccupancy);
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                        sourceSq, targetSq, piece, 0, true, false, false,
+                                        false
+                                ));
+                                tempOccupancy &= (tempOccupancy - 1);
+                            }
+                        }
+                    } else {
+                        // add move all
+                        long tempOccupancy = pieceAttacks;
+                        while (tempOccupancy != 0L) {
+                            int targetSq = BitBoardUtils.getLS1BIndex(tempOccupancy);
+                            boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], targetSq);
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                    sourceSq, targetSq, piece, 0, isCapture, false, false,
+                                    false
+                            ));
+                            tempOccupancy &= (tempOccupancy - 1);
+                        }
+                    }
+
+                    bitboard &= (bitboard - 1);
+                }
+            }
+        }
+
+        return moveCount;
+    }
+
+    /**
+     * Get piece attacks
+     *
+     * @param chessboard chess board
+     * @param piece piece
+     * @param side side
+     * @param sourceSq source square
+     * @return piece attacks
+     */
+    private static long getPieceAttacks(Chessboard chessboard, int piece, int side, int sourceSq) {
+        long pieceAttacks;
+
+        if (piece == N || piece == n) {
+            pieceAttacks = Attacks.knight_attacks[sourceSq];
+        } else if (piece == B || piece == b) {
+            pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
+        } else if (piece == R || piece == r) {
+            pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
+        } else if (piece == Q || piece == q) {
+            pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
+        } else if (piece == P || piece == p){
+            pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
+        } else {
+            pieceAttacks = Attacks.king_attacks[sourceSq];
+        }
+
+        return pieceAttacks;
+    }
+
+    /**
      * Generate Strictly legal moves
      *
      * @param chessboard chessboard
@@ -304,6 +490,10 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
+        if(chessboard.gameVariants == GameVariants.ANTICHESS) {
+            return generateAntiChessMoves(chessboard, moveArray);
+        }
+
         if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
             if(ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
                 return 0;
@@ -414,15 +604,8 @@ public class MoveGenerator {
 
                 if (!isPawn) {
                     // get piece moves
-                    if (piece == N || piece == n) {
-                        pieceMoves = Attacks.knight_attacks[sourceSq];
-                    } else if (piece == B || piece == b) {
-                        pieceMoves = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
-                    } else if (piece == R || piece == r) {
-                        pieceMoves = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
-                    } else if (piece == Q || piece == q) {
-                        pieceMoves = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
-                    }
+                    pieceMoves = getPieceAttacks(chessboard, piece, side, sourceSq);
+
 
                     // remove my side's pieces
                     pieceMoves &= ~chessboard.occupancies[side];
@@ -659,6 +842,54 @@ public class MoveGenerator {
             return moveCount + 4;
         } else {
 
+            // if not promotion, just add one move
+            addMove(moveArray, moveCount, EncodeMove.encodeMove(source, target, piece, 0, isCapture,
+                    false, false, false));
+
+            return moveCount + 1;
+        }
+    }
+
+    /**
+     * Add anti chess pawn moves
+     *
+     * @param moveArray move array
+     * @param moveCount current move count
+     * @param source pawn source square
+     * @param target pawn target square
+     * @param piece pawn piece (for distinguishing white and black)
+     * @param isCapture is this pawn move capture
+     * @return move count
+     */
+    private static int addAntiChessPawnMoves(int[] moveArray, int moveCount, int source, int target,
+                                             int piece, boolean isCapture) {
+        // get moving piece turn
+        int turn = (piece == P) ? white : black;
+
+        // get whether this move is promotion
+        boolean isPromotion = (turn == white && target >= a8) || (turn == black && target <= h1);
+
+        if (isPromotion) {
+            // if promotion move, add four moves (queen, rook, bishop, knight)
+            int queen = (turn == white) ? Q : q;
+            int rook = (turn == white) ? R : r;
+            int bishop = (turn == white) ? B : b;
+            int knight = (turn == white) ? N : n;
+            int king = (turn == white) ? K : k;
+
+            addMove(moveArray, moveCount, EncodeMove.encodeMove(source, target, piece, queen, isCapture,
+                    false, false, false));
+            addMove(moveArray, moveCount + 1, EncodeMove.encodeMove(source, target, piece, rook, isCapture,
+                    false, false, false));
+            addMove(moveArray, moveCount + 2, EncodeMove.encodeMove(source, target, piece, bishop, isCapture,
+                    false, false, false));
+            addMove(moveArray, moveCount + 3, EncodeMove.encodeMove(source, target, piece, knight, isCapture,
+                    false, false, false));
+            addMove(moveArray, moveCount + 4, EncodeMove.encodeMove(source, target, piece, king, isCapture,
+                    false, false, false));
+
+            return moveCount + 5;
+        } else {
             // if not promotion, just add one move
             addMove(moveArray, moveCount, EncodeMove.encodeMove(source, target, piece, 0, isCapture,
                     false, false, false));

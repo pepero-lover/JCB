@@ -22,6 +22,10 @@ public class Chessboard {
     // racing kings start pos
     public static final String racing_kings_start_position = "8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1";
 
+    // antichess start pos
+    // equals to start_position, but removed castling rights.
+    public static final String antichess_start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1";
+
     // define bitboards
     public long[] bitboards = new long[12];
 

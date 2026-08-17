@@ -215,6 +215,7 @@ public class ChessGame {
         return switch (gameVariants) {
             case HORDE -> Chessboard.horde_start_position;
             case RACING_KINGS -> Chessboard.racing_kings_start_position;
+            case ANTICHESS -> Chessboard.antichess_start_position;
             default -> Chessboard.start_position;
         };
     }
