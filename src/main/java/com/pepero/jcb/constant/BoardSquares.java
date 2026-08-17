@@ -1,5 +1,7 @@
 package com.pepero.jcb.constant;
 
+import com.pepero.jcb.bitboard.BitBoardUtils;
+
 public class BoardSquares {
     // For human reading board numbers (a1 = 0, LERF: Little-Endian Rank-File)
     public static final int a1 = 0;     public static final int b1 = 1;     public static final int c1 = 2;     public static final int d1 = 3;     public static final int e1 = 4;     public static final int f1 = 5;     public static final int g1 = 6;     public static final int h1 = 7;
@@ -15,9 +17,25 @@ public class BoardSquares {
     public static final int no_sq = 64;
 
 
+    // Rank constants
+
+    public static final long RANK_1 = 0x00000000000000FFL;
+    public static final long RANK_2 = 0x000000000000FF00L;
+    public static final long RANK_3 = 0x0000000000FF0000L;
+    public static final long RANK_4 = 0x00000000FF000000L;
+    public static final long RANK_5 = 0x000000FF00000000L;
+    public static final long RANK_6 = 0x0000FF0000000000L;
+    public static final long RANK_7 = 0x00FF000000000000L;
+    public static final long RANK_8 = 0xFF00000000000000L;
+
+
     // for masking king of the hills center squares
     public static final long CENTER_SQUARES =
             (1L << d4) | (1L << e4) | (1L << d5) | (1L << e5);
+
+    // for masking racing kings goal line
+    // 8 rank mask
+    public static final long GOAL_LINE = RANK_8;
 
 
     public static String[] square_to_coordinates = {

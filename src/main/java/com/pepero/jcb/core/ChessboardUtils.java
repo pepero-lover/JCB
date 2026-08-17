@@ -16,6 +16,7 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.MoveCache.CHESSBOARD_UTIL_CACHE;
 import static com.pepero.jcb.constant.SideToMove.*;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
+import static com.pepero.jcb.core.MoveGenerator.isSquareAttackedWithOcc;
 
 public class ChessboardUtils {
     public static final char[] ascii_pieces = {
@@ -567,6 +568,92 @@ public class ChessboardUtils {
      */
     public static boolean isStaleMate(Chessboard chessboard) {
         return !isCheck(chessboard) && !hasLegalMoves(chessboard);
+    }
+
+    public static int WHITE_WON_VALUE = 0;
+    public static int BLACK_WON_VALUE = 1;
+    public static int DREW_VALUE = 2;
+    public static int ONGOING_VALUE = 3;
+
+    /**
+     * Get game result for king racing <br>
+     * if white won, returns 0, <br>
+     * if black won, returns 1, <br>
+     * if drew, returns 2, <br>
+     * and otherwise (not game over), returns 3
+     *
+     * @param chessboard chess board
+     * @return game result
+     */
+    public static int getGameResultForRacingKings(Chessboard chessboard) {
+        boolean whiteTurn = chessboard.side == white;
+
+        int blackKingSq = BitBoardUtils.getLS1BIndex(chessboard.bitboards[k]);
+
+        boolean wonRaceWhite = (chessboard.bitboards[K] & GOAL_LINE) != 0L;
+        boolean wonRaceBlack = (chessboard.bitboards[k] & GOAL_LINE) != 0L;
+
+        // if both have won race
+        if(wonRaceWhite && wonRaceBlack) {
+            // draw
+            return DREW_VALUE;
+        }
+
+        // if black won the race, black won
+        if(wonRaceBlack /* && !wonRaceWhite can be removed */) {
+            return BLACK_WON_VALUE;
+        }
+
+        // if black turn, and white won the race, check black king can draw the race
+        if(wonRaceWhite /* && !wonRaceBlack can be removed */) {
+            if(!whiteTurn) {
+                // get black king moves
+                long kingAttacks = Attacks.king_attacks[blackKingSq] & ~chessboard.occupancies[black];
+                boolean canDrawRace = false;
+                while (kingAttacks != 0) {
+                    int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
+                    if(!BitBoardUtils.getBit(GOAL_LINE, targetSq)) {
+                        kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
+                        continue;
+                    }
+
+                    // pop king pos on occupancy because
+
+                    // let's assume this is the position
+                    // - R - - - k - -
+                    // - - - - - - - -
+
+                    // and the expected is
+                    // - R - - 1 k 1 -
+                    // - - - - 1 1 1 -
+
+                    // but if we don't pop the king square, the attack is blocked by king square so
+                    // - R - - 1 k - -
+                    // - - - - 1 1 1 -
+                    // and this is not we wanted.
+                    long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], blackKingSq);
+                    boolean isSafe = !isSquareAttackedWithOcc(chessboard, targetSq, white, tempOcc);
+
+                    if (isSafe) {
+                        canDrawRace = true;
+                        break;
+                    }
+
+                    kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
+                }
+
+                // if black can't draw race
+                if(!canDrawRace) {
+                    // white won
+                    return WHITE_WON_VALUE;
+                }
+            } else {
+                // if white turn and white is already on finish line, white won
+                return WHITE_WON_VALUE;
+            }
+        }
+
+        return ONGOING_VALUE;
     }
 
     /**

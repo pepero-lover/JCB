@@ -8,8 +8,8 @@ import com.pepero.jcb.encode.EncodeMove;
 public class MoveGenTest {
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(
-                Chessboard.horde_start_position,
-                GameVariants.HORDE
+                Chessboard.racing_kings_start_position,
+                GameVariants.RACING_KINGS
         );
 
         int[] move_list = new int[255];

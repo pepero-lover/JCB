@@ -56,7 +56,7 @@ public class EngineMatchTest {
 //                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
 //                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 //                            ))
-                    .variants(GameVariants.HORDE)
+                    .variants(GameVariants.RACING_KINGS)
                     .totalGames(10)
                     .concurrency(4)
                     .build();

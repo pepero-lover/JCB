@@ -214,6 +214,7 @@ public class ChessGame {
     private static String getDefaultStartPosition(GameVariants gameVariants) {
         return switch (gameVariants) {
             case HORDE -> Chessboard.horde_start_position;
+            case RACING_KINGS -> Chessboard.racing_kings_start_position;
             default -> Chessboard.start_position;
         };
     }
@@ -1663,6 +1664,25 @@ public class ChessGame {
     }
 
     /**
+     * Get whether racing kings is over (on racing kings variant)
+     *
+     * @return whether racing kings is over
+     * @throws VariantNotMatchException if this ChessGame isn't racing kings variant
+     */
+    public boolean isKingRaceOver() {
+        if(chessboard.gameVariants != GameVariants.RACING_KINGS) throw new VariantNotMatchException(
+                "The variant should be racing kings!"
+        );
+
+        readLock.lock();
+        try {
+            return ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get whether this position allows claiming a draw by threefold repetition
      *
      * @return whether threefold repetition draw can be claimed
@@ -1811,6 +1831,9 @@ public class ChessGame {
             }
             if(chessboard.gameVariants == GameVariants.HORDE) {
                 if(isHordePiecesGone()) return GameOverReason.HORDE;
+            }
+            if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
+                if(isKingRaceOver()) return GameOverReason.KING_RACE;
             }
 
             boolean inCheck = isCheck();
@@ -2497,6 +2520,13 @@ public class ChessGame {
                 case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
                         ? GameResult.WHITE_WON : GameResult.BLACK_WON;
                 case HORDE -> GameResult.BLACK_WON;
+                case KING_RACE -> {
+                    int racingResult = ChessboardUtils.getGameResultForRacingKings(chessboard);
+                    if(racingResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
+                    else if(racingResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
+                    else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
+                    else yield GameResult.UNKNOWN;
+                }
                 case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
                      SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
@@ -2649,6 +2679,8 @@ public class ChessGame {
             case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
             case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
             case "horde", "hord", "hd" -> GameVariants.HORDE;
+            case "racing kings", "racing king", "racingkings", "racingking"
+            ,"king race", "kingrace", "kr" -> GameVariants.RACING_KINGS;
             default -> GameVariants.STANDARD;
         };
     }
@@ -2876,6 +2908,7 @@ public class ChessGame {
                     case THREE_CHECK -> this.headers.put("Variant", "Three-check");
                     case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
                     case HORDE -> this.headers.put("Variant", "Horde");
+                    case RACING_KINGS -> this.headers.put("Variant", "Racing Kings");
                 }
             }
 
