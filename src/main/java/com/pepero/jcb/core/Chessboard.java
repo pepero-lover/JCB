@@ -100,6 +100,8 @@ public class Chessboard {
 
     public GameVariants gameVariants;
 
+    public boolean isChess960 = false;
+
     public int MAX_DEPTH = 256;
 
     public int[] enpassant_history = new int[MAX_DEPTH];
@@ -134,8 +136,17 @@ public class Chessboard {
     }
 
     public Chessboard(String fen, GameVariants gameVariants) {
+        this(fen, false, gameVariants);
+    }
+
+    public Chessboard(String fen, boolean isChess960) {
+        this(fen, isChess960, GameVariants.STANDARD);
+    }
+
+    public Chessboard(String fen, boolean isChess960, GameVariants gameVariants) {
         ChessboardUtils.parseFen(this, fen);
 
+        this.isChess960 = isChess960;
         this.gameVariants = gameVariants;
     }
 
@@ -227,6 +238,7 @@ public class Chessboard {
         this.half_ply = source.half_ply;
 
         this.gameVariants = source.gameVariants;
+        this.isChess960 = source.isChess960;
 
         this.king_side_rook_file = source.king_side_rook_file;
         this.queen_side_rook_file = source.queen_side_rook_file;

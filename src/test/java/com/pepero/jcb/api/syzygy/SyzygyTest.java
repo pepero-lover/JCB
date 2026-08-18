@@ -8,7 +8,7 @@ import java.nio.file.Path;
 
 public class SyzygyTest {
     public static void main(String[] args) throws IOException {
-        ChessGame game = ChessGame.fromFEN("r3k3/8/8/8/8/8/8/4K2R w Kq - 0 1", GameVariants.CHESS960);
+        ChessGame game = ChessGame.fromFEN("r3k3/8/8/8/8/8/8/4K2R w Kq - 0 1", true);
 
         Path path = Path.of("syzygy/");
 

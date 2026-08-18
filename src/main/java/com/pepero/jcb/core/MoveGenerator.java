@@ -483,7 +483,8 @@ public class MoveGenerator {
         if (extraRemoveSq != -1) occAfterMove = BitBoardUtils.popBit(occAfterMove, extraRemoveSq);
         occAfterMove = BitBoardUtils.setBit(occAfterMove, targetSquare);
 
-        long pawns = chessboard.bitboards[P] | chessboard.bitboards[p];
+        long pawns = (chessboard.bitboards[P] | chessboard.bitboards[p]) & ~(1L << targetSquare);
+
         return EXPLOSION_MASK[targetSquare] & occAfterMove & ~pawns;
     }
 
@@ -589,8 +590,8 @@ public class MoveGenerator {
                     while (captures != 0) {
                         int targetSq = BitBoardUtils.getLS1BIndex(captures);
 
-                        if (isAtomicCaptureLegal(chessboard, side,
-                                sourceSq, targetSq, piece, 0, -1)) {
+                        if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
+                                -1, 0)) {
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                     sourceSq, targetSq, piece, 0, true, false, false, false));
                         }
@@ -628,8 +629,8 @@ public class MoveGenerator {
                         boolean isPromotion = (side == white && targetSq >= a8) || (side == black && targetSq <= h1);
 
                         if (!isPromotion) {
-                            if (isAtomicCaptureLegal(chessboard, side,
-                                    sourceSq, targetSq, piece, 0, -1)) {
+                            if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
+                                -1, 0)) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true, false,
                                         false, false));
@@ -637,8 +638,8 @@ public class MoveGenerator {
                         } else {
                             int[] promoPieces = (side == white) ? new int[]{Q,R,B,N} : new int[]{q,r,b,n};
                             for (int promo : promoPieces) {
-                                if (isAtomicCaptureLegal(chessboard, side, sourceSq, targetSq, piece,
-                                        promo, -1)) {
+                                if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
+                                        -1, promo)) {
                                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                             sourceSq, targetSq, piece, promo, true,
                                             false, false, false));
@@ -654,8 +655,8 @@ public class MoveGenerator {
                             int targetSq = chessboard.enpassant;
                             int capturedPawnSq = (side == white) ? targetSq - 8 : targetSq + 8;
 
-                            if (isAtomicCaptureLegal(chessboard, side, sourceSq, targetSq, piece,
-                                    0, capturedPawnSq)) {
+                            if (isAtomicCaptureLegal(chessboard, side, piece,
+                                    sourceSq,targetSq, capturedPawnSq, 0)) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true,
                                         false, true, false));
@@ -1002,23 +1003,25 @@ public class MoveGenerator {
 
         int targetPiece = (promotedPiece != 0) ? promotedPiece : piece;
 
-        long bishopsQueens = ((side == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q])
+        long bishopsQueens = ((attackerSide == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[b] | chessboard.bitboards[q])) & ~removalMask;
-        long rooksQueens = ((side == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q])
+        long rooksQueens = ((attackerSide == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[r] | chessboard.bitboards[q])) & ~removalMask;
-        long knights = ((side == white) ? chessboard.bitboards[N] : chessboard.bitboards[n]) & ~removalMask;
-        long pawns   = ((side == white) ? chessboard.bitboards[P] : chessboard.bitboards[p]) & ~removalMask;
+        long knights = ((attackerSide == white) ? chessboard.bitboards[N] : chessboard.bitboards[n]) & ~removalMask;
+        long pawns   = ((attackerSide == white) ? chessboard.bitboards[P] : chessboard.bitboards[p]) & ~removalMask;
 
-        if (piece == B || piece == b || piece == Q || piece == q)
-            bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
-        if (piece == R || piece == r || piece == Q || piece == q)
-            rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
-        if (piece == N || piece == n)
-            knights = BitBoardUtils.popBit(knights, sourceSq);
-        if (piece == P || piece == p)
-            pawns = BitBoardUtils.popBit(pawns, sourceSq);
+        if (side == attackerSide) {
+            if (piece == B || piece == b || piece == Q || piece == q)
+                bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
+            if (piece == R || piece == r || piece == Q || piece == q)
+                rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
+            if (piece == N || piece == n)
+                knights = BitBoardUtils.popBit(knights, sourceSq);
+            if (piece == P || piece == p)
+                pawns = BitBoardUtils.popBit(pawns, sourceSq);
+        }
 
-        if (!BitBoardUtils.getBit(removalMask, targetSq)) {
+        if (!BitBoardUtils.getBit(removalMask, targetSq) && side == attackerSide) {
             if (targetPiece == B || targetPiece == b || targetPiece == Q || targetPiece == q)
                 bishopsQueens = BitBoardUtils.setBit(bishopsQueens, targetSq);
             if (targetPiece == R || targetPiece == r || targetPiece == Q || targetPiece == q)
@@ -1037,8 +1040,6 @@ public class MoveGenerator {
                 ? (Attacks.pawn_attacks[black][targetKingSq] & pawns)
                 : (Attacks.pawn_attacks[white][targetKingSq] & pawns);
         if (pawnAttackers != 0) return true;
-
-        // king attacks removed
 
         return false;
     }
@@ -1081,14 +1082,10 @@ public class MoveGenerator {
         int ourKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? K : k]);
         int oppKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? k : K]);
 
-        long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq);
+        long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq
+        );
 
-        // first, check our king is on explosion range.
-        // if it is, it's illegal move.
         if(BitBoardUtils.getBit(removalMask, ourKing)) return false;
-
-        // and check opposite king is on explosion range.
-        // our king is not on explosion range, so return legal move
         if(BitBoardUtils.getBit(removalMask, oppKing)) return true;
 
         int oppSide = side ^ 1;
@@ -1255,7 +1252,7 @@ public class MoveGenerator {
 
         // if chess 960, returns KxR moves like e1h1
         // if standard chess, returns normal moves like e1g1
-        boolean is960 = chessboard.gameVariants == GameVariants.CHESS960;
+        boolean is960 = chessboard.isChess960;
 
         if (side == white) {
             // make sure the white king side castling right
@@ -1478,24 +1475,24 @@ public class MoveGenerator {
                 if (target_square > source_square) {
                     king_target = g1;
                     rook_target = f1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
+                    if (!chessboard.isChess960) rook_source = h1;
                 }
                 else {
                     king_target = c1;
                     rook_target = d1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
+                    if (!chessboard.isChess960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) {
                     king_target = g8;
                     rook_target = f8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
+                    if (!chessboard.isChess960) rook_source = h8;
                 }
                 else {
                     king_target = c8;
                     rook_target = d8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
+                    if (!chessboard.isChess960) rook_source = a8;
                 }
             }
 
@@ -1686,24 +1683,24 @@ public class MoveGenerator {
                 if (target_square > source_square) { // king side castling
                     k_target = g1;
                     r_target = f1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
+                    if (!chessboard.isChess960) rook_source = h1;
                 }
                 else { // queen side castling
                     k_target = c1;
                     r_target = d1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
+                    if (!chessboard.isChess960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) { // king side castling
                     k_target = g8;
                     r_target = f8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
+                    if (!chessboard.isChess960) rook_source = h8;
                 }
                 else { // queen side castling
                     k_target = c8;
                     r_target = d8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
+                    if (!chessboard.isChess960) rook_source = a8;
                 }
             }
 
@@ -1765,9 +1762,8 @@ public class MoveGenerator {
                 chessboard.bitboards[p] | chessboard.bitboards[n] | chessboard.bitboards[b] |
                 chessboard.bitboards[r] | chessboard.bitboards[q] | chessboard.bitboards[k];
 
-        long pawns = chessboard.bitboards[P] | chessboard.bitboards[p];
+        long pawns = (chessboard.bitboards[P] | chessboard.bitboards[p]) & ~(1L << targetSq);
 
-        // target square is always removed (capturing piece), other squares exclude pawns
         long removalMask = (EXPLOSION_MASK[targetSq] & occ & ~pawns) | (1L << targetSq);
 
         int expCount = 0;
@@ -1923,24 +1919,24 @@ public class MoveGenerator {
                 if (target_square > source_square) {
                     king_target = g1;
                     rook_target = f1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
+                    if (!chessboard.isChess960) rook_source = h1;
                 }
                 else {
                     king_target = c1;
                     rook_target = d1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
+                    if (!chessboard.isChess960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) {
                     king_target = g8;
                     rook_target = f8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
+                    if (!chessboard.isChess960) rook_source = h8;
                 }
                 else {
                     king_target = c8;
                     rook_target = d8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
+                    if (!chessboard.isChess960) rook_source = a8;
                 }
             }
 
@@ -2063,7 +2059,7 @@ public class MoveGenerator {
         // remove castling rights if king moved
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
 
-        if(chessboard.gameVariants == GameVariants.CHESS960) {
+        if(chessboard.isChess960) {
             if (piece == K) chessboard.castle &= ~(CastlingRights.WK | CastlingRights.WQ);
             if (piece == k) chessboard.castle &= ~(CastlingRights.BK | CastlingRights.BQ);
 
@@ -2217,24 +2213,24 @@ public class MoveGenerator {
                 if (target_square > source_square) { // king side castling
                     k_target = g1;
                     r_target = f1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h1;
+                    if (!chessboard.isChess960) rook_source = h1;
                 }
                 else { // queen side castling
                     k_target = c1;
                     r_target = d1;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a1;
+                    if (!chessboard.isChess960) rook_source = a1;
                 }
             } else {
                 rook_piece = r;
                 if (target_square > source_square) { // king side castling
                     k_target = g8;
                     r_target = f8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = h8;
+                    if (!chessboard.isChess960) rook_source = h8;
                 }
                 else { // queen side castling
                     k_target = c8;
                     r_target = d8;
-                    if (chessboard.gameVariants != GameVariants.CHESS960) rook_source = a8;
+                    if (!chessboard.isChess960) rook_source = a8;
                 }
             }
 
@@ -2271,11 +2267,8 @@ public class MoveGenerator {
 
         // if normal capture move
         if (capture && !enpass) {
-            if (!hadExplosion) { // = "variant != ATOMIC"
-                chessboard.bitboards[captured_piece] =
-                        BitBoardUtils.setBit(chessboard.bitboards[captured_piece],
-                        target_square);
-            }
+            chessboard.bitboards[captured_piece] =
+                    BitBoardUtils.setBit(chessboard.bitboards[captured_piece], target_square);
 
             if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
                 boolean was_promoted = chessboard.promoted_captured_history[chessboard.ply];

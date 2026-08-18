@@ -322,7 +322,7 @@ public class ChessGameTest {
     @DisplayName("Chess 960 에서 e1h1 입력시 정상적으로 파싱되어야 한다")
     public void testChess960Castling() {
         Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1",
-                GameVariants.CHESS960);
+                true);
 
         int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e1h1");
 

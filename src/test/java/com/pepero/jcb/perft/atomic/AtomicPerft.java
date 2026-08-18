@@ -7,11 +7,12 @@ import com.pepero.jcb.core.GameVariants;
 public class AtomicPerft {
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(
-                "r3k1rR/5K2/8/8/8/8/8/8 b kq - 0 1",
+                Chessboard.start_position,
+                false,
                 GameVariants.ATOMIC
         );
 
-        System.out.println(PerftDriver.perftBitboardTest(chessboard, 4,
+        System.out.println(PerftDriver.perftBitboardTest(chessboard, 6,
                 1, false, true));
     }
 }

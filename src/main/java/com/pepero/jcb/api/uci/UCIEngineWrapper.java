@@ -159,6 +159,13 @@ public class UCIEngineWrapper implements AutoCloseable {
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
 
+        if(chessGame.isChess960()) {
+            if(!hasOption("UCI_Chess960")) {
+                throw new UCIEngineException("Chess 960 option not found!");
+            }
+            setOptionSync("UCI_Chess960", "true");
+        }
+
         supportVariant(chessGame.getGameVariants());
 
         sendCommand(buildPositionCommand(chessGame));
@@ -177,36 +184,29 @@ public class UCIEngineWrapper implements AutoCloseable {
      */
     private void supportVariant(GameVariants variants) {
         if(variants != GameVariants.STANDARD) {
-            if(variants == GameVariants.CHESS960) {
-                if(!hasOption("UCI_Chess960")) {
-                    throw new UCIEngineException("Chess 960 option not found!");
-                }
-                setOptionSync("UCI_Chess960", "true");
-            } else {
-                if(!hasOption("UCI_Variant")) {
-                    throw new UCIEngineException("Variant option not found!");
-                }
+            if(!hasOption("UCI_Variant")) {
+                throw new UCIEngineException("Variant option not found!");
+            }
 
-                switch (variants) {
-                    case CRAZY_HOUSE :
-                        setOptionSync("UCI_Variant", "crazyhouse");
-                        break;
-                    case THREE_CHECK:
-                        setOptionSync("UCI_Variant", "3check");
-                        break;
-                    case KING_OF_THE_HILL:
-                        setOptionSync("UCI_Variant", "kingofthehill");
-                        break;
-                    case HORDE:
-                        setOptionSync("UCI_Variant", "horde");
-                        break;
-                    case ANTICHESS:
-                        setOptionSync("UCI_Variant", "antichess");
-                        break;
-                    case RACING_KINGS:
-                        setOptionSync("UCI_Variant", "racingkings");
-                        break;
-                }
+            switch (variants) {
+                case CRAZY_HOUSE :
+                    setOptionSync("UCI_Variant", "crazyhouse");
+                    break;
+                case THREE_CHECK:
+                    setOptionSync("UCI_Variant", "3check");
+                    break;
+                case KING_OF_THE_HILL:
+                    setOptionSync("UCI_Variant", "kingofthehill");
+                    break;
+                case HORDE:
+                    setOptionSync("UCI_Variant", "horde");
+                    break;
+                case ANTICHESS:
+                    setOptionSync("UCI_Variant", "antichess");
+                    break;
+                case RACING_KINGS:
+                    setOptionSync("UCI_Variant", "racingkings");
+                    break;
             }
         }
     }
@@ -478,6 +478,13 @@ public class UCIEngineWrapper implements AutoCloseable {
         analysisSnapshot = takeSnapshot(chessGame);
 
         setOptionSync("MultiPV", String.valueOf(multiPv));
+
+        if(chessGame.isChess960()) {
+            if(!hasOption("UCI_Chess960")) {
+                throw new UCIEngineException("Chess 960 option not found!");
+            }
+            setOptionSync("UCI_Chess960", "true");
+        }
 
         supportVariant(chessGame.getGameVariants());
 

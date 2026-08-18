@@ -151,7 +151,7 @@ public class ChessGame {
      * @param pgn pgn string
      */
     public static ChessGame fromPGN(String pgn) {
-        ChessGame result = new ChessGame();
+        ChessGame result = new ChessGame(false, GameVariants.STANDARD);
         result.loadPGN(pgn);
         return result;
     }
@@ -160,12 +160,37 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param gameVariants game variants ( standard, chess 960 ... )
+     * @param gameVariants game variants ( standard, crazyhouse ... )
      *
      * @throws FENConvertException - if converting fen string failed
      */
     public static ChessGame fromFEN(String fen, GameVariants gameVariants) {
-        return new ChessGame(fen, gameVariants);
+        return new ChessGame(fen, false, gameVariants);
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param fen fen string
+     * @param isChess960 is Chess 960 variant
+     * @param gameVariants game variants ( standard, crazyhouse ... )
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public static ChessGame fromFEN(String fen, boolean isChess960, GameVariants gameVariants) {
+        return new ChessGame(fen, isChess960, gameVariants);
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param fen fen string
+     * @param isChess960 is Chess 960 variant
+     *
+     * @throws FENConvertException - if converting fen string failed
+     */
+    public static ChessGame fromFEN(String fen, boolean isChess960) {
+        return new ChessGame(fen, isChess960, GameVariants.STANDARD);
     }
 
     /**
@@ -183,16 +208,35 @@ public class ChessGame {
      * Initialize position to start position
      */
     public static ChessGame startPosition() {
-        return new ChessGame();
+        return new ChessGame(false, GameVariants.STANDARD);
     }
 
     /**
      * Initialize position to start position
      *
-     * @param gameVariants game variants ( standard, chess 960 ... )
+     * @param isChess960 is Chess 960 variant
+     */
+    public static ChessGame startPosition(boolean isChess960) {
+        return new ChessGame(isChess960, GameVariants.STANDARD);
+    }
+
+    /**
+     * Initialize position to start position
+     *
+     * @param gameVariants game variants ( standard, crazyhouse ... )
      */
     public static ChessGame startPosition(GameVariants gameVariants) {
-        return new ChessGame(gameVariants);
+        return new ChessGame(false, gameVariants);
+    }
+
+    /**
+     * Initialize position to start position
+     *
+     * @param isChess960 is Chess 960 variant
+     * @param gameVariants game variants ( standard, crazyhouse ... )
+     */
+    public static ChessGame startPosition(boolean isChess960, GameVariants gameVariants) {
+        return new ChessGame(isChess960, gameVariants);
     }
 
     /**
@@ -224,16 +268,18 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param gameVariants game variants ( standard, chess 960 ... )
+     * @param isChess960 is Chess 960 variant
+     * @param gameVariants game variants ( standard, crazyhouse ... )
      *
      * @throws FENConvertException - if converting fen string failed
      */
-    private ChessGame(String fen, GameVariants gameVariants) {
+    private ChessGame(String fen, boolean isChess960, GameVariants gameVariants) {
         FENValidator.validateString(fen, gameVariants);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
 
+        chessboard.isChess960 = isChess960;
         chessboard.gameVariants = gameVariants;
 
         try {
@@ -251,26 +297,13 @@ public class ChessGame {
 
     /**
      * Initialize position to start position
-     */
-    private ChessGame() {
-        this.chessboard = new Chessboard();
-
-        ChessboardUtils.parseFen(this.chessboard, Chessboard.start_position);
-
-        startPositionFEN = Chessboard.start_position;
-
-        nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
-
-        calculateInitialPieces(this.getFEN());
-    }
-
-    /**
-     * Initialize position to start position
      *
-     * @param gameVariants game variants ( standard, chess 960 ... )
+     * @param isChess960 is Chess 960 variant
+     * @param gameVariants game variants ( standard, crazyhouse ... )
      */
-    private ChessGame(GameVariants gameVariants) {
+    private ChessGame(boolean isChess960, GameVariants gameVariants) {
         this.chessboard = new Chessboard();
+        this.chessboard.isChess960 = isChess960;
         this.chessboard.gameVariants = gameVariants;
 
         String startFen = getDefaultStartPosition(gameVariants);
@@ -2705,7 +2738,6 @@ public class ChessGame {
         if (variantValue == null) return GameVariants.STANDARD;
 
         return switch (variantValue.trim().toLowerCase()) {
-            case "chess960", "fischerandom", "fischerrandom" -> GameVariants.CHESS960;
             case "crazyhouse" -> GameVariants.CRAZY_HOUSE;
             case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
             case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
@@ -2770,11 +2802,16 @@ public class ChessGame {
 
         Chessboard pgnChessboard;
         GameVariants parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
+        boolean isChess960 = false;
+        //"chess960", "fischerandom", "fischerrandom"
+        switch (parsedHeaders.get("Variant").trim().toLowerCase()) {
+            case "chess960", "fischerandom", "fischerrandom" -> isChess960 = true;
+        }
 
         if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
-            pgnChessboard = new Chessboard(parsedHeaders.get("FEN"), parsedVariant);
+            pgnChessboard = new Chessboard(parsedHeaders.get("FEN"), isChess960, parsedVariant);
         } else {
-            pgnChessboard = new Chessboard(getDefaultStartPosition(parsedVariant), parsedVariant);
+            pgnChessboard = new Chessboard(getDefaultStartPosition(parsedVariant), isChess960, parsedVariant);
         }
 
         GameResult parsedGameResult = GameResult.UNKNOWN;
@@ -2908,6 +2945,7 @@ public class ChessGame {
         try {
             String fenToLoad = parsedHeaders.getOrDefault("FEN", getDefaultStartPosition(parsedVariant));
             this.chessboard.gameVariants = parsedVariant;
+            this.chessboard.isChess960 = isChess960;
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
             this.startPositionFEN = fenToLoad;
 
@@ -2934,9 +2972,12 @@ public class ChessGame {
         try {
             if(this.headers.isEmpty()) setDefaultHeaders();
 
+            if(chessboard.isChess960) {
+                this.headers.put("Variant", "Chess960");
+            }
+
             if(chessboard.gameVariants != GameVariants.STANDARD) {
                 switch (chessboard.gameVariants) {
-                    case CHESS960 -> this.headers.put("Variant", "Chess960");
                     case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
                     case THREE_CHECK -> this.headers.put("Variant", "Three-check");
                     case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
@@ -3179,6 +3220,20 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this ChessGame is chess960
+     *
+     * @return whether this ChessGame is chess960
+     */
+    public boolean isChess960() {
+        readLock.lock();
+        try {
+            return chessboard.isChess960;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get game variants
      *
      * @return game variants
@@ -3292,7 +3347,7 @@ public class ChessGame {
      * @return WDL result
      */
     public int probeSyzygyWdl(SyzygyTablebase tablebase) throws IOException{
-        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+        if (getGameVariants() != GameVariants.STANDARD && isChess960())
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();
@@ -3311,7 +3366,7 @@ public class ChessGame {
      * @return DTZ result
      */
     public int probeSyzygyDtz(SyzygyTablebase tablebase) throws IOException {
-        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+        if (getGameVariants() != GameVariants.STANDARD && isChess960())
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();
@@ -3346,7 +3401,7 @@ public class ChessGame {
      * @throws IOException if tablebase could not find or something
      */
     public List<SyzygyMoveDTO> findRankedSyzygyMoves(SyzygyTablebase tablebase) throws IOException {
-        if (getGameVariants() != GameVariants.STANDARD && getGameVariants() != GameVariants.CHESS960)
+        if (getGameVariants() != GameVariants.STANDARD && isChess960())
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
 
         readLock.lock();

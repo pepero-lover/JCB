@@ -448,7 +448,7 @@ public class ConvertStringMoveUtils {
             if(chessboard.side == white) promotion_type -= 6;
         }
 
-        if(chessboard.gameVariants != GameVariants.CHESS960) {
+        if(!chessboard.isChess960) {
             int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
             int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
             if(pieceType == K && targetType == R) {
@@ -531,7 +531,7 @@ public class ConvertStringMoveUtils {
 
                 boolean isMoveKingSide = target > source;
 
-                if(isKingSide == isMoveKingSide) return new TranslateResult(lanForCastling(chessboard, move), move);
+                if(isKingSide == isMoveKingSide) return new TranslateResult(lanForCastling(move), move);
             }
 
             throw new ConvertMoveException("There is no possible castling move! ( FEN : " +
@@ -636,23 +636,14 @@ public class ConvertStringMoveUtils {
     /**
      * Get Lan for Castling move
      *
-     * @param board chessboard
      * @param move encoded move (castling)
      * @return lan string
      */
-    private static String lanForCastling(Chessboard board, int move) {
+    private static String lanForCastling(int move) {
         int src = EncodeMove.getMoveSource(move);
         int tgt = EncodeMove.getMoveTarget(move);
 
-        if (board.gameVariants == GameVariants.CHESS960) {
-            return BoardSquares.square_to_coordinates[src] + BoardSquares.square_to_coordinates[tgt];
-        }
-
-        boolean isWhite = board.side == white;
-        boolean isKingSide = (src < tgt);
-
-        if (isWhite) return isKingSide ? "e1g1" : "e1c1";
-        else return isKingSide ? "e8g8" : "e8c8";
+        return BoardSquares.square_to_coordinates[src] + BoardSquares.square_to_coordinates[tgt];
     }
 
     /**

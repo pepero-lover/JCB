@@ -32,7 +32,7 @@ public class EngineArena {
         this.factory = new ProcessUCIEngineFactory();
         this.matchConfig = config;
 
-        if(config.getVariants() == GameVariants.CHESS960) {
+        if(config.isChess960()) {
             List<Integer> list = new ArrayList<>();
             for (int i = 0; i < 960; i++) list.add(i);
 
@@ -66,16 +66,16 @@ public class EngineArena {
         boolean isEngine1White = roundNumber % 2 == 1;
 
         ChessGame chessGame;
-        if(matchConfig.getVariants() == GameVariants.CHESS960) {
+        if(matchConfig.isChess960()) {
             if(matchConfig.hasFENSetting()) {
                 chessGame = ChessGame.fromFEN(isEngine1White
                         ? matchConfig.fenSettingConfig().fenWhenEngine1White()
                         : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
-                        GameVariants.CHESS960);
+                        true);
             } else {
                 chessGame = ChessGame.fromFEN(
                         Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
-                        GameVariants.CHESS960
+                        true
                 );
             }
         } else {

@@ -12,6 +12,7 @@ public class MatchConfig {
 
     private final FENSettingConfig fenSettingConfig;
 
+    private final boolean isChess960;
     private final GameVariants variants;
 
     private final int seed;
@@ -29,6 +30,7 @@ public class MatchConfig {
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
         this.variants = builder.variants;
+        this.isChess960 = builder.isChess960;
         this.openingBook = builder.openingBook;
         this.repeatOpening = builder.repeatOpening;
         this.resignRule = builder.resignRule;
@@ -41,6 +43,7 @@ public class MatchConfig {
     public EngineConfig getEngine1Config() { return engine1Config; }
     public EngineConfig getEngine2Config() { return engine2Config; }
     public GameVariants getVariants() { return variants; }
+    public boolean isChess960() { return isChess960; }
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
@@ -60,6 +63,7 @@ public class MatchConfig {
         private FENSettingConfig fenSettingConfig;
 
         private GameVariants variants = GameVariants.STANDARD;
+        private boolean isChess960 = false;
 
         private PolyglotBookReader openingBook = null;
         private boolean repeatOpening = true;
@@ -106,6 +110,11 @@ public class MatchConfig {
 
         public Builder variants(GameVariants variants) {
             this.variants = variants;
+            return this;
+        }
+
+        public Builder isChess960(boolean isChess960) {
+            this.isChess960 = isChess960;
             return this;
         }
 

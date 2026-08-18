@@ -184,7 +184,7 @@ public class ChessboardUtils {
                         break;
                     default:
                         // when Chess 960
-                        if (chessboard.gameVariants == GameVariants.CHESS960) {
+                        if (chessboard.isChess960) {
                             if (c >= 'A' && c <= 'H') {
                                 int white_king_sq = BitBoardUtils.getLS1BIndex(chessboard.bitboards[K]);
                                 int king_file = white_king_sq % 8;
@@ -352,7 +352,7 @@ public class ChessboardUtils {
 
         // castling rights
         StringBuilder castle = new StringBuilder();
-        if(chessboard.gameVariants != GameVariants.CHESS960) {
+        if(!chessboard.isChess960) {
             if ((chessboard.castle & CastlingRights.WK) != 0) castle.append("K");
             if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append("Q");
             if ((chessboard.castle & CastlingRights.BK) != 0) castle.append("k");
