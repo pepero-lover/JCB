@@ -7,7 +7,9 @@
 - Java 21 이상
 ## 지원 기능
 
-- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / Three-check / King of the Hill / Horde / Racing Kings)
+- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / 
+Three-check / King of the Hill / Horde / AntiChess(Giveaway) /
+Racing Kings)
 - Syzygy tablebase 프로빙 (WDL / DTZ)
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
@@ -31,6 +33,7 @@
 | Three-check      | ✅   | ✅ (`UCI_Variant`)  |
 | King of the Hill | ✅   | ✅ (`UCI_Variant`)  |
 | Horde            | ✅   | ✅ (`UCI_Variant`)  |
+| Antichess        | ✅   | ✅ (`UCI_Variant`)  |
 | Racing Kings     | ✅   | ✅ (`UCI_Variant`)  |
 
 ## 참고 및 출처

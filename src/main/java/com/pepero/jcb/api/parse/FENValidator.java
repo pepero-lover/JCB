@@ -128,6 +128,9 @@ public class FENValidator {
             }
         }
 
+        if(variants == GameVariants.ANTICHESS) {
+            return;
+        }
         if(variants != GameVariants.HORDE) {
             if (whiteKingCount != 1 || blackKingCount != 1) {
                 throw new FENConvertException("Invalid FEN: There must be exactly one white king and one black king.");
@@ -186,6 +189,10 @@ public class FENValidator {
     }
 
     public static void validateLogicalState(Chessboard chessboard, GameVariants variants) {
+        if(variants == GameVariants.ANTICHESS) {
+            return;
+        }
+
         int oppositeSide = chessboard.side ^ 1;
 
         if(variants == GameVariants.HORDE && oppositeSide == white){

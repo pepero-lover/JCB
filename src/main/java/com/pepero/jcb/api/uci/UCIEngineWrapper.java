@@ -200,6 +200,9 @@ public class UCIEngineWrapper implements AutoCloseable {
                     case HORDE:
                         setOptionSync("UCI_Variant", "horde");
                         break;
+                    case ANTICHESS:
+                        setOptionSync("UCI_Variant", "antichess");
+                        break;
                     case RACING_KINGS:
                         setOptionSync("UCI_Variant", "racingkings");
                         break;
@@ -252,6 +255,8 @@ public class UCIEngineWrapper implements AutoCloseable {
                 positionCmd.append(" ").append(move.toLanString(chessGame.getGameVariants()));
             }
         }
+
+        System.out.println(positionCmd);
 
         return positionCmd.toString();
     }

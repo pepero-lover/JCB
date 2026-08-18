@@ -200,10 +200,12 @@ public class EncodeMove {
      * Init promoted_pieces char map
      */
     public static void initPromotedPiecesChar(){
+        promoted_pieces.put(K, 'k');
         promoted_pieces.put(Q, 'q');
         promoted_pieces.put(R, 'r');
         promoted_pieces.put(B, 'b');
         promoted_pieces.put(N, 'n');
+        promoted_pieces.put(k, 'k');
         promoted_pieces.put(q, 'q');
         promoted_pieces.put(r, 'r');
         promoted_pieces.put(b, 'b');

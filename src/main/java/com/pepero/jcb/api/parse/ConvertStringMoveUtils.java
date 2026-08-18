@@ -31,9 +31,34 @@ public class ConvertStringMoveUtils {
      * @return whether this position should show the # symbol
      */
     public static boolean shouldShowCheckmateSymbol(Chessboard chessboard) {
+        if (chessboard.gameVariants == GameVariants.ANTICHESS) {
+            return ChessboardUtils.isAntiChessOver(chessboard);
+        }
+        if (chessboard.gameVariants == GameVariants.HORDE) {
+            return ChessboardUtils.isHordePiecesGone(chessboard) || ChessboardUtils.isCheckmate(chessboard);
+        }
+        if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+            return ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
+        }
         return ChessboardUtils.isThreeCheck(chessboard) ||
                 ChessboardUtils.isKingGoneToHill(chessboard) ||
                 ChessboardUtils.isCheckmate(chessboard);
+    }
+
+    /**
+     * Get this position should show the # or + symbol. <br>
+     * if should append # or + symbol, add symbol.
+     *
+     * @param chessboard chessboard
+     */
+    private static void appendCheckOrMateSymbol(StringBuilder sb, Chessboard chessboard) {
+        if (shouldShowCheckmateSymbol(chessboard)) {
+            sb.append("#");
+        } else if (chessboard.gameVariants != GameVariants.ANTICHESS
+                && chessboard.gameVariants != GameVariants.RACING_KINGS
+                && ChessboardUtils.isCheck(chessboard)) {
+            sb.append("+");
+        }
     }
 
     /**
@@ -57,8 +82,7 @@ public class ConvertStringMoveUtils {
 
             MoveGenerator.makeMove(chessboard, encoded_move);
 
-            if(shouldShowCheckmateSymbol(chessboard)) sb.append("#");
-            else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
+            appendCheckOrMateSymbol(sb, chessboard);
 
             MoveGenerator.unmakeMove(chessboard, encoded_move);
             return new TranslateResult(sb.toString(), encoded_move);
@@ -134,7 +158,9 @@ public class ConvertStringMoveUtils {
                 sb.append(encodedPieceToString(type));
 
                 // add disambiguation
-                if (!(type == k || type == K)) {
+                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariants != GameVariants.ANTICHESS;
+
+                if (!skipDisambiguation) {
                     int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
                     int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
@@ -183,11 +209,7 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(shouldShowCheckmateSymbol(chessboard)) {
-            sb.append("#");
-        } else if(ChessboardUtils.isCheck(chessboard)) {
-            sb.append("+");
-        }
+        appendCheckOrMateSymbol(sb, chessboard);
 
         MoveGenerator.unmakeMove(chessboard, encoded_move);
 
@@ -214,8 +236,7 @@ public class ConvertStringMoveUtils {
             sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
 
             MoveGenerator.makeMove(chessboard, encoded_move);
-            if(shouldShowCheckmateSymbol(chessboard)) sb.append("#");
-            else if(ChessboardUtils.isCheck(chessboard)) sb.append("+");
+            appendCheckOrMateSymbol(sb, chessboard);
             MoveGenerator.unmakeMove(chessboard, encoded_move);
 
             return new TranslateResult(sb.toString(), encoded_move);
@@ -310,11 +331,7 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.makeMove(chessboard, encoded_move);
 
-        if(shouldShowCheckmateSymbol(chessboard)) {
-            sb.append("#");
-        } else if(ChessboardUtils.isCheck(chessboard)) {
-            sb.append("+");
-        }
+        appendCheckOrMateSymbol(sb, chessboard);
 
         MoveGenerator.unmakeMove(chessboard, encoded_move);
 

@@ -1636,10 +1636,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return true;
-            if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return true;
-
-            return false;
+            return ChessboardUtils.isKingGoneToHill(chessboard);
         } finally {
             readLock.unlock();
         }
@@ -1658,7 +1655,26 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            return chessboard.occupancies[white] == 0L;
+            return ChessboardUtils.isHordePiecesGone(chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether this antichess position overed
+     *
+     * @return whether this antichess position overed
+     * @throws VariantNotMatchException if this ChessGame isn't AntiChess variant
+     */
+    public boolean isAntiChessOver() {
+        if(chessboard.gameVariants != GameVariants.ANTICHESS) throw new VariantNotMatchException(
+                "The variant should be antichess!"
+        );
+
+        readLock.lock();
+        try {
+            return ChessboardUtils.isAntiChessOver(chessboard);
         } finally {
             readLock.unlock();
         }
@@ -1715,6 +1731,14 @@ public class ChessGame {
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
+            if (chessboard.gameVariants == GameVariants.ANTICHESS
+                    || chessboard.gameVariants == GameVariants.THREE_CHECK
+                    || chessboard.gameVariants == GameVariants.KING_OF_THE_HILL
+                    || chessboard.gameVariants == GameVariants.RACING_KINGS
+                    || chessboard.gameVariants == GameVariants.HORDE) {
+                return false;
+            }
+
             if (this.chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
                 int totalPocketPieces = 0;
                 for (int piece = P; piece <= k; piece++) totalPocketPieces += this.chessboard.pocket[piece];
@@ -1824,6 +1848,9 @@ public class ChessGame {
         readLock.lock();
 
         try {
+            if(chessboard.gameVariants == GameVariants.ANTICHESS) {
+                if(isAntiChessOver()) return GameOverReason.ANTICHESS;
+            }
             if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
                 if(isThreeChecked()) return GameOverReason.THREE_CHECK;
             }
@@ -1837,17 +1864,19 @@ public class ChessGame {
                 if(isKingRaceOver()) return GameOverReason.KING_RACE;
             }
 
-            boolean inCheck = isCheck();
-
             if (includeClaimableDraws) {
                 if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
                 if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
             }
 
-            if (inCheck) {
-                if (isCheckmate()) return GameOverReason.CHECKMATE;
-            } else {
-                if (isStalemate()) return GameOverReason.STALEMATE;
+            if(chessboard.gameVariants != GameVariants.ANTICHESS) {
+                boolean inCheck = isCheck();
+
+                if (inCheck) {
+                    if (isCheckmate()) return GameOverReason.CHECKMATE;
+                } else {
+                    if (isStalemate()) return GameOverReason.STALEMATE;
+                }
             }
 
             if(isFivefoldRepetition()) return GameOverReason.FIVEFOLD;
@@ -2528,6 +2557,7 @@ public class ChessGame {
                     else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
                     else yield GameResult.UNKNOWN;
                 }
+                case ANTICHESS -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
                 case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
                      SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
@@ -2682,6 +2712,8 @@ public class ChessGame {
             case "horde", "hord", "hd" -> GameVariants.HORDE;
             case "racing kings", "racing king", "racingkings", "racingking"
             ,"king race", "kingrace", "kr" -> GameVariants.RACING_KINGS;
+            case "antichess", "anti chess", "ac", "anti", "giveaway", "losing chess",
+                 "losingchess", "suicide chess", "suicidechess" -> GameVariants.ANTICHESS;
             default -> GameVariants.STANDARD;
         };
     }
@@ -2909,6 +2941,7 @@ public class ChessGame {
                     case THREE_CHECK -> this.headers.put("Variant", "Three-check");
                     case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
                     case HORDE -> this.headers.put("Variant", "Horde");
+                    case ANTICHESS -> this.headers.put("Variant", "Antichess");
                     case RACING_KINGS -> this.headers.put("Variant", "Racing Kings");
                 }
             }

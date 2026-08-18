@@ -1,5 +1,6 @@
 package com.pepero.jcb.core;
 
+import com.pepero.jcb.api.exception.VariantNotMatchException;
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
@@ -420,6 +421,7 @@ public class ChessboardUtils {
      * @return whether king is under attack
      */
     public static boolean isCheck(Chessboard chessboard) {
+        if(chessboard.gameVariants == GameVariants.ANTICHESS) return false;
         if(chessboard.gameVariants == GameVariants.HORDE && chessboard.side == white) return false;
 
         int kingPos = BitBoardUtils.getLS1BIndex(
@@ -544,10 +546,36 @@ public class ChessboardUtils {
      * @return whether this position's white/black king gone to the hill
      */
     public static boolean isKingGoneToHill(Chessboard chessboard) {
+        if(chessboard.gameVariants != GameVariants.KING_OF_THE_HILL) return false;
+
         if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return true;
         if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return true;
 
         return false;
+    }
+
+    /**
+     * Get whether this horde position's white pieces is all gone (black won)
+     *
+     * @return whether this horde position's white pieces is all gone
+     */
+    public static boolean isHordePiecesGone(Chessboard chessboard) {
+        if(chessboard.gameVariants != GameVariants.HORDE) return false;
+
+        return chessboard.occupancies[white] == 0L;
+    }
+
+    /**
+     * Get whether this antichess position overed
+     *
+     * @return whether this antichess position overed
+     */
+    public static boolean isAntiChessOver(Chessboard chessboard) {
+        if(chessboard.gameVariants != GameVariants.ANTICHESS) return false;
+
+        return
+                chessboard.occupancies[chessboard.side] == 0L ||
+                        !ChessboardUtils.hasLegalMoves(chessboard);
     }
 
     /**

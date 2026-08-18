@@ -375,8 +375,9 @@ public class MoveGenerator {
                             boolean isStartRank = (side == white) ? (sourceSq >= a2 && sourceSq <= h2) : (sourceSq >= a7 && sourceSq <= h7);
                             if (isStartRank &&
                                     !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
-                                moveCount = addAntiChessPawnMoves(moveArray, moveCount,
-                                        sourceSq, doublePushSq, piece, false);
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                        sourceSq, doublePushSq, piece, 0, false,
+                                        true, false, false));
                             }
                         }
                     }
