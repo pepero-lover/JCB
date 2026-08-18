@@ -98,7 +98,6 @@ public class Chessboard {
     // checked count
     public int[] check_count = new int[2];
 
-
     public GameVariants gameVariants;
 
     public int MAX_DEPTH = 256;
@@ -110,7 +109,14 @@ public class Chessboard {
 
     public int[] captured_piece_history = new int[MAX_DEPTH];
 
+    // 3 check
     public int[][] check_count_history = new int[2][MAX_DEPTH];
+
+    // atomic
+    public static final int MAX_EXPLOSION_PER_PLY = 8;
+    public int[][] explosion_piece_history = new int[MAX_DEPTH][MAX_EXPLOSION_PER_PLY];
+    public int[][] explosion_square_history = new int[MAX_DEPTH][MAX_EXPLOSION_PER_PLY];
+    public int[] explosion_count_history = new int[MAX_DEPTH];
 
     // crazy house
     public boolean[] promoted_captured_history = new boolean[MAX_DEPTH];
@@ -151,6 +157,12 @@ public class Chessboard {
         Arrays.fill(this.captured_piece_history, 0);
         Arrays.fill(this.check_count_history[white], 0);
         Arrays.fill(this.check_count_history[black], 0);
+
+        for (int i = 0; i < this.explosion_piece_history.length; i++) {
+            Arrays.fill(this.explosion_piece_history[i], 0);
+            Arrays.fill(this.explosion_square_history[i], 0);
+        }
+        Arrays.fill(this.explosion_count_history, 0);
 
         // reset game state variables
         this.side = 0;
@@ -235,6 +247,13 @@ public class Chessboard {
 
         System.arraycopy(source.check_count_history[white], 0, this.check_count_history[white], 0, MAX_DEPTH);
         System.arraycopy(source.check_count_history[black], 0, this.check_count_history[black], 0, MAX_DEPTH);
+
+        // atomic
+        for (int i = 0; i < MAX_DEPTH; i++) {
+            System.arraycopy(source.explosion_piece_history[i], 0, this.explosion_piece_history[i], 0, MAX_EXPLOSION_PER_PLY);
+            System.arraycopy(source.explosion_square_history[i], 0, this.explosion_square_history[i], 0, MAX_EXPLOSION_PER_PLY);
+        }
+        System.arraycopy(source.explosion_count_history, 0, this.explosion_count_history, 0, MAX_DEPTH);
     }
 
     /**
@@ -243,6 +262,7 @@ public class Chessboard {
      * @param capacity capacity
      */
     private void ensureCapacityTo(int capacity) {
+        int oldCapacity = MAX_DEPTH;
         MAX_DEPTH = capacity;
 
         enpassant_history = Arrays.copyOf(enpassant_history, capacity);
@@ -254,6 +274,14 @@ public class Chessboard {
 
         check_count_history[white] = Arrays.copyOf(check_count_history[white], capacity);
         check_count_history[black] = Arrays.copyOf(check_count_history[black], capacity);
+
+        explosion_piece_history = Arrays.copyOf(explosion_piece_history, capacity);
+        explosion_square_history = Arrays.copyOf(explosion_square_history, capacity);
+        explosion_count_history = Arrays.copyOf(explosion_count_history, capacity);
+        for (int i = oldCapacity; i < capacity; i++) {
+            explosion_piece_history[i] = new int[MAX_EXPLOSION_PER_PLY];
+            explosion_square_history[i] = new int[MAX_EXPLOSION_PER_PLY];
+        }
     }
 
     /**

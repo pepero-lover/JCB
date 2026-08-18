@@ -81,6 +81,19 @@ public class MoveGenerator {
         }
     }
 
+    // atomic variant explosion mask
+    public static final long[] EXPLOSION_MASK = new long[64];
+
+    static {
+        // init explosion mask
+
+        // loop 64 squares
+        for (int sq = 0; sq < 64; sq++) {
+            // explosion mask ( = removing piece mask) is king attack + moved piece square
+            EXPLOSION_MASK[sq] = Attacks.king_attacks[sq] | (1L << sq);
+        }
+    }
+
     /**
      * Get pinned piece(s) bitboard
      *
@@ -455,6 +468,215 @@ public class MoveGenerator {
     }
 
     /**
+     * Calculate occupancy[both] after explosion
+     *
+     * @param chessboard chess board
+     * @param sourceSq source square
+     * @param targetSquare target square
+     * @param extraRemoveSq extra remove square like enpassant (default -1)
+     * @return occupancy[both] after explosion
+     */
+    private static long computeExplosionRemovalMask(Chessboard chessboard, int sourceSq,
+                                                    int targetSquare, int extraRemoveSq) {
+        long occAfterMove = chessboard.occupancies[both];
+        occAfterMove = BitBoardUtils.popBit(occAfterMove, sourceSq);
+        if (extraRemoveSq != -1) occAfterMove = BitBoardUtils.popBit(occAfterMove, extraRemoveSq);
+        occAfterMove = BitBoardUtils.setBit(occAfterMove, targetSquare);
+
+        long pawns = chessboard.bitboards[P] | chessboard.bitboards[p];
+        return EXPLOSION_MASK[targetSquare] & occAfterMove & ~pawns;
+    }
+
+    /**
+     * Generate Atomic moves
+     *
+     * @param chessboard chess board
+     * @param moveArray move array
+     * @return move count
+     */
+    public static int generateAtomicMoves(Chessboard chessboard, int[] moveArray) {
+        if(chessboard.bitboards[K] == 0 || chessboard.bitboards[k] == 0) return 0;
+
+        int moveCount = 0;
+        int side = chessboard.side;
+        int oppSide = side ^ 1;
+
+        int checkersInfo = ChessboardUtils.getChecker(chessboard);
+        boolean inCheck = (checkersInfo & (1 << 12)) != 0;
+        boolean isDoubleCheck = (checkersInfo & (1 << 13)) != 0;
+
+        int kingSq = BitBoardUtils.getLS1BIndex(
+                side == white ? chessboard.bitboards[K] : chessboard.bitboards[k]);
+
+        int oppKingSq = BitBoardUtils.getLS1BIndex(
+                side == white ? chessboard.bitboards[k] : chessboard.bitboards[K]);
+
+        long pinnedPieces = getPinnedPiecesBitboard(chessboard, kingSq, side);
+
+        // avoiding check mask
+        long checkMask = ~0L;
+
+        // if in check and it's not a double check
+        if (inCheck && !isDoubleCheck) {
+            // get checker
+            int checkerSq = checkersInfo & 0x3F;
+            // avoid check masks
+
+            // avoiding check (when not a double check) methods :
+
+            // capture check piece
+            // block attacking piece's path
+            // move king (this not includes on this code)
+
+            checkMask = (1L << checkerSq) | RAY_BETWEEN[checkerSq][kingSq];
+        }
+
+        // get king moves
+        // in atomic, king cannot capture any piece(s).
+        long kingAttacks = Attacks.king_attacks[kingSq] & ~chessboard.occupancies[both];
+        while (kingAttacks != 0) {
+            int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
+
+            long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
+            if (!isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOcc)) {
+                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                        kingSq, targetSq, (side == white ? K : k), 0, false, false, false, false));
+            }
+
+            kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
+        }
+
+        int start_piece = (side == white) ? P : p;
+        int end_piece = (side == white) ? Q : q;
+
+        for (int piece = start_piece; piece <= end_piece; piece++) {
+            long bitboard = chessboard.bitboards[piece];
+
+            while (bitboard != 0) {
+                int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
+
+                // piece moves bitboard
+                long pieceMoves = 0L;
+                boolean isPawn = (piece == P || piece == p);
+
+                // get whether this piece is pinned
+                boolean isPinned = BitBoardUtils.getBit(pinnedPieces, sourceSq);
+                // if the piece is pinned, get legal moves by pin mask
+                long pinRay = isPinned ? RAY_LINE[kingSq][sourceSq] : ~0L;
+
+                if (!isPawn) {
+                    // get piece moves
+                    pieceMoves = getPieceAttacks(chessboard, piece, side, sourceSq);
+
+
+                    // remove my side's pieces
+                    pieceMoves &= ~chessboard.occupancies[side];
+
+                    if (!isDoubleCheck) {
+                        // add quiet moves all
+                        long quiet = pieceMoves & ~chessboard.occupancies[both];
+                        quiet &= pinRay;
+                        quiet &= checkMask;
+                        while (quiet != 0) {
+                            int targetSq = BitBoardUtils.getLS1BIndex(quiet);
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                    sourceSq, targetSq, piece, 0, false, false, false, false));
+                            quiet = BitBoardUtils.popBit(quiet, targetSq);
+                        }
+                    }
+
+                    long captures = pieceMoves & chessboard.occupancies[oppSide];
+                    while (captures != 0) {
+                        int targetSq = BitBoardUtils.getLS1BIndex(captures);
+
+                        if (isAtomicCaptureLegal(chessboard, side,
+                                sourceSq, targetSq, piece, 0, -1)) {
+                            moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                    sourceSq, targetSq, piece, 0, true, false, false, false));
+                        }
+                        captures = BitBoardUtils.popBit(captures, targetSq);
+                    }
+                } else {
+                    if (!isDoubleCheck) {
+                        // pawn quiet move
+
+                        int pushDir = (side == white) ? 8 : -8;
+                        int pushSq = sourceSq + pushDir;
+
+                        // check target square is empty
+                        if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
+                            if (BitBoardUtils.getBit(pinRay, pushSq) && BitBoardUtils.getBit(checkMask, pushSq)) {
+                                moveCount = addPawnMoves(moveArray, moveCount, sourceSq, pushSq, piece, false);
+                            }
+                            int doublePushSq = sourceSq + (pushDir * 2);
+                            boolean isStartRank = (side == white) ? (sourceSq >= a2 && sourceSq <= h2) : (sourceSq >= a7 && sourceSq <= h7);
+                            if (isStartRank && !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq)) {
+                                if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
+                                    moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                            sourceSq, doublePushSq, piece, 0, false, true, false, false));
+                                }
+                            }
+                        }
+                    }
+
+                    long pawnCaptures = Attacks.pawn_attacks[side][sourceSq] & chessboard.occupancies[oppSide];
+                    while (pawnCaptures != 0) {
+                        // pawn capture move
+
+                        int targetSq = BitBoardUtils.getLS1BIndex(pawnCaptures);
+
+                        boolean isPromotion = (side == white && targetSq >= a8) || (side == black && targetSq <= h1);
+
+                        if (!isPromotion) {
+                            if (isAtomicCaptureLegal(chessboard, side,
+                                    sourceSq, targetSq, piece, 0, -1)) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                        sourceSq, targetSq, piece, 0, true, false,
+                                        false, false));
+                            }
+                        } else {
+                            int[] promoPieces = (side == white) ? new int[]{Q,R,B,N} : new int[]{q,r,b,n};
+                            for (int promo : promoPieces) {
+                                if (isAtomicCaptureLegal(chessboard, side, sourceSq, targetSq, piece,
+                                        promo, -1)) {
+                                    moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                            sourceSq, targetSq, piece, promo, true,
+                                            false, false, false));
+                                }
+                            }
+                        }
+                        pawnCaptures = BitBoardUtils.popBit(pawnCaptures, targetSq);
+                    }
+
+                    if (chessboard.enpassant != no_sq) {
+                        long epAttacks = Attacks.pawn_attacks[side][sourceSq] & (1L << chessboard.enpassant);
+                        if (epAttacks != 0) {
+                            int targetSq = chessboard.enpassant;
+                            int capturedPawnSq = (side == white) ? targetSq - 8 : targetSq + 8;
+
+                            if (isAtomicCaptureLegal(chessboard, side, sourceSq, targetSq, piece,
+                                    0, capturedPawnSq)) {
+                                moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                        sourceSq, targetSq, piece, 0, true,
+                                        false, true, false));
+                            }
+                        }
+                    }
+                }
+
+                bitboard &= (bitboard - 1);
+            }
+        }
+
+        if (!inCheck) {
+            // generate castling moves
+            moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side);
+        }
+
+        return moveCount;
+    }
+
+    /**
      * Get piece attacks
      *
      * @param chessboard chess board
@@ -493,6 +715,10 @@ public class MoveGenerator {
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
         if(chessboard.gameVariants == GameVariants.ANTICHESS) {
             return generateAntiChessMoves(chessboard, moveArray);
+        }
+
+        if(chessboard.gameVariants == GameVariants.ATOMIC) {
+            return generateAtomicMoves(chessboard, moveArray);
         }
 
         if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
@@ -564,11 +790,11 @@ public class MoveGenerator {
             // - - - - - - - -
 
             // and the expected is
-            // - R - - 1 k 1 -
+            // - R - - - k - -
             // - - - - 1 1 1 -
 
             // but if we don't pop the king square, the attack is blocked by king square so
-            // - R - - 1 k - -
+            // - R - - - k 1 -
             // - - - - 1 1 1 -
             // and this is not we wanted.
             long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
@@ -749,6 +975,75 @@ public class MoveGenerator {
     }
 
     /**
+     * Get whether target king square is attacked or not <br>
+     * king attack not included
+     *
+     * @param chessboard chess board
+     * @param side moving side
+     * @param piece piece type
+     * @param sourceSq source square
+     * @param targetSq target square
+     * @param extraRemoveSq extra remove square like enpassant (default -1)
+     * @param promotedPiece promotion piece (default 0)
+     * @param removalMask removal mask for atomic chess (default 0L)
+     * @param targetKingSq target king square
+     * @param attackerSide attacker side
+     * @return whether target king square is attacked or not
+     */
+    private static boolean isSquareAttackedAfterMove(Chessboard chessboard, int side, int piece,
+                                                     int sourceSq, int targetSq, int extraRemoveSq,
+                                                     int promotedPiece, long removalMask,
+                                                     int targetKingSq, int attackerSide) {
+        long tempOcc = chessboard.occupancies[both];
+        tempOcc = BitBoardUtils.popBit(tempOcc, sourceSq);
+        if (extraRemoveSq != -1) tempOcc = BitBoardUtils.popBit(tempOcc, extraRemoveSq);
+        tempOcc = BitBoardUtils.setBit(tempOcc, targetSq);
+        tempOcc &= ~removalMask;
+
+        int targetPiece = (promotedPiece != 0) ? promotedPiece : piece;
+
+        long bishopsQueens = ((side == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q])
+                : (chessboard.bitboards[b] | chessboard.bitboards[q])) & ~removalMask;
+        long rooksQueens = ((side == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q])
+                : (chessboard.bitboards[r] | chessboard.bitboards[q])) & ~removalMask;
+        long knights = ((side == white) ? chessboard.bitboards[N] : chessboard.bitboards[n]) & ~removalMask;
+        long pawns   = ((side == white) ? chessboard.bitboards[P] : chessboard.bitboards[p]) & ~removalMask;
+
+        if (piece == B || piece == b || piece == Q || piece == q)
+            bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
+        if (piece == R || piece == r || piece == Q || piece == q)
+            rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
+        if (piece == N || piece == n)
+            knights = BitBoardUtils.popBit(knights, sourceSq);
+        if (piece == P || piece == p)
+            pawns = BitBoardUtils.popBit(pawns, sourceSq);
+
+        if (!BitBoardUtils.getBit(removalMask, targetSq)) {
+            if (targetPiece == B || targetPiece == b || targetPiece == Q || targetPiece == q)
+                bishopsQueens = BitBoardUtils.setBit(bishopsQueens, targetSq);
+            if (targetPiece == R || targetPiece == r || targetPiece == Q || targetPiece == q)
+                rooksQueens = BitBoardUtils.setBit(rooksQueens, targetSq);
+            if (targetPiece == N || targetPiece == n)
+                knights = BitBoardUtils.setBit(knights, targetSq);
+            if (targetPiece == P || targetPiece == p)
+                pawns = BitBoardUtils.setBit(pawns, targetSq);
+        }
+
+        if ((Attacks.getBishopAttacks(targetKingSq, tempOcc) & bishopsQueens) != 0) return true;
+        if ((Attacks.getRookAttacks(targetKingSq, tempOcc) & rooksQueens) != 0) return true;
+        if ((Attacks.knight_attacks[targetKingSq] & knights) != 0) return true;
+
+        long pawnAttackers = (attackerSide == white)
+                ? (Attacks.pawn_attacks[black][targetKingSq] & pawns)
+                : (Attacks.pawn_attacks[white][targetKingSq] & pawns);
+        if (pawnAttackers != 0) return true;
+
+        // king attacks removed
+
+        return false;
+    }
+
+    /**
      * Check whether this move would give check or not (for racing kings)
      *
      * @param chessboard chess board
@@ -756,54 +1051,49 @@ public class MoveGenerator {
      * @param piece piece type
      * @param sourceSq source square
      * @param targetSq target square
-     * @param extraRemoveSq extra remove square like enpassant
+     * @param extraRemoveSq extra remove square like enpassant (if no extra square, -1)
      * @param oppKingSq opponent king square
-     * @param promotedPiece promoting piece (if not promoting
+     * @param promotedPiece promoting piece (if not promoting, 0)
      * @return whether this move would give check or not
      */
     private static boolean wouldGiveCheck(Chessboard chessboard, int side, int piece,
                                           int sourceSq, int targetSq, int extraRemoveSq,
                                           int oppKingSq, int promotedPiece) {
-        long tempOcc = chessboard.occupancies[both];
-        tempOcc = BitBoardUtils.popBit(tempOcc, sourceSq);
-        if (extraRemoveSq != -1) tempOcc = BitBoardUtils.popBit(tempOcc, extraRemoveSq);
-        tempOcc = BitBoardUtils.setBit(tempOcc, targetSq);
+        return isSquareAttackedAfterMove(chessboard, side, piece, sourceSq, targetSq, extraRemoveSq,
+                promotedPiece, 0L, oppKingSq, side);
+    }
 
-        int destPiece = (promotedPiece != 0) ? promotedPiece : piece;
+    /**
+     * Check whether this capturing atomic move is legal move
+     *
+     * @param chessboard chess board
+     * @param side moving side
+     * @param piece piece type
+     * @param sourceSq source square
+     * @param targetSq target square
+     * @param extraRemoveSq extra removing square like enpassant (default -1)
+     * @param promotedPiece promotion piece (default 0)
+     * @return whether this capturing atomic move is legal move
+     */
+    private static boolean isAtomicCaptureLegal(Chessboard chessboard, int side, int piece,
+                                                int sourceSq, int targetSq, int extraRemoveSq,
+                                                int promotedPiece) {
+        int ourKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? K : k]);
+        int oppKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? k : K]);
 
-        long myBishopsQueens = (side == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q])
-                : (chessboard.bitboards[b] | chessboard.bitboards[q]);
-        long myRooksQueens   = (side == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q])
-                : (chessboard.bitboards[r] | chessboard.bitboards[q]);
-        long myKnights = (side == white) ? chessboard.bitboards[N] : chessboard.bitboards[n];
-        long myPawns   = (side == white) ? chessboard.bitboards[P] : chessboard.bitboards[p];
+        long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq);
 
-        if (piece == B || piece == b || piece == Q || piece == q)
-            myBishopsQueens = BitBoardUtils.popBit(myBishopsQueens, sourceSq);
-        if (piece == R || piece == r || piece == Q || piece == q)
-            myRooksQueens = BitBoardUtils.popBit(myRooksQueens, sourceSq);
-        if (piece == N || piece == n)
-            myKnights = BitBoardUtils.popBit(myKnights, sourceSq);
-        if (piece == P || piece == p)
-            myPawns = BitBoardUtils.popBit(myPawns, sourceSq);
+        // first, check our king is on explosion range.
+        // if it is, it's illegal move.
+        if(BitBoardUtils.getBit(removalMask, ourKing)) return false;
 
-        if (destPiece == B || destPiece == b || destPiece == Q || destPiece == q)
-            myBishopsQueens = BitBoardUtils.setBit(myBishopsQueens, targetSq);
-        if (destPiece == R || destPiece == r || destPiece == Q || destPiece == q)
-            myRooksQueens = BitBoardUtils.setBit(myRooksQueens, targetSq);
-        if (destPiece == N || destPiece == n)
-            myKnights = BitBoardUtils.setBit(myKnights, targetSq);
-        if (destPiece == P || destPiece == p)
-            myPawns = BitBoardUtils.setBit(myPawns, targetSq);
+        // and check opposite king is on explosion range.
+        // our king is not on explosion range, so return legal move
+        if(BitBoardUtils.getBit(removalMask, oppKing)) return true;
 
-        if ((Attacks.getBishopAttacks(oppKingSq, tempOcc) & myBishopsQueens) != 0) return true;
-        if ((Attacks.getRookAttacks(oppKingSq, tempOcc) & myRooksQueens) != 0) return true;
-        if ((Attacks.knight_attacks[oppKingSq] & myKnights) != 0) return true;
-
-        long pawnAttackers = (side == white)
-                ? (Attacks.pawn_attacks[black][oppKingSq] & myPawns)
-                : (Attacks.pawn_attacks[white][oppKingSq] & myPawns);
-        return pawnAttackers != 0;
+        int oppSide = side ^ 1;
+        return !isSquareAttackedAfterMove(chessboard, side, piece, sourceSq, targetSq, extraRemoveSq,
+                promotedPiece, removalMask, ourKing, oppSide);
     }
 
     /**
@@ -1462,6 +1752,53 @@ public class MoveGenerator {
     }
 
     /**
+     * Apply atomic capture explosion <br>
+     * returns updated castling mask to AND with chessboard.castle
+     *
+     * @param chessboard chess board
+     * @param targetSq target square
+     * @return updated castling mask to AND with chessboard.castle
+     */
+    private static int applyAtomicExplosion(Chessboard chessboard, int targetSq) {
+        long occ = chessboard.bitboards[P] | chessboard.bitboards[N] | chessboard.bitboards[B] |
+                chessboard.bitboards[R] | chessboard.bitboards[Q] | chessboard.bitboards[K] |
+                chessboard.bitboards[p] | chessboard.bitboards[n] | chessboard.bitboards[b] |
+                chessboard.bitboards[r] | chessboard.bitboards[q] | chessboard.bitboards[k];
+
+        long pawns = chessboard.bitboards[P] | chessboard.bitboards[p];
+
+        // target square is always removed (capturing piece), other squares exclude pawns
+        long removalMask = (EXPLOSION_MASK[targetSq] & occ & ~pawns) | (1L << targetSq);
+
+        int expCount = 0;
+        long mask = removalMask;
+        while (mask != 0) {
+            int sq = BitBoardUtils.getLS1BIndex(mask);
+            for (int bb = P; bb <= k; bb++) {
+                if (BitBoardUtils.getBit(chessboard.bitboards[bb], sq)) {
+                    chessboard.bitboards[bb] = BitBoardUtils.popBit(chessboard.bitboards[bb], sq);
+                    chessboard.hash_key ^= Zobrist.piece_keys[bb][sq];
+                    chessboard.explosion_piece_history[chessboard.ply][expCount] = bb;
+                    chessboard.explosion_square_history[chessboard.ply][expCount] = sq;
+                    expCount++;
+                    break;
+                }
+            }
+            mask = BitBoardUtils.popBit(mask, sq);
+        }
+        chessboard.explosion_count_history[chessboard.ply] = expCount;
+
+        int castleMask = 0xF;
+        long m2 = removalMask;
+        while (m2 != 0) {
+            int sq = BitBoardUtils.getLS1BIndex(m2);
+            castleMask &= CastlingRights.UPDATE_MASK[sq];
+            m2 = BitBoardUtils.popBit(m2, sq);
+        }
+        return castleMask;
+    }
+
+    /**
      * Make a move on chess board
      * @param chessboard chess board
      * @param move encoded move
@@ -1489,6 +1826,9 @@ public class MoveGenerator {
         boolean enpass = EncodeMove.getMoveEnpassant(move);
         boolean castling = EncodeMove.getMoveCastling(move);
         boolean is_drop = EncodeMove.getMoveDrop(move);
+
+        boolean isAtomic = chessboard.gameVariants == GameVariants.ATOMIC;
+        int atomicCastleMask = 0xF;
 
         if (capture && !castling && !is_drop) {
             int start_piece, end_piece;
@@ -1655,6 +1995,11 @@ public class MoveGenerator {
             chessboard.hash_key ^= Zobrist.piece_keys[promoted_piece][target_square];
         }
 
+        if (isAtomic && capture && !castling && !enpass) {
+            // if atomic and capture move, apply atomic explosion
+            atomicCastleMask = applyAtomicExplosion(chessboard, target_square);
+        }
+
         // handle enpassant captures
         if (enpass){
             if (chessboard.side == white){
@@ -1675,6 +2020,11 @@ public class MoveGenerator {
                     chessboard.pocket[p]++;
                     chessboard.hash_key ^= Zobrist.pocket_keys[p][chessboard.pocket[p]];
                 }
+            }
+
+            if (isAtomic) {
+                // if atomic and enpassant, apply atomic explosion
+                atomicCastleMask = applyAtomicExplosion(chessboard, target_square);
             }
         }
 
@@ -1729,6 +2079,9 @@ public class MoveGenerator {
         } else {
             chessboard.castle &= CastlingRights.UPDATE_MASK[source_square] & CastlingRights.UPDATE_MASK[target_square];
         }
+
+        // AND chessboard.castle with atomic castle mask
+        chessboard.castle &= atomicCastleMask;
 
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
 
@@ -1836,6 +2189,20 @@ public class MoveGenerator {
         boolean castling = EncodeMove.getMoveCastling(move);
         boolean is_drop = EncodeMove.getMoveDrop(move);
 
+        boolean isAtomic = chessboard.gameVariants == GameVariants.ATOMIC;
+        boolean hadExplosion = isAtomic && capture;
+
+        // if had explosion on last move,
+        if (hadExplosion) {
+            // restore it
+            int expCount = chessboard.explosion_count_history[chessboard.ply];
+            for (int i = 0; i < expCount; i++) {
+                int bb = chessboard.explosion_piece_history[chessboard.ply][i];
+                int sq = chessboard.explosion_square_history[chessboard.ply][i];
+                chessboard.bitboards[bb] = BitBoardUtils.setBit(chessboard.bitboards[bb], sq);
+            }
+        }
+
         // unmake castling
         if (is_drop) {
             chessboard.pocket[piece]++;
@@ -1881,10 +2248,14 @@ public class MoveGenerator {
         } else {
             // unmake piece
             if (promoted_piece != 0) {
-                chessboard.bitboards[promoted_piece] = BitBoardUtils.popBit(chessboard.bitboards[promoted_piece], target_square);
+                chessboard.bitboards[promoted_piece] =
+                        BitBoardUtils.popBit(chessboard.bitboards[promoted_piece],
+                                target_square);
 
                 if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
-                    chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
+                    chessboard.promoted_pieces =
+                            BitBoardUtils.popBit(chessboard.promoted_pieces,
+                                    target_square);
                 }
             } else {
                 chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
@@ -1900,8 +2271,11 @@ public class MoveGenerator {
 
         // if normal capture move
         if (capture && !enpass) {
-            chessboard.bitboards[captured_piece] = BitBoardUtils.setBit(chessboard.bitboards[captured_piece],
-                    target_square);
+            if (!hadExplosion) { // = "variant != ATOMIC"
+                chessboard.bitboards[captured_piece] =
+                        BitBoardUtils.setBit(chessboard.bitboards[captured_piece],
+                        target_square);
+            }
 
             if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
                 boolean was_promoted = chessboard.promoted_captured_history[chessboard.ply];
@@ -1962,6 +2336,37 @@ public class MoveGenerator {
     }
 
     /**
+     * Get whether this square is attacked or not with occupancy, bitboards (for atomic)
+     *
+     * @param chessboard chess board
+     * @param square square
+     * @param attackerSide attacker side
+     * @param tempOcc temp occupancy
+     * @return whether this square is attacked or not
+     */
+    public static boolean isSquareAttackedWithOccAtomic(Chessboard chessboard, int square, int attackerSide,
+                                                        long tempOcc) {
+        if (attackerSide == white &&
+                (Attacks.pawn_attacks[black][square] & chessboard.bitboards[P]) != 0) return true;
+        if (attackerSide == black &&
+                (Attacks.pawn_attacks[white][square] & chessboard.bitboards[p]) != 0) return true;
+        if ((Attacks.knight_attacks[square] &
+                (attackerSide == white ? chessboard.bitboards[N] : chessboard.bitboards[n])) != 0) return true;
+
+        long bishopsQueens = (attackerSide == white) ?
+                (chessboard.bitboards[B] | chessboard.bitboards[Q])
+                : (chessboard.bitboards[b] | chessboard.bitboards[q]);
+        if ((Attacks.getBishopAttacks(square, tempOcc) & bishopsQueens) != 0) return true;
+
+        long rooksQueens = (attackerSide == white) ?
+                (chessboard.bitboards[R] | chessboard.bitboards[Q])
+                : (chessboard.bitboards[r] | chessboard.bitboards[q]);
+        if ((Attacks.getRookAttacks(square, tempOcc) & rooksQueens) != 0) return true;
+
+        return false;
+    }
+
+    /**
      * This method checks whether the square is attacked or not
      *
      * @param chessboard the chessboard
@@ -1998,7 +2403,8 @@ public class MoveGenerator {
         if ((Attacks.getRookAttacks(square, occupancy) & rooksQueens) != 0) return true;
 
         // attacked by kings
-        if ((Attacks.king_attacks[square] & (side == white ?
+        if (chessboard.gameVariants != GameVariants.ATOMIC &&
+                (Attacks.king_attacks[square] & (side == white ?
                 chessboard.bitboards[K] : chessboard.bitboards[k])) != 0) return true;
 
         // by default return false
