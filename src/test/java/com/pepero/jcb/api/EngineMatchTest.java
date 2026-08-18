@@ -56,9 +56,9 @@ public class EngineMatchTest {
 //                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
 //                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 //                            ))
-                    .variants(GameVariants.ANTICHESS)
+                    .variants(GameVariants.ATOMIC)
                     .totalGames(10)
-                    .concurrency(1)
+                    .concurrency(4)
                     .build();
 
             ArenaRunner arena = new ArenaRunner(config);

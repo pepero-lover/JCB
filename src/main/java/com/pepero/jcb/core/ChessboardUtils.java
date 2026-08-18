@@ -579,6 +579,17 @@ public class ChessboardUtils {
     }
 
     /**
+     * Get whether this atomic position overed
+     *
+     * @return whether this antichess position overed
+     */
+    public static boolean isAtomicOver(Chessboard chessboard) {
+        if(chessboard.gameVariants != GameVariants.ATOMIC) return false;
+
+        return chessboard.bitboards[K] == 0L || chessboard.bitboards[k] == 0L;
+    }
+
+    /**
      * Get whether this position is checkmate
      *
      * @param chessboard chessboard

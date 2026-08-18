@@ -496,7 +496,7 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateAtomicMoves(Chessboard chessboard, int[] moveArray) {
-        if(chessboard.bitboards[K] == 0 || chessboard.bitboards[k] == 0) return 0;
+        if(chessboard.bitboards[K] == 0L || chessboard.bitboards[k] == 0L) return 0;
 
         int moveCount = 0;
         int side = chessboard.side;
@@ -512,10 +512,17 @@ public class MoveGenerator {
         int oppKingSq = BitBoardUtils.getLS1BIndex(
                 side == white ? chessboard.bitboards[k] : chessboard.bitboards[K]);
 
-        long pinnedPieces = getPinnedPiecesBitboard(chessboard, kingSq, side);
+        // if kings touching, all check and pin is disabled.
+        boolean kingsTouching = (Attacks.king_attacks[kingSq] & (1L << oppKingSq)) != 0;
+        long pinnedPieces = kingsTouching ? 0L : getPinnedPiecesBitboard(chessboard, kingSq, side);
 
         // avoiding check mask
         long checkMask = ~0L;
+
+        if (kingsTouching) {
+            inCheck = false;
+            isDoubleCheck = false;
+        }
 
         // if in check and it's not a double check
         if (inCheck && !isDoubleCheck) {
@@ -539,7 +546,11 @@ public class MoveGenerator {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
 
             long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
-            if (!isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOcc)) {
+
+            // if target is touching, it's safe
+            boolean targetTouching = (Attacks.king_attacks[targetSq] & (1L << oppKingSq)) != 0;
+
+            if (targetTouching || !isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOcc)) {
                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                         kingSq, targetSq, (side == white ? K : k), 0, false, false, false, false));
             }
@@ -630,7 +641,7 @@ public class MoveGenerator {
 
                         if (!isPromotion) {
                             if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
-                                -1, 0)) {
+                                    -1, 0)) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true, false,
                                         false, false));
@@ -1082,11 +1093,13 @@ public class MoveGenerator {
         int ourKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? K : k]);
         int oppKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? k : K]);
 
-        long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq
-        );
+        long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq);
 
         if(BitBoardUtils.getBit(removalMask, ourKing)) return false;
         if(BitBoardUtils.getBit(removalMask, oppKing)) return true;
+
+        boolean kingsTouching = (Attacks.king_attacks[ourKing] & (1L << oppKing)) != 0;
+        if (kingsTouching) return true;
 
         int oppSide = side ^ 1;
         return !isSquareAttackedAfterMove(chessboard, side, piece, sourceSq, targetSq, extraRemoveSq,
@@ -2130,23 +2143,6 @@ public class MoveGenerator {
 
         chessboard.ply++;
         chessboard.full_move++;
-
-        // ---------------------------------
-        // debug hash key incremental update
-        // ---------------------------------
-
-        // build hash key for the updated position (after move is made) from scratch
-        //long hash_from_scratch = Zobrist.generateHashKey(chessboard);
-
-        // in case if the hash key built from scratch doesn't match
-        // the one that was incrementally updated, we interrupt execution
-            /*if(chessboard.hash_key != hash_from_scratch){
-                System.out.println("\n\n Make move \n");
-                System.out.println("move: " + EncodeMove.getMoveString(move));
-                ChessBoardUtils.printChessBoard(chessboard);
-                System.out.println("hash key should be: " + Long.toHexString(hash_from_scratch));
-                new Scanner(System.in).nextLine();
-            } */
     }
 
     /**
@@ -2398,7 +2394,7 @@ public class MoveGenerator {
         // attacked by kings
         if (chessboard.gameVariants != GameVariants.ATOMIC &&
                 (Attacks.king_attacks[square] & (side == white ?
-                chessboard.bitboards[K] : chessboard.bitboards[k])) != 0) return true;
+                        chessboard.bitboards[K] : chessboard.bitboards[k])) != 0) return true;
 
         // by default return false
         return false;

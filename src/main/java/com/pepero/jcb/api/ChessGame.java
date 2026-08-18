@@ -1714,6 +1714,24 @@ public class ChessGame {
     }
 
     /**
+     * Get whether this atomic position overed
+     *
+     * @return whether this atomic position overed
+     */
+    public boolean isAtomicOver() {
+        if(chessboard.gameVariants != GameVariants.ATOMIC) throw new VariantNotMatchException(
+                "The variant should be atomic!"
+        );
+
+        readLock.lock();
+        try {
+            return ChessboardUtils.isAtomicOver(chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get whether racing kings is over (on racing kings variant)
      *
      * @return whether racing kings is over
@@ -1765,6 +1783,7 @@ public class ChessGame {
         readLock.lock();
         try {
             if (chessboard.gameVariants == GameVariants.ANTICHESS
+                    || chessboard.gameVariants == GameVariants.ATOMIC
                     || chessboard.gameVariants == GameVariants.THREE_CHECK
                     || chessboard.gameVariants == GameVariants.KING_OF_THE_HILL
                     || chessboard.gameVariants == GameVariants.RACING_KINGS
@@ -1883,6 +1902,9 @@ public class ChessGame {
         try {
             if(chessboard.gameVariants == GameVariants.ANTICHESS) {
                 if(isAntiChessOver()) return GameOverReason.ANTICHESS;
+            }
+            if(chessboard.gameVariants == GameVariants.ATOMIC) {
+                if(isAtomicOver()) return GameOverReason.ATOMIC;
             }
             if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
                 if(isThreeChecked()) return GameOverReason.THREE_CHECK;
@@ -2591,6 +2613,11 @@ public class ChessGame {
                     else yield GameResult.UNKNOWN;
                 }
                 case ANTICHESS -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+                case ATOMIC -> {
+                    if(chessboard.bitboards[k] == 0L) yield GameResult.WHITE_WON;
+                    if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;
+                    yield GameResult.UNKNOWN;
+                }
                 case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
                      SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
@@ -2746,6 +2773,8 @@ public class ChessGame {
             ,"king race", "kingrace", "kr" -> GameVariants.RACING_KINGS;
             case "antichess", "anti chess", "ac", "anti", "giveaway", "losing chess",
                  "losingchess", "suicide chess", "suicidechess" -> GameVariants.ANTICHESS;
+            case "atomic", "atomic chess", "atom", "at", "nuclear", "nuclear chess",
+                 "explosion chess", "bomb chess" -> GameVariants.ATOMIC;
             default -> GameVariants.STANDARD;
         };
     }
@@ -2983,6 +3012,7 @@ public class ChessGame {
                     case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
                     case HORDE -> this.headers.put("Variant", "Horde");
                     case ANTICHESS -> this.headers.put("Variant", "Antichess");
+                    case ATOMIC -> this.headers.put("Variant", "Atomic");
                     case RACING_KINGS -> this.headers.put("Variant", "Racing Kings");
                 }
             }

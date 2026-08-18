@@ -34,6 +34,9 @@ public class ConvertStringMoveUtils {
         if (chessboard.gameVariants == GameVariants.ANTICHESS) {
             return ChessboardUtils.isAntiChessOver(chessboard);
         }
+        if (chessboard.gameVariants == GameVariants.ATOMIC) {
+            return ChessboardUtils.isAtomicOver(chessboard) || ChessboardUtils.isCheckmate(chessboard);
+        }
         if (chessboard.gameVariants == GameVariants.HORDE) {
             return ChessboardUtils.isHordePiecesGone(chessboard) || ChessboardUtils.isCheckmate(chessboard);
         }

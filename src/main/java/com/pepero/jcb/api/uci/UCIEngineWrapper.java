@@ -204,6 +204,9 @@ public class UCIEngineWrapper implements AutoCloseable {
                 case ANTICHESS:
                     setOptionSync("UCI_Variant", "antichess");
                     break;
+                case ATOMIC:
+                    setOptionSync("UCI_Variant", "atomic");
+                    break;
                 case RACING_KINGS:
                     setOptionSync("UCI_Variant", "racingkings");
                     break;
