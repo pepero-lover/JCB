@@ -256,8 +256,6 @@ public class UCIEngineWrapper implements AutoCloseable {
             }
         }
 
-        System.out.println(positionCmd);
-
         return positionCmd.toString();
     }
 

@@ -10,8 +10,8 @@ import java.util.Map;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
-        String engine2Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
+        String engine1Path = new File("engine/fairy-stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/fairy-stockfish").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
