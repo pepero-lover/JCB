@@ -100,14 +100,20 @@ public class Magics {
                     Attacks.rook_relevant_bits[square], Attacks.rook);
         }
 
-        System.out.println();
-        System.out.println();
-
         // loop over 64 board squares
         for(int square = 0;square<64;square++){
             // init rook magic numbers
             MagicNumbers.bishop_magic_numbers[square] = findMagicNumber(square,
                     Attacks.bishop_relevant_bits[square], Attacks.bishop);
+        }
+
+        System.out.println("ROOK");
+        for(int i=0;i<64;i++) {
+            System.out.println("0x" + Long.toHexString(MagicNumbers.rook_magic_numbers[i]).toUpperCase() + "L,");
+        }
+        System.out.println("BISHOP");
+        for(int i=0;i<64;i++) {
+            System.out.println("0x" + Long.toHexString(MagicNumbers.bishop_magic_numbers[i]).toUpperCase() + "L,");
         }
     }
 

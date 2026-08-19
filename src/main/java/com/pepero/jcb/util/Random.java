@@ -1,19 +1,21 @@
 package com.pepero.jcb.util;
 
 public class Random {
+    // i love pepero
+
     // pseudo random number state
-    private static int state = 1804289383;
+    private static int state = 111111;
 
     // state for MAGIC NUM
-    private static final int MAGIC_NUM_STATE = 1804289383;
+    private static final int MAGIC_NUM_STATE = 111111;
 
     // state for HASHING
-    private static final int HASHING_STATE = 1804289383;
+    private static final int HASHING_STATE = 111111;
 
     /**
      * Generate 32-bit pseudo legal numbers
      * <p>
-     * It depends on the state, so if the state changes to 1804289383 to 1804289382,
+     * It depends on the state, so if the state changes to 111111 to 111110,
      * it prints completely another number.
      * <p>
      * In other words, if the state is the same, the random result is always the same.
@@ -40,7 +42,7 @@ public class Random {
     /**
      * Generate 64-bit pseudo legal numbers
      * <p>
-     * It depends on the state, so if the state changes to 1804289383 to 1804289382,
+     * It depends on the state, so if the state changes to 111111 to 111110,
      * it prints completely another number
      * <p>
      * In other words, if the state is the same, the random result is always the same.
