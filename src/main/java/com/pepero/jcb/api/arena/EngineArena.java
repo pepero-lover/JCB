@@ -7,6 +7,7 @@ import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.EngineArenaException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
+import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.core.GameVariants;
@@ -89,6 +90,11 @@ public class EngineArena {
             }
         }
 
+        chessGame.setHeader("White", isEngine1White ?
+                matchConfig.getEngine1Config().name() : matchConfig.getEngine2Config().name());
+        chessGame.setHeader("Black", isEngine1White ?
+                matchConfig.getEngine2Config().name() : matchConfig.getEngine1Config().name());
+
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());
                 UCIEngineWrapper engine2 = factory.spawn(matchConfig.getEngine2Config())) {
@@ -114,6 +120,7 @@ public class EngineArena {
             int resignAdjCount = 0;
 
             while (chessGame.getGameoverReason() == GameOverReason.NOTGAMEOVER) {
+                boolean whiteTurn = chessGame.isWhiteTurn();
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
                     String move;
@@ -126,7 +133,11 @@ public class EngineArena {
                     if(move != null) {
                         String san = chessGame.toSan(move);
 
+                        clock.spendTime(whiteTurn, 0);
                         chessGame.makeMove(move);
+                        chessGame.setCurrentMoveClock(
+                                (int) ((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000)
+                        );
                         if(listener != null) {
                             listener.onMovePlayed(new MoveEvent(
                                     chessGame.getFEN(),
@@ -143,7 +154,6 @@ public class EngineArena {
                     }
                 }
 
-                boolean whiteTurn = chessGame.isWhiteTurn();
                 boolean isEngine1Turn = whiteTurn == isEngine1White;
                 UCIEngineWrapper currentEngine = isEngine1Turn ? engine1 : engine2;
                 EngineLimit currentLimit = isEngine1Turn ? engine1Limit : engine2Limit;
@@ -210,6 +220,14 @@ public class EngineArena {
                     String san = chessGame.toSan(bestMove);
 
                     chessGame.makeMove(bestMove);
+                    EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
+                    if(currentEngineLine != null) {
+                        chessGame.setCurrentMoveEval(currentEngineLine.score().toString());
+                        chessGame.setCurrentMoveClock(
+                                (int) Math.ceil((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000.)
+                        );
+                        chessGame.setCurrentMoveComment(currentEngineLine.sanPv());
+                    }
                     if(listener != null) {
                         listener.onMovePlayed(new MoveEvent(
                                 chessGame.getFEN(),

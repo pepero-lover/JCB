@@ -2667,6 +2667,18 @@ public class ChessGame {
     /**
      * Save clock data on last move on MoveNode(DTO)
      *
+     * @param seconds seconds data
+     */
+    public void setCurrentMoveClock(int seconds) {
+        int resultHours = seconds / 3600;
+        int resultMinutes = (seconds % 3600) / 60;
+        int resultSeconds = seconds % 60;
+        setCurrentMoveClock(resultHours, resultMinutes, resultSeconds);
+    }
+
+    /**
+     * Save clock data on last move on MoveNode(DTO)
+     *
      * @param clkTime string format like "0:05:00"
      */
     public void setCurrentMoveClock(String clkTime) {
@@ -2719,6 +2731,21 @@ public class ChessGame {
         try {
             if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().cal = cal;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Add comment data on this current move
+     *
+     * @param comment comment string
+     */
+    public void setCurrentMoveComment(String comment) {
+        writeLock.lock();
+        try {
+            if (this.currentNode == moveHistoryRoot) return;
+            this.currentNode.getAnnotation().comment = comment;
         } finally {
             writeLock.unlock();
         }

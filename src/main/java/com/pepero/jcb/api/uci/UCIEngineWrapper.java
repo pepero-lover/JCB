@@ -591,4 +591,13 @@ public class UCIEngineWrapper implements AutoCloseable {
     public int getCurrentCp() {
         return currentCp;
     }
+
+    /**
+     * Get current first pv engine line
+     *
+     * @return current first pv engine line
+     */
+    public EngineLine getCurrentFirstEngineLine() {
+        return latestAnalysisMap.get(1);
+    }
 }

@@ -77,17 +77,18 @@ public class PGNUtils {
 
         boolean hasComment = mainMove.annotation().comment() != null && !mainMove.annotation().comment().isEmpty();
         boolean hasClk = mainMove.annotation().clk() != null && !mainMove.annotation().clk().isEmpty();
+        boolean hasEval = mainMove.annotation().eval() != null && !mainMove.annotation().eval().isEmpty();
 
         if (hasComment || hasClk) {
             sb.append("{");
+            if (hasClk) {
+                sb.append("[%clk ").append(mainMove.annotation().clk()).append("] ");
+            }
+            if(hasEval) {
+                sb.append("[%eval ").append(mainMove.annotation().eval()).append("] ");
+            }
             if (hasComment) {
                 sb.append(mainMove.annotation().comment());
-            }
-            if (hasComment && hasClk) {
-                sb.append(" ");
-            }
-            if (hasClk) {
-                sb.append("[%clk ").append(mainMove.annotation().clk()).append("]");
             }
             sb.append("} ");
             interrupted = true;
