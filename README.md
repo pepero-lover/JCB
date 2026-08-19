@@ -62,6 +62,26 @@ dependencies {
 }
 ```
 
+### gradle.kts 의 경우
+
+1. settings.gradle.kts 에 이 코드를 삽입하세요.
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+```
+
+2. 의존성을 build.gradle.kts 에 추가하세요.
+```kotlin
+dependencies {
+    implementation("com.github.pepero-lover:JCB:v1.6.0")
+}
+```
+
 ### Maven 프로젝트의 경우
 1. pom.xml 에 이 코드를 삽입하세요.
 ```xml
