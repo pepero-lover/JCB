@@ -2832,9 +2832,10 @@ public class ChessGame {
         Chessboard pgnChessboard;
         GameVariants parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
         boolean isChess960 = false;
-        //"chess960", "fischerandom", "fischerrandom"
-        switch (parsedHeaders.get("Variant").trim().toLowerCase()) {
-            case "chess960", "fischerandom", "fischerrandom" -> isChess960 = true;
+        if(parsedHeaders.containsKey("Variant")) {
+            switch (parsedHeaders.get("Variant").trim().toLowerCase()) {
+                case "chess960", "fischerandom", "fischerrandom" -> isChess960 = true;
+            }
         }
 
         if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
