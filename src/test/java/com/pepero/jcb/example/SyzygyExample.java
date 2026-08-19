@@ -22,12 +22,12 @@ public class SyzygyExample {
 
         // WDL, DTZ 결과를 보입니다.
 
-        // WDL 데이터는 -2 ~ 2 의 범위를 가지고, 각각
-        // -2 는 양쪽 모두 최선의 플레이를 했을 때, 두는 쪽 기준 진다는 것이고,
-        // -1 은 지지만, 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
-        // 0 은 무승부,
-        // 1은 두는 쪽 기준 이기지만 최선의 플레이를 했을 때, 50수 규칙으로 무승부가 되고,
-        // 2는 두는 쪽 기준 이긴다는 것입니다.
+        // WDL 데이터는 -2 ~ 2의 범위를 가집니다. (두는 쪽 기준)
+        //  2 : 완벽하게 플레이할 경우 승리함
+        //  1 : 승리하지만 50수 규칙에 의해 무승부가 됨
+        //  0 : 무승부
+        // -1 : 패배하지만 50수 규칙에 의해 무승부가 됨
+        // -2 : 완벽하게 플레이해도 패배함
 
         // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
 
@@ -35,7 +35,7 @@ public class SyzygyExample {
         System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
         System.out.println();
 
-        // 지금 상황에서 최선수도 보일 수 있습니다.
+        // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
         System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
         System.out.println();
 

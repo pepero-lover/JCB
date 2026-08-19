@@ -41,7 +41,7 @@ public class EngineExample {
                     new EngineLimit(10)
             );
 
-            // 메치의 설정을 생성합니다.
+            // 매치의 설정을 생성합니다.
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
                     .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
@@ -51,10 +51,10 @@ public class EngineExample {
                     .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
                     .build();
 
-            // 메치 진행 클래스를 생성합니다.
+            // 매치 진행 클래스를 생성합니다.
             ArenaRunner arena = new ArenaRunner(config);
 
-            // 아레나 메치를 시작합니다.
+            // 아레나 매치를 시작합니다.
             // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
             MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
                 @Override

@@ -18,7 +18,7 @@ public class GameStateExample {
         if (reason != GameOverReason.NOTGAMEOVER) {
             System.out.println("게임 종료! 사유: " + reason);
         }
-        
+
         // 개별 상태 체크도 가능 합니다.
         System.out.println("체크메이트 상태인가? : " + game.isCheckmate());
         System.out.println("체크 상태인가? : " + game.isCheck());

@@ -19,7 +19,7 @@ public class GUIExample {
         for (MoveInfo move : legalMoves) {
             System.out.println("- " + move.toString());
         }
-        
+
         // 현재 체스판의 기물 점수 확인 (백 유리: 양수 / 흑 유리: 음수)
         System.out.println("현재 백 기준 기물 점수: " + chessGame.getPieceScore());
     }
