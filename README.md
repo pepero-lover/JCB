@@ -2,6 +2,7 @@
 ![Java](https://img.shields.io/badge/Java-21%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Size](https://img.shields.io/badge/Size-240KB-orange)
+[![](https://jitpack.io/v/pepero-lover/JCB.svg)](https://jitpack.io/#pepero-lover/JCB)
 
 ## 요구 사항
 - Java 21 이상
