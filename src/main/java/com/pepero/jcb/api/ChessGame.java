@@ -3005,6 +3005,7 @@ public class ChessGame {
                 this.headers.put("Variant", "Chess960");
             }
 
+            // if there is another variant, overwrite it
             if(chessboard.gameVariants != GameVariants.STANDARD) {
                 switch (chessboard.gameVariants) {
                     case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
@@ -3124,7 +3125,9 @@ public class ChessGame {
     }
 
     /**
-     * Get pgn string
+     * Get pgn string <p>
+     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
+     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
      * @param maxNodes max nodes count
      * @return pgn string
@@ -3136,7 +3139,9 @@ public class ChessGame {
     }
 
     /**
-     * Get pgn string
+     * Get pgn string <p>
+     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
+     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
      * @return pgn string
      *

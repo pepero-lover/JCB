@@ -427,7 +427,8 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
 
-                    long pieceAttacks = getPieceAttacks(chessboard, piece, side, sourceSq);
+                    long pieceAttacks = getPieceAttacks(chessboard, piece, side, sourceSq) &
+                            ~chessboard.occupancies[side];
 
                     // if capture only,
                     if(capture) {
@@ -795,6 +796,14 @@ public class MoveGenerator {
         while (kingAttacks != 0) {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
 
+            // if racing kings, check move is not possible
+            if (chessboard.gameVariants == GameVariants.RACING_KINGS
+                    && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, targetSq,
+                    -1, oppKingSq, 0)) {
+                kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
+                continue;
+            }
+
             // pop king pos on occupancy because
 
             // let's assume this is the position
@@ -907,7 +916,9 @@ public class MoveGenerator {
                                                 false, false));
                                     }
                                 } else {
-                                    moveCount = addPawnMoves(moveArray, moveCount, sourceSq, doublePushSq, piece, false);
+                                    moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
+                                            sourceSq, doublePushSq, piece, 0, false, true,
+                                            false, false));
                                 }
                             }
                         }
@@ -1446,7 +1457,7 @@ public class MoveGenerator {
     public static final int ILLEGAL_MOVE = -1;
 
     /**
-     * Make a standard move on chess board (CrazyHouse & Chess960 removed)
+     * Make a standard move on chess board (Variant (not chess 960) removed)
      * @param chessboard chess board
      * @param move encoded move
      */
@@ -1658,7 +1669,7 @@ public class MoveGenerator {
     }
 
     /**
-     * Unmake standard Move on chessboard
+     * Unmake standard Move on chess board (Variant (not chess 960) removed)
      *
      * @param chessboard chessboard
      * @param move encoded move
