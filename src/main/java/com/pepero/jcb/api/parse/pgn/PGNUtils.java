@@ -8,6 +8,7 @@ import com.pepero.jcb.api.exception.PGNConvertException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 public class PGNUtils {
     /**
@@ -82,20 +83,22 @@ public class PGNUtils {
                 !mainMove.annotation().timeStamp().isEmpty();
 
         if (hasComment || hasClk) {
-            sb.append("{");
+            StringJoiner innerContent = new StringJoiner(" ");
+
             if (hasClk) {
-                sb.append("[%clk ").append(mainMove.annotation().clk()).append("] ");
+                innerContent.add("[%clk " + mainMove.annotation().clk() + "]");
             }
             if (hasTimestamp) {
-                sb.append("[%timestamp ").append(mainMove.annotation().timeStamp()).append("] ");
+                innerContent.add("[%timestamp " + mainMove.annotation().timeStamp() + "]");
             }
-            if(hasEval) {
-                sb.append("[%eval ").append(mainMove.annotation().eval()).append("] ");
+            if (hasEval) {
+                innerContent.add("[%eval " + mainMove.annotation().eval() + "]");
             }
             if (hasComment) {
-                sb.append(mainMove.annotation().comment());
+                innerContent.add(mainMove.annotation().comment());
             }
-            sb.append("} ");
+
+            sb.append("{").append(innerContent).append("} ");
             interrupted = true;
         }
 
