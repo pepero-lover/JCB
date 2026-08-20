@@ -8,6 +8,7 @@ import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.event.ChessGameListener;
 import com.pepero.jcb.api.exception.*;
+import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
@@ -275,7 +276,7 @@ public class ChessGame {
      * @throws FENConvertException - if converting fen string failed
      */
     private ChessGame(String fen, boolean isChess960, GameVariants gameVariants) {
-        FENValidator.validateString(fen, gameVariants);
+        FENValidator.validateString(fen, isChess960, gameVariants);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
@@ -286,7 +287,7 @@ public class ChessGame {
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
         } catch (Exception e) {
-            throw new FENConvertException("Could not parse the fen.");
+            throw new FENConvertException("Could not parse the fen.", FENErrorType.UNKNOWN);
         }
 
         FENValidator.validateLogicalState(chessboard, gameVariants);
