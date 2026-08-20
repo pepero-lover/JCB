@@ -16,7 +16,7 @@ public class EngineAnalyzeTest {
         );
 
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(
-                new File("engine/fairy-stockfish.exe").getAbsolutePath()
+                new File("engine/fairy-stockfish").getAbsolutePath()
         ), 100, new EngineAnalysisListener() {
             @Override
             public void onAnalysisBundled(List<EngineLine> bundledLines) {
@@ -36,6 +36,10 @@ public class EngineAnalyzeTest {
 
             }
         });
+        System.out.println("Author : " + engineWrapper.getAuthor());
+        System.out.println("Engine Name : " + engineWrapper.getEngineName());
+        System.out.println();
+
         engineWrapper.startAnalysis(chessGame, 255, 5);
     }
 }

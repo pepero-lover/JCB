@@ -12,9 +12,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -39,6 +37,7 @@ public class UCIEngineWrapper implements AutoCloseable {
     private volatile CountDownLatch stopLatch;
 
     private final Set<String> availableOptions = ConcurrentHashMap.newKeySet();
+    private final HashMap<String, String> engineIdData = new HashMap<>();
 
     private final AtomicReference<CompletableFuture<String>> currentMoveFuture = new AtomicReference<>();
 
@@ -281,6 +280,8 @@ public class UCIEngineWrapper implements AutoCloseable {
                         readyokLatch.countDown();
                     } else if (line.startsWith("option name ")) {
                         parseOptionLine(line);
+                    } else if (line.startsWith("id")) {
+                        parseIdLine(line);
                     } else if (line.startsWith("bestmove")) {
                         if (!latestAnalysisMap.isEmpty() && listener != null) {
                             List<EngineLine> finalBundle = latestAnalysisMap.values().stream()
@@ -447,10 +448,62 @@ public class UCIEngineWrapper implements AutoCloseable {
         }
     }
 
+    private void parseIdLine(String line) {
+        try {
+            if (line.startsWith("id author ")) {
+                String authorName = line.substring(10).trim();
+                engineIdData.put("author", authorName);
+            }
+            if (line.startsWith("id name ")) {
+                String authorName = line.substring(8).trim();
+                engineIdData.put("name", authorName);
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    /**
+     * Get whether this option name exists
+     *
+     * @param name option name
+     * @return whether this option name exists
+     */
     public boolean hasOption(String name) {
         return availableOptions.contains(name);
     }
 
+    /**
+     * Get engine author
+     *
+     * @return engine author
+     */
+    public String getAuthor() {
+        return engineIdData.get("author");
+    }
+
+    /**
+     * Get engine name
+     *
+     * @return engine name
+     */
+    public String getEngineName() {
+        return engineIdData.get("name");
+    }
+
+    /**
+     * Get engine id data
+     *
+     * @return engine id data
+     */
+    public Map<String, String> getEngineIdData() {
+        return Map.copyOf(engineIdData);
+    }
+
+    /**
+     * Get available engine options
+     *
+     * @return available engine options
+     */
     public Set<String> getAvailableOptions() {
         return Set.copyOf(availableOptions);
     }
