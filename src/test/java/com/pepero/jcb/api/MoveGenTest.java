@@ -1,6 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;

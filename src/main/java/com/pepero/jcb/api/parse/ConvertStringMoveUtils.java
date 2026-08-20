@@ -5,6 +5,7 @@ import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.exception.type.ConvertErrorType;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.ChessboardUtils;
@@ -94,7 +95,8 @@ public class ConvertStringMoveUtils {
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
-            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan, chessboard);
+            throw new ConvertMoveException("Length of the string is too short ( or too long )!"
+                    , lan, chessboard, ConvertType.LAN, ConvertErrorType.LENGTH);
         }
 
         int source_square = BoardSquares.coordinates_to_square(lan.substring(0,2));
@@ -102,15 +104,18 @@ public class ConvertStringMoveUtils {
 
         // lan is not correct
         if(source_square == -1 || target_square == -1) {
-            throw new ConvertMoveException("Square string is not correct!", lan, chessboard);
+            throw new ConvertMoveException("Square string is not correct!", lan, chessboard,
+                    ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
         }
 
         int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
 
         // if piece is not found
         if(type == -1) {
-            throw new ConvertMoveException("Piece not found! ( FEN : " +
-                    ChessboardUtils.getFen(chessboard) + " )", lan);
+            throw new ConvertMoveException("Piece not found!", lan, chessboard,
+                    ConvertType.LAN,
+                    ConvertErrorType.PIECE_NOT_FOUND
+                    );
         }
 
         StringBuilder sb = new StringBuilder();
@@ -152,7 +157,8 @@ public class ConvertStringMoveUtils {
                 try {
                     promotionStr = "=" + String.valueOf(lan.charAt(4)).toUpperCase();
                 } catch (IndexOutOfBoundsException e){
-                    throw new ConvertMoveException("Promotion char not found!");
+                    throw new ConvertMoveException("Promotion char not found!",
+                            lan, ConvertType.LAN, ConvertErrorType.PROMOTION_CHARACTER);
                 }
             }
         } else {
@@ -420,11 +426,13 @@ public class ConvertStringMoveUtils {
         // check crazy house
         if (lan.contains("@")) {
             String[] parts = lan.split("@");
-            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", lan);
+            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", lan,
+                    ConvertType.LAN, ConvertErrorType.DROP_MOVE);
 
             char pieceChar = parts[0].charAt(0);
-            int target_square = Square.fromString(parts[1]).getIndex();
-            if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan);
+            int target_square = BoardSquares.coordinates_to_square(parts[1]);
+            if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan,
+                    ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
 
             int piece_type = ChessboardUtils.char_to_encoded_piece.get(pieceChar);
             if (chessboard.side == black && piece_type <= K) piece_type += 6;
@@ -439,11 +447,12 @@ public class ConvertStringMoveUtils {
         // check the length
         if(lan.length() < 4 || lan.length() >= 6) {
             // the length is too short ( or too long )
-            throw new ConvertMoveException("Length of the string is too short ( or too long )!", lan, chessboard);
+            throw new ConvertMoveException("Length of the string is too short ( or too long )!",
+                    lan, chessboard, ConvertType.LAN, ConvertErrorType.LENGTH);
         }
 
-        int source_square = Square.fromString(lan.substring(0,2)).getIndex();
-        int target_square = Square.fromString(lan.substring(2,4)).getIndex();
+        int source_square = BoardSquares.coordinates_to_square(lan.substring(0,2));
+        int target_square = BoardSquares.coordinates_to_square(lan.substring(2,4));
 
         int promotion_type = 0;
         if(lan.length() == 5){
@@ -464,7 +473,8 @@ public class ConvertStringMoveUtils {
 
         // lan is not correct
         if(source_square == -1 || target_square == -1) {
-            throw new ConvertMoveException("Square string is not correct!", lan);
+            throw new ConvertMoveException("Square string is not correct!", lan,
+                    ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
         }
 
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
@@ -484,6 +494,7 @@ public class ConvertStringMoveUtils {
      * @return Translated Result
      *
      * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if illegal move
      */
     private static TranslateResult parseSan(Chessboard chessboard, String san) {
         int source_square = -1;
@@ -512,7 +523,7 @@ public class ConvertStringMoveUtils {
             int move_result = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
 
             if (move_result == ILLEGAL_MOVE) {
-                throw new ConvertMoveException("Illegal drop move! ( FEN : " + ChessboardUtils.getFen(chessboard) + " )");
+                throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
             }
 
             return new TranslateResult(parts[0] + "@" + parts[1], move_result);
@@ -537,8 +548,7 @@ public class ConvertStringMoveUtils {
                 if(isKingSide == isMoveKingSide) return new TranslateResult(lanForCastling(move), move);
             }
 
-            throw new ConvertMoveException("There is no possible castling move! ( FEN : " +
-                    ChessboardUtils.getFen(chessboard) + " )");
+            throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
         }
 
         int piece_type = switch (san.charAt(0)) {
@@ -595,7 +605,9 @@ public class ConvertStringMoveUtils {
                 case 'B', 'b' -> B;
                 case 'N', 'n' -> N;
                 default -> throw new ConvertMoveException("Promotion piece char Not Found! ( FEN : " +
-                        ChessboardUtils.getFen(chessboard) + " )");
+                        ChessboardUtils.getFen(chessboard) + " )",
+                        ConvertType.SAN,
+                        ConvertErrorType.PROMOTION_CHARACTER);
             };
 
         int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
@@ -618,7 +630,9 @@ public class ConvertStringMoveUtils {
                 if(expected_rank != -1 && source / 8 != expected_rank) continue;
 
                 if(result) throw new ConvertMoveException("Available move count is more than 1! ( FEN : " +
-                        ChessboardUtils.getFen(chessboard) + " )");
+                        ChessboardUtils.getFen(chessboard) + " )",
+                        ConvertType.SAN,
+                        ConvertErrorType.AMBIGUITY_COULD_NOT_BE_RESOLVED);
 
                 source_square = source;
                 target_square = EncodeMove.getMoveTarget(move);
@@ -628,8 +642,7 @@ public class ConvertStringMoveUtils {
             }
         }
 
-        if(move_result == -1) throw new ConvertMoveException("Available move count is zero! ( FEN : " +
-                ChessboardUtils.getFen(chessboard) + " )");
+        if(move_result == -1) throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
 
         return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
                 + BoardSquares.square_to_coordinates[target_square]
@@ -686,6 +699,7 @@ public class ConvertStringMoveUtils {
      * @return Parsed encoded move
      *
      * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if illegal move
      */
     public static int parseMoveDataToEncodedMove(Chessboard chessboard, int source_square, int target_square,
                                                  int promotion_type){
@@ -693,16 +707,22 @@ public class ConvertStringMoveUtils {
 
         // source square is not correct
         if(source_square < 0 || source_square >= 64) {
-            throw new ConvertMoveException("Source square string is not correct!");
+            throw new ConvertMoveException("Source square is not correct!",
+                    ConvertType.MANUAL,
+                    ConvertErrorType.INCORRECT_SQUARE);
         }
 
         // target square is not correct
         if(target_square < 0 || target_square >= 64) {
-            throw new ConvertMoveException("Target square string is not correct!");
+            throw new ConvertMoveException("Target square is not correct!",
+                    ConvertType.MANUAL,
+                    ConvertErrorType.INCORRECT_SQUARE);
         }
 
         if(promotion_type < 0 || promotion_type > 11) {
-            throw new ConvertMoveException("Promotion Type is not correct!");
+            throw new ConvertMoveException("Promotion Type is not correct!",
+                    ConvertType.MANUAL,
+                    ConvertErrorType.PROMOTION_CHARACTER);
         }
 
         if (promotion_type != 0) {
