@@ -91,12 +91,6 @@ public class EngineArena {
             }
         }
 
-        chessGame.setHeader("White", isEngine1White ?
-                matchConfig.getEngine1Config().name() : matchConfig.getEngine2Config().name());
-        chessGame.setHeader("Black", isEngine1White ?
-                matchConfig.getEngine2Config().name() : matchConfig.getEngine1Config().name());
-        chessGame.setHeader("Round", String.valueOf(roundNumber));
-
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());
                 UCIEngineWrapper engine2 = factory.spawn(matchConfig.getEngine2Config())) {
@@ -113,6 +107,18 @@ public class EngineArena {
                     blackLimit.timeControlMs(),
                     blackLimit.incrementMs()
             );
+
+            chessGame.setHeader("White", isEngine1White ?
+                    matchConfig.getEngine1Config().name() : matchConfig.getEngine2Config().name());
+            chessGame.setHeader("Black", isEngine1White ?
+                    matchConfig.getEngine2Config().name() : matchConfig.getEngine1Config().name());
+            chessGame.setHeader("Round", String.valueOf(roundNumber));
+            if(whiteLimit.hasTimeLimit() && blackLimit.hasTimeLimit()) {
+                String time = String.valueOf(whiteLimit.timeControlMs() / 1000.);
+                String increment = String.valueOf(whiteLimit.incrementMs() / 1000.);
+
+                chessGame.setHeader("TimeControl", time + "+" + increment);
+            }
 
             PolyglotBookReader bookReader = matchConfig.getOpeningBook();
 
@@ -143,9 +149,11 @@ public class EngineArena {
                         clock.spendTime(whiteTurn, 0);
                         chessGame.makeMove(move);
                         if(matchConfig.isShowClk()) {
-                            chessGame.setCurrentMoveClock(
-                                    (int) ((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000)
+                            long time = (whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs());
+                            chessGame.setCurrentMoveClockMilliSeconds(
+                                    time
                             );
+                            chessGame.setTimeStamp("0");
                         }
                         if(listener != null) {
                             listener.onMovePlayed(new MoveEvent(
@@ -251,9 +259,11 @@ public class EngineArena {
                             chessGame.setCurrentMoveComment(currentEngineLine.sanPv());
                         }
                         if(matchConfig.isShowClk()) {
-                            chessGame.setCurrentMoveClock(
-                                    (int) Math.ceil((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000.)
+                            long time = (whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs());
+                            chessGame.setCurrentMoveClockMilliSeconds(
+                                    time
                             );
+                            chessGame.setTimeStamp(String.valueOf(spentTime % 1000 / 100));
                         }
                     }
                     if(listener != null) {

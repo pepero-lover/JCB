@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
@@ -59,10 +60,12 @@ public class EngineMatchTest {
 //                            ))
                     .totalGames(10)
                     .concurrency(4)
-                    .showClk(false)
+                    .showClk(true)
                     .showEval(false)
                     .showPv(false)
                     .build();
+
+            CountDownLatch doneLatch = new CountDownLatch(1);
 
             ArenaRunner runner = new ArenaRunner(config);
             Thread runnerThread = new Thread(() -> runner.run(new ArenaRunner.RunnerListener() {
@@ -90,18 +93,26 @@ public class EngineMatchTest {
                 public void onAllGamesFinished(MatchStatistics finalStats, boolean stoppedEarly) {
                     System.out.println(stoppedEarly ? "Aborted midway" : "All games finished successfully");
                     System.out.println("Final stats: " + finalStats);
+                    doneLatch.countDown();
                 }
             }));
             runnerThread.start();
 
             System.out.println("To stop, type 'stop' and Enter");
-            Scanner sc = new Scanner(System.in);
-            while (sc.hasNextLine()) {
-                if (sc.nextLine().trim().equalsIgnoreCase("stop")) {
-                    runner.stop();
-                    break;
+            Thread inputThread = new Thread(() -> {
+                Scanner sc = new Scanner(System.in);
+                while (sc.hasNextLine()) {
+                    if (sc.nextLine().trim().equalsIgnoreCase("stop")) {
+                        runner.stop();
+                        break;
+                    }
                 }
-            }
+            });
+
+            inputThread.setDaemon(true);
+            inputThread.start();
+
+            doneLatch.await();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

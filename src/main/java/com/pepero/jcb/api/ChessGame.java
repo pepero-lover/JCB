@@ -141,6 +141,7 @@ public class ChessGame {
 
     // for pgn parsing pattern
     private static final Pattern CLK_PATTERN = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
+    private static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\[%timestamp\\s+([^\\]]+)\\]");
     private static final Pattern EVAL_PATTERN = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
     private static final Pattern CSL_PATTERN = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
     private static final Pattern CAL_PATTERN = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
@@ -2679,6 +2680,36 @@ public class ChessGame {
     /**
      * Save clock data on last move on MoveNode(DTO)
      *
+     * @param milliseconds milliseconds data
+     */
+    public void setCurrentMoveClockMilliSeconds(long milliseconds) {
+        writeLock.lock();
+        try {
+            if (this.currentNode == moveHistoryRoot) throw new ClockException("...");
+
+            long seconds = milliseconds / 1000;
+            long resultHours = seconds / 3600;
+            long resultMinutes = (seconds % 3600) / 60;
+            long resultSeconds = seconds % 60;
+            long decimalPoint = milliseconds % 1000 / 100;
+
+            StringBuilder sb = new StringBuilder(8);
+            sb.append(resultHours).append(':');
+            if (resultMinutes < 10) sb.append('0');
+            sb.append(resultMinutes).append(':');
+            if (resultSeconds < 10) sb.append('0');
+            sb.append(resultSeconds);
+            sb.append(".").append(decimalPoint);
+
+            this.currentNode.getAnnotation().clk = sb.toString();
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Save clock data on last move on MoveNode(DTO)
+     *
      * @param clkTime string format like "0:05:00"
      */
     public void setCurrentMoveClock(String clkTime) {
@@ -2686,6 +2717,21 @@ public class ChessGame {
         try {
             if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
             this.currentNode.getAnnotation().clk = clkTime;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Save time stamp data on last move on MoveNode(DTO)
+     *
+     * @param timeStamp time elapsed string
+     */
+    public void setTimeStamp(String timeStamp) {
+        writeLock.lock();
+        try {
+            if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
+            this.currentNode.getAnnotation().timeStamp = timeStamp;
         } finally {
             writeLock.unlock();
         }
@@ -2768,7 +2814,7 @@ public class ChessGame {
         if (node.getAnnotation() != null) {
             MoveAnnotation anno = node.getAnnotation();
             annotationDTO = new MoveAnnotationDTO(
-                    anno.comment, anno.nag, anno.clk,
+                    anno.comment, anno.nag, anno.clk, anno.timeStamp,
                     anno.eval, anno.csl, anno.cal
             );
         }
@@ -2885,6 +2931,12 @@ public class ChessGame {
                     if (clkMatcher.find()) {
                         currentParsedNode.getAnnotation().clk = clkMatcher.group(1);
                         rawComment = clkMatcher.replaceAll("").trim();
+                    }
+
+                    Matcher timestampMatcher = TIMESTAMP_PATTERN.matcher(rawComment);
+                    if (timestampMatcher.find()) {
+                        currentParsedNode.getAnnotation().timeStamp = timestampMatcher.group(1);
+                        rawComment = timestampMatcher.replaceAll("").trim();
                     }
 
                     Matcher evalMatcher = EVAL_PATTERN.matcher(rawComment);
@@ -3101,7 +3153,8 @@ public class ChessGame {
         }
 
         MoveAnnotation nodeAnnotation = node.getAnnotation();
-        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment, nodeAnnotation.nag, nodeAnnotation.clk,
+        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment,
+                nodeAnnotation.nag, nodeAnnotation.clk, nodeAnnotation.timeStamp,
                 nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);;
 
         return new MoveNodeDTO(

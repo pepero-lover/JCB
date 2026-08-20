@@ -9,6 +9,7 @@ public class MoveAnnotation {
     public String nag; // nag data like $2 (?), $3 (!!)
 
     public String clk; // clock data
+    public String timeStamp; // time stamp (time elapsed)
 
     public boolean isEmpty() { return eval == null && csl == null && cal == null; }
 }
