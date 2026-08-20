@@ -11,11 +11,7 @@ import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
-import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
-import com.pepero.jcb.api.parse.pgn.PGNLexer;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
-import com.pepero.jcb.api.parse.pgn.TokenType;
-import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
@@ -24,20 +20,16 @@ import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.api.perft.PerftDriver;
 import com.pepero.jcb.api.perft.PerftResult;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import static com.pepero.jcb.api.PGNParser.getDefaultStartPosition;
 import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.black;
-import static com.pepero.jcb.constant.SideToMove.white;
-import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
-import static com.pepero.jcb.core.MoveGenerator.generateMoves;
+import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.MoveGenerator.*;
 
 public class ChessGame {
     // start position constant
@@ -47,51 +39,6 @@ public class ChessGame {
 
     // Chessboard class
     private final Chessboard chessboard;
-
-    // For variation mode
-    private class MoveNode {
-        final long id;
-        final MoveNode parent;
-        final List<MoveNode> children = new ArrayList<>();
-        final MoveInfo moveData;
-        String san;
-
-        MoveAnnotation annotation = null;
-
-        // for external
-        GameResult terminalResult = null;
-        GameOverReason terminalReason = null;
-
-        // cache game state
-        boolean isStateEvaluated = false;
-        GameResult calculatedResult = GameResult.UNKNOWN;
-        GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
-
-        MoveNode() {
-            this.id = nodeCounter.incrementAndGet();
-            this.moveData = null;
-            this.parent = null;
-        }
-
-        MoveNode(MoveInfo moveData, MoveNode parent) {
-            this.id = nodeCounter.incrementAndGet();
-            this.moveData = moveData;
-            this.parent = parent;
-        }
-
-        public MoveAnnotation getAnnotation() {
-            if (this.annotation == null) {
-                this.annotation = new MoveAnnotation();
-            }
-            return this.annotation;
-        }
-
-        @Override
-        public String toString() {
-            String dataStr = (moveData == null) ? "ROOT" : moveData.toString();
-            return dataStr + " -> " + children;
-        }
-    }
 
     private static final int[] PIECE_VALUES = new int[12];
     static {
@@ -103,11 +50,10 @@ public class ChessGame {
         PIECE_VALUES[K] = 100; PIECE_VALUES[k] = -100;
     }
 
-
     private static final int MAX_PGN_NODE_COUNT = 2048;
     private final AtomicLong nodeCounter = new AtomicLong(0L);
 
-    private final Map<Long, MoveNode> nodeCache = new LinkedHashMap<>(16, 0.75f, true);
+    private final Map<Long, MoveNode> nodeCache = new HashMap<>();
 
     private boolean autoChangeGameOver = true;
 
@@ -116,7 +62,7 @@ public class ChessGame {
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
 
-    private MoveNode moveHistoryRoot = new MoveNode();
+    private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
 
     private MoveNode currentNode = moveHistoryRoot;
 
@@ -133,13 +79,6 @@ public class ChessGame {
     private String startPositionFEN;
 
     private final CopyOnWriteArrayList<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
-
-    // for pgn parsing pattern
-    private static final Pattern CLK_PATTERN = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
-    private static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\[%timestamp\\s+([^\\]]+)\\]");
-    private static final Pattern EVAL_PATTERN = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
-    private static final Pattern CSL_PATTERN = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
-    private static final Pattern CAL_PATTERN = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
 
     /**
      * Initialize position with FEN string
@@ -246,21 +185,6 @@ public class ChessGame {
     }
 
     /**
-     * Get default start position
-     *
-     * @param gameVariants game variant
-     * @return default start position
-     */
-    private static String getDefaultStartPosition(GameVariants gameVariants) {
-        return switch (gameVariants) {
-            case HORDE -> Chessboard.horde_start_position;
-            case RACING_KINGS -> Chessboard.racing_kings_start_position;
-            case ANTICHESS -> Chessboard.antichess_start_position;
-            default -> Chessboard.start_position;
-        };
-    }
-
-    /**
      * Initialize position with FEN string
      *
      * @param fen fen string
@@ -328,7 +252,7 @@ public class ChessGame {
 
             System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
 
-            this.moveHistoryRoot = new MoveNode();
+            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -806,12 +730,14 @@ public class ChessGame {
      * @param sanString san string
      *
      * @return true if the move was legal and applied, false otherwise
+     *
+     * @throws ConvertMoveException if converting move failed
      */
     public boolean tryMakeMoveSan(String sanString) {
         try {
             makeMoveSan(sanString);
             return true;
-        } catch (IllegalMoveException | ConvertMoveException e) {
+        } catch (IllegalMoveException e) {
             return false;
         }
     }
@@ -858,12 +784,14 @@ public class ChessGame {
      * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
      * @return true if all moves were legal and applied, false if it stopped partway through
+     *
+     * @throws ConvertMoveException if converting move failed
      */
     public boolean tryMakeMoveAll(String lanString) {
         try {
             makeMoveAll(lanString);
             return true;
-        } catch (IllegalMoveException | ConvertMoveException e) {
+        } catch (IllegalMoveException e) {
             return false;
         }
     }
@@ -2212,7 +2140,7 @@ public class ChessGame {
             }
         }
 
-        MoveNode result = new MoveNode(moveData, currentNode);
+        MoveNode result = new MoveNode(moveData, currentNode, nodeCounter.incrementAndGet());
 
         currentNode.children.add(result);
         currentNode = result;
@@ -2321,7 +2249,7 @@ public class ChessGame {
     public MoveNodeDTO getRootNode() {
         readLock.lock();
         try {
-            return convertToDTO(moveHistoryRoot);
+            return moveHistoryRoot.convertToDTO();
         } finally {
             readLock.unlock();
         }
@@ -2339,22 +2267,6 @@ public class ChessGame {
             if (currentNode == null) return -1;
 
             return currentNode.id;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
-     * Get current node as DTO
-     *
-     * @return MoveNodeDTO of the current node
-     */
-    public MoveNodeDTO getCurrentNodeDTO() {
-        readLock.lock();
-        try {
-            if (currentNode == null) return null;
-
-            return convertToDTO(currentNode);
         } finally {
             readLock.unlock();
         }
@@ -2773,372 +2685,35 @@ public class ChessGame {
     }
 
     /**
-     * Convert MoveNode to MoveNodeDTO
-     *
-     * @param node MoveNode class
-     * @return converted MoveNodeDTO
-     */
-    private MoveNodeDTO convertToDTO(MoveNode node) {
-        if (node == null) return null;
-
-        List<MoveNodeDTO> childDTOs = node.children.stream()
-                .map(this::convertToDTO)
-                .toList();
-
-        MoveAnnotationDTO annotationDTO = null;
-        if (node.getAnnotation() != null) {
-            MoveAnnotation anno = node.getAnnotation();
-            annotationDTO = new MoveAnnotationDTO(
-                    anno.comment, anno.nag, anno.clk, anno.timeStamp,
-                    anno.eval, anno.csl, anno.cal
-            );
-        }
-
-        return new MoveNodeDTO(
-                node.id,
-                node.moveData,
-                childDTOs,
-                node.san,
-                annotationDTO
-        );
-    }
-
-    /**
-     * Parse "Variant" section on PGN header to GameVariant enum
-     *
-     * @param variantValue "Variant" section on PGN header
-     * @return GameVariant enum
-     */
-    private static GameVariants parseVariantHeader(String variantValue) {
-        if (variantValue == null) return GameVariants.STANDARD;
-
-        return switch (variantValue.trim().toLowerCase()) {
-            case "crazyhouse" -> GameVariants.CRAZY_HOUSE;
-            case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
-            case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
-            case "horde", "hord", "hd" -> GameVariants.HORDE;
-            case "racing kings", "racing king", "racingkings", "racingking"
-            ,"king race", "kingrace", "kr" -> GameVariants.RACING_KINGS;
-            case "antichess", "anti chess", "ac", "anti", "giveaway", "losing chess",
-                 "losingchess", "suicide chess", "suicidechess" -> GameVariants.ANTICHESS;
-            case "atomic", "atomic chess", "atom", "at", "nuclear", "nuclear chess",
-                 "explosion chess", "bomb chess" -> GameVariants.ATOMIC;
-            default -> GameVariants.STANDARD;
-        };
-    }
-
-    /**
      * Load PGN on this ChessGame
      *
      * @param pgnString PGN data
      */
-    public PGNGame loadPGN(String pgnString) {
-        if (pgnString == null || pgnString.isEmpty()) {
-            throw new IllegalArgumentException("PGN string is empty");
-        }
-        pgnString = pgnString.replace("\uFEFF", "");
-
-        Map<String, String> parsedHeaders = new HashMap<>();
-        String[] lines = pgnString.split("\\R");
-        int line_stopped = -1;
-
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i].trim();
-            if (line.isEmpty()) continue;
-
-            if (line.startsWith("[")) {
-                line = line.substring(1, line.length() - 1);
-                String[] parts = line.split(" ", 2);
-                if (parts.length == 2) {
-                    String type = parts[0];
-                    String what = parts[1].replace("\"", "");
-                    parsedHeaders.put(type, what);
-                }
-            } else {
-                line_stopped = i;
-                break;
-            }
-        }
-
-        String movePGNString = "";
-        if (line_stopped != -1) {
-            StringBuilder moveBuilder = new StringBuilder();
-            for (int i = line_stopped; i < lines.length; i++) {
-                moveBuilder.append(lines[i]).append("\n");
-            }
-            movePGNString = moveBuilder.toString();
-        }
-
-        MoveNode rootNode = new MoveNode();
-        MoveNode currentParsedNode = rootNode;
-        Map<Long, MoveNode> tempNodeCache = new HashMap<>();
-        tempNodeCache.put(rootNode.id, rootNode);
-
-        record VariationState(MoveNode node, Chessboard snapshotBoard) {}
-        Stack<VariationState> variationStack = new Stack<>();
-
-        Chessboard pgnChessboard;
-        GameVariants parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
-        boolean isChess960 = false;
-        if(parsedHeaders.containsKey("Variant")) {
-            switch (parsedHeaders.get("Variant").trim().toLowerCase()) {
-                case "chess960", "fischerandom", "fischerrandom" -> isChess960 = true;
-            }
-        }
-
-        if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
-            pgnChessboard = new Chessboard(parsedHeaders.get("FEN"), isChess960, parsedVariant);
-        } else {
-            pgnChessboard = new Chessboard(getDefaultStartPosition(parsedVariant), isChess960, parsedVariant);
-        }
-
-        GameResult parsedGameResult = GameResult.UNKNOWN;
-
-        PGNLexer lexer = new PGNLexer(movePGNString);
-        PGNToken currentToken;
-
-        while ((currentToken = lexer.nextToken()).type() != TokenType.EOF) {
-            switch (currentToken.type()) {
-                case COMMENT:
-                    String rawComment = currentToken.value().trim();
-
-                    Matcher clkMatcher = CLK_PATTERN.matcher(rawComment);
-                    if (clkMatcher.find()) {
-                        currentParsedNode.getAnnotation().clk = clkMatcher.group(1);
-                        rawComment = clkMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher timestampMatcher = TIMESTAMP_PATTERN.matcher(rawComment);
-                    if (timestampMatcher.find()) {
-                        currentParsedNode.getAnnotation().timeStamp = timestampMatcher.group(1);
-                        rawComment = timestampMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher evalMatcher = EVAL_PATTERN.matcher(rawComment);
-                    if (evalMatcher.find()) {
-                        currentParsedNode.getAnnotation().eval = evalMatcher.group(1);
-                        rawComment = evalMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher cslMatcher = CSL_PATTERN.matcher(rawComment);
-                    if (cslMatcher.find()) {
-                        currentParsedNode.getAnnotation().csl = cslMatcher.group(1);
-                        rawComment = cslMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher calMatcher = CAL_PATTERN.matcher(rawComment);
-                    if (calMatcher.find()) {
-                        currentParsedNode.getAnnotation().cal = calMatcher.group(1);
-                        rawComment = calMatcher.replaceAll("").trim();
-                    }
-
-                    if (!rawComment.isEmpty()) {
-                        currentParsedNode.getAnnotation().comment = (currentParsedNode.getAnnotation().comment == null)
-                                ? rawComment : currentParsedNode.getAnnotation().comment + " " + rawComment;
-                    }
-                    break;
-
-                case NAG:
-                    currentParsedNode.getAnnotation().nag = currentToken.value();
-                    break;
-
-                case VARIATION_START:
-                    variationStack.push(new VariationState(currentParsedNode, new Chessboard(pgnChessboard)));
-                    if (currentParsedNode.moveData != null) {
-                        MoveGenerator.unmakeMove(pgnChessboard, currentParsedNode.moveData.originEncodedData());
-                        currentParsedNode = currentParsedNode.parent;
-                    }
-                    break;
-
-                case VARIATION_END:
-                    if (!variationStack.isEmpty()) {
-                        VariationState state = variationStack.pop();
-                        currentParsedNode = state.node;
-                        pgnChessboard = state.snapshotBoard;
-                    } else {
-                        throw new PGNConvertException("Variation stack is empty!");
-                    }
-                    break;
-
-                case RESULT:
-                    if (currentToken.value().equals("1-0")) parsedGameResult = GameResult.WHITE_WON;
-                    if (currentToken.value().equals("0-1")) parsedGameResult = GameResult.BLACK_WON;
-                    if (currentToken.value().equals("1/2-1/2")) parsedGameResult = GameResult.DRAW;
-                    break;
-
-                case MOVE:
-                    String rawSan = currentToken.value();
-                    int cleanEnd = rawSan.length();
-                    while (cleanEnd > 0) {
-                        char lastChar = rawSan.charAt(cleanEnd - 1);
-                        if (lastChar == '!' || lastChar == '?') cleanEnd--;
-                        else break;
-                    }
-
-                    String pureSan = rawSan.substring(0, cleanEnd);
-                    String annotation = rawSan.substring(cleanEnd);
-
-                    int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
-                    if (!ChessboardUtils.isLegalMove(pgnChessboard, moveData)) {
-                        throw new IllegalMoveException(new MoveInfo(moveData).toString(),
-                                ChessboardUtils.getFen(pgnChessboard));
-                    }
-                    MoveGenerator.makeMove(pgnChessboard, moveData);
-
-                    MoveInfo moveInfo = new MoveInfo(moveData);
-                    MoveNode newNode = new MoveNode(moveInfo, currentParsedNode);
-                    newNode.san = pureSan;
-
-                    if (!annotation.isEmpty()) {
-                        String parsedNag = switch (annotation) {
-                            case "!" -> "$1"; case "?" -> "$2"; case "!!" -> "$3";
-                            case "??" -> "$4"; case "!?" -> "$5"; case "?!" -> "$6";
-                            default -> "";
-                        };
-                        if (!parsedNag.isEmpty()) {
-                            newNode.getAnnotation().nag =
-                                    (newNode.getAnnotation().nag == null || newNode.getAnnotation().nag.isEmpty())
-                                            ? parsedNag : newNode.getAnnotation().nag + " " + parsedNag;
-                        }
-                    }
-
-                    currentParsedNode.children.add(newNode);
-                    currentParsedNode = newNode;
-                    tempNodeCache.put(newNode.id, newNode);
-                    break;
-            }
-        }
-
-        if (parsedGameResult != GameResult.UNKNOWN) {
-            MoveNode lastNode = getLastMainlineNode(rootNode);
-            lastNode.terminalResult = parsedGameResult;
-
-            if (ChessboardUtils.isCheckmate(pgnChessboard)) {
-                lastNode.terminalReason = GameOverReason.CHECKMATE;
-            } else if (ChessboardUtils.isStaleMate(pgnChessboard)) {
-                lastNode.terminalReason = GameOverReason.STALEMATE;
-            } else {
-                lastNode.terminalReason = (parsedGameResult == GameResult.DRAW) ?
-                        GameOverReason.AGREEMENTDRAW : GameOverReason.RESIGNATION;
-            }
-        }
-
-        MoveNodeDTO rootDTO = convertToDTO(rootNode);
-
+    public void loadPGN(String pgnString) {
         writeLock.lock();
         try {
-            String fenToLoad = parsedHeaders.getOrDefault("FEN", getDefaultStartPosition(parsedVariant));
-            this.chessboard.gameVariants = parsedVariant;
-            this.chessboard.isChess960 = isChess960;
+            PGNParsedData parsedData = PGNParser.parse(pgnString);
+
+            String fenToLoad = parsedData.startFEN();
+            this.chessboard.gameVariants = parsedData.variants();
+            this.chessboard.isChess960 = parsedData.isChess960();
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
             this.startPositionFEN = fenToLoad;
 
-            this.moveHistoryRoot = rootNode;
-            this.currentNode = rootNode;
+            this.moveHistoryRoot = parsedData.rootNode();
+            this.currentNode = parsedData.rootNode();
 
             this.nodeCache.clear();
-            this.nodeCache.putAll(tempNodeCache);
+            this.nodeCache.putAll(parsedData.cache());
 
             this.headers.clear();
             setDefaultHeaders();
-            this.headers.putAll(parsedHeaders);
+            this.headers.putAll(parsedData.header());
 
-            this.gameResult = parsedGameResult;
+            this.gameResult = parsedData.gameResult();
         } finally {
             writeLock.unlock();
         }
-
-        return new PGNGame(parsedHeaders, rootDTO, parsedGameResult);
-    }
-
-    public PGNGame toPGNGame(int maxNodes) {
-        writeLock.lock();
-        try {
-            if(this.headers.isEmpty()) setDefaultHeaders();
-
-            if(chessboard.isChess960) {
-                this.headers.put("Variant", "Chess960");
-            }
-
-            // if there is another variant, overwrite it
-            if(chessboard.gameVariants != GameVariants.STANDARD) {
-                switch (chessboard.gameVariants) {
-                    case CRAZY_HOUSE -> this.headers.put("Variant", "Crazyhouse");
-                    case THREE_CHECK -> this.headers.put("Variant", "Three-check");
-                    case KING_OF_THE_HILL -> this.headers.put("Variant", "King of the Hill");
-                    case HORDE -> this.headers.put("Variant", "Horde");
-                    case ANTICHESS -> this.headers.put("Variant", "Antichess");
-                    case ATOMIC -> this.headers.put("Variant", "Atomic");
-                    case RACING_KINGS -> this.headers.put("Variant", "Racing Kings");
-                }
-            }
-
-            String currentStartFen = this.startPositionFEN;
-            if (!currentStartFen.equals(getDefaultStartPosition(chessboard.gameVariants))) {
-                this.headers.put("SetUp", "1");
-                this.headers.put("FEN", currentStartFen);
-            } else {
-                this.headers.remove("SetUp");
-                this.headers.remove("FEN");
-            }
-
-            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
-            this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
-
-            Chessboard tempBoard = new Chessboard(startPositionFEN);
-            tempBoard.gameVariants = this.getGameVariants();
-
-            MoveNodeDTO rootDTO = buildPGNTreeWithSan(this.moveHistoryRoot, tempBoard, maxNodes, 0);
-
-            return new PGNGame(new LinkedHashMap<>(this.headers), rootDTO, this.gameResult);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * Add san move on pgn tree
-     *
-     * @param node root node
-     * @param tempBoard board
-     * @param maxNodesCount max nodes count
-     * @param currentNodes current nodes (default : 0)
-     * @return root node
-     *
-     * @throws NodesOverflowException if move count is more than maxNodesCount
-     */
-    private MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard, int maxNodesCount, int currentNodes) {
-        currentNodes++;
-        if(maxNodesCount < currentNodes) throw new NodesOverflowException(
-                "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
-        );
-
-        String calculatedSan = null;
-
-        if (node.moveData != null) {
-            calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, node.moveData);
-
-            MoveGenerator.makeMove(tempBoard, node.moveData.originEncodedData());
-        }
-
-        List<MoveNodeDTO> childrenDTOs = new java.util.ArrayList<>();
-
-        for (MoveNode child : node.children) {
-            childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard), maxNodesCount, currentNodes));
-        }
-
-        MoveAnnotation nodeAnnotation = node.getAnnotation();
-        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment,
-                nodeAnnotation.nag, nodeAnnotation.clk, nodeAnnotation.timeStamp,
-                nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);;
-
-        return new MoveNodeDTO(
-                node.id,
-                node.moveData,
-                childrenDTOs,
-                calculatedSan,
-                annotationDTO
-        );
     }
 
     /**
@@ -3154,7 +2729,7 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            return buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT, 0);
+            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT, 0);
         } finally {
             readLock.unlock();
         }
@@ -3174,7 +2749,7 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            return buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount, 0);
+            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount, 0);
         } finally {
             readLock.unlock();
         }
@@ -3191,7 +2766,18 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPGN(int maxNodes) {
-        return PGNUtils.export(this, toPGNGame(maxNodes), false);
+        writeLock.lock();
+        try {
+            if (this.headers.isEmpty()) setDefaultHeaders();
+
+            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
+
+            return PGNUtils.export(this,
+                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariants(),
+                            isChess960(), getGameResult(), moveHistoryRoot, maxNodes), false);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -3207,19 +2793,6 @@ public class ChessGame {
         return getPGN(MAX_PGN_NODE_COUNT);
     }
 
-    /**
-     * Get pgn string with no extra commentary, clk, nag, etc. <p>
-     *
-     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
-     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
-     *
-     * @return pgn string
-     *
-     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
-     */
-    public String getPurePGN() {
-        return getPurePGN(MAX_PGN_NODE_COUNT);
-    }
 
     /**
      * Get pgn string with no extra commentary, clk, nag, etc. <p>
@@ -3233,7 +2806,32 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPurePGN(int maxNodes) {
-        return PGNUtils.export(this, toPGNGame(maxNodes), true);
+        writeLock.lock();
+        try {
+            if (this.headers.isEmpty()) setDefaultHeaders();
+
+            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
+
+            return PGNUtils.export(this,
+                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariants(),
+                    isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Get pgn string with no extra commentary, clk, nag, etc. <p>
+     *
+     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
+     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
+     *
+     * @return pgn string
+     *
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
+     */
+    public String getPurePGN() {
+        return getPurePGN(MAX_PGN_NODE_COUNT);
     }
 
     /**
@@ -3460,155 +3058,31 @@ public class ChessGame {
     }
 
     /**
-     * Get WDL result on this chess position <br>
-     * not supports other variants
+     * Get total nodes count
      *
-     * @param tablebase table base class
-     * @return WDL result
+     * @return nodes count
      */
-    public int probeSyzygyWdl(SyzygyTablebase tablebase) throws IOException{
-        if (getGameVariants() != GameVariants.STANDARD && isChess960())
-            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
-
+    public int getTotalNodeCount() {
         readLock.lock();
         try {
-            return tablebase.getWdlData(this.chessboard);
+            return this.nodeCache.size();
         } finally {
             readLock.unlock();
         }
     }
 
     /**
-     * Get DTZ result on this chess position <br>
-     * not supports other variants
+     * Get current chess board copy (snapshot)
      *
-     * @param tablebase table base class
-     * @return DTZ result
+     * @return current chess board copy
      */
-    public int probeSyzygyDtz(SyzygyTablebase tablebase) throws IOException {
-        if (getGameVariants() != GameVariants.STANDARD && isChess960())
-            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
-
+    Chessboard getBoardSnapshot() {
         readLock.lock();
         try {
-            return tablebase.getDtzData(this.chessboard);
+            return new Chessboard(this.chessboard);
         } finally {
             readLock.unlock();
         }
-    }
-
-    /**
-     * Get the best move based on Syzygy tablebase <br>
-     * if is checkmate or stalemate, return null
-     *
-     * @param tablebase Syzygy tablebase
-     * @return best move
-     * @throws IOException if tablebase could not find or something
-     */
-    public MoveInfo findBestMoveSyzygy(SyzygyTablebase tablebase) throws IOException {
-        List<SyzygyMoveDTO> bestMoves = findRankedSyzygyMoves(tablebase);
-        if (bestMoves.isEmpty()) return null;
-        return bestMoves.getFirst().move();
-    }
-
-    /**
-     * Get Sorted moves based on Syzygy tablebase (first is best move, last is worst move)
-     * <p>
-     * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}.
-     *
-     * @param tablebase Syzygy table base
-     * @return sorted moves list
-     * @throws IOException if tablebase could not find or something
-     */
-    public List<SyzygyMoveDTO> findRankedSyzygyMoves(SyzygyTablebase tablebase) throws IOException {
-        if (getGameVariants() != GameVariants.STANDARD && isChess960())
-            throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
-
-        readLock.lock();
-        try {
-            int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
-            int moveCount = MoveGenerator.generateMoves(this.chessboard, moveArray);
-
-            if (moveCount == 0) {
-                return List.of(); // checkmate or stalemate
-            }
-
-            List<SyzygyMoveDTO> ranked = new ArrayList<>();
-            int halfMoveClock = this.getHalfMove();
-
-            for (int i = 0; i < moveCount; i++) {
-                int move = moveArray[i];
-                boolean zeroing = EncodeMove.getMoveCapture(move)
-                        || EncodeMove.getMovePiece(move) == P
-                        || EncodeMove.getMovePiece(move) == p;
-
-                MoveGenerator.makeMove(this.chessboard, move);
-
-                boolean triggersRepetition = ChessboardUtils.getRepetitionCount(this.chessboard, 2) >= 2;
-
-                int childWdl = tablebase.getWdlData(this.chessboard);
-                int ourWdl = triggersRepetition ? 0 : -childWdl;
-
-                int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(this.chessboard)));
-
-                if (!zeroing && (halfMoveClock + distance >= 100)) {
-                    if (ourWdl == 2) ourWdl = 1;
-                    else if (ourWdl == -2) ourWdl = -1;
-                }
-
-                ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance));
-
-                MoveGenerator.unmakeMove(this.chessboard, move);
-            }
-
-            ranked.sort((a, b) -> {
-                if (a.ourWdl() != b.ourWdl()) {
-                    return b.ourWdl() - a.ourWdl();
-                }
-                if (a.ourWdl() > 0) {
-                    return a.distance() - b.distance();
-                }
-                if (a.ourWdl() < 0) {
-                    return b.distance() - a.distance();
-                }
-                return 0;
-            });
-
-            return ranked;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
-     * Find tactics and return
-     *
-     * @param whiteAttacking is white attacking
-     * @return tactics dto(s)
-     */
-    public List<TacticFinding> findTactics(boolean whiteAttacking) {
-        return TacticAnalyzer.findAllTactics(this.chessboard, whiteAttacking);
-    }
-
-    /**
-     * Find immediate tactics and return
-     *
-     * @param whiteAttacking is white attacking
-     * @return tactics dto(s)
-     */
-    public List<TacticFinding> findImmediateTactics(boolean whiteAttacking) {
-        return TacticAnalyzer.findImmediateThreats(this.chessboard, whiteAttacking);
-    }
-
-
-    /**
-     * Get Hanging pieces square
-     *
-     * @param whiteAttacking if true, get black's hanging pieces. otherwise, get white's hanging pieces.
-     * @return hanging pieces square
-     */
-    public List<Square> findHangingPieces(boolean whiteAttacking) {
-        return ChessTacticUtils.findHangingPieces(this.chessboard, whiteAttacking);
     }
 
     /**

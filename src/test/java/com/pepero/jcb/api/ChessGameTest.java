@@ -365,8 +365,8 @@ public class ChessGameTest {
                 1.e4!!(1.d4!?{Queen's Pawn}Nf6 2.c4(2.Nf3 d5)2...e6)1...e5?? 2.Nf3!?(2.f4{King's Gambit}exf4 3.Nf3)2...Nc6?! 3.Bb5(3 .Bc4 Bc5(3...Nf6 4.d3)4.c3)3...a6$1 4.Ba4(4.Bxc6 dxc6 5.0-0(5.d3 f6))4...Nf6 *""";
 
         ChessGame chessGame = ChessGame.startPosition();
-        PGNGame pgnGame = chessGame.loadPGN(multiversePgn);
-        MoveNodeDTO root = pgnGame.rootNode();
+        chessGame.loadPGN(multiversePgn);
+        MoveNodeDTO root = chessGame.getRootNode();
 
         assertNotNull(root, "루트 노드는 생성되어야 합니다.");
 
@@ -404,8 +404,8 @@ public class ChessGameTest {
 
         ChessGame chessGame = ChessGame.startPosition();
 
-        PGNGame parsedGame = chessGame.loadPGN(inputPgn);
-        MoveNodeDTO root = parsedGame.rootNode();
+        chessGame.loadPGN(inputPgn);
+        MoveNodeDTO root = chessGame.getRootNode();
 
         assertNotNull(root);
         assertFalse(root.children().isEmpty(), "루트의 자식이 있어야 합니다.");

@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.core.GameVariants;
 
 import java.io.IOException;
@@ -14,8 +15,8 @@ public class SyzygyTest {
 
         SyzygyTablebase syzygy = new SyzygyTablebase(path, 5);
 
-        System.out.println("WDL : " + game.probeSyzygyWdl(syzygy));
-        System.out.println("DTZ : " + game.probeSyzygyDtz(syzygy));
-        System.out.println("Rank : " + game.findRankedSyzygyMoves(syzygy));
+        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, syzygy));
+        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, syzygy));
+        System.out.println("Rank : " + SyzygyAnalyzer.findRankedMoves(game, syzygy));
     }
 }

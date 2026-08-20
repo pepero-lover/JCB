@@ -107,6 +107,8 @@ dependencies {
 
 ## Usage Examples
 
+> ⚠️ **Note:** The example code provided below might differ slightly from the actual implementation in the current release due to ongoing updates.
+
 ### 1. Basic Gameplay
 This is the most standard way to create a chess game and make moves in sequence, whether from the console or from user input (using LAN format).
 
@@ -286,6 +288,7 @@ public class EngineExample {
 ### 5. Using Syzygy Tablebases
 ```java
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 
@@ -316,16 +319,16 @@ public class SyzygyExample {
 
         // DTZ tells you how many moves remain until a pawn move or capture.
 
-        System.out.println("WDL : " + game.probeSyzygyWdl(tb));
-        System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
         System.out.println();
 
         // You can also find the best move in the current position.
-        System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
+        System.out.println("Syzygy best move : " + SyzygyAnalyzer.findBestMove(game, tb));
         System.out.println();
 
         // There's also a method that shows the WDL/DTZ results for every available move.
-        for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
+        for(SyzygyMoveDTO move : SyzygyAnalyzer.findRankedMoves(game, tb)) {
             System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
         }
     }

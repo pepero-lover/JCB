@@ -1,6 +1,7 @@
 package com.pepero.jcb.example;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 
@@ -31,16 +32,16 @@ public class SyzygyExample {
 
         // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
 
-        System.out.println("WDL : " + game.probeSyzygyWdl(tb));
-        System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
         System.out.println();
 
         // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
-        System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
+        System.out.println("Syzygy best move : " + SyzygyAnalyzer.findBestMove(game, tb));
         System.out.println();
 
         // 가능한 수들의 WDL DTZ 결과를 전부 보여주는 메서드도 있습니다.
-        for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
+        for(SyzygyMoveDTO move : SyzygyAnalyzer.findRankedMoves(game, tb)) {
             System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
         }
     }

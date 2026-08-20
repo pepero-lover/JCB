@@ -106,6 +106,8 @@ dependencies {
 
 ## 사용 예시
 
+> ⚠️ **참고:** 아래 제공된 예제 코드는 지속적인 라이브러리 업데이트로 인해 현재 최신 릴리즈의 실제 API 구현과 약간 다를 수 있습니다.
+
 ### 1. 가장 기본적인 게임 플레이
 체스 게임을 생성하고, 콘솔이나 입력값을 받아 차례대로 수를 두는 가장 표준적인 방법입니다. (LAN 포멧 사용)
 
@@ -284,6 +286,7 @@ public class EngineExample {
 ### 5. Syzygy 테이블베이스 사용하기
 ```java
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 
@@ -314,16 +317,16 @@ public class SyzygyExample {
 
         // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
 
-        System.out.println("WDL : " + game.probeSyzygyWdl(tb));
-        System.out.println("DTZ : " + game.probeSyzygyDtz(tb));
+        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
         System.out.println();
 
         // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
-        System.out.println("Syzygy best move : " + game.findBestMoveSyzygy(tb));
+        System.out.println("Syzygy best move : " + SyzygyAnalyzer.findBestMove(game, tb));
         System.out.println();
 
         // 가능한 수들의 WDL DTZ 결과를 전부 보여주는 메서드도 있습니다.
-        for(SyzygyMoveDTO move : game.findRankedSyzygyMoves(tb)) {
+        for(SyzygyMoveDTO move : SyzygyAnalyzer.findRankedMoves(game, tb)) {
             System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
         }
     }
