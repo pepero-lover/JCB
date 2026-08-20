@@ -30,11 +30,6 @@ public class EngineAnalyzeTest {
                 System.out.println();
                 System.out.println();
             }
-
-            @Override
-            public void onBestMoveFound(String bestMove) {
-
-            }
         });
         System.out.println("Author : " + engineWrapper.getAuthor());
         System.out.println("Engine Name : " + engineWrapper.getEngineName());
