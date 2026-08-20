@@ -1,8 +1,5 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.analyze.ChessTacticUtils;
-import com.pepero.jcb.api.analyze.TacticAnalyzer;
-import com.pepero.jcb.api.analyze.TacticFinding;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
@@ -69,9 +66,9 @@ public class ChessGame {
 
     // game variables
 
-    private int[] initialPieceCounts = new int[12];
+    private final int[] initialPieceCounts = new int[12];
 
-    private LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+    private final LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
     private GameResult gameResult = GameResult.UNKNOWN;
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
@@ -255,6 +252,9 @@ public class ChessGame {
             this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
+
+            this.gameResult = other.gameResult;
+            this.gameoverReason = other.gameoverReason;
 
             setDefaultHeaders();
         } finally {
@@ -517,24 +517,6 @@ public class ChessGame {
         }
     }
 
-
-    /**
-     * Make move for internal make move raw methods (not locking multi-thread)
-     *
-     * @param encodedMove encoded move data
-     */
-    private void internalMakeMoveRawLocked(int encodedMove) {
-        if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
-            throw new IllegalMoveException(EncodeMove.moveToString(encodedMove),
-                    this.getFEN());
-        }
-
-        if(chessboard.gameVariants == GameVariants.STANDARD) {
-            MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
-        } else {
-            MoveGenerator.makeMove(this.chessboard, encodedMove);
-        }
-    }
 
     /**
      * Try to make move on this ChessGame without throwing an exception
