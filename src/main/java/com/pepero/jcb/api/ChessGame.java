@@ -3216,7 +3216,7 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPGN(int maxNodes) {
-        return PGNUtils.export(this, toPGNGame(maxNodes));
+        return PGNUtils.export(this, toPGNGame(maxNodes), false);
     }
 
     /**
@@ -3226,10 +3226,39 @@ public class ChessGame {
      *
      * @return pgn string
      *
-     * @throws PGNConvertException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
      */
     public String getPGN() {
         return getPGN(MAX_PGN_NODE_COUNT);
+    }
+
+    /**
+     * Get pgn string with no extra commentary, clk, nag, etc. <p>
+     *
+     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
+     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
+     *
+     * @return pgn string
+     *
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
+     */
+    public String getPurePGN() {
+        return getPurePGN(MAX_PGN_NODE_COUNT);
+    }
+
+    /**
+     * Get pgn string with no extra commentary, clk, nag, etc. <p>
+     *
+     * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
+     * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
+     *
+     * @param maxNodes max nodes count
+     * @return pgn string
+     *
+     * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
+     */
+    public String getPurePGN(int maxNodes) {
+        return PGNUtils.export(this, toPGNGame(maxNodes), true);
     }
 
     /**

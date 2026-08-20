@@ -16,9 +16,10 @@ public class PGNUtils {
      *
      * @param chessGame chess pgn
      * @param pgn PGN Game data
+     * @param isPure contain commentary, clk, nag, etc.
      * @return Exported pgn string
      */
-    public static String export(ChessGame chessGame, PGNGame pgn) {
+    public static String export(ChessGame chessGame, PGNGame pgn, boolean isPure) {
         StringBuilder sb = new StringBuilder();
 
         for (Map.Entry<String, String> entry : pgn.headers().entrySet()) {
@@ -31,7 +32,7 @@ public class PGNUtils {
 
         if (pgn.rootNode() != null && pgn.rootNode().children() != null && !pgn.rootNode().children().isEmpty()) {
             buildMoveText(pgn.rootNode().children(), sb, spilt_startFEN[1].equals("w"),
-                    Integer.parseInt(spilt_startFEN[5]) / 2 + 1, true);
+                    Integer.parseInt(spilt_startFEN[5]) / 2 + 1, true, isPure);
         }
 
         sb.append(" ").append(getGameResultString(pgn.matchResult()));
@@ -57,8 +58,10 @@ public class PGNUtils {
      * @param isWhite is white turn
      * @param moveNumber move number like 1. 1...
      * @param forceMoveNumber if move is variation (like 1. e4 ("1." d4))
+     * @param isPure contain commentary, clk, etc.
      */
-    private static void buildMoveText(List<MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite, int moveNumber, boolean forceMoveNumber) {
+    private static void buildMoveText(List<MoveNodeDTO> siblings, StringBuilder sb, boolean isWhite,
+                                      int moveNumber, boolean forceMoveNumber, boolean isPure) {
         if (siblings == null || siblings.isEmpty()) return;
 
         MoveNodeDTO mainMove = siblings.getFirst();
@@ -72,7 +75,7 @@ public class PGNUtils {
 
         boolean interrupted = false;
 
-        if (mainMove.annotation().nag() != null) {
+        if (mainMove.annotation().nag() != null && !isPure) {
             sb.append(mainMove.annotation().nag()).append(" ");
         }
 
@@ -82,7 +85,7 @@ public class PGNUtils {
         boolean hasTimestamp = mainMove.annotation().timeStamp() != null &&
                 !mainMove.annotation().timeStamp().isEmpty();
 
-        if (hasComment || hasClk) {
+        if ((hasComment || hasClk || hasEval || hasTimestamp) && !isPure) {
             StringJoiner innerContent = new StringJoiner(" ");
 
             if (hasClk) {
@@ -104,7 +107,7 @@ public class PGNUtils {
 
         for (int i = 1; i < siblings.size(); i++) {
             sb.append("( ");
-            buildMoveText(List.of(siblings.get(i)), sb, isWhite, moveNumber, true);
+            buildMoveText(List.of(siblings.get(i)), sb, isWhite, moveNumber, true, isPure);
             sb.append(") ");
             interrupted = true;
         }
@@ -114,7 +117,7 @@ public class PGNUtils {
             int nextMoveNumber = isWhite ? moveNumber : moveNumber + 1;
             boolean nextForceNumber = !nextIsWhite && interrupted;
 
-            buildMoveText(mainMove.children(), sb, nextIsWhite, nextMoveNumber, nextForceNumber);
+            buildMoveText(mainMove.children(), sb, nextIsWhite, nextMoveNumber, nextForceNumber, isPure);
         }
     }
 }

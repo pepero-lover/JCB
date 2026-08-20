@@ -433,8 +433,6 @@ public class ChessGameTest {
 
         String exportedPgn = chessGame.getPGN();
 
-        System.out.println(exportedPgn);
-
         assertTrue(exportedPgn.contains("e4 {[%clk 0:05:00]}"));
         assertTrue(exportedPgn.contains("e5 {[%clk 0:04:58] Black responds}"));
         assertTrue(exportedPgn.contains("Nf3 $3 {[%clk 0:04:45]}"));
