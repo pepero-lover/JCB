@@ -5,6 +5,7 @@ import com.pepero.jcb.api.dto.MatchResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ArenaRunner {
@@ -13,15 +14,31 @@ public class ArenaRunner {
     private final MatchConfig matchConfig;
     private final MatchStatistics statistics = new MatchStatistics();
     private final AtomicInteger roundNumber = new AtomicInteger(1);
+    private final AtomicBoolean stopRequested = new AtomicBoolean(false);
+    private final ConcurrentHashMap<Integer, CancellationToken> activeTokens = new ConcurrentHashMap<>();
+    private volatile ExecutorService pool;
 
     public interface RunnerListener {
         void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats);
         default void onGameFailed(int roundNumber, Throwable cause) {}
+        default void onAllGamesFinished(MatchStatistics finalStats, boolean stoppedEarly) {}
     }
 
     public ArenaRunner(MatchConfig matchConfig) {
         this.matchConfig = matchConfig;
         this.arena = new EngineArena(matchConfig);
+    }
+
+    /**
+     * Stop current playing games and stop creating new games
+     */
+    public void stop() {
+        if (stopRequested.compareAndSet(false, true)) {
+            activeTokens.values().forEach(CancellationToken::cancel);
+            if (pool != null) {
+                pool.shutdown();
+            }
+        }
     }
 
     public void setArenaListener(EngineArena.ArenaListener listener) {
@@ -38,15 +55,19 @@ public class ArenaRunner {
         int totalGames = matchConfig.getTotalGames();
         int concurrency = Math.max(1, matchConfig.getConcurrency());
 
-        ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+        pool = Executors.newFixedThreadPool(concurrency);
         List<Future<Void>> futures = new ArrayList<>();
 
         for (int i = 0; i < totalGames; i++) {
+            if (stopRequested.get()) break;
+
             int round = roundNumber.getAndIncrement();
+            CancellationToken token = new CancellationToken();
+            activeTokens.put(round, token);
 
             futures.add(pool.submit(() -> {
                 try {
-                    MatchResult result = arena.startMatch(round);
+                    MatchResult result = arena.startMatch(round, token);
                     statistics.record(result);
 
                     if (runnerListener != null) {
@@ -57,6 +78,8 @@ public class ArenaRunner {
                     if (runnerListener != null) {
                         runnerListener.onGameFailed(round, e);
                     }
+                } finally {
+                    activeTokens.remove(round);
                 }
                 return null;
             }));
@@ -64,6 +87,10 @@ public class ArenaRunner {
 
         awaitAll(futures);
         pool.shutdown();
+
+        if (runnerListener != null) {
+            runnerListener.onAllGamesFinished(statistics, stopRequested.get());
+        }
 
         return statistics;
     }

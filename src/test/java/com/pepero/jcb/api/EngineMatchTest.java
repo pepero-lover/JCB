@@ -7,13 +7,14 @@ import com.pepero.jcb.core.GameVariants;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engines/stockfish/stockfish.exe").getAbsolutePath();
-        String engine2Path = new File("engines/stockfish/stockfish.exe").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish").getAbsolutePath();
 
-        String folder = new File("engines/stockfish/").getAbsolutePath();
+        String folder = new File("engine/").getAbsolutePath();
 
         try {
             EngineConfig engine1Config = new EngineConfig(
@@ -37,7 +38,7 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("opening/gm2001.bin")
+                    .openingBook("engine/opening.bin")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -58,18 +59,22 @@ public class EngineMatchTest {
 //                            ))
                     .totalGames(10)
                     .concurrency(4)
+                    .showClk(false)
+                    .showEval(false)
+                    .showPv(false)
                     .build();
 
-            ArenaRunner arena = new ArenaRunner(config);
-            MatchStatistics result = arena.run(new ArenaRunner.RunnerListener() {
+            ArenaRunner runner = new ArenaRunner(config);
+            Thread runnerThread = new Thread(() -> runner.run(new ArenaRunner.RunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
-                    System.out.println("ROUND " + roundNumber);
-                    System.out.println(result.pgn());
-                    System.out.println(result.engineWinner() + " WON");
-                    System.out.println(result.reason());
-                    System.out.println("Total game completed : " + runningStats.getTotalCompleted());
-                    System.out.println();
+                    String sb = "ROUND " + roundNumber + "\n" +
+                            result.pgn() + "\n" +
+                            result.engineWinner() + " WON\n" +
+                            result.reason() + "\n" +
+                            "Total game completed : " + runningStats.getTotalCompleted() + "\n\n";
+
+                    System.out.print(sb);
                 }
 
                 @Override
@@ -80,10 +85,23 @@ public class EngineMatchTest {
                         throw new RuntimeException(e);
                     }
                 }
-            });
-            System.out.println();
-            System.out.println();
-            System.out.println(result);
+
+                @Override
+                public void onAllGamesFinished(MatchStatistics finalStats, boolean stoppedEarly) {
+                    System.out.println(stoppedEarly ? "Aborted midway" : "All games finished successfully");
+                    System.out.println("Final stats: " + finalStats);
+                }
+            }));
+            runnerThread.start();
+
+            System.out.println("To stop, type 'stop' and Enter");
+            Scanner sc = new Scanner(System.in);
+            while (sc.hasNextLine()) {
+                if (sc.nextLine().trim().equalsIgnoreCase("stop")) {
+                    runner.stop();
+                    break;
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

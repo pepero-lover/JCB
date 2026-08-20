@@ -61,9 +61,10 @@ public class EngineArena {
      * Start Engine match
      *
      * @param roundNumber round number (1 ~ inf)
+     * @param token cancellation token (for aborting game)
      * @return Match result
      */
-    public MatchResult startMatch(int roundNumber) {
+    public MatchResult startMatch(int roundNumber, CancellationToken token) {
         boolean isEngine1White = roundNumber % 2 == 1;
 
         ChessGame chessGame;
@@ -94,6 +95,7 @@ public class EngineArena {
                 matchConfig.getEngine1Config().name() : matchConfig.getEngine2Config().name());
         chessGame.setHeader("Black", isEngine1White ?
                 matchConfig.getEngine2Config().name() : matchConfig.getEngine1Config().name());
+        chessGame.setHeader("Round", String.valueOf(roundNumber));
 
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());
@@ -120,6 +122,11 @@ public class EngineArena {
             int resignAdjCount = 0;
 
             while (chessGame.getGameoverReason() == GameOverReason.NOTGAMEOVER) {
+                if (token != null && token.isCancelled()) {
+                    chessGame.adjudication(GameResult.ABORTED);
+                    break;
+                }
+
                 boolean whiteTurn = chessGame.isWhiteTurn();
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
@@ -135,9 +142,11 @@ public class EngineArena {
 
                         clock.spendTime(whiteTurn, 0);
                         chessGame.makeMove(move);
-                        chessGame.setCurrentMoveClock(
-                                (int) ((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000)
-                        );
+                        if(matchConfig.isShowClk()) {
+                            chessGame.setCurrentMoveClock(
+                                    (int) ((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000)
+                            );
+                        }
                         if(listener != null) {
                             listener.onMovePlayed(new MoveEvent(
                                     chessGame.getFEN(),
@@ -158,6 +167,10 @@ public class EngineArena {
                 UCIEngineWrapper currentEngine = isEngine1Turn ? engine1 : engine2;
                 EngineLimit currentLimit = isEngine1Turn ? engine1Limit : engine2Limit;
 
+                if (token != null) {
+                    token.setActiveEngine(currentEngine);
+                }
+
                 long startTime = System.currentTimeMillis();
 
                 String bestMove = currentEngine.startAnalysisSync(chessGame,
@@ -171,6 +184,15 @@ public class EngineArena {
                 );
 
                 long stopTime = System.currentTimeMillis();
+
+                if (token != null) {
+                    token.setActiveEngine(null);
+                }
+
+                if (token != null && token.isCancelled()) {
+                    chessGame.adjudication(GameResult.ABORTED);
+                    break;
+                }
 
                 long spentTime = stopTime - startTime;
                 clock.spendTime(whiteTurn, spentTime);
@@ -222,11 +244,17 @@ public class EngineArena {
                     chessGame.makeMove(bestMove);
                     EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
                     if(currentEngineLine != null) {
-                        chessGame.setCurrentMoveEval(currentEngineLine.score().toString());
-                        chessGame.setCurrentMoveClock(
-                                (int) Math.ceil((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000.)
-                        );
-                        chessGame.setCurrentMoveComment(currentEngineLine.sanPv());
+                        if(matchConfig.isShowEval()) {
+                            chessGame.setCurrentMoveEval(currentEngineLine.score().toString());
+                        }
+                        if(matchConfig.isShowPv()) {
+                            chessGame.setCurrentMoveComment(currentEngineLine.sanPv());
+                        }
+                        if(matchConfig.isShowClk()) {
+                            chessGame.setCurrentMoveClock(
+                                    (int) Math.ceil((whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000.)
+                            );
+                        }
                     }
                     if(listener != null) {
                         listener.onMovePlayed(new MoveEvent(
@@ -256,6 +284,8 @@ public class EngineArena {
             winner = EngineWinner.DRAW;
         } else if(result == GameResult.BLACK_WON){
             winner = isEngine1White ? EngineWinner.ENGINE2 : EngineWinner.ENGINE1;
+        } else if(result == GameResult.ABORTED) {
+            winner = EngineWinner.ABORTED;
         }
 
         if(listener != null) {

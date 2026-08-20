@@ -23,6 +23,15 @@ public class MatchConfig {
     private final AdjudicationRule resignRule;
     private final AdjudicationRule drawRule;
 
+    // Show pv string on pgn commentary
+    private final boolean showPv;
+
+    // Show eval value on pgn
+    private final boolean showEval;
+
+    // Show clk value on pgn
+    private final boolean showClk;
+
     private MatchConfig(Builder builder) {
         this.totalGames = builder.totalGames;
         this.concurrency = builder.concurrency;
@@ -35,6 +44,9 @@ public class MatchConfig {
         this.repeatOpening = builder.repeatOpening;
         this.resignRule = builder.resignRule;
         this.drawRule = builder.drawRule;
+        this.showPv = builder.showPv;
+        this.showEval = builder.showEval;
+        this.showClk = builder.showClk;
         this.seed = builder.seed;
     }
 
@@ -51,6 +63,9 @@ public class MatchConfig {
     public boolean hasFENSetting() { return fenSettingConfig != null; }
     public AdjudicationRule getResignRule() { return resignRule; }
     public AdjudicationRule getDrawRule() { return drawRule; }
+    public boolean isShowPv() { return showPv; }
+    public boolean isShowEval() { return showEval; }
+    public boolean isShowClk() { return showClk; }
     public int getSeed() { return seed; }
 
     public static class Builder {
@@ -70,6 +85,10 @@ public class MatchConfig {
 
         private AdjudicationRule resignRule = null;
         private AdjudicationRule drawRule = null;
+
+        private boolean showPv = true;
+        private boolean showEval = true;
+        private boolean showClk = true;
 
         private int seed = 1111;
 
@@ -127,6 +146,22 @@ public class MatchConfig {
             this.drawRule = drawRule;
             return this;
         }
+
+        public Builder showPv(boolean showPv) {
+            this.showPv = showPv;
+            return this;
+        }
+
+        public Builder showEval(boolean showEval) {
+            this.showEval = showEval;
+            return this;
+        }
+
+        public Builder showClk(boolean showClk) {
+            this.showClk = showClk;
+            return this;
+        }
+
 
         public Builder seed(int seed) {
             this.seed = seed;

@@ -44,7 +44,7 @@ public class PGNUtils {
             case WHITE_WON -> "1-0";
             case BLACK_WON -> "0-1";
             case DRAW -> "1/2-1/2";
-            case UNKNOWN -> "*";
+            case UNKNOWN, ABORTED -> "*";
         };
     }
 
