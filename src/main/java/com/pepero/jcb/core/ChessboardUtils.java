@@ -150,6 +150,7 @@ public class ChessboardUtils {
                     last_square = (7 - rank) * 8 + file;
 
                     chessboard.bitboards[piece] = BitBoardUtils.setBit(chessboard.bitboards[piece], last_square);
+                    chessboard.mailbox[last_square] = piece;
 
                     file++;
                 }
@@ -408,11 +409,7 @@ public class ChessboardUtils {
      * if there is notting, returns -1
      */
     public static int getPieceTypeOnSquare(Chessboard chessboard, int square){
-        for (int piece = P; piece <= k; piece++){
-            if(BitBoardUtils.getBit(chessboard.bitboards[piece], square)) return piece;
-        }
-
-        return -1;
+        return chessboard.mailbox[square];
     }
 
     /**

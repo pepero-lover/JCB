@@ -616,7 +616,11 @@ public class ChessGame {
     public void unmakeMoveRaw(int encodedMove) {
         writeLock.lock();
         try {
-            MoveGenerator.unmakeMove(this.chessboard, encodedMove);
+            if(this.chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.unmakeStandardMove(this.chessboard, encodedMove);
+            } else {
+                MoveGenerator.unmakeMove(this.chessboard, encodedMove);
+            }
         } finally {
             writeLock.unlock();
         }
@@ -843,7 +847,11 @@ public class ChessGame {
             moveInfo = currentNode.moveData;
             currentNode = currentNode.parent;
 
-            MoveGenerator.unmakeMove(chessboard, moveInfo.originEncodedData());
+            if(this.chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.unmakeStandardMove(this.chessboard, moveInfo.originEncodedData());
+            } else {
+                MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
+            }
 
             if(autoChangeGameOver) {
                 gameResult = evaluateGameState(currentNode);

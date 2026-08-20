@@ -212,9 +212,18 @@ public class PerftDriver {
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
 
-            MoveGenerator.makeMove(chessboard, move);
+            if(chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.makeStandardMove(chessboard, move);
+            } else {
+                MoveGenerator.makeMove(chessboard, move);
+            }
             nodes += perftBitboardDriver(chessboard, depth - 1, bulkCounting);
-            MoveGenerator.unmakeMove(chessboard, move);
+
+            if(chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.unmakeStandardMove(chessboard, move);
+            } else {
+                MoveGenerator.unmakeMove(chessboard, move);
+            }
         }
         return nodes;
     }
@@ -229,9 +238,17 @@ public class PerftDriver {
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveList[i];
-            MoveGenerator.makeMove(chessboard, move);
+            if(chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.makeStandardMove(chessboard, move);
+            } else {
+                MoveGenerator.makeMove(chessboard, move);
+            }
             clonedBoards.add(new Chessboard(chessboard));
-            MoveGenerator.unmakeMove(chessboard, move);
+            if(chessboard.gameVariants == GameVariants.STANDARD) {
+                MoveGenerator.unmakeStandardMove(chessboard, move);
+            } else {
+                MoveGenerator.unmakeMove(chessboard, move);
+            }
             moveStrs.add(EncodeMove.moveToString(move));
         }
 

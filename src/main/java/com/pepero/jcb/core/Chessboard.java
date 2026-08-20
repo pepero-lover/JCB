@@ -36,6 +36,11 @@ public class Chessboard {
     */
     public long[] occupancies = new long[3];
 
+    /*
+    define mailbox to check piece on square
+     */
+    public int[] mailbox = new int[64];
+
     // side to move
     // 0 equals to white
     // 1 equals to black
@@ -161,6 +166,9 @@ public class Chessboard {
         // reset occupancies (bitboards)
         Arrays.fill(this.occupancies, 0L);
 
+        // reset mailbox
+        Arrays.fill(this.mailbox, -1);
+
         Arrays.fill(this.enpassant_history, 0);
         Arrays.fill(this.castle_history, 0);
         Arrays.fill(this.half_ply_history, 0);
@@ -226,6 +234,7 @@ public class Chessboard {
 
         System.arraycopy(source.bitboards, 0, this.bitboards, 0, 12);
         System.arraycopy(source.occupancies, 0, this.occupancies, 0, 3);
+        System.arraycopy(source.mailbox, 0, this.mailbox, 0, 64);
 
         this.side = source.side;
         this.enpassant = source.enpassant;
