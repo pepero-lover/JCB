@@ -106,14 +106,8 @@ public class ChessGame {
 
     private static final int MAX_PGN_NODE_COUNT = 2048;
     private final AtomicLong nodeCounter = new AtomicLong(0L);
-    private static final int MAX_ENTRIES = 65536;
 
-    private final Map<Long, MoveNode> nodeCache = new LinkedHashMap<>(16, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, MoveNode> eldest) {
-            return size() > MAX_ENTRIES;
-        }
-    };
+    private final Map<Long, MoveNode> nodeCache = new LinkedHashMap<>(16, 0.75f, true);
 
     private boolean autoChangeGameOver = true;
 
@@ -326,9 +320,10 @@ public class ChessGame {
      */
     private ChessGame(ChessGame other) {
         other.readLock.lock();
+        writeLock.lock();
         try {
             this.chessboard = new Chessboard(other.chessboard);
-            this.startPositionFEN = other.getFEN();
+            this.startPositionFEN = other.startPositionFEN;
             this.autoChangeGameOver = other.autoChangeGameOver;
 
             System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
@@ -340,6 +335,7 @@ public class ChessGame {
             setDefaultHeaders();
         } finally {
             other.readLock.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -522,26 +518,15 @@ public class ChessGame {
             sanString = sanString.trim();
             String[] sanStrings = sanString.split(" ");
 
-            List<Integer> appliedMoves = new ArrayList<>(sanStrings.length);
+            Chessboard tempChessboard = new Chessboard(this.chessboard);
 
-            try {
-                for (String san : sanStrings) {
-                    int encodedMove = ConvertStringMoveUtils.sanToMoveData(this.chessboard, san);
-
-                    if (!tryMakeMoveRaw(encodedMove)) {
-                        throw new IllegalMoveException(san, this.getFEN());
-                    }
-                    appliedMoves.add(encodedMove);
+            for (String san : sanStrings) {
+                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, san);
+                if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
+                    throw new IllegalMoveException(san,
+                            ChessboardUtils.getFen(tempChessboard));
                 }
-            } catch (IllegalMoveException | ConvertMoveException e) {
-                for (int i = appliedMoves.size() - 1; i >= 0; i--) {
-                    unmakeMoveRaw(appliedMoves.get(i));
-                }
-                throw e;
-            }
-
-            for (int i = appliedMoves.size() - 1; i >= 0; i--) {
-                unmakeMoveRaw(appliedMoves.get(i));
+                MoveGenerator.makeMove(tempChessboard, encodedMove);
             }
 
             for (String san : sanStrings) {
@@ -566,26 +551,15 @@ public class ChessGame {
             lanString = lanString.trim();
             String[] lanStrings = lanString.split(" ");
 
-            List<Integer> appliedMoves = new ArrayList<>(lanStrings.length);
+            Chessboard tempChessboard = new Chessboard(this.chessboard);
 
-            try {
-                for (String lan : lanStrings) {
-                    int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, lan);
-
-                    if (!tryMakeMoveRaw(encodedMove)) {
-                        throw new IllegalMoveException(lan, this.getFEN());
-                    }
-                    appliedMoves.add(encodedMove);
+            for (String lan : lanStrings) {
+                int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(tempChessboard, lan);
+                if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
+                    throw new IllegalMoveException(lan,
+                            ChessboardUtils.getFen(tempChessboard));
                 }
-            } catch (IllegalMoveException | ConvertMoveException e) {
-                for (int i = appliedMoves.size() - 1; i >= 0; i--) {
-                    unmakeMoveRaw(appliedMoves.get(i));
-                }
-                throw e;
-            }
-
-            for (int i = appliedMoves.size() - 1; i >= 0; i--) {
-                unmakeMoveRaw(appliedMoves.get(i));
+                MoveGenerator.makeMove(tempChessboard, encodedMove);
             }
 
             for (String lan : lanStrings) {
