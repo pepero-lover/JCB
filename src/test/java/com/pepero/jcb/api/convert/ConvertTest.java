@@ -8,12 +8,12 @@ import java.util.Random;
 
 public class ConvertTest {
     public static void main(String[] args) {
-        Random random = new Random(2026);
+        Random random = new Random(1111);
         int totalGamesToSimulate = 50_000; // game count to simulate
 
         System.out.println("Game count : " + totalGamesToSimulate);
 
-        playRandomGames(new Random(41), 2000);
+        playRandomGames(new Random(1111), 2000);
 
         System.gc();
         try { Thread.sleep(500); } catch (InterruptedException ignored) {}
@@ -50,7 +50,7 @@ public class ConvertTest {
                     moveList[index] = temp;
                 }
 
-                MoveGenerator.makeStandardMove(board, moveList[0]);
+                MoveGenerator.makeMove(board, moveList[0]);
                 conversionCount++;
             }
         }

@@ -440,7 +440,20 @@ public class ChessboardUtils {
     public static int getChecker(Chessboard chessboard) {
         int kingSquare = BitBoardUtils.getLS1BIndex(
                 chessboard.side == white ? chessboard.bitboards[K] : chessboard.bitboards[k]);
+        return getChecker(chessboard, kingSquare);
+    }
 
+    /**
+     * Get checkers square <br>
+     * if return is <b>00101010001010</b>, <br>
+     * the first checker square is '<b>001010</b>', and the second checker is '<b>100010</b>' <br>
+     * and attacking piece count is '<b>10</b>' and count is 1.
+     *
+     * @param chessboard chessboard
+     * @param kingSquare king square
+     * @return checkers square
+     */
+    public static int getChecker(Chessboard chessboard, int kingSquare) {
         int firstAttacker = -1;
         int secondAttacker = -1;
         int oppSide = chessboard.side == white ? black : white;

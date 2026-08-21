@@ -323,11 +323,7 @@ public class ChessGame {
                 throw new IllegalMoveException(errorStr, this.getFEN());
             }
 
-            if(chessboard.gameVariants == GameVariants.STANDARD) {
-                MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
-            } else {
-                MoveGenerator.makeMove(this.chessboard, encodedMove);
-            }
+            MoveGenerator.makeMove(this.chessboard, encodedMove);
 
             moveData = new MoveInfo(encodedMove);
             historyChanged = addMoveHistory(moveData);
@@ -364,11 +360,7 @@ public class ChessGame {
             throw new IllegalMoveException(errorStr, this.getFEN());
         }
 
-        if(chessboard.gameVariants == GameVariants.STANDARD) {
-            MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
-        } else {
-            MoveGenerator.makeMove(this.chessboard, encodedMove);
-        }
+        MoveGenerator.makeMove(this.chessboard, encodedMove);
 
         moveData = new MoveInfo(encodedMove);
         historyChanged = addMoveHistory(moveData);
@@ -507,11 +499,7 @@ public class ChessGame {
                         this.getFEN());
             }
 
-            if(chessboard.gameVariants == GameVariants.STANDARD) {
-                MoveGenerator.makeStandardMove(this.chessboard, encodedMove);
-            } else {
-                MoveGenerator.makeMove(this.chessboard, encodedMove);
-            }
+            MoveGenerator.makeMove(this.chessboard, encodedMove);
         } finally {
             writeLock.unlock();
         }
@@ -616,11 +604,7 @@ public class ChessGame {
     public void unmakeMoveRaw(int encodedMove) {
         writeLock.lock();
         try {
-            if(this.chessboard.gameVariants == GameVariants.STANDARD) {
-                MoveGenerator.unmakeStandardMove(this.chessboard, encodedMove);
-            } else {
-                MoveGenerator.unmakeMove(this.chessboard, encodedMove);
-            }
+            MoveGenerator.unmakeMove(this.chessboard, encodedMove);
         } finally {
             writeLock.unlock();
         }
@@ -847,11 +831,7 @@ public class ChessGame {
             moveInfo = currentNode.moveData;
             currentNode = currentNode.parent;
 
-            if(this.chessboard.gameVariants == GameVariants.STANDARD) {
-                MoveGenerator.unmakeStandardMove(this.chessboard, moveInfo.originEncodedData());
-            } else {
-                MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
-            }
+            MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
 
             if(autoChangeGameOver) {
                 gameResult = evaluateGameState(currentNode);
@@ -907,11 +887,7 @@ public class ChessGame {
             currentNode = currentNode.children.get(variationIndex);
             moveInfo = currentNode.moveData;
 
-            if(chessboard.gameVariants == GameVariants.STANDARD) {
-                MoveGenerator.makeStandardMove(this.chessboard, moveInfo.originEncodedData());
-            } else {
-                MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-            }
+            MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
 
             if(autoChangeGameOver) {
                 gameResult = evaluateGameState(currentNode);
@@ -2293,11 +2269,7 @@ public class ChessGame {
             ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
 
             for (MoveNode node : historyPath) {
-                if(chessboard.gameVariants == GameVariants.STANDARD) {
-                    MoveGenerator.makeStandardMove(this.chessboard, node.moveData.originEncodedData());
-                } else {
-                    MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
-                }
+                MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
             }
 
             this.currentNode = targetNode;
@@ -2354,11 +2326,7 @@ public class ChessGame {
 
                 for (int i = 0; i < targetPly; i++) {
                     MoveNode nextNode = history.get(i);
-                    if(chessboard.gameVariants == GameVariants.STANDARD) {
-                        MoveGenerator.makeStandardMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    } else {
-                        MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    }
+                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
                     newCurrentNode = nextNode;
                 }
                 this.currentNode = newCurrentNode;
@@ -2366,11 +2334,7 @@ public class ChessGame {
                 while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
                     MoveNode nextNode = this.currentNode.children.getFirst();
 
-                    if(chessboard.gameVariants == GameVariants.STANDARD) {
-                        MoveGenerator.makeStandardMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    } else {
-                        MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    }
+                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
                     this.currentNode = nextNode;
                     currentPly++;
                 }
