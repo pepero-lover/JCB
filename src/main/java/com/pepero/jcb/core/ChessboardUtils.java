@@ -507,7 +507,7 @@ public class ChessboardUtils {
      */
     public static boolean hasLegalMoves(Chessboard chessboard) {
         int[] move_list = CHESSBOARD_UTIL_CACHE.get();
-        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list, true);
 
         return move_count != 0;
     }

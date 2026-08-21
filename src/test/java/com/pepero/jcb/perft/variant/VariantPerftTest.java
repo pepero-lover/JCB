@@ -14,14 +14,14 @@ public class VariantPerftTest {
 
     public static void main(String[] args) {
         Chessboard chessboard = new Chessboard(
-                Chessboard.racing_kings_start_position,
+                Chessboard.start_position,
                 false,
-                GameVariants.RACING_KINGS
+                GameVariants.ATOMIC
         );
 
         ChessboardUtils.printChessBoard(chessboard);
 
-        System.out.println(PerftDriver.perftBitboardTest(chessboard, 5,
+        System.out.println(PerftDriver.perftBitboardTest(chessboard, 6,
                 1, false, true));
     }
 }

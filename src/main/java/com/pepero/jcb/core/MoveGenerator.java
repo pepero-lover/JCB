@@ -221,9 +221,10 @@ public class MoveGenerator {
      *
      * @param chessboard chess board
      * @param moveArray move array
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
      * @return move count
      */
-    public static int generateHordeMoves(Chessboard chessboard, int[] moveArray) {
+    public static int generateHordeMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
         int moveCount = 0;
 
         if(chessboard.side == white) {
@@ -239,6 +240,7 @@ public class MoveGenerator {
 
                         if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
                             moveCount = addPawnMoves(moveArray, moveCount, sourceSq, pushSq, piece, false);
+                            if(stopAtFirstMove) return moveCount;
 
                             // when double push
                             int doublePushSq = sourceSq + (pushDir * 2);
@@ -248,7 +250,8 @@ public class MoveGenerator {
                             if (canDoublePush &&
                                     !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
-                                        sourceSq, doublePushSq, piece, 0, false, true, false, false));
+                                        sourceSq, doublePushSq, piece, 0, false,
+                                        true, false, false));
                             }
                         }
 
@@ -259,6 +262,7 @@ public class MoveGenerator {
                         while (pawnAttacks != 0) {
                             int targetSq = BitBoardUtils.getLS1BIndex(pawnAttacks);
                             moveCount = addPawnMoves(moveArray, moveCount, sourceSq, targetSq, piece, true);
+                            if(stopAtFirstMove) return moveCount;
                             pawnAttacks = BitBoardUtils.popBit(pawnAttacks, targetSq);
                         }
 
@@ -270,7 +274,9 @@ public class MoveGenerator {
                                 int targetSq = BitBoardUtils.getLS1BIndex(epAttacks);
 
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
-                                        sourceSq, targetSq, piece, 0, true, false, true, false));
+                                        sourceSq, targetSq, piece, 0, true,
+                                        false, true, false));
+                                if(stopAtFirstMove) return moveCount;
                             }
                         }
                     } else {
@@ -296,7 +302,9 @@ public class MoveGenerator {
                             boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[black], targetSq);
 
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
-                                    sourceSq, targetSq, piece, 0, isCapture, false, false, false));
+                                    sourceSq, targetSq, piece, 0, isCapture, false,
+                                    false, false));
+                            if(stopAtFirstMove) return moveCount;
                             pieceMoves = BitBoardUtils.popBit(pieceMoves, targetSq);
                         }
                     }
@@ -316,9 +324,10 @@ public class MoveGenerator {
      *
      * @param chessboard chess board
      * @param moveArray move array
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
      * @return move count
      */
-    public static int generateAntiChessMoves(Chessboard chessboard, int[] moveArray) {
+    public static int generateAntiChessMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
         int moveCount = 0;
 
         int side = chessboard.side;
@@ -383,6 +392,8 @@ public class MoveGenerator {
                             moveCount = addAntiChessPawnMoves(moveArray, moveCount, sourceSq,
                                     pushSq, piece, false);
 
+                            if(stopAtFirstMove) return moveCount;
+
                             // when double push
                             int doublePushSq = sourceSq + (pushDir * 2);
 
@@ -407,6 +418,8 @@ public class MoveGenerator {
                         moveCount = addAntiChessPawnMoves(moveArray, moveCount, sourceSq,
                                 targetSq, piece, true);
 
+                        if(stopAtFirstMove) return moveCount;
+
                         pawnAttacks = BitBoardUtils.popBit(pawnAttacks, targetSq);
                     }
 
@@ -420,6 +433,8 @@ public class MoveGenerator {
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                     sourceSq, targetSq, piece, 0, true, false,
                                     true, false));
+
+                            if(stopAtFirstMove) return moveCount;
                         }
                     }
 
@@ -445,6 +460,7 @@ public class MoveGenerator {
                                         sourceSq, targetSq, piece, 0, true, false, false,
                                         false
                                 ));
+                                if(stopAtFirstMove) return moveCount;
                                 tempOccupancy &= (tempOccupancy - 1);
                             }
                         }
@@ -458,6 +474,7 @@ public class MoveGenerator {
                                     sourceSq, targetSq, piece, 0, isCapture, false, false,
                                     false
                             ));
+                            if(stopAtFirstMove) return moveCount;
                             tempOccupancy &= (tempOccupancy - 1);
                         }
                     }
@@ -496,9 +513,10 @@ public class MoveGenerator {
      *
      * @param chessboard chess board
      * @param moveArray move array
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
      * @return move count
      */
-    public static int generateAtomicMoves(Chessboard chessboard, int[] moveArray) {
+    public static int generateAtomicMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
         if(chessboard.bitboards[K] == 0L || chessboard.bitboards[k] == 0L) return 0;
 
         int moveCount = 0;
@@ -556,6 +574,7 @@ public class MoveGenerator {
             if (targetTouching || !isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOcc)) {
                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                         kingSq, targetSq, (side == white ? K : k), 0, false, false, false, false));
+                if(stopAtFirstMove) return moveCount;
             }
 
             kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
@@ -596,6 +615,7 @@ public class MoveGenerator {
                             int targetSq = BitBoardUtils.getLS1BIndex(quiet);
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                     sourceSq, targetSq, piece, 0, false, false, false, false));
+                            if(stopAtFirstMove) return moveCount;
                             quiet = BitBoardUtils.popBit(quiet, targetSq);
                         }
                     }
@@ -608,6 +628,7 @@ public class MoveGenerator {
                                 -1, 0)) {
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                     sourceSq, targetSq, piece, 0, true, false, false, false));
+                            if(stopAtFirstMove) return moveCount;
                         }
                         captures = BitBoardUtils.popBit(captures, targetSq);
                     }
@@ -622,6 +643,7 @@ public class MoveGenerator {
                         if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
                             if (BitBoardUtils.getBit(pinRay, pushSq) && BitBoardUtils.getBit(checkMask, pushSq)) {
                                 moveCount = addPawnMoves(moveArray, moveCount, sourceSq, pushSq, piece, false);
+                                if(stopAtFirstMove) return moveCount;
                             }
                             int doublePushSq = sourceSq + (pushDir * 2);
                             boolean isStartRank = (side == white) ? (sourceSq >= a2 && sourceSq <= h2) : (sourceSq >= a7 && sourceSq <= h7);
@@ -629,6 +651,7 @@ public class MoveGenerator {
                                 if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
                                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                             sourceSq, doublePushSq, piece, 0, false, true, false, false));
+                                    if(stopAtFirstMove) return moveCount;
                                 }
                             }
                         }
@@ -648,6 +671,7 @@ public class MoveGenerator {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true, false,
                                         false, false));
+                                if(stopAtFirstMove) return moveCount;
                             }
                         } else {
                             int[] promoPieces = (side == white) ? new int[]{Q,R,B,N} : new int[]{q,r,b,n};
@@ -657,6 +681,7 @@ public class MoveGenerator {
                                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                             sourceSq, targetSq, piece, promo, true,
                                             false, false, false));
+                                    if(stopAtFirstMove) return moveCount;
                                 }
                             }
                         }
@@ -674,6 +699,7 @@ public class MoveGenerator {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true,
                                         false, true, false));
+                                if(stopAtFirstMove) return moveCount;
                             }
                         }
                     }
@@ -685,7 +711,7 @@ public class MoveGenerator {
 
         if (!inCheck) {
             // generate castling moves
-            moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side);
+            moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side, stopAtFirstMove);
         }
 
         return moveCount;
@@ -728,12 +754,24 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
+        return generateMoves(chessboard, moveArray, false);
+    }
+
+    /**
+     * Generate Strictly legal moves
+     *
+     * @param chessboard chessboard
+     * @param moveArray move array
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
+     * @return move count
+     */
+    public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
         if(chessboard.gameVariants == GameVariants.ANTICHESS) {
-            return generateAntiChessMoves(chessboard, moveArray);
+            return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
         if(chessboard.gameVariants == GameVariants.ATOMIC) {
-            return generateAtomicMoves(chessboard, moveArray);
+            return generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
         if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
@@ -744,7 +782,7 @@ public class MoveGenerator {
 
         // when horde and it's white's turn
         if(chessboard.gameVariants == GameVariants.HORDE && chessboard.side == white) {
-            return generateHordeMoves(chessboard, moveArray);
+            return generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
         // when 3 check
@@ -824,7 +862,9 @@ public class MoveGenerator {
             if (isSafe) {
                 boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], targetSq);
                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
-                        kingSq, targetSq, (side == white ? K : k), 0, isCapture, false, false, false));
+                        kingSq, targetSq, (side == white ? K : k), 0, isCapture,
+                        false, false, false));
+                if(stopAtFirstMove) return moveCount;
             }
             kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
         }
@@ -882,6 +922,9 @@ public class MoveGenerator {
 
                         moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                 sourceSq, targetSq, piece, 0, isCapture, false, false, false));
+
+                        if(stopAtFirstMove) return moveCount;
+
                         pieceMoves = BitBoardUtils.popBit(pieceMoves, targetSq);
                     }
 
@@ -899,6 +942,7 @@ public class MoveGenerator {
                             } else {
                                 moveCount = addPawnMoves(moveArray, moveCount, sourceSq, pushSq, piece, false);
                             }
+                            if (stopAtFirstMove && moveCount > 0) return moveCount;
                         }
 
                         // when double push
@@ -916,11 +960,13 @@ public class MoveGenerator {
                                         moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                                 sourceSq, doublePushSq, piece, 0, false, true,
                                                 false, false));
+                                        if (stopAtFirstMove) return moveCount;
                                     }
                                 } else {
                                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                             sourceSq, doublePushSq, piece, 0, false, true,
                                             false, false));
+                                    if (stopAtFirstMove) return moveCount;
                                 }
                             }
                         }
@@ -945,6 +991,8 @@ public class MoveGenerator {
                         } else {
                             moveCount = addPawnMoves(moveArray, moveCount, sourceSq, targetSq, piece, true);
                         }
+                        if (stopAtFirstMove && moveCount > 0) return moveCount;
+
                         pawnAttacks = BitBoardUtils.popBit(pawnAttacks, targetSq);
                     }
 
@@ -970,11 +1018,13 @@ public class MoveGenerator {
                                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                                     sourceSq, targetSq, piece, 0, true, false,
                                                     true, false));
+                                            if (stopAtFirstMove) return moveCount;
                                         }
                                     } else {
                                         moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                                 sourceSq, targetSq, piece, 0, true, false,
                                                 true, false));
+                                        if (stopAtFirstMove) return moveCount;
                                     }
                                 }
                             }
@@ -988,12 +1038,12 @@ public class MoveGenerator {
 
         if (!inCheck) {
             // generate castling moves
-            moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side);
+            moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side, stopAtFirstMove);
         }
 
         if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
             // generate crazy house drop moves
-            moveCount = generateDropMoves(chessboard, moveArray, moveCount, checkMask);
+            moveCount = generateDropMoves(chessboard, moveArray, moveCount, checkMask, stopAtFirstMove);
         }
 
         return moveCount;
@@ -1268,9 +1318,11 @@ public class MoveGenerator {
      * @param moveCount current move count
      * @param kingSq king square
      * @param side is this white's / black's castling move
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
      * @return added move count
      */
-    private static int generateCastlingMovesStrict(Chessboard chessboard, int[] moveArray, int moveCount, int kingSq, int side) {
+    private static int generateCastlingMovesStrict(Chessboard chessboard, int[] moveArray,
+                                                   int moveCount, int kingSq, int side, boolean stopAtFirstMove) {
         if (chessboard.gameVariants == GameVariants.RACING_KINGS) return moveCount;
         int oppSide = side ^ 1;
 
@@ -1320,6 +1372,7 @@ public class MoveGenerator {
                             // if standard,  target square is g1
                             int targetSq = is960 ? r_sq : g1;
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                            if (stopAtFirstMove) return moveCount;
                         }
                     }
                 }
@@ -1343,6 +1396,7 @@ public class MoveGenerator {
                         if (safe) {
                             int targetSq = is960 ? r_sq : c1;
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, K, 0, false, false, false, true));
+                            if (stopAtFirstMove) return moveCount;
                         }
                     }
                 }
@@ -1364,6 +1418,7 @@ public class MoveGenerator {
                         if (safe) {
                             int targetSq = is960 ? r_sq : g8;
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                            if (stopAtFirstMove) return moveCount;
                         }
                     }
                 }
@@ -1385,6 +1440,7 @@ public class MoveGenerator {
                         if (safe) {
                             int targetSq = is960 ? r_sq : c8;
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(kingSq, targetSq, k, 0, false, false, false, true));
+                            if (stopAtFirstMove) return moveCount;
                         }
                     }
                 }
@@ -1401,9 +1457,11 @@ public class MoveGenerator {
      * @param moveArray move array
      * @param currentMoveCount current move count
      * @param checkMask current check blocking mask
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
      * @return added move count
      */
-    public static int generateDropMoves(Chessboard chessboard, int[] moveArray, int currentMoveCount, long checkMask) {
+    public static int generateDropMoves(Chessboard chessboard, int[] moveArray,
+                                        int currentMoveCount, long checkMask, boolean stopAtFirstMove) {
         // if it's not the crazy house variant, just returns current move count
         if (chessboard.gameVariants != GameVariants.CRAZY_HOUSE) return currentMoveCount;
         int moveCount = currentMoveCount;
@@ -1430,6 +1488,7 @@ public class MoveGenerator {
                     // add drop moves
                     int target_square = BitBoardUtils.getLS1BIndex(dropTargets);
                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeDropMove(piece, target_square));
+                    if(stopAtFirstMove) return moveCount;
                     dropTargets = BitBoardUtils.popBit(dropTargets, target_square);
                 }
             }
@@ -1899,7 +1958,7 @@ public class MoveGenerator {
             chessboard.pocket[piece]++;
 
             chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
-            chessboard.mailbox[target_square] = piece;
+            chessboard.mailbox[target_square] = NO_PIECE_CONSTANT;
         } else if (castling) {
             // unmake castling
             int k_target, r_target, rook_piece, rook_source;
@@ -2163,7 +2222,7 @@ public class MoveGenerator {
         return false;
     }
 
-    public static int isLegalMove(Chessboard chessboard,int source_square, int target_square, int promotion_type) {
+    public static int isLegalMove(Chessboard chessboard, int source_square, int target_square, int promotion_type) {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
