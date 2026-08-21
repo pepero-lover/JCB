@@ -1,14 +1,13 @@
 package com.pepero.jcb.encode;
 
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.EncodedPieces;
 import com.pepero.jcb.core.ChessboardUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.core.ChessboardUtils.ascii_pieces;
 
 public class EncodeMove {
     /*
@@ -171,7 +170,7 @@ public class EncodeMove {
      */
     public static String moveToString(int move) {
         if (EncodeMove.getMoveDrop(move)) {
-            char pieceChar = ChessboardUtils.ascii_pieces[EncodeMove.getMovePiece(move)];
+            char pieceChar = EncodedPieces.ascii_pieces[EncodeMove.getMovePiece(move)];
             String target = BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(move)];
             return Character.toUpperCase(pieceChar) + "@" + target;
         } else {

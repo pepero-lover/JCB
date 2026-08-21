@@ -1,6 +1,5 @@
 package com.pepero.jcb.core;
 
-import com.pepero.jcb.api.exception.VariantNotMatchException;
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
@@ -9,8 +8,6 @@ import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -20,60 +17,6 @@ import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttackedWithOcc;
 
 public class ChessboardUtils {
-    public static final char[] ascii_pieces = {
-            'P','N','B','R','Q','K',
-            'p','n','b','r','q','k'
-    };
-
-    public static final char[] promotion_pieces = {
-            'p','n','b','r','q','k'
-    };
-
-    // convert char pieces to encoded constants
-    public static final Map<Character, Integer> char_to_encoded_piece = new HashMap<>();
-
-    // init piece char
-    public static void initCharPieces(){
-        initCharToEncodedPiece();
-        initPieceToCharPieces();
-    }
-
-    // init char map
-    private static void initCharToEncodedPiece(){
-        char_to_encoded_piece.put('P', P);
-        char_to_encoded_piece.put('N', N);
-        char_to_encoded_piece.put('B', B);
-        char_to_encoded_piece.put('R', R);
-        char_to_encoded_piece.put('Q', Q);
-        char_to_encoded_piece.put('K', K);
-
-        char_to_encoded_piece.put('p', p);
-        char_to_encoded_piece.put('n', n);
-        char_to_encoded_piece.put('b', b);
-        char_to_encoded_piece.put('r', r);
-        char_to_encoded_piece.put('q', q);
-        char_to_encoded_piece.put('k', k);
-    }
-
-    public static final Map<Integer, Character> encoded_piece_to_char = new HashMap<>();
-
-    // init char map
-    private static void initPieceToCharPieces(){
-        encoded_piece_to_char.put(P, 'P');
-        encoded_piece_to_char.put(N, 'N');
-        encoded_piece_to_char.put(B, 'B');
-        encoded_piece_to_char.put(R, 'R');
-        encoded_piece_to_char.put(Q, 'Q');
-        encoded_piece_to_char.put(K, 'K');
-
-        encoded_piece_to_char.put(p, 'p');
-        encoded_piece_to_char.put(n, 'n');
-        encoded_piece_to_char.put(b, 'b');
-        encoded_piece_to_char.put(r, 'r');
-        encoded_piece_to_char.put(q, 'q');
-        encoded_piece_to_char.put(k, 'k');
-    }
-
     /**
      * print this chessboard
      */
@@ -315,7 +258,7 @@ public class ChessboardUtils {
                     empty_square = 0;
                 }
 
-                fen.append(encoded_piece_to_char.get(type));
+                fen.append(ascii_pieces[type]);
 
                 if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE &&
                         BitBoardUtils.getBit(chessboard.promoted_pieces, square)) {

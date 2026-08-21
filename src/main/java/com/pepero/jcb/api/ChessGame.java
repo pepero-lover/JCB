@@ -428,18 +428,19 @@ public class ChessGame {
             String[] sanStrings = sanString.split(" ");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
+            int[] encodedMoves = new int[sanStrings.length];
 
-            for (String san : sanStrings) {
-                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, san);
-                if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
-                    throw new IllegalMoveException(san,
-                            ChessboardUtils.getFen(tempChessboard));
+            for (int i = 0; i < sanStrings.length; i++) {
+                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, sanStrings[i]);
+                if (!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
+                    throw new IllegalMoveException(sanStrings[i], ChessboardUtils.getFen(tempChessboard));
                 }
                 MoveGenerator.makeMove(tempChessboard, encodedMove);
+                encodedMoves[i] = encodedMove;
             }
 
-            for (String san : sanStrings) {
-                makeMoveSan(san);
+            for (int encodedMove : encodedMoves) {
+                internalMakeMoveValidated(encodedMove);
             }
         } finally {
             writeLock.unlock();
@@ -461,18 +462,20 @@ public class ChessGame {
             String[] lanStrings = lanString.split(" ");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
+            int[] encodedMoves = new int[lanStrings.length];
 
-            for (String lan : lanStrings) {
-                int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(tempChessboard, lan);
+            for (int i = 0; i < lanStrings.length; i++) {
+                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, lanStrings[i]);
                 if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
-                    throw new IllegalMoveException(lan,
+                    throw new IllegalMoveException(lanStrings[i],
                             ChessboardUtils.getFen(tempChessboard));
                 }
                 MoveGenerator.makeMove(tempChessboard, encodedMove);
+                encodedMoves[i] = encodedMove;
             }
 
-            for (String lan : lanStrings) {
-                makeMove(lan);
+            for (int encodedMove : encodedMoves) {
+                internalMakeMoveValidated(encodedMove);
             }
         } finally {
             writeLock.unlock();
@@ -623,19 +626,12 @@ public class ChessGame {
             throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
         }
 
-        int encodedMove;
-
-        readLock.lock();
+        writeLock.lock();
         try {
+            int encodedMove;
             encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
-        } finally {
-            readLock.unlock();
-        }
-
-        writeLock.lock();
-        try {
             internalMakeMoveValidated(encodedMove);
         } finally {
             writeLock.unlock();
@@ -1782,8 +1778,10 @@ public class ChessGame {
                 if(isKingRaceOver()) return GameOverReason.KING_RACE;
             }
 
+            int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
+
             if (includeClaimableDraws) {
-                if (canClaimThreefoldRepetition()) return GameOverReason.THREEFOLD_CLAIM;
+                if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
                 if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
             }
 
@@ -1797,7 +1795,7 @@ public class ChessGame {
                 }
             }
 
-            if(isFivefoldRepetition()) return GameOverReason.FIVEFOLD;
+            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
             if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
             if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
 
@@ -1829,8 +1827,7 @@ public class ChessGame {
     public String toSan(String lanMove){
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(chessboard);
-            return ConvertStringMoveUtils.translateLanSequence(tempBoard, lanMove).trim();
+            return ConvertStringMoveUtils.translateLanSequence(this.chessboard, lanMove).trim();
         } finally {
             readLock.unlock();
         }
@@ -1845,14 +1842,28 @@ public class ChessGame {
     public String toSan(List<MoveInfo> moveData){
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(chessboard);
+            int[] encodedMoves = moveData.stream()
+                    .mapToInt(MoveInfo::originEncodedData)
+                    .toArray();
 
-            StringBuilder sb = new StringBuilder();
-            for(MoveInfo moveInfo : moveData) {
-                sb.append(moveInfo.toString()).append(" ");
-            }
+            return ConvertStringMoveUtils.translateEncodedMoveToSan(this.chessboard,
+                    encodedMoves).trim();
+        } finally {
+            readLock.unlock();
+        }
+    }
 
-            return ConvertStringMoveUtils.translateLanSequence(tempBoard, sb.toString()).trim();
+    /**
+     * Convert encoded move data to SAN (like e4 e5 Nf3)
+     *
+     * @param encodedMoves encoded moves data
+     * @return converted SAN move
+     */
+    public String toSan(int[] encodedMoves) {
+        readLock.lock();
+        try {
+            return ConvertStringMoveUtils.translateEncodedMoveToSan(this.chessboard,
+                    encodedMoves).trim();
         } finally {
             readLock.unlock();
         }
@@ -1865,11 +1876,9 @@ public class ChessGame {
      * @return Translated string result
      */
     public String toLanString(String san) {
-        Chessboard tempBoard;
         readLock.lock();
         try {
-            tempBoard = new Chessboard(this.chessboard);
-            return ConvertStringMoveUtils.toLanString(tempBoard, san);
+            return ConvertStringMoveUtils.toLanString(this.chessboard, san);
         } finally {
             readLock.unlock();
         }

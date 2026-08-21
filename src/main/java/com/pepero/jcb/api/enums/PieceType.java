@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.PieceNotFoundException;
+import com.pepero.jcb.constant.EncodedPieces;
 import com.pepero.jcb.core.ChessboardUtils;
 
 public enum PieceType {
@@ -84,6 +85,6 @@ public enum PieceType {
     public String toString() {
         if(this == NONE) return "";
 
-        return String.valueOf(ChessboardUtils.ascii_pieces[getPieceType() % 6]);
+        return String.valueOf(EncodedPieces.ascii_pieces[getPieceType() % 6]);
     }
 }

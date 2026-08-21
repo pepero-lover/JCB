@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.PieceNotFoundException;
+import com.pepero.jcb.constant.EncodedPieces;
 import com.pepero.jcb.core.ChessboardUtils;
 
 public enum Piece {
@@ -122,6 +123,6 @@ public enum Piece {
 
     @Override
     public String toString() {
-        return String.valueOf(ChessboardUtils.ascii_pieces[getPieceType()]);
+        return String.valueOf(EncodedPieces.ascii_pieces[getPieceType()]);
     }
 }

@@ -1,8 +1,6 @@
 package com.pepero.jcb.api.parse;
 
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.enums.PieceType;
-import com.pepero.jcb.api.enums.Square;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.exception.type.ConvertErrorType;
@@ -69,8 +67,10 @@ public class ConvertStringMoveUtils {
      * Convert lan move to san move
      * <p>
      * examples. <p>
-     * e2e4 -> e4 (it depends, but if start position, this is right) <p>
+     * e2e4 -> e4 (it depends, but if start position, this is right) <br>
      * g1f3 -> Nf3
+     *
+     * @param chessboard temp chessboard
      * @param lan string like e2e4 d7c8q
      * @return converted san string (if error occurs, returns null)
      *
@@ -120,7 +120,28 @@ public class ConvertStringMoveUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        int encoded_move = parseLanToEncodedMove(chessboard, lan);
+        int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        int promotion_type = 0;
+        if (lan.length() == 5) {
+            promotion_type = char_to_encoded_piece.get(lan.charAt(4));
+            if (chessboard.side == white) promotion_type -= 6;
+        }
+
+        int encoded_move = -1;
+        for (int i = 0; i < move_count; i++) {
+            int move = move_list[i];
+            if (EncodeMove.getMoveSource(move) == source_square
+                    && EncodeMove.getMoveTarget(move) == target_square
+                    && EncodeMove.getMovePromoted(move) == promotion_type) {
+                encoded_move = move;
+                break;
+            }
+        }
+        if (encoded_move == -1) {
+            throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
+        }
         boolean castle = EncodeMove.getMoveCastling(encoded_move);
 
         if (castle) {
@@ -164,15 +185,12 @@ public class ConvertStringMoveUtils {
         } else {
             if(!castle) {
                 // add piece type
-                sb.append(encodedPieceToString(type));
+                sb.append(ascii_pieces[type % 6]);
 
                 // add disambiguation
                 boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariants != GameVariants.ANTICHESS;
 
                 if (!skipDisambiguation) {
-                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-                    int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
                     int going_piece_count = 0;
                     boolean equal_file = false;
                     boolean equal_rank = false;
@@ -228,7 +246,7 @@ public class ConvertStringMoveUtils {
     /**
      * Translate LAN string to SAN data
      *
-     * @param chessboard chessboard
+     * @param chessboard temp chessboard
      * @param moveInfo move
      * @return Translated Result
      *
@@ -236,13 +254,25 @@ public class ConvertStringMoveUtils {
      */
     private static TranslateResult parseLan(Chessboard chessboard, MoveInfo moveInfo) {
         int encoded_move = moveInfo.originEncodedData();
+        return parseLan(chessboard, encoded_move);
+    }
 
+    /**
+     * Translate LAN string to SAN data
+     *
+     * @param chessboard temp chessboard
+     * @param encoded_move encoded move
+     * @return Translated Result
+     *
+     * @throws IllegalMoveException - if move is illegal
+     */
+    private static TranslateResult parseLan(Chessboard chessboard, int encoded_move) {
         // when drop move (crazy house)
-        if (moveInfo.isDrop()) {
+        if (EncodeMove.getMoveDrop(encoded_move)) {
             StringBuilder sb = new StringBuilder();
-            sb.append(encodedPieceToString(EncodeMove.getMovePiece(encoded_move)).toUpperCase());
+            sb.append(ascii_pieces[EncodeMove.getMovePiece(encoded_move) % 6]);
             sb.append("@");
-            sb.append(BoardSquares.square_to_coordinates[moveInfo.targetSquare().getIndex()]);
+            sb.append(BoardSquares.square_to_coordinates[EncodeMove.getMoveTarget(encoded_move)]);
 
             MoveGenerator.makeMove(chessboard, encoded_move);
             appendCheckOrMateSymbol(sb, chessboard);
@@ -272,7 +302,8 @@ public class ConvertStringMoveUtils {
 
         int target_file = target_square % 8;
 
-        boolean is_capture = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1 || moveInfo.enpassant();
+        boolean is_capture = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square) != -1
+                || EncodeMove.getMoveEnpassant(encoded_move);
 
         String promotionStr = "";
 
@@ -285,13 +316,14 @@ public class ConvertStringMoveUtils {
                 sb.append("x");
             }
 
-            if (moveInfo.promotionPiece() != PieceType.NONE) {
-                promotionStr = "=" + moveInfo.promotionPiece().name().substring(0, 1).toUpperCase();
-                if (moveInfo.promotionPiece() == PieceType.KNIGHT) promotionStr = "=N";
+            if (EncodeMove.getMovePromoted(encoded_move) != 0) {
+                promotionStr = "=" + ascii_pieces[
+                                EncodeMove.getMovePromoted(encoded_move) % 6
+                        ];
             }
         } else {
             if (!castle) {
-                sb.append(encodedPieceToString(type));
+                sb.append(ascii_pieces[type % 6]);
 
                 if (!(type == k || type == K)) {
                     int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
@@ -344,7 +376,7 @@ public class ConvertStringMoveUtils {
 
         MoveGenerator.unmakeMove(chessboard, encoded_move);
 
-        return new TranslateResult(sb.toString(), moveInfo.originEncodedData());
+        return new TranslateResult(sb.toString(), encoded_move);
     }
 
     /**
@@ -363,7 +395,7 @@ public class ConvertStringMoveUtils {
     /**
      * Parse move data to san string
      *
-     * @param chessboard chessboard
+     * @param chessboard temp chessboard
      * @param move move data
      * @return san move string
      *
@@ -374,9 +406,35 @@ public class ConvertStringMoveUtils {
     }
 
     /**
+     * Translate encoded move to san move string
+     *
+     * @param chessboard chess board
+     * @param encodedMoves encoded moves
+     * @return san move string
+     *
+     * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if move is illegal
+     */
+    public static String translateEncodedMoveToSan(Chessboard chessboard, int[] encodedMoves) {
+        chessboard = new Chessboard(chessboard);
+
+        StringBuilder sanSequence = new StringBuilder();
+
+        for (int encoded_move : encodedMoves) {
+            TranslateResult result = parseLan(chessboard, encoded_move);
+
+            sanSequence.append(result.moveString).append(" ");
+
+            MoveGenerator.makeMove(chessboard, result.moveData);
+        }
+
+        return sanSequence.toString();
+    }
+
+    /**
      * Lan sequence to San sequence
      *
-     * @param chessboard chessboard
+     * @param chessboard temp chessboard
      * @param lanSequence lan string
      * @return translated san sequence
      *
@@ -384,27 +442,19 @@ public class ConvertStringMoveUtils {
      * @throws IllegalMoveException - if move is illegal
      */
     public static String translateLanSequence(Chessboard chessboard, String lanSequence){
+        chessboard = new Chessboard(chessboard);
+
         if(lanSequence.trim().isEmpty()) return "";
 
         String[] lans = lanSequence.trim().split("\\s+");
         StringBuilder sanSequence = new StringBuilder();
 
-        int[] moveData = new int[lans.length];
-
-        for (int i = 0; i < lans.length; i++) {
-            String lan = lans[i];
-
+        for (String lan : lans) {
             TranslateResult result = parseLan(chessboard, lan);
 
             sanSequence.append(result.moveString).append(" ");
 
             MoveGenerator.makeMove(chessboard, result.moveData);
-
-            moveData[i] = result.moveData();
-        }
-
-        for (int i = lans.length - 1; i >= 0; i--){
-            MoveGenerator.unmakeMove(chessboard, moveData[i]);
         }
 
         return sanSequence.toString();
@@ -434,7 +484,7 @@ public class ConvertStringMoveUtils {
             if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
 
-            int piece_type = ChessboardUtils.char_to_encoded_piece.get(pieceChar);
+            int piece_type = char_to_encoded_piece.get(pieceChar);
             if (chessboard.side == black && piece_type <= K) piece_type += 6;
             else if (chessboard.side == white && piece_type > K) piece_type -= 6;
 
@@ -456,7 +506,7 @@ public class ConvertStringMoveUtils {
 
         int promotion_type = 0;
         if(lan.length() == 5){
-            promotion_type = ChessboardUtils.char_to_encoded_piece.get(lan.charAt(4));
+            promotion_type = char_to_encoded_piece.get(lan.charAt(4));
             if(chessboard.side == white) promotion_type -= 6;
         }
 
@@ -516,7 +566,7 @@ public class ConvertStringMoveUtils {
             char pieceChar = parts[0].charAt(0);
             target_square = BoardSquares.coordinates_to_square(parts[1]);
 
-            int piece_type = ChessboardUtils.char_to_encoded_piece.get(pieceChar);
+            int piece_type = char_to_encoded_piece.get(pieceChar);
             if (chessboard.side == black && piece_type <= K) piece_type += 6;
             else if (chessboard.side == white && piece_type > K) piece_type -= 6;
 
@@ -545,7 +595,10 @@ public class ConvertStringMoveUtils {
 
                 boolean isMoveKingSide = target > source;
 
-                if(isKingSide == isMoveKingSide) return new TranslateResult(lanForCastling(move), move);
+                if(isKingSide == isMoveKingSide) return new TranslateResult(
+                        BoardSquares.square_to_coordinates[source]
+                                + BoardSquares.square_to_coordinates[target]
+                        , move);
             }
 
             throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
@@ -646,20 +699,7 @@ public class ConvertStringMoveUtils {
 
         return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
                 + BoardSquares.square_to_coordinates[target_square]
-                + (promotion_type != -1 ? ChessboardUtils.promotion_pieces[promotion_type] : ""), move_result);
-    }
-
-    /**
-     * Get Lan for Castling move
-     *
-     * @param move encoded move (castling)
-     * @return lan string
-     */
-    private static String lanForCastling(int move) {
-        int src = EncodeMove.getMoveSource(move);
-        int tgt = EncodeMove.getMoveTarget(move);
-
-        return BoardSquares.square_to_coordinates[src] + BoardSquares.square_to_coordinates[tgt];
+                + (promotion_type != -1 ? promotion_pieces[promotion_type] : ""), move_result);
     }
 
     /**
@@ -688,6 +728,34 @@ public class ConvertStringMoveUtils {
         return parseSan(chessboard, san).moveData;
     }
 
+    /**
+     * Translate san sequence to lan sequence
+     *
+     * @param chessboard chess board
+     * @param sanSequence san string (like e4 e5 Nf3)
+     * @return translated lan sequence
+     *
+     * @throws ConvertMoveException - if converting move failed
+     * @throws IllegalMoveException - if move is illegal
+     */
+    public static String translateSanSequence(Chessboard chessboard, String sanSequence) {
+        chessboard = new Chessboard(chessboard);
+
+        if(sanSequence.trim().isEmpty()) return "";
+
+        String[] sans = sanSequence.trim().split("\\s+");
+        StringBuilder lanSequence = new StringBuilder();
+
+        for (String lan : sans) {
+            TranslateResult result = parseSan(chessboard, lan);
+
+            lanSequence.append(result.moveString).append(" ");
+
+            MoveGenerator.makeMove(chessboard, result.moveData);
+        }
+
+        return lanSequence.toString();
+    }
 
     /**
      * Parse move data (source square, target square, promotion type)
@@ -742,6 +810,6 @@ public class ConvertStringMoveUtils {
 
         throw new IllegalMoveException(BoardSquares.square_to_coordinates[source_square]
         +BoardSquares.square_to_coordinates[target_square]
-        +(promotion_type!=0? ChessboardUtils.promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
+        +(promotion_type!=0? promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
     }
 }

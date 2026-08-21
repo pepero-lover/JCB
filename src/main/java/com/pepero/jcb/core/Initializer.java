@@ -2,6 +2,7 @@ package com.pepero.jcb.core;
 
 import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.Magics;
+import com.pepero.jcb.constant.EncodedPieces;
 import com.pepero.jcb.encode.EncodeMove;
 import com.pepero.jcb.hash.Zobrist;
 
@@ -15,7 +16,7 @@ public class Initializer {
         Magics.initSlidersAttacks(Attacks.bishop);
         Magics.initSlidersAttacks(Attacks.rook);
 
-        ChessboardUtils.initCharPieces();
+        EncodedPieces.initCharPieces();
 
         EncodeMove.initPromotedPiecesChar();
 
