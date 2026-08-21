@@ -57,7 +57,7 @@ class PGNExporter {
         tempBoard.gameVariants = variant;
         tempBoard.isChess960 = isChess960;
 
-        MoveNodeDTO rootDTO = buildPGNTreeWithSan(rootNode, tempBoard, maxNodes, 0);
+        MoveNodeDTO rootDTO = buildPGNTreeWithSan(rootNode, tempBoard, maxNodes, new int[1]);
 
         return new PGNGame(pgnHeaders, rootDTO, result);
     }
@@ -68,42 +68,40 @@ class PGNExporter {
      * @param node root node
      * @param tempBoard board
      * @param maxNodesCount max nodes count
-     * @param currentNodes current nodes (default : 0)
+     * @param currentNodes current nodes (default : new int[1])
      * @return root node
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
-    static MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard, int maxNodesCount, int currentNodes) {
-        currentNodes++;
-        if(maxNodesCount < currentNodes) throw new NodesOverflowException(
+    static MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard, int maxNodesCount,
+                                           int[] currentNodes) {
+        currentNodes[0]++;
+        if (maxNodesCount < currentNodes[0]) throw new NodesOverflowException(
                 "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
         );
 
         String calculatedSan = null;
+        boolean moved = node.moveData != null;
 
-        if (node.moveData != null) {
+        if (moved) {
             calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, node.moveData);
-
             MoveGenerator.makeMove(tempBoard, node.moveData.originEncodedData());
         }
 
-        List<MoveNodeDTO> childrenDTOs = new java.util.ArrayList<>();
-
+        List<MoveNodeDTO> childrenDTOs = new java.util.ArrayList<>(node.children.size());
         for (MoveNode child : node.children) {
-            childrenDTOs.add(buildPGNTreeWithSan(child, new Chessboard(tempBoard), maxNodesCount, currentNodes));
+            childrenDTOs.add(buildPGNTreeWithSan(child, tempBoard, maxNodesCount, currentNodes));
+        }
+
+        if (moved) {
+            MoveGenerator.unmakeMove(tempBoard, node.moveData.originEncodedData());
         }
 
         MoveAnnotation nodeAnnotation = node.getAnnotation();
         MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment,
                 nodeAnnotation.nag, nodeAnnotation.clk, nodeAnnotation.timeStamp,
-                nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);;
+                nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);
 
-        return new MoveNodeDTO(
-                node.id,
-                node.moveData,
-                childrenDTOs,
-                calculatedSan,
-                annotationDTO
-        );
+        return new MoveNodeDTO(node.id, node.moveData, childrenDTOs, calculatedSan, annotationDTO);
     }
 }

@@ -6,6 +6,7 @@ import com.pepero.jcb.api.dto.PGNToken;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.exception.NodesOverflowException;
 import com.pepero.jcb.api.exception.PGNConvertException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.pgn.PGNLexer;
@@ -73,9 +74,10 @@ class PGNParser {
      * Parse pgn string to PGNParsedData DTO
      *
      * @param pgnString pgn string
+     * @param maxNodesCount max nodes calculating count
      * @return PGNParsedData DTO (for initializing ChessGame
      */
-    public static PGNParsedData parse(String pgnString) {
+    public static PGNParsedData parse(String pgnString, int maxNodesCount) {
         long nodeCounter = 0;
 
         if (pgnString == null || pgnString.isEmpty()) {
@@ -254,6 +256,11 @@ class PGNParser {
                     currentParsedNode.children.add(newNode);
                     currentParsedNode = newNode;
                     tempNodeCache.put(newNode.id, newNode);
+                    if(tempNodeCache.size() >= maxNodesCount) {
+                        throw new NodesOverflowException(
+                                "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
+                        );
+                    }
                     break;
             }
         }

@@ -81,10 +81,25 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param pgn pgn string
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #fromPGN(String, int maxNodesCount)})
      */
     public static ChessGame fromPGN(String pgn) {
         ChessGame result = new ChessGame(false, GameVariants.STANDARD);
         result.loadPGN(pgn);
+        return result;
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param pgn pgn string
+     * @param maxNodesCount max nodes count
+     *
+     * @throws NodesOverflowException if move count is more than maxNodesCount
+     */
+    public static ChessGame fromPGN(String pgn, int maxNodesCount) {
+        ChessGame result = new ChessGame(false, GameVariants.STANDARD);
+        result.loadPGN(pgn, maxNodesCount);
         return result;
     }
 
@@ -2644,11 +2659,48 @@ public class ChessGame {
      * Load PGN on this ChessGame
      *
      * @param pgnString PGN data
+     *
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #loadPGN(String, int maxNodes)})
      */
     public void loadPGN(String pgnString) {
         writeLock.lock();
         try {
-            PGNParsedData parsedData = PGNParser.parse(pgnString);
+            PGNParsedData parsedData = PGNParser.parse(pgnString, MAX_PGN_NODE_COUNT);
+
+            String fenToLoad = parsedData.startFEN();
+            this.chessboard.gameVariants = parsedData.variants();
+            this.chessboard.isChess960 = parsedData.isChess960();
+            ChessboardUtils.parseFen(this.chessboard, fenToLoad);
+            this.startPositionFEN = fenToLoad;
+
+            this.moveHistoryRoot = parsedData.rootNode();
+            this.currentNode = parsedData.rootNode();
+
+            this.nodeCache.clear();
+            this.nodeCache.putAll(parsedData.cache());
+
+            this.headers.clear();
+            setDefaultHeaders();
+            this.headers.putAll(parsedData.header());
+
+            this.gameResult = parsedData.gameResult();
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Load PGN on this ChessGame
+     *
+     * @param pgnString PGN data
+     * @param maxNodesCount max nodes count
+     *
+     * @throws NodesOverflowException if move count is more than maxNodesCount
+     */
+    public void loadPGN(String pgnString, int maxNodesCount) {
+        writeLock.lock();
+        try {
+            PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount);
 
             String fenToLoad = parsedData.startFEN();
             this.chessboard.gameVariants = parsedData.variants();
@@ -2685,7 +2737,8 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT, 0);
+            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT,
+                    new int[1]);
         } finally {
             readLock.unlock();
         }
@@ -2705,7 +2758,8 @@ public class ChessGame {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
             tempBoard.gameVariants = this.getGameVariants();
 
-            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount, 0);
+            return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount,
+                    new int[1]);
         } finally {
             readLock.unlock();
         }
