@@ -54,13 +54,28 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      */
     private static void appendCheckOrMateSymbol(StringBuilder sb, Chessboard chessboard) {
-        if (shouldShowCheckmateSymbol(chessboard)) {
-            sb.append("#");
-        } else if (chessboard.gameVariants != GameVariants.ANTICHESS
-                && chessboard.gameVariants != GameVariants.RACING_KINGS
-                && ChessboardUtils.isCheck(chessboard)) {
-            sb.append("+");
+        boolean isAntichessLike = chessboard.gameVariants == GameVariants.ANTICHESS
+                || chessboard.gameVariants == GameVariants.RACING_KINGS;
+
+        boolean inCheck = !isAntichessLike && ChessboardUtils.isCheck(chessboard);
+
+        boolean isMate;
+        if (chessboard.gameVariants == GameVariants.ANTICHESS) {
+            isMate = ChessboardUtils.isAntiChessOver(chessboard);
+        } else if (chessboard.gameVariants == GameVariants.ATOMIC) {
+            isMate = ChessboardUtils.isAtomicOver(chessboard) || (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
+        } else if (chessboard.gameVariants == GameVariants.HORDE) {
+            isMate = ChessboardUtils.isHordePiecesGone(chessboard) || (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
+        } else if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+            isMate = ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
+        } else {
+            isMate = ChessboardUtils.isThreeCheck(chessboard) ||
+                    ChessboardUtils.isKingGoneToHill(chessboard) ||
+                    (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
         }
+
+        if (isMate) sb.append("#");
+        else if (inCheck) sb.append("+");
     }
 
     /**
