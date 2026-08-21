@@ -22,26 +22,68 @@ public class SyzygyAnalyzer {
 
     /**
      * Get WDL result on this chess position <br>
-     * not supports other variants
+     * supports only Standard chess, Chess 960 chess
      *
      * @param tablebase table base class
+     * @param containCastle do not throw exception when game has castling rights <br>
+     *                      Warning : if you enable this, the position that contained castling rights
+     *                      wdl probing going to be inaccurate.
      * @return WDL result
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws IllegalArgumentException if this position has castling right
      */
-    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         validateVariant(game);
+        if(!containCastle) validateCastling(game);
         return tablebase.getWdlData(game.getBoardSnapshot());
     }
 
     /**
+     * Get WDL result on this chess position <br>
+     * supports only Standard chess, Chess 960 chess
+     *
+     * @param tablebase table base class
+     * @return WDL result
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws IllegalArgumentException if this position has castling right
+     */
+    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+        return probeWdl(game, tablebase, false);
+    }
+
+    /**
      * Get DTZ result on this chess position <br>
-     * not supports other variants
+     * supports only Standard chess, Chess 960 chess
+     *
+     * @param tablebase table base class
+     * @param containCastle do not throw exception when game has castling rights <br>
+     *                      Warning : if you enable this, the position that contained castling rights
+     *                      wdl probing going to be inaccurate.
+     * @return DTZ result
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws IllegalArgumentException if this position has castling right
+     */
+    public static int probeDtz(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+        validateVariant(game);
+        if(!containCastle) validateCastling(game);
+        return tablebase.getDtzData(game.getBoardSnapshot());
+    }
+
+    /**
+     * Get DTZ result on this chess position <br>
+     * supports only Standard chess, Chess 960 chess
      *
      * @param tablebase table base class
      * @return DTZ result
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws IllegalArgumentException if this position has castling right
      */
     public static int probeDtz(ChessGame game, SyzygyTablebase tablebase) throws IOException {
-        validateVariant(game);
-        return tablebase.getDtzData(game.getBoardSnapshot());
+        return probeDtz(game, tablebase, false);
     }
 
     /**
@@ -117,5 +159,9 @@ public class SyzygyAnalyzer {
         if (game.getGameVariants() != GameVariants.STANDARD && game.isChess960()) {
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
         }
+    }
+
+    private static void validateCastling(ChessGame game) {
+        if(game.hasCastling()) throw new IllegalArgumentException("Syzygy should not contain Castling rights!");
     }
 }

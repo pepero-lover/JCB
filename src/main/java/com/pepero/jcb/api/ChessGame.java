@@ -11,6 +11,7 @@ import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.constant.CastlingRights;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
@@ -1308,6 +1309,33 @@ public class ChessGame {
     }
 
     /**
+     * Get white pieces count
+     *
+     * @return white pieces count
+     */
+    public int getWhitePieceCount() {
+        return BitBoardUtils.countBits(chessboard.occupancies[white]);
+    }
+
+    /**
+     * Get black pieces count
+     *
+     * @return black pieces count
+     */
+    public int getBlackPieceCount() {
+        return BitBoardUtils.countBits(chessboard.occupancies[black]);
+    }
+
+    /**
+     * Get pieces count
+     *
+     * @return pieces count
+     */
+    public int getPieceCount() {
+        return BitBoardUtils.countBits(chessboard.occupancies[both]);
+    }
+
+    /**
      * Get piece type on square
      * if not found, returns NONE
      *
@@ -1434,6 +1462,123 @@ public class ChessGame {
         readLock.lock();
         try {
             return getPieceOnSquare(square) == Piece.NONE;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether white has king side castling right
+     *
+     * @return whether white has king side castling right
+     */
+    public boolean hasWhiteKingSideCastling() {
+        readLock.lock();
+        try {
+            return (chessboard.castle & CastlingRights.WK) != 0;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether white has queen side castling right
+     *
+     * @return whether white has queen side castling right
+     */
+    public boolean hasWhiteQueenSideCastling() {
+        readLock.lock();
+        try {
+            return (chessboard.castle & CastlingRights.WQ) != 0;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether black has king side castling right
+     *
+     * @return whether black has king side castling right
+     */
+    public boolean hasBlackKingSideCastling() {
+        readLock.lock();
+        try {
+            return (chessboard.castle & CastlingRights.BK) != 0;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether black has queen side castling right
+     *
+     * @return whether black has queen side castling right
+     */
+    public boolean hasBlackQueenSideCastling() {
+        readLock.lock();
+        try {
+            return (chessboard.castle & CastlingRights.BQ) != 0;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether white has any castling rights
+     *
+     * @return whether white has any castling rights
+     */
+    public boolean hasWhiteCastling() {
+        readLock.lock();
+        try {
+            return hasWhiteKingSideCastling() || hasWhiteQueenSideCastling();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether black has any castling rights
+     *
+     * @return whether black has any castling rights
+     */
+    public boolean hasBlackCastling() {
+        readLock.lock();
+        try {
+            return hasBlackKingSideCastling() || hasBlackQueenSideCastling();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether this position has any castling rights
+     *
+     * @return whether this position has any castling rights
+     */
+    public boolean hasCastling() {
+        readLock.lock();
+        try {
+            return (chessboard.castle) != 0;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get castling rights info
+     *
+     * @return castling rights info
+     */
+    public CastlingRightsInfo getCastlingRights() {
+        readLock.lock();
+        try {
+            return new CastlingRightsInfo(
+                    (chessboard.castle & CastlingRights.WK) != 0,
+                    (chessboard.castle & CastlingRights.WQ) != 0,
+                    (chessboard.castle & CastlingRights.BK) != 0,
+                    (chessboard.castle & CastlingRights.BQ) != 0
+            );
         } finally {
             readLock.unlock();
         }

@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
@@ -8,8 +9,10 @@ import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.EngineArenaException;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.chess960.Chess960Utils;
 
+import java.io.IOException;
 import java.util.*;
 
 public class EngineArena {
@@ -133,6 +136,9 @@ public class EngineArena {
             int drawAdjCount = 0;
             int resignAdjCount = 0;
 
+            GameResult syzygyWinningSide = GameResult.UNKNOWN;
+            int syzygyAdjCount = 0;
+
             while (chessGame.getGameoverReason() == GameOverReason.NOTGAMEOVER) {
                 if (token != null && token.isCancelled()) {
                     chessGame.adjudication(GameResult.ABORTED);
@@ -254,6 +260,42 @@ public class EngineArena {
                         }
                     }
                 }
+                if (matchConfig.hasSyzygyAdjudication()) {
+                    SyzygyRule rule = matchConfig.getSyzygyRule();
+                    int pieceCount = chessGame.getPieceCount();
+                    if (pieceCount <= rule.maxPieceCount() && !chessGame.hasCastling()) {
+                        int probeResult = SyzygyAnalyzer.probeWdl(chessGame, matchConfig.getSyzygyTablebase());
+
+                        if (probeResult == 0) {
+                            syzygyAdjCount++;
+                            syzygyWinningSide = GameResult.DRAW;
+
+                            if (syzygyAdjCount >= rule.moveCount()) {
+                                chessGame.adjudication(GameResult.DRAW);
+                                break;
+                            }
+                        } else if (Math.abs(probeResult) == 2) {
+                            boolean sideToMoveWinning = probeResult > 0;
+                            GameResult currentSyzygyWinner = whiteTurn == sideToMoveWinning
+                                    ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+
+                            if (syzygyWinningSide == GameResult.UNKNOWN || syzygyWinningSide == currentSyzygyWinner) {
+                                syzygyAdjCount++;
+                            } else {
+                                syzygyAdjCount = 1;
+                            }
+                            syzygyWinningSide = currentSyzygyWinner;
+
+                            if (syzygyAdjCount >= rule.moveCount()) {
+                                chessGame.adjudication(currentSyzygyWinner);
+                                break;
+                            }
+                        } else {
+                            syzygyAdjCount = 0;
+                            syzygyWinningSide = GameResult.UNKNOWN;
+                        }
+                    }
+                }
 
                 if(bestMove != null) {
                     String san = chessGame.makeMoveReturningSan(bestMove);
@@ -290,6 +332,8 @@ public class EngineArena {
                     throw new EngineArenaException("Best move not found!");
                 }
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         GameResult result = chessGame.getGameResult();

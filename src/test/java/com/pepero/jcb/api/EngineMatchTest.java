@@ -2,9 +2,11 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariants;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -52,6 +54,12 @@ public class EngineMatchTest {
                             700,
                             50
                     ))
+//                    .syzygyRule(new SyzygyRule(
+//                            5,
+//                            10
+//                    ))
+//                    .syzygyTablebase(new SyzygyTablebase(Path.of("syzygy/")))
+
                     .engine1Config(engine1Config)
                     .engine2Config(engine2Config)
 //                    .fenSetting(new FENSettingConfig(

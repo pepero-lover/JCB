@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.book.PolyglotBookReader;
+import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariants;
 
 public class MatchConfig {
@@ -23,6 +24,9 @@ public class MatchConfig {
     private final AdjudicationRule resignRule;
     private final AdjudicationRule drawRule;
 
+    private final SyzygyTablebase syzygyTablebase;
+    private final SyzygyRule syzygyRule;
+
     // Show pv string on pgn commentary
     private final boolean showPv;
 
@@ -34,38 +38,73 @@ public class MatchConfig {
 
     private MatchConfig(Builder builder) {
         this.totalGames = builder.totalGames;
+
         this.concurrency = builder.concurrency;
+
         this.fenSettingConfig = builder.fenSettingConfig;
+
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
+
         this.variants = builder.variants;
+
         this.isChess960 = builder.isChess960;
+
         this.openingBook = builder.openingBook;
         this.repeatOpening = builder.repeatOpening;
+
         this.resignRule = builder.resignRule;
         this.drawRule = builder.drawRule;
+
+        this.syzygyTablebase = builder.syzygyTablebase;
+        this.syzygyRule = builder.syzygyRule;
+
         this.showPv = builder.showPv;
         this.showEval = builder.showEval;
         this.showClk = builder.showClk;
+
         this.seed = builder.seed;
     }
 
+    // total playing games
     public int getTotalGames() { return totalGames; }
+
+    // using this amount of threads
     public int getConcurrency() { return concurrency; }
+
+    // engine configs
     public EngineConfig getEngine1Config() { return engine1Config; }
     public EngineConfig getEngine2Config() { return engine2Config; }
+
+    // game variants
     public GameVariants getVariants() { return variants; }
+
+    // is chess 960
     public boolean isChess960() { return isChess960; }
+
+    // opening book
     public PolyglotBookReader getOpeningBook() { return openingBook; }
     public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
+
+    // fen setting
     public FENSettingConfig fenSettingConfig() { return fenSettingConfig; }
     public boolean hasFENSetting() { return fenSettingConfig != null; }
+
+    // adjudication rule
     public AdjudicationRule getResignRule() { return resignRule; }
     public AdjudicationRule getDrawRule() { return drawRule; }
+
+    // syzygy adjudication rule
+    public SyzygyTablebase getSyzygyTablebase() { return syzygyTablebase; }
+    public SyzygyRule getSyzygyRule() { return syzygyRule; }
+    public boolean hasSyzygyAdjudication() { return syzygyTablebase != null && syzygyRule != null; }
+
+    // pgn data
     public boolean isShowPv() { return showPv; }
     public boolean isShowEval() { return showEval; }
     public boolean isShowClk() { return showClk; }
+
     public int getSeed() { return seed; }
 
     public static class Builder {
@@ -85,6 +124,9 @@ public class MatchConfig {
 
         private AdjudicationRule resignRule = null;
         private AdjudicationRule drawRule = null;
+
+        private SyzygyTablebase syzygyTablebase;
+        private SyzygyRule syzygyRule;
 
         private boolean showPv = true;
         private boolean showEval = true;
@@ -147,6 +189,16 @@ public class MatchConfig {
             return this;
         }
 
+        public Builder syzygyTablebase(SyzygyTablebase tablebase) {
+            this.syzygyTablebase = tablebase;
+            return this;
+        }
+
+        public Builder syzygyRule(SyzygyRule rule) {
+            this.syzygyRule = rule;
+            return this;
+        }
+
         public Builder showPv(boolean showPv) {
             this.showPv = showPv;
             return this;
@@ -177,6 +229,9 @@ public class MatchConfig {
                 throw new IllegalArgumentException("Resign rule threshold cp should be positive!");
             if (fenSettingConfig != null && openingBook != null) {
                 throw new IllegalArgumentException("Fen setting and opening book can't have both!");
+            }
+            if(syzygyTablebase == null && syzygyRule != null) {
+                throw new IllegalArgumentException("Syzygy adjudication rule exists, but Syzygy tablebase not found!");
             }
 
             return new MatchConfig(this);

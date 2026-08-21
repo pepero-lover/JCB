@@ -523,7 +523,7 @@ public class SyzygyTablebase {
      * @return WDL data
      */
     public int getWdlData(Chessboard board) throws IOException {
-        int wdlRaw = probeWdl(board); // 0~4 스케일 (0=Loss,1=BlessedLoss,2=Draw,3=CursedWin,4=Win)
+        int wdlRaw = probeWdl(board);
         int wdl = wdlRaw - 2;
 
         if (wdl == 0) {
