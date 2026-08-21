@@ -3,7 +3,6 @@ package com.pepero.jcb.api.dto;
 import com.pepero.jcb.api.enums.Piece;
 import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
-import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.encode.EncodeMove;
 
 import java.util.Objects;
@@ -42,10 +41,6 @@ public record MoveInfo(
     }
 
     public String toLanString() {
-        return toLanString(GameVariants.STANDARD);
-    }
-
-    public String toLanString(GameVariants variants) {
         return EncodeMove.moveToString(originEncodedData);
     }
 

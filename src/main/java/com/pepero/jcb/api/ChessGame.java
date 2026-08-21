@@ -316,56 +316,16 @@ public class ChessGame {
         GameResult gameResult = GameResult.UNKNOWN;
         boolean historyChanged;
 
-        writeLock.lock();
-        try {
-            if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
-                String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
-                throw new IllegalMoveException(errorStr, this.getFEN());
-            }
-
-            MoveGenerator.makeMove(this.chessboard, encodedMove);
-
-            moveData = new MoveInfo(encodedMove);
-            historyChanged = addMoveHistory(moveData);
-
-            if(autoChangeGameOver) {
-                gameResult = evaluateGameState(currentNode);
-            }
-        } finally {
-            writeLock.unlock();
-        }
-
-        notifyMoveMade(moveData);
-        if (gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if(historyChanged) {
-            notifyHistoryChanged();
-        }
-    }
-
-    /**
-     * Make move for internal make move methods (not locking multi-thread)
-     *
-     * @param encodedMove encoded move data
-     * @param originalMoveString original move string (null allowed)
-     */
-    private void internalMakeMoveLocked(int encodedMove, String originalMoveString) {
-        MoveInfo moveData;
-        GameResult gameResult = GameResult.UNKNOWN;
-        boolean historyChanged;
-
-        if(!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
+        if (!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
             String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
             throw new IllegalMoveException(errorStr, this.getFEN());
         }
 
         MoveGenerator.makeMove(this.chessboard, encodedMove);
-
         moveData = new MoveInfo(encodedMove);
         historyChanged = addMoveHistory(moveData);
 
-        if(autoChangeGameOver) {
+        if (autoChangeGameOver) {
             gameResult = evaluateGameState(currentNode);
         }
 
@@ -373,7 +333,35 @@ public class ChessGame {
         if (gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameoverReason);
         }
-        if(historyChanged) {
+        if (historyChanged) {
+            notifyHistoryChanged();
+        }
+    }
+
+    /**
+     * Make move for internal make move methods <br>
+     * this method doesn't check whether this is a legal move or not
+     *
+     * @param encodedMove encoded move data
+     */
+    private void internalMakeMoveValidated(int encodedMove) {
+        MoveInfo moveData;
+        GameResult gameResult = GameResult.UNKNOWN;
+        boolean historyChanged;
+
+        MoveGenerator.makeMove(this.chessboard, encodedMove);
+        moveData = new MoveInfo(encodedMove);
+        historyChanged = addMoveHistory(moveData);
+
+        if (autoChangeGameOver) {
+            gameResult = evaluateGameState(currentNode);
+        }
+
+        notifyMoveMade(moveData);
+        if (gameResult != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+        if (historyChanged) {
             notifyHistoryChanged();
         }
     }
@@ -390,7 +378,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
-            internalMakeMoveLocked(encodedMove, moveString);
+            internalMakeMove(encodedMove, moveString);
         } finally {
             writeLock.unlock();
         }
@@ -417,7 +405,12 @@ public class ChessGame {
      * @throws ConvertMoveException - if move data is not correct
      */
     public void makeMove(int encodedMove) {
-        internalMakeMove(encodedMove, null);
+        writeLock.lock();
+        try {
+            internalMakeMove(encodedMove, null);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -631,19 +624,9 @@ public class ChessGame {
         }
 
         int encodedMove;
-        String errorString = BoardSquares.square_to_coordinates[sourceSquare.getIndex()]
-                + BoardSquares.square_to_coordinates[targetSquare.getIndex()]
-                + ((promotionType != PieceType.NONE) ? String.valueOf(ChessboardUtils.promotion_pieces[promotionType.getPieceType()]) : "");
 
         readLock.lock();
         try {
-            int isLegal = MoveGenerator.isLegalMove(this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(),
-                    promotionType.getPieceType());
-
-            if(isLegal == ILLEGAL_MOVE){
-                throw new IllegalMoveException(errorString, ChessboardUtils.getFen(chessboard));
-            }
-
             encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
@@ -651,7 +634,12 @@ public class ChessGame {
             readLock.unlock();
         }
 
-        internalMakeMove(encodedMove, errorString);
+        writeLock.lock();
+        try {
+            internalMakeMoveValidated(encodedMove);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -675,7 +663,12 @@ public class ChessGame {
      * @throws IllegalMoveException - if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
-        internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
+        writeLock.lock();
+        try {
+            internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**

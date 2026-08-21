@@ -40,7 +40,7 @@ public class ChessGameConcurrencyTest {
         });
 
         int readerThreadCount = 10;
-        int repeatCount = 1000;
+        int repeatCount = 10000;
 
         ExecutorService executor = Executors.newFixedThreadPool(readerThreadCount + 1);
 

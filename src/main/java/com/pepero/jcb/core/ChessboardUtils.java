@@ -462,7 +462,7 @@ public class ChessboardUtils {
         long checkersMask = 0L;
 
         // pawn
-        if (oppSide == white) {
+        if (oppSide == white)  {
             checkersMask |= Attacks.pawn_attacks[black][kingSquare] & chessboard.bitboards[P];
         } else {
             checkersMask |= Attacks.pawn_attacks[white][kingSquare] & chessboard.bitboards[p];

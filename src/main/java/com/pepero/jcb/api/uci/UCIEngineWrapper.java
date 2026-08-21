@@ -254,7 +254,7 @@ public class UCIEngineWrapper implements AutoCloseable {
         if (history != null && !history.isEmpty()) {
             positionCmd.append(" moves");
             for (MoveInfo move : history) {
-                positionCmd.append(" ").append(move.toLanString(chessGame.getGameVariants()));
+                positionCmd.append(" ").append(move.toLanString());
             }
         }
 
