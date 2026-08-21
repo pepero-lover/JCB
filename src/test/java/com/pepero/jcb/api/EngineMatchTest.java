@@ -12,8 +12,8 @@ import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish.exe").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish.exe").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 

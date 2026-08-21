@@ -6,11 +6,8 @@ import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.EngineArenaException;
-import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
-import com.pepero.jcb.api.book.PolyglotHashUtils;
-import com.pepero.jcb.core.GameVariants;
 import com.pepero.jcb.core.chess960.Chess960Utils;
 
 import java.util.*;
@@ -20,7 +17,7 @@ public class EngineArena {
     private final MatchConfig matchConfig;
     private final UCIEngineFactory factory;
 
-    private final int[] chess960Position = new int[960];
+    private int[] chess960Position = new int[960];
 
     public interface ArenaListener {
         void onMovePlayed(MoveEvent event);
@@ -34,16 +31,25 @@ public class EngineArena {
         this.matchConfig = config;
 
         if(config.isChess960()) {
-            List<Integer> list = new ArrayList<>();
-            for (int i = 0; i < 960; i++) list.add(i);
-
-            Collections.shuffle(list, new Random(config.getSeed()));
-            for (int i = 0; i < 960; i++) {
-                chess960Position[i] = list.get(i);
+            int[] positions = new int[960];
+            for (int i = 0; i < 960; i++) positions[i] = i;
+            Random rnd = new Random(config.getSeed());
+            for (int i = 959; i > 0; i--) {
+                int j = rnd.nextInt(i + 1);
+                int tmp = positions[i];
+                positions[i] = positions[j];
+                positions[j] = tmp;
             }
+            this.chess960Position = positions;
         }
     }
 
+    /**
+     * Get random chess 960 position index with roundNum(seed)
+     *
+     * @param roundNum round number (used as random seed)
+     * @return chess 960 position index
+     */
     private int getPositionIndex(int roundNum) {
         if(matchConfig.isRepeatOpening()) {
             int pairIndex = (roundNum - 1) / 2;
@@ -122,7 +128,7 @@ public class EngineArena {
 
             PolyglotBookReader bookReader = matchConfig.getOpeningBook();
 
-            Boolean losingSide = null;
+            GameResult winningSide = GameResult.UNKNOWN;
 
             int drawAdjCount = 0;
             int resignAdjCount = 0;
@@ -211,9 +217,12 @@ public class EngineArena {
                 }
                 int whiteCp = currentEngine.getCurrentCp();
                 int moverCp = whiteTurn ? whiteCp : -whiteCp;
+
+                int fullMove = chessGame.getFullMove();
+
                 if(matchConfig.getDrawRule() != null) {
                     AdjudicationRule drawRule = matchConfig.getDrawRule();
-                    if(chessGame.getFullMove() >= drawRule.minMoveNumber()) {
+                    if(fullMove >= drawRule.minMoveNumber()) {
                         boolean adjust = drawRule.isWithinThreshold(moverCp, false);
                         if(adjust) drawAdjCount++;
                         else drawAdjCount = 0;
@@ -226,30 +235,29 @@ public class EngineArena {
                 }
                 if(matchConfig.getResignRule() != null) {
                     AdjudicationRule resignRule = matchConfig.getResignRule();
-                    if(chessGame.getFullMove() >= resignRule.minMoveNumber()) {
+                    if(fullMove >= resignRule.minMoveNumber()) {
                         boolean isExtreme = Math.abs(whiteCp)
                                 >= resignRule.scoreThresholdCP() + resignRule.scoreToleranceCP();
-                        boolean currentLoser = whiteCp < 0;
+                        GameResult currentWinner = whiteCp > 0 ? GameResult.WHITE_WON : GameResult.BLACK_WON;
 
-                        if (isExtreme && (losingSide == null || losingSide == currentLoser)) {
+                        if (isExtreme && (winningSide == GameResult.UNKNOWN || winningSide == currentWinner)) {
                             resignAdjCount++;
-                            losingSide = currentLoser;
+                            winningSide = currentWinner;
                         } else {
                             resignAdjCount = 0;
-                            losingSide = null;
+                            winningSide = GameResult.UNKNOWN;
                         }
 
                         if (resignAdjCount >= resignRule.moveCount()) {
-                            chessGame.adjudication(currentLoser ? GameResult.BLACK_WON : GameResult.WHITE_WON);
+                            chessGame.adjudication(currentWinner);
                             break;
                         }
                     }
                 }
 
                 if(bestMove != null) {
-                    String san = chessGame.toSan(bestMove);
+                    String san = chessGame.makeMoveReturningSan(bestMove);
 
-                    chessGame.makeMove(bestMove);
                     EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
                     if(currentEngineLine != null) {
                         if(matchConfig.isShowEval()) {

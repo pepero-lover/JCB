@@ -1,6 +1,5 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.core.GameVariants;
 

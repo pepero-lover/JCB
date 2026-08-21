@@ -9,7 +9,7 @@ import com.pepero.jcb.core.MoveGenerator;
 
 public class VariantPerftTest {
     public static void makeMove(Chessboard chessboard, String lan) {
-        MoveGenerator.makeMove(chessboard, ConvertStringMoveUtils.parseLanToEncodedMove(chessboard, lan));
+        MoveGenerator.makeMove(chessboard, ConvertStringMoveUtils.lanToMoveData(chessboard, lan));
     }
 
     public static void main(String[] args) {

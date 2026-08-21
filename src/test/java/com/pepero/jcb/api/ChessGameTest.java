@@ -324,7 +324,7 @@ public class ChessGameTest {
         Chessboard board = new Chessboard("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1",
                 true);
 
-        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(board, "e1h1");
+        int encodedMove = ConvertStringMoveUtils.lanToMoveData(board, "e1h1");
 
         assertTrue(EncodeMove.getMoveCastling(encodedMove));
         assertEquals(BoardSquares.h1, EncodeMove.getMoveTarget(encodedMove));

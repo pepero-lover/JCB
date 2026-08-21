@@ -86,7 +86,7 @@ public class CLIChess {
                 String san = arg[1];
                 try {
                     // San 무브를 무브 데이터로 가져옵니다.
-                    MoveInfo encoded_data = chessGame.toLanMoveData(san);
+                    MoveInfo encoded_data = chessGame.sanToMoveData(san);
                     chessGame.makeMove(encoded_data);
                 } catch (ConvertMoveException e) {
                     System.err.println("SAN 무브를 해석할 수 없습니다!");
@@ -104,7 +104,7 @@ public class CLIChess {
                         String san = arg[i];
 
                         // San 무브를 무브 데이터로 가져옵니다.
-                        MoveInfo encodedData = chessGame.toLanMoveData(san);
+                        MoveInfo encodedData = chessGame.sanToMoveData(san);
                         chessGame.makeMove(encodedData);
                     }
                 } catch (ConvertMoveException e) {

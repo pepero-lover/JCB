@@ -89,13 +89,13 @@ public class ConvertStringMoveUtils {
      * @param lan string like e2e4 d7c8q
      * @return converted san string (if error occurs, returns null)
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if move is illegal
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     private static TranslateResult parseLan(Chessboard chessboard, String lan){
         // if crazy house
         if (lan.contains("@")) {
-            int encoded_move = parseLanToEncodedMove(chessboard, lan);
+            int encoded_move = lanToMoveData(chessboard, lan);
 
             StringBuilder sb = new StringBuilder(lan);
 
@@ -145,6 +145,16 @@ public class ConvertStringMoveUtils {
         }
 
         int encoded_move = -1;
+        if(!chessboard.isChess960) {
+            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
+            if(pieceType == K && targetType == R) {
+                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            }
+            if(pieceType == k && targetType == r) {
+                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            }
+        }
         for (int i = 0; i < move_count; i++) {
             int move = move_list[i];
             if (EncodeMove.getMoveSource(move) == source_square
@@ -262,24 +272,10 @@ public class ConvertStringMoveUtils {
      * Translate LAN string to SAN data
      *
      * @param chessboard temp chessboard
-     * @param moveInfo move
-     * @return Translated Result
-     *
-     * @throws IllegalMoveException - if move is illegal
-     */
-    private static TranslateResult parseLan(Chessboard chessboard, MoveInfo moveInfo) {
-        int encoded_move = moveInfo.originEncodedData();
-        return parseLan(chessboard, encoded_move);
-    }
-
-    /**
-     * Translate LAN string to SAN data
-     *
-     * @param chessboard temp chessboard
      * @param encoded_move encoded move
      * @return Translated Result
      *
-     * @throws IllegalMoveException - if move is illegal
+     * @throws IllegalMoveException if move is illegal
      */
     private static TranslateResult parseLan(Chessboard chessboard, int encoded_move) {
         // when drop move (crazy house)
@@ -401,7 +397,7 @@ public class ConvertStringMoveUtils {
      * @param lan lan move string
      * @return san move string
      *
-     * @throws ConvertMoveException - if converting move failed
+     * @throws ConvertMoveException if converting move failed
      */
     public static String toSanString(Chessboard chessboard, String lan) {
         return ConvertStringMoveUtils.parseLan(chessboard, lan).moveString;
@@ -414,10 +410,23 @@ public class ConvertStringMoveUtils {
      * @param move move data
      * @return san move string
      *
-     * @throws IllegalMoveException - if move is illegal
+     * @throws IllegalMoveException if move is illegal
      */
     public static String toSanString(Chessboard chessboard, MoveInfo move) {
-        return ConvertStringMoveUtils.parseLan(chessboard, move).moveString;
+        return ConvertStringMoveUtils.parseLan(chessboard, move.originEncodedData()).moveString;
+    }
+
+    /**
+     * Parse move data to san string
+     *
+     * @param chessboard temp chessboard
+     * @param encodedMove encoded move data
+     * @return san move string
+     *
+     * @throws IllegalMoveException if move is illegal
+     */
+    public static String toSanString(Chessboard chessboard, int encodedMove) {
+        return ConvertStringMoveUtils.parseLan(chessboard, encodedMove).moveString;
     }
 
     /**
@@ -427,10 +436,10 @@ public class ConvertStringMoveUtils {
      * @param encodedMoves encoded moves
      * @return san move string
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if move is illegal
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
-    public static String translateEncodedMoveToSan(Chessboard chessboard, int[] encodedMoves) {
+    public static String parseEncodedMoveToSan(Chessboard chessboard, int[] encodedMoves) {
         chessboard = new Chessboard(chessboard);
 
         StringBuilder sanSequence = new StringBuilder();
@@ -453,10 +462,10 @@ public class ConvertStringMoveUtils {
      * @param lanSequence lan string
      * @return translated san sequence
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if move is illegal
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
-    public static String translateLanSequence(Chessboard chessboard, String lanSequence){
+    public static String parseLanSequenceToSan(Chessboard chessboard, String lanSequence){
         chessboard = new Chessboard(chessboard);
 
         if(lanSequence.trim().isEmpty()) return "";
@@ -484,10 +493,10 @@ public class ConvertStringMoveUtils {
      * @param lan LAN move
      * @return Parsed LAN move to encoded move
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if move is illegal
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
-    public static int parseLanToEncodedMove(Chessboard chessboard, String lan){
+    public static int lanToMoveData(Chessboard chessboard, String lan){
         // check crazy house
         if (lan.contains("@")) {
             String[] parts = lan.split("@");
@@ -558,8 +567,8 @@ public class ConvertStringMoveUtils {
      * @param san SAN move
      * @return Translated Result
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if illegal move
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if illegal move
      */
     private static TranslateResult parseSan(Chessboard chessboard, String san) {
         int source_square = -1;
@@ -724,7 +733,7 @@ public class ConvertStringMoveUtils {
      * @param san san move
      * @return lan string
      *
-     * @throws ConvertMoveException - if converting move failed
+     * @throws ConvertMoveException if converting move failed
      */
     public static String toLanString(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveString;
@@ -737,7 +746,8 @@ public class ConvertStringMoveUtils {
      * @param san san move
      * @return move data
      *
-     * @throws ConvertMoveException - if converting move failed
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public static int sanToMoveData(Chessboard chessboard, String san) {
         return parseSan(chessboard, san).moveData;
@@ -750,10 +760,10 @@ public class ConvertStringMoveUtils {
      * @param sanSequence san string (like e4 e5 Nf3)
      * @return translated lan sequence
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if move is illegal
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
-    public static String translateSanSequence(Chessboard chessboard, String sanSequence) {
+    public static String parseSanSequenceToLan(Chessboard chessboard, String sanSequence) {
         chessboard = new Chessboard(chessboard);
 
         if(sanSequence.trim().isEmpty()) return "";
@@ -781,8 +791,8 @@ public class ConvertStringMoveUtils {
      * @param promotion_type promotion type move data
      * @return Parsed encoded move
      *
-     * @throws ConvertMoveException - if converting move failed
-     * @throws IllegalMoveException - if illegal move
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if illegal move
      */
     public static int parseMoveDataToEncodedMove(Chessboard chessboard, int source_square, int target_square,
                                                  int promotion_type){

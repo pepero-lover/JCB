@@ -382,18 +382,39 @@ public class ChessGame {
     }
 
     /**
-     * Make move on this ChessGame (LAN MOVE)
+     * Make move on this ChessGame
      *
-     * @param moveString move like e2e4, e7e5 (LAN move string)
+     * @param lan move like e2e4, e7e5 (LAN (or UCI) move string)
      *
      * @throws IllegalMoveException - if move is illegal move
      * @throws ConvertMoveException - if move data is not correct
      */
-    public void makeMove(String moveString) {
+    public void makeMove(String lan) {
         writeLock.lock();
         try {
-            int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
-            internalMakeMove(encodedMove, moveString);
+            int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
+            internalMakeMove(encodedMove, lan);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Make a move on this ChessGame and return converted san move
+     *
+     * @param lan move like e2e4, e7e5 (LAN (or UCI) move string)
+     * @return converted san move
+     *
+     * @throws IllegalMoveException - if move is illegal move
+     * @throws ConvertMoveException - if move data is not correct
+     */
+    public String makeMoveReturningSan(String lan) {
+        writeLock.lock();
+        try {
+            int encodedMove = ConvertStringMoveUtils.lanToMoveData(chessboard, lan);
+            String san = ConvertStringMoveUtils.toSanString(chessboard, encodedMove);
+            internalMakeMoveValidated(encodedMove);
+            return san;
         } finally {
             writeLock.unlock();
         }
@@ -582,7 +603,7 @@ public class ChessGame {
      * @param moveString lan move string
      */
     public void makeMoveRaw(String moveString) {
-        int encodedMove = ConvertStringMoveUtils.parseLanToEncodedMove(this.chessboard, moveString);
+        int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, moveString);
         internalMakeMoveRaw(encodedMove);
     }
 
@@ -1838,11 +1859,34 @@ public class ChessGame {
      *
      * @param lanMove LAN move
      * @return converted SAN move
+     *
+     * @throws ConvertMoveException when converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public String toSan(String lanMove){
         readLock.lock();
         try {
-            return ConvertStringMoveUtils.translateLanSequence(this.chessboard, lanMove).trim();
+            return ConvertStringMoveUtils.parseLanSequenceToSan(this.chessboard, lanMove).trim();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Convert move data to SAN (like e4 e5 Nf3)
+     *
+     * @param moveData moves data
+     * @return converted SAN move
+     */
+    public String toSan(List<MoveInfo> moveData){
+        readLock.lock();
+        try {
+            int[] encodedMoves = moveData.stream()
+                    .mapToInt(MoveInfo::originEncodedData)
+                    .toArray();
+
+            return ConvertStringMoveUtils.parseEncodedMoveToSan(this.chessboard,
+                    encodedMoves).trim();
         } finally {
             readLock.unlock();
         }
@@ -1854,15 +1898,11 @@ public class ChessGame {
      * @param moveData move data
      * @return converted SAN move
      */
-    public String toSan(List<MoveInfo> moveData){
+    public String toSan(MoveInfo moveData){
         readLock.lock();
         try {
-            int[] encodedMoves = moveData.stream()
-                    .mapToInt(MoveInfo::originEncodedData)
-                    .toArray();
-
-            return ConvertStringMoveUtils.translateEncodedMoveToSan(this.chessboard,
-                    encodedMoves).trim();
+            return ConvertStringMoveUtils.toSanString(this.chessboard,
+                    moveData.originEncodedData()).trim();
         } finally {
             readLock.unlock();
         }
@@ -1877,8 +1917,24 @@ public class ChessGame {
     public String toSan(int[] encodedMoves) {
         readLock.lock();
         try {
-            return ConvertStringMoveUtils.translateEncodedMoveToSan(this.chessboard,
+            return ConvertStringMoveUtils.parseEncodedMoveToSan(this.chessboard,
                     encodedMoves).trim();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Convert move data to SAN (like e4 e5 Nf3)
+     *
+     * @param encoded_move encoded move data
+     * @return converted SAN move
+     */
+    public String toSan(int encoded_move){
+        readLock.lock();
+        try {
+            return ConvertStringMoveUtils.toSanString(this.chessboard,
+                    encoded_move).trim();
         } finally {
             readLock.unlock();
         }
@@ -1905,12 +1961,29 @@ public class ChessGame {
      * @param san SAN move
      * @return Translated move data result
      */
-    public MoveInfo toLanMoveData(String san) {
+    public MoveInfo sanToMoveData(String san) {
         Chessboard tempBoard;
         readLock.lock();
         try {
             tempBoard = new Chessboard(this.chessboard);
             return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(tempBoard, san));
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Translate LAN string to MoveInfo
+     *
+     * @param lan LAN move
+     * @return Translated move data result
+     */
+    public MoveInfo lanToMoveData(String lan) {
+        Chessboard tempBoard;
+        readLock.lock();
+        try {
+            tempBoard = new Chessboard(this.chessboard);
+            return new MoveInfo(ConvertStringMoveUtils.lanToMoveData(tempBoard, lan));
         } finally {
             readLock.unlock();
         }
@@ -2549,7 +2622,7 @@ public class ChessGame {
             long resultHours = seconds / 3600;
             long resultMinutes = (seconds % 3600) / 60;
             long resultSeconds = seconds % 60;
-            long decimalPoint = milliseconds % 1000 / 100;
+            long decimalPoint = milliseconds % 1000 / 10;
 
             StringBuilder sb = new StringBuilder(8);
             sb.append(resultHours).append(':');
