@@ -3,6 +3,9 @@ package com.pepero.jcb.constant;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Encoded Pieces constant for bitboard
+ */
 public class EncodedPieces {
     // white pieces
     public static final int P = 0; // white pawn

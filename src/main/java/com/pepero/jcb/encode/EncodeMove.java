@@ -2,13 +2,20 @@ package com.pepero.jcb.encode;
 
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.EncodedPieces;
-import com.pepero.jcb.core.ChessboardUtils;
+import com.pepero.jcb.core.Chessboard;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
 
+/**
+ * Encode move data to just one 32 bits integer data <br>
+ * You can get this move data on {@link com.pepero.jcb.core.MoveGenerator#generateMoves(Chessboard, int[])} <p>
+ *
+ * The encoded move data stores source square, target square, promotion piece, moved piece, etc. <p>
+ * if you want to learn more about this, check this class's commentary.
+ */
 public class EncodeMove {
     /*
 
@@ -75,7 +82,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get source square
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return source square
      */
     public static int getMoveSource(int move){
@@ -86,7 +93,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get target square
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return target square
      */
     public static int getMoveTarget(int move){
@@ -101,7 +108,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get piece type
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return piece type
      */
     public static int getMovePiece(int move){
@@ -110,7 +117,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get promoted piece type
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return promoted piece type
      */
     public static int getMovePromoted(int move){
@@ -119,7 +126,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get capture flag
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return capture flag
      */
     public static boolean getMoveCapture(int move){
@@ -128,7 +135,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get double pawn push flag
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return  double push flag
      */
     public static boolean getMoveDouble(int move){
@@ -137,7 +144,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get enpassant flag
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return enpassant flag
      */
     public static boolean getMoveEnpassant(int move){
@@ -146,7 +153,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get castling flag
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return castling flag
      */
     public static boolean getMoveCastling(int move){
@@ -155,7 +162,7 @@ public class EncodeMove {
 
     /**
      * Extract encoded move and get drop flag
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return move drop flag
      */
     public static boolean getMoveDrop(int move){
@@ -165,7 +172,7 @@ public class EncodeMove {
     /**
      * Get encoded move string
      *
-     * @param move encoded move (that can be generated on encodeMove() method)
+     * @param move encoded move (which can be generated on encodeMove() method)
      * @return encoded move string
      */
     public static String moveToString(int move) {

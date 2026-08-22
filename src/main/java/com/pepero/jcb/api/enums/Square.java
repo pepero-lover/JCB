@@ -2,6 +2,12 @@ package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.SquareConvertException;
 
+/**
+ * Chess board square data <p>
+ *
+ * The {@link com.pepero.jcb.core.Chessboard} doesn't use this Square class but {@link com.pepero.jcb.constant.BoardSquares} <p>
+ * but {@link com.pepero.jcb.api.ChessGame} uses this Square class
+ */
 public enum Square {
     a1, b1, c1, d1, e1, f1, g1, h1,
     a2, b2, c2, d2, e2, f2, g2, h2,

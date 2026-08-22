@@ -9,6 +9,7 @@ import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
+import com.pepero.jcb.bitboard.Attacks;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.CastlingRights;
@@ -29,6 +30,9 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 import static com.pepero.jcb.core.MoveGenerator.*;
 
+/**
+ * Chess board class storing tree history data, board state, etc.
+ */
 public class ChessGame {
     // start position constant
     public static final String START_POSITION = Chessboard.start_position;
@@ -48,38 +52,100 @@ public class ChessGame {
         PIECE_VALUES[K] = 100; PIECE_VALUES[k] = -100;
     }
 
+    /**
+     * Max PGN Node count
+     */
     private static final int MAX_PGN_NODE_COUNT = 2048;
+
+    /**
+     * Node counter for making node cache long id
+     */
     private final AtomicLong nodeCounter = new AtomicLong(0L);
 
+    /**
+     * Node cache for going instantly to other node (Long id)
+     */
     private final Map<Long, MoveNode> nodeCache = new HashMap<>();
-
-    private boolean autoChangeGameOver = true;
 
     // multi-thread safe lock
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
 
+    /**
+     * Move tree root <p>
+     * ---> [root] - e4 - e5 - Nf3 ( - Nc3 - Nf6 ) - Nc6
+     */
     private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
 
+    /**
+     * Current move node on {@link ChessGame#moveHistoryRoot}
+     */
     private MoveNode currentNode = moveHistoryRoot;
 
 
     // game variables
 
-    private final int[] initialPieceCounts = new int[12];
+    /**
+     * Initial piece count <br>
+     * The piece type index on {@link com.pepero.jcb.constant.EncodedPieces}
+     */
+    private static final int[] initialPieceCounts = new int[]{
+            8, // White pawn
+            2, // White knight
+            2, // White bishop
+            2, // White rook
+            1, // White queen
+            1, // White king
 
+            8, // Black pawn
+            2, // Black knight
+            2, // Black bishop
+            2, // Black rook
+            1, // Black queen
+            1, // Black king
+    };
+
+    /**
+     * PGN headers
+     */
     private final LinkedHashMap<String, String> headers = new LinkedHashMap<>();
 
+    /**
+     * Game result variable <br>
+     * The game result variable types can be found on {@link GameResult} <p>
+     *
+     * This game result variable doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change. but the
+     * {@link #isCheckmate()} changes. <br>
+     * You can get this value on {@link ChessGame#getGameResult()}
+     */
     private GameResult gameResult = GameResult.UNKNOWN;
+
+    /**
+     * Game over reason variable for checking why this game finished <br>
+     * The game over reason types can be found on {@link GameOverReason} <p>
+     *
+     * This game over reason variable doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
+     * {@link #isCheckmate()} changes. <br>
+     * You can get this value on {@link #getGameoverReason()}
+     */
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
 
+    /**
+     * Start position FEN <br>
+     * this position fen can be reset on {@link #fromFEN(String fen)} methods.
+     */
     private String startPositionFEN;
 
+    /**
+     * Chess game listeners
+     */
     private final CopyOnWriteArrayList<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
-     * Initialize position with FEN string
+     * Initialize position with PGN string
      *
      * @param pgn pgn string
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #fromPGN(String, int maxNodesCount)})
@@ -91,7 +157,7 @@ public class ChessGame {
     }
 
     /**
-     * Initialize position with FEN string
+     * Initialize position with PGN string
      *
      * @param pgn pgn string
      * @param maxNodesCount max nodes count
@@ -108,9 +174,10 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      *
-     * @throws FENConvertException - if converting fen string failed
+     * @throws FENConvertException if converting fen string failed
      */
     public static ChessGame fromFEN(String fen, GameVariants gameVariants) {
         return new ChessGame(fen, false, gameVariants);
@@ -120,22 +187,11 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param isChess960 is Chess 960 variant
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
      *
-     * @throws FENConvertException - if converting fen string failed
-     */
-    public static ChessGame fromFEN(String fen, boolean isChess960, GameVariants gameVariants) {
-        return new ChessGame(fen, isChess960, gameVariants);
-    }
-
-    /**
-     * Initialize position with FEN string
-     *
-     * @param fen fen string
-     * @param isChess960 is Chess 960 variant
-     *
-     * @throws FENConvertException - if converting fen string failed
+     * @throws FENConvertException if converting fen string failed
      */
     public static ChessGame fromFEN(String fen, boolean isChess960) {
         return new ChessGame(fen, isChess960, GameVariants.STANDARD);
@@ -145,51 +201,81 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      *
-     * @throws FENConvertException - if converting fen string failed
+     * @throws FENConvertException if converting fen string failed
+     */
+    public static ChessGame fromFEN(String fen, boolean isChess960, GameVariants gameVariants) {
+        return new ChessGame(fen, isChess960, gameVariants);
+    }
+
+    /**
+     * Initialize position with FEN string
+     *
+     * @param fen fen string
+     *
+     * @throws FENConvertException if converting fen string failed
      */
     public static ChessGame fromFEN(String fen) {
         return fromFEN(fen, GameVariants.STANDARD);
     }
 
     /**
-     * Initialize position to start position
+     * Initialize position to start position <br>
+     * Note that the start position constant on {@link #START_POSITION}
+     * or if you want to get other start position fen like {@link Chessboard#racing_kings_start_position},
+     * go to {@link Chessboard}
      */
     public static ChessGame startPosition() {
         return new ChessGame(false, GameVariants.STANDARD);
     }
 
     /**
-     * Initialize position to start position
+     * Initialize position to start position  <br>
+     * Note that the start position constant on {@link #START_POSITION}
+     * or if you want to get other start position fen like {@link Chessboard#racing_kings_start_position},
+     * go to {@link Chessboard}
      *
-     * @param isChess960 is Chess 960 variant
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
      */
     public static ChessGame startPosition(boolean isChess960) {
         return new ChessGame(isChess960, GameVariants.STANDARD);
     }
 
     /**
-     * Initialize position to start position
+     * Initialize position to start position <br>
+     * this method automatically set the right start position for <b>gameVariants</b>
      *
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      */
     public static ChessGame startPosition(GameVariants gameVariants) {
         return new ChessGame(false, gameVariants);
     }
 
     /**
-     * Initialize position to start position
+     * Initialize position to start position <br>
+     * this method automatically set the right start position for <b>gameVariants</b>
      *
-     * @param isChess960 is Chess 960 variant
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      */
     public static ChessGame startPosition(boolean isChess960, GameVariants gameVariants) {
         return new ChessGame(isChess960, gameVariants);
     }
 
     /**
-     * Lightweight copy constructor
-     * Warning : This doesn't copy event listener and history tree but the position of this ChessGame
+     * Lightweight copy constructor <br>
+     * <b>Warning : This doesn't copy event listener and history tree but the position of this ChessGame</b>
      *
      * @param other ChessGame class to copy
      */
@@ -201,10 +287,13 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param isChess960 is Chess 960 variant
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      *
-     * @throws FENConvertException - if converting fen string failed
+     * @throws FENConvertException if converting fen string failed
      */
     private ChessGame(String fen, boolean isChess960, GameVariants gameVariants) {
         FENValidator.validateString(fen, isChess960, gameVariants);
@@ -224,15 +313,17 @@ public class ChessGame {
         FENValidator.validateLogicalState(chessboard, gameVariants);
 
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
-
-        calculateInitialPieces(fen);
     }
 
     /**
-     * Initialize position to start position
+     * Initialize position to start position <br>
+     * this method automatically set the right start position for <b>gameVariants</b>
      *
-     * @param isChess960 is Chess 960 variant
-     * @param gameVariants game variants ( standard, crazyhouse ... )
+     * @param isChess960 is Chess 960 variant <br>
+     *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
+     *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
+     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
+     *                     you can get this variants type on {@link GameVariants}
      */
     private ChessGame(boolean isChess960, GameVariants gameVariants) {
         this.chessboard = new Chessboard();
@@ -245,13 +336,11 @@ public class ChessGame {
         startPositionFEN = startFen;
 
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
-
-        calculateInitialPieces(this.getFEN());
     }
 
     /**
-     * Lightweight copy constructor
-     * Warning : This doesn't copy event listener and history tree but the position of this ChessGame
+     * Lightweight copy constructor <br>
+     * <b>Warning : This doesn't copy event listener and history tree but the position of this ChessGame</b>
      *
      * @param other ChessGame class to copy
      */
@@ -261,9 +350,6 @@ public class ChessGame {
         try {
             this.chessboard = new Chessboard(other.chessboard);
             this.startPositionFEN = other.startPositionFEN;
-            this.autoChangeGameOver = other.autoChangeGameOver;
-
-            System.arraycopy(other.initialPieceCounts, 0, this.initialPieceCounts, 0, 12);
 
             this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
             this.currentNode = this.moveHistoryRoot;
@@ -294,8 +380,16 @@ public class ChessGame {
     }
 
     /**
-     * Get FEN on this ChessGame
-     * @return fen (lichess dialect for 3-check variant)
+     * Get FEN on this ChessGame <p>
+     *
+     * This fen printing dialect default is lichess, <p>
+     *
+     * example : the 3 check lichess dialect fen is <br>
+     * <b>"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 3+3 2 3"</b> <br>
+     * but the 3 check fairy stockfish dialect fen is <br>
+     * <b>"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3 +0+0"</b>
+     *
+     * @return fen (lichess dialect) if you want to change dialect, go to {@link #getFEN(FENDialect)}
      */
     public String getFEN() {
         readLock.lock();
@@ -307,7 +401,12 @@ public class ChessGame {
     }
 
     /**
-     * Get FEN on this ChessGame
+     * Get FEN on this ChessGame with dialect variable <p>
+     *
+     * example : the 3 check lichess dialect fen is <br>
+     * <b>"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 3+3 2 3"</b> <br>
+     * but the 3 check fairy stockfish dialect fen is <br>
+     * <b>"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3 +0+0"</b>
      *
      * @param dialect FEN dialect (affects 3-check variant output format)
      * @return fen
@@ -322,14 +421,17 @@ public class ChessGame {
     }
 
     /**
-     * Make move for internal make move methods
+     * Make move for internal make move methods <p>
      *
-     * @param encodedMove encoded move data
-     * @param originalMoveString original move string (null allowed)
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
+     *
+     * @param originalMoveString original move string for error message (null allowed)
      */
     private void internalMakeMove(int encodedMove, String originalMoveString) {
         MoveInfo moveData;
-        GameResult gameResult = GameResult.UNKNOWN;
+        GameResult gameResult;
         boolean historyChanged;
 
         if (!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
@@ -341,9 +443,7 @@ public class ChessGame {
         moveData = new MoveInfo(encodedMove);
         historyChanged = addMoveHistory(moveData);
 
-        if (autoChangeGameOver) {
-            gameResult = evaluateGameState(currentNode);
-        }
+        gameResult = evaluateGameState(currentNode);
 
         notifyMoveMade(moveData);
         if (gameResult != GameResult.UNKNOWN) {
@@ -356,22 +456,23 @@ public class ChessGame {
 
     /**
      * Make move for internal make move methods <br>
-     * this method doesn't check whether this is a legal move or not
+     * this method doesn't check whether this is a legal move or not <p>
      *
-     * @param encodedMove encoded move data
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
+     *
      */
     private void internalMakeMoveValidated(int encodedMove) {
         MoveInfo moveData;
-        GameResult gameResult = GameResult.UNKNOWN;
+        GameResult gameResult;
         boolean historyChanged;
 
         MoveGenerator.makeMove(this.chessboard, encodedMove);
         moveData = new MoveInfo(encodedMove);
         historyChanged = addMoveHistory(moveData);
 
-        if (autoChangeGameOver) {
-            gameResult = evaluateGameState(currentNode);
-        }
+        gameResult = evaluateGameState(currentNode);
 
         notifyMoveMade(moveData);
         if (gameResult != GameResult.UNKNOWN) {
@@ -387,8 +488,8 @@ public class ChessGame {
      *
      * @param lan move like e2e4, e7e5 (LAN (or UCI) move string)
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move string is incorrect
      */
     public void makeMove(String lan) {
         writeLock.lock();
@@ -403,11 +504,11 @@ public class ChessGame {
     /**
      * Make a move on this ChessGame and return converted san move
      *
-     * @param lan move like e2e4, e7e5 (LAN (or UCI) move string)
+     * @param lan move like "e2e4", "e7e5" (LAN (or UCI) move string)
      * @return converted san move
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move string is incorrect
      */
     public String makeMoveReturningSan(String lan) {
         writeLock.lock();
@@ -426,20 +527,22 @@ public class ChessGame {
      *
      * @param sanString san string
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move string is incorrect
      */
     public void makeMoveSan(String sanString) {
         makeMove(toLanString(sanString));
     }
 
     /**
-     * Make a move on this ChessGame (ENCODED MOVE)
+     * Make a move on this ChessGame (ENCODED MOVE)<p>
      *
-     * @param encodedMove encoded move
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
+     *
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move data is not correct
      */
     public void makeMove(int encodedMove) {
         writeLock.lock();
@@ -455,8 +558,8 @@ public class ChessGame {
      *
      * @param sanString san string like "e4 e5 Nf3 Nc6"
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move data is not correct
      */
     public void makeMoveSanAll(String sanString) {
         writeLock.lock();
@@ -489,8 +592,8 @@ public class ChessGame {
      *
      * @param lanString san string like "e2e4 e7e5 g1f3 b8c6"
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move data is not correct
      */
     public void makeMoveAll(String lanString) {
         writeLock.lock();
@@ -520,9 +623,11 @@ public class ChessGame {
     }
 
     /**
-     * Make move for internal make move raw methods
+     * Make move for internal make move raw methods<p>
      *
-     * @param encodedMove encoded move data
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      */
     private void internalMakeMoveRaw(int encodedMove) {
         writeLock.lock();
@@ -556,15 +661,17 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception
+     * Try to make move on this ChessGame without throwing an exception <p>
      *
-     * @param encoded_move encoded move
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      *
      * @return true if the move was legal and applied, false otherwise
      */
-    public boolean tryMakeMoveRaw(int encoded_move) {
+    public boolean tryMakeMoveRaw(int encodedMove) {
         try {
-            makeMoveRaw(encoded_move);
+            makeMoveRaw(encodedMove);
             return true;
         } catch (IllegalMoveException | ConvertMoveException e) {
             return false;
@@ -610,9 +717,11 @@ public class ChessGame {
 
     /**
      * Make move on this ChessGame <br>
-     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
+     * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b><p>
      *
-     * @param encodedMove encoded move
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      */
     public void makeMoveRaw(int encodedMove) {
         internalMakeMoveRaw(encodedMove);
@@ -630,9 +739,11 @@ public class ChessGame {
 
     /**
      * Unmake move on this ChessGame <br>
-     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b>
+     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b><p>
      *
-     * @param encodedMove encoded move
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      */
     public void unmakeMoveRaw(int encodedMove) {
         writeLock.lock();
@@ -646,12 +757,12 @@ public class ChessGame {
     /**
      * Make move on this ChessGame (Source square, Target square, Promotion Type)
      *
-     * @param sourceSquare Source square (you can make square on BoardSquares.java)
-     * @param targetSquare Target square (you can make square on BoardSquares.java)
+     * @param sourceSquare Source square
+     * @param targetSquare Target square
      * @param promotionType Promotion type like queen, rook, bishop and knight (PieceType.QUEEN, PieceType.ROOK ... )
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move data is not correct
      */
     public void makeMove(Square sourceSquare, Square targetSquare, PieceType promotionType) {
         Objects.requireNonNull(sourceSquare, "The source square can not be null!");
@@ -681,8 +792,8 @@ public class ChessGame {
      * @param sourceSquare Source square (you can make square on BoardSquares.java)
      * @param targetSquare Target square (you can make square on BoardSquares.java)
      *
-     * @throws IllegalMoveException - if move is illegal move
-     * @throws ConvertMoveException - if move data is not correct
+     * @throws IllegalMoveException if move is illegal move
+     * @throws ConvertMoveException if move data is not correct
      */
     public void makeMove(Square sourceSquare, Square targetSquare) {
         makeMove(sourceSquare, targetSquare, PieceType.NONE);
@@ -691,9 +802,9 @@ public class ChessGame {
     /**
      * Make move on this ChessGame (MoveInfo)
      *
-     * @param moveInfo MoveInfo class
+     * @param moveInfo move data
      *
-     * @throws IllegalMoveException - if move is illegal move
+     * @throws IllegalMoveException if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
         writeLock.lock();
@@ -739,9 +850,11 @@ public class ChessGame {
     }
 
     /**
-     * Try to make a move on this ChessGame without throwing an exception (ENCODED MOVE)
+     * Try to make a move on this ChessGame without throwing an exception<p>
      *
-     * @param encodedMove encoded move
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      *
      * @return true if the move was legal and applied, false otherwise
      */
@@ -843,12 +956,11 @@ public class ChessGame {
      *
      * @return unmade move info
      *
-     * @throws EmptyMoveUndoException - if move history is empty and unmake move
-     * @throws MoveNotFoundException - if the current node is not found (Only for variation mode)
+     * @throws EmptyMoveUndoException if move history is empty and unmake move
      */
     public MoveInfo unmakeMove() {
         MoveInfo moveInfo;
-        GameResult gameResult = GameResult.UNKNOWN;
+        GameResult gameResult;
 
         writeLock.lock();
         try {
@@ -859,9 +971,7 @@ public class ChessGame {
 
             MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
 
-            if(autoChangeGameOver) {
-                gameResult = evaluateGameState(currentNode);
-            }
+            gameResult = evaluateGameState(currentNode);
         } finally {
             writeLock.unlock();
         }
@@ -882,7 +992,7 @@ public class ChessGame {
      * Example : <br> e2e4 e7e5 (d7d5) g1f3 and pointer is e2e4
      * and remakeMove(), and pointer is now e7e5. <br>
      *
-     * @throws EmptyMoveRedoException - if redo history is empty and remake move
+     * @throws EmptyMoveRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove() {
         return remakeMove(0);
@@ -899,11 +1009,11 @@ public class ChessGame {
      * and remakeMove(1), and pointer is now d7d5. <br>
      * if remakeMove(0), pointer is now e7e5. <br>
      *
-     * @throws EmptyMoveRedoException - if redo history is empty and remake move
+     * @throws EmptyMoveRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove(int variationIndex) {
         MoveInfo moveInfo;
-        GameResult gameResult = GameResult.UNKNOWN;
+        GameResult gameResult;
 
         writeLock.lock();
         try {
@@ -915,9 +1025,7 @@ public class ChessGame {
 
             MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
 
-            if(autoChangeGameOver) {
-                gameResult = evaluateGameState(currentNode);
-            }
+            gameResult = evaluateGameState(currentNode);
         } finally {
             writeLock.unlock();
         }
@@ -967,7 +1075,7 @@ public class ChessGame {
      *
      * @return whether this position can redo
      *
-     * @throws MoveNotFoundException - if current node (move) not found
+     * @throws MoveNotFoundException if current node (move) not found
      */
     public boolean canRedo(int variationIndex) {
         readLock.lock();
@@ -983,6 +1091,8 @@ public class ChessGame {
      * Go forward on history (mainline)
      *
      * @return forwarded move info (if forwarding move failed, returns null)
+     *
+     * @throws EmptyMoveRedoException if move to go forward not found
      */
     public MoveInfo goForward() {
         if (canRedo()) return remakeMove();
@@ -993,6 +1103,8 @@ public class ChessGame {
      * Go backward on history (mainline)
      *
      * @return undid move info (if undoing move failed, returns null)
+     *
+     * @throws EmptyMoveUndoException if move to go backward not found
      */
     public MoveInfo goBackward() {
         if (canUndo()) return unmakeMove();
@@ -1005,8 +1117,6 @@ public class ChessGame {
      * Example : <br>
      * <b>e2e4 e7e5 g1f3 ( b1c3 <- pointer) b8c6 ) g8f6 </b>
      * and the result is <b>e2e4 e7e5 b1c3</b>
-     *
-     * @return previous moves
      */
     public List<MoveInfo> getMoveHistory() {
         readLock.lock();
@@ -1024,74 +1134,8 @@ public class ChessGame {
         }
     }
 
-
-    /**
-     * Get last move to string squares
-     * <p>
-     * Examples : <br>
-     * the last move is e2e4 and the return is String[]{"e2","e4"}
-     *
-     * @return Get last move (string[])
-     */
-    public String[] getLastMoveSquares() {
-        readLock.lock();
-        try {
-            if(!canUndo()) return new String[0];
-
-            try {
-                MoveInfo lastMove = getLastMove();
-
-                String source = lastMove.sourceSquare().toString().toLowerCase();
-                String target = lastMove.targetSquare().toString().toLowerCase();
-
-                return new String[] { source, target };
-
-            } catch (MoveNotFoundException e) {
-                return new String[0];
-            }
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    public MoveType getLastMoveType() {
-        readLock.lock();
-
-        try {
-            MoveInfo lastMove = getLastMove();
-
-            if(lastMove.capture()) return MoveType.CAPTURE;
-            if(lastMove.castling()) return MoveType.CASTLING;
-            if(lastMove.promotionPiece() != PieceType.NONE) return MoveType.PROMOTION;
-            if(lastMove.enpassant()) return MoveType.ENPASSANT;
-            return MoveType.NORMAL;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
-     * Get the last (previous) move
-     *
-     * @return the last (previous) move
-     *
-     * @throws MoveNotFoundException if the current node is not found (Only for variation mode)
-     */
-    public MoveInfo getLastMove() {
-        readLock.lock();
-        try {
-            if(currentNode == null) throw new MoveNotFoundException();
-
-            return currentNode.moveData;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
     /**
      * Get white turn
-     *
-     * @return white turn
      */
     public boolean getTurn() {
         readLock.lock();
@@ -1107,7 +1151,6 @@ public class ChessGame {
      *
      * @param source source square
      * @param target target square
-     * @return whether this move legal move
      */
     public boolean canDropPiece(Square source, Square target) {
         readLock.lock();
@@ -1161,7 +1204,6 @@ public class ChessGame {
      *
      * @param source source square
      * @param target target square
-     * @return whether this move is a promotion move
      */
     public boolean shouldPromotion(Square source, Square target) {
         readLock.lock();
@@ -1186,40 +1228,10 @@ public class ChessGame {
     }
 
     /**
-     * Init initial piece count
-     *
-     * @param fen this chess game fen
-     */
-    private void calculateInitialPieces(String fen) {
-        int spaceIndex = fen.indexOf(' ');
-        int limit = (spaceIndex != -1) ? spaceIndex : fen.length();
-
-        for (int i = 0; i < limit; i++) {
-            char c = fen.charAt(i);
-            switch (c) {
-                case 'P' -> initialPieceCounts[P]++;
-                case 'N' -> initialPieceCounts[N]++;
-                case 'B' -> initialPieceCounts[B]++;
-                case 'R' -> initialPieceCounts[R]++;
-                case 'Q' -> initialPieceCounts[Q]++;
-                case 'K' -> initialPieceCounts[K]++;
-
-                case 'p' -> initialPieceCounts[p]++;
-                case 'n' -> initialPieceCounts[n]++;
-                case 'b' -> initialPieceCounts[b]++;
-                case 'r' -> initialPieceCounts[r]++;
-                case 'q' -> initialPieceCounts[q]++;
-                case 'k' -> initialPieceCounts[k]++;
-            }
-        }
-    }
-
-    /**
      * Get captured piece <br>
      * You can also get pocket data on CrazyHouse variant
      *
      * @param isWhite if white, returns black captured piece. if black, returns white captured piece.
-     * @return captured piece
      */
     public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) {
         readLock.lock();
@@ -1274,8 +1286,6 @@ public class ChessGame {
 
     /**
      * Get piece score (For GUI showing / material comparison)
-     *
-     * @return piece score
      */
     public int getPieceScore() {
         readLock.lock();
@@ -1310,8 +1320,6 @@ public class ChessGame {
 
     /**
      * Get white pieces count
-     *
-     * @return white pieces count
      */
     public int getWhitePieceCount() {
         return BitBoardUtils.countBits(chessboard.occupancies[white]);
@@ -1319,8 +1327,6 @@ public class ChessGame {
 
     /**
      * Get black pieces count
-     *
-     * @return black pieces count
      */
     public int getBlackPieceCount() {
         return BitBoardUtils.countBits(chessboard.occupancies[black]);
@@ -1328,8 +1334,6 @@ public class ChessGame {
 
     /**
      * Get pieces count
-     *
-     * @return pieces count
      */
     public int getPieceCount() {
         return BitBoardUtils.countBits(chessboard.occupancies[both]);
@@ -1340,7 +1344,6 @@ public class ChessGame {
      * if not found, returns NONE
      *
      * @param square square
-     * @return piece type
      */
     public Piece getPieceOnSquare(Square square){
         readLock.lock();
@@ -1355,8 +1358,6 @@ public class ChessGame {
 
     /**
      * Get legal moves on this chess game
-     *
-     * @return legal moves
      */
     public List<MoveInfo> getLegalMoves() {
         writeLock.lock();
@@ -1378,12 +1379,10 @@ public class ChessGame {
     /**
      * Generate moves only one source square
      * <p>
-     * Example : chessboard = start pos, square = e2, returns e2e3, e2e4
-     *
-     * @return generated move
+     * Example : chessboard = start pos, source = e2, returns e2e3, e2e4
      */
-    public List<MoveInfo> getLegalMovesForSource(Square square) {
-        Objects.requireNonNull(square, "Source Square is null!");
+    public List<MoveInfo> getLegalMovesForSource(Square source) {
+        Objects.requireNonNull(source, "Source Square is null!");
 
         writeLock.lock();
         try {
@@ -1393,7 +1392,7 @@ public class ChessGame {
 
             for (int count = 0; count < move_count; count++){
                 int encodedMove = move_list[count];
-                if(EncodeMove.getMoveSource(encodedMove) != square.getIndex()) continue;
+                if(EncodeMove.getMoveSource(encodedMove) != source.getIndex()) continue;
                 result.add(new MoveInfo(encodedMove));
             }
             return result;
@@ -1405,12 +1404,12 @@ public class ChessGame {
     /**
      * Generate moves only one target square
      * <p>
-     * Example : chessboard = start pos, square = e4, returns e2e3, e2e4
+     * Example : chessboard = start pos, target = e4, returns e2e3, e2e4
      *
      * @return generated move
      */
-    public List<MoveInfo> getLegalMovesForTarget(Square square) {
-        Objects.requireNonNull(square, "Source Square is null!");
+    public List<MoveInfo> getLegalMovesForTarget(Square target) {
+        Objects.requireNonNull(target, "Target Square is null!");
 
         writeLock.lock();
         try {
@@ -1420,7 +1419,7 @@ public class ChessGame {
 
             for (int count = 0; count < move_count; count++){
                 int encodedMove = move_list[count];
-                if(EncodeMove.getMoveTarget(encodedMove) != square.getIndex()) continue;
+                if(EncodeMove.getMoveTarget(encodedMove) != target.getIndex()) continue;
                 result.add(new MoveInfo(encodedMove));
             }
             return result;
@@ -1430,9 +1429,7 @@ public class ChessGame {
     }
 
     /**
-     * Get board state (Map)(square)(piece)
-     *
-     * @return board state (Map)
+     * Get board state Map(square)(piece)
      */
     public Map<Square, Piece> getBoardStateMap() {
         readLock.lock();
@@ -1456,7 +1453,6 @@ public class ChessGame {
      * Get whether this square is empty
      *
      * @param square square
-     * @return whether this square is empty
      */
     public boolean isEmpty(Square square) {
         readLock.lock();
@@ -1469,8 +1465,6 @@ public class ChessGame {
 
     /**
      * Get whether white has king side castling right
-     *
-     * @return whether white has king side castling right
      */
     public boolean hasWhiteKingSideCastling() {
         readLock.lock();
@@ -1483,8 +1477,6 @@ public class ChessGame {
 
     /**
      * Get whether white has queen side castling right
-     *
-     * @return whether white has queen side castling right
      */
     public boolean hasWhiteQueenSideCastling() {
         readLock.lock();
@@ -1497,8 +1489,6 @@ public class ChessGame {
 
     /**
      * Get whether black has king side castling right
-     *
-     * @return whether black has king side castling right
      */
     public boolean hasBlackKingSideCastling() {
         readLock.lock();
@@ -1511,8 +1501,6 @@ public class ChessGame {
 
     /**
      * Get whether black has queen side castling right
-     *
-     * @return whether black has queen side castling right
      */
     public boolean hasBlackQueenSideCastling() {
         readLock.lock();
@@ -1525,8 +1513,6 @@ public class ChessGame {
 
     /**
      * Get whether white has any castling rights
-     *
-     * @return whether white has any castling rights
      */
     public boolean hasWhiteCastling() {
         readLock.lock();
@@ -1539,8 +1525,6 @@ public class ChessGame {
 
     /**
      * Get whether black has any castling rights
-     *
-     * @return whether black has any castling rights
      */
     public boolean hasBlackCastling() {
         readLock.lock();
@@ -1553,8 +1537,6 @@ public class ChessGame {
 
     /**
      * Get whether this position has any castling rights
-     *
-     * @return whether this position has any castling rights
      */
     public boolean hasCastling() {
         readLock.lock();
@@ -1567,8 +1549,6 @@ public class ChessGame {
 
     /**
      * Get castling rights info
-     *
-     * @return castling rights info
      */
     public CastlingRightsInfo getCastlingRights() {
         readLock.lock();
@@ -1586,8 +1566,6 @@ public class ChessGame {
 
     /**
      * Get whether the king is under attack
-     *
-     * @return whether the king is under attack
      */
     public boolean isCheck() {
         readLock.lock();
@@ -1599,31 +1577,52 @@ public class ChessGame {
     }
 
     /**
-     * Get checking piece (max size is 2)
-     *
-     * @return checking piece
+     * Get checking piece (king attacker) <br>
+     * The max size of this return list is 2.
      */
     public List<Square> getChecker() {
         readLock.lock();
         try {
-            int checkers = ChessboardUtils.getChecker(chessboard);
-            int firstAttacker = checkers & 0x3f;
-            int secondAttacker = (checkers >> 6) & 0x3f;
-            boolean hasFirst = ((checkers >> 12) & 1) == 1;
-            boolean hasSecond = ((checkers >> 13) & 1) == 1;
+            List<Square> checker = new ArrayList<>();
 
-            if(hasSecond) {
-                return List.of(
-                        Square.fromIndex(firstAttacker),
-                        Square.fromIndex(secondAttacker)
-                );
-            } else if(hasFirst) {
-                return List.of(
-                        Square.fromIndex(firstAttacker)
-                );
+            int oppSide = chessboard.side ^ 1;
+
+            int kingSquare = BitBoardUtils.getLS1BIndex(
+                    chessboard.side == white ? chessboard.bitboards[K] : chessboard.bitboards[k]);
+
+            // get all checker
+            long checkersMask = 0L;
+
+            // pawn
+            if (oppSide == white)  {
+                checkersMask |= Attacks.pawn_attacks[black][kingSquare] & chessboard.bitboards[P];
             } else {
-                return List.of();
+                checkersMask |= Attacks.pawn_attacks[white][kingSquare] & chessboard.bitboards[p];
             }
+
+            // knight
+            checkersMask |= Attacks.knight_attacks[kingSquare] &
+                    (oppSide == white ? chessboard.bitboards[N] : chessboard.bitboards[n]);
+
+            // bishop
+            checkersMask |= Attacks.getBishopAttacks(kingSquare, chessboard.occupancies[both]) &
+                    (oppSide == white ? (chessboard.bitboards[B] | chessboard.bitboards[Q]) :
+                            (chessboard.bitboards[b] | chessboard.bitboards[q]));
+
+            // rook
+            checkersMask |= Attacks.getRookAttacks(kingSquare, chessboard.occupancies[both]) &
+                    (oppSide == white ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) :
+                            (chessboard.bitboards[r] | chessboard.bitboards[q]));
+
+            // queen is already contained
+
+            while (checkersMask != 0L) {
+                int square = BitBoardUtils.getLS1BIndex(checkersMask);
+                checker.add(Square.fromIndex(square));
+                checkersMask &= 1L << square;
+            }
+
+            return checker;
         } finally {
             readLock.unlock();
         }
@@ -1648,8 +1647,6 @@ public class ChessGame {
 
     /**
      * Get whether this position is checkmate
-     *
-     * @return whether this position is checkmate
      */
     public boolean isCheckmate() {
         readLock.lock();
@@ -1662,8 +1659,6 @@ public class ChessGame {
 
     /**
      * Get whether this position is stalemate
-     *
-     * @return whether this position is stalemate
      */
     public boolean isStalemate() {
         readLock.lock();
@@ -1677,7 +1672,6 @@ public class ChessGame {
     /**
      * Get whether white or black have been checked three times
      *
-     * @return whether white or black have been checked three times
      * @throws VariantNotMatchException if this ChessGame isn't Three check variant
      */
     public boolean isThreeChecked() {
@@ -1699,7 +1693,6 @@ public class ChessGame {
     /**
      * Get whether this position's white/black king gone to the hill
      *
-     * @return whether this position's white/black king gone to the hill
      * @throws VariantNotMatchException if this ChessGame isn't King of the hill variant
      */
     public boolean isKingGoneToHill() {
@@ -1718,7 +1711,6 @@ public class ChessGame {
     /**
      * Get whether this horde position's white pieces is all gone (black won)
      *
-     * @return whether this horde position's white pieces is all gone
      * @throws VariantNotMatchException if this ChessGame isn't Horde variant
      */
     public boolean isHordePiecesGone() {
@@ -1737,7 +1729,6 @@ public class ChessGame {
     /**
      * Get whether this antichess position overed
      *
-     * @return whether this antichess position overed
      * @throws VariantNotMatchException if this ChessGame isn't AntiChess variant
      */
     public boolean isAntiChessOver() {
@@ -1756,7 +1747,7 @@ public class ChessGame {
     /**
      * Get whether this atomic position overed
      *
-     * @return whether this atomic position overed
+     * @throws VariantNotMatchException if this ChessGame isn't Atomic variant
      */
     public boolean isAtomicOver() {
         if(chessboard.gameVariants != GameVariants.ATOMIC) throw new VariantNotMatchException(
@@ -1774,7 +1765,6 @@ public class ChessGame {
     /**
      * Get whether racing kings is over (on racing kings variant)
      *
-     * @return whether racing kings is over
      * @throws VariantNotMatchException if this ChessGame isn't racing kings variant
      */
     public boolean isKingRaceOver() {
@@ -1792,8 +1782,6 @@ public class ChessGame {
 
     /**
      * Get whether this position allows claiming a draw by threefold repetition
-     *
-     * @return whether threefold repetition draw can be claimed
      */
     public boolean canClaimThreefoldRepetition() {
         readLock.lock();
@@ -1806,8 +1794,6 @@ public class ChessGame {
 
     /**
      * Get whether this position is fivefold repetition
-     *
-     * @return whether this position is fivefold repetition
      */
     public boolean isFivefoldRepetition() {
         readLock.lock();
@@ -1819,6 +1805,9 @@ public class ChessGame {
         }
     }
 
+    /**
+     * Get whether this position is insufficient material
+     */
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
@@ -1869,8 +1858,6 @@ public class ChessGame {
 
     /**
      * Get whether this position is seventy-five moves draw
-     *
-     * @return whether this position is seventy-five moves draw
      */
     public boolean isSeventyFiveMoves() {
         readLock.lock();
@@ -1883,8 +1870,6 @@ public class ChessGame {
 
     /**
      * Get whether this position can be claimed fifty moves draw
-     *
-     * @return whether this position can be claimed fifty moves draw
      */
     public boolean canClaimFiftyMoves() {
         readLock.lock();
@@ -1897,8 +1882,6 @@ public class ChessGame {
 
     /**
      * Get whether this position can be claimed draw
-     *
-     * @return whether this position can be claimed draw
      */
     public boolean canClaimDraw() {
         readLock.lock();
@@ -1913,8 +1896,6 @@ public class ChessGame {
     /**
      * Get claimable draw reason <br>
      * like 50 moves draw claim, threefold draw claim
-     *
-     * @return claimable draw reason
      */
     public GameOverReason getClaimableDrawReason() {
         readLock.lock();
@@ -1992,7 +1973,6 @@ public class ChessGame {
      * <br>
      * this includes claimable draws like fifty moves draw claim, threefold repetition draw claim.
      *
-     *
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
     public GameOverReason isGameOver() {
@@ -2056,7 +2036,10 @@ public class ChessGame {
     /**
      * Convert encoded move data to SAN (like e4 e5 Nf3)
      *
-     * @param encodedMoves encoded moves data
+     * @param encodedMoves encoded moves data<p>
+     *
+     * if you want to know what's the <b>encodedMoves</b>, go to {@link EncodeMove}
+     *
      * @return converted SAN move
      */
     public String toSan(int[] encodedMoves) {
@@ -2070,16 +2053,19 @@ public class ChessGame {
     }
 
     /**
-     * Convert move data to SAN (like e4 e5 Nf3)
+     * Convert move data to SAN (like e4 e5 Nf3) <p>
      *
-     * @param encoded_move encoded move data
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
+     *
      * @return converted SAN move
      */
-    public String toSan(int encoded_move){
+    public String toSan(int encodedMove){
         readLock.lock();
         try {
             return ConvertStringMoveUtils.toSanString(this.chessboard,
-                    encoded_move).trim();
+                    encodedMove).trim();
         } finally {
             readLock.unlock();
         }
@@ -2189,8 +2175,6 @@ public class ChessGame {
 
     /**
      * Get 'full move' on this ChessGame
-     *
-     * @return full move
      */
     public int getFullMove() {
         readLock.lock();
@@ -2203,8 +2187,6 @@ public class ChessGame {
 
     /**
      * Get 'half move' on this ChessGame
-     *
-     * @return half move
      */
     public int getHalfMove() {
         readLock.lock();
@@ -2243,9 +2225,11 @@ public class ChessGame {
 
 
     /**
-     * Get game result
+     * Get game result <p>
      *
-     * @return game result
+     * This game result doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change. but the
+     * {@link #isCheckmate()} changes. <br>
      */
     public GameResult getGameResult() {
         writeLock.lock();
@@ -2260,9 +2244,11 @@ public class ChessGame {
     }
 
     /**
-     * Get game over reason
+     * Game over reason variable for checking why this game finished <p>
      *
-     * @return game over reason
+     * This game over reason variable doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
+     * {@link #isCheckmate()} changes. <br>
      */
     public GameOverReason getGameoverReason() {
         writeLock.lock();
@@ -2277,7 +2263,7 @@ public class ChessGame {
     }
 
     /**
-     * When one of player have resigned
+     * When one of player has resigned
      *
      * @param isWhiteResigning is player white
      */
@@ -2313,7 +2299,7 @@ public class ChessGame {
     }
 
     /**
-     * When server have to force this game end
+     * When have to force this game end
      *
      * @param result game result
      * @param reason game over reason
@@ -2328,7 +2314,7 @@ public class ChessGame {
      * @param moveData move info (data)
      * @return whether history changed
      *
-     * @throws MoveNotFoundException - could not find the node
+     * @throws MoveNotFoundException could not find the node
      */
     private boolean addMoveHistory(MoveInfo moveData) {
         for(int i = 0; i < currentNode.children.size(); i++) {
@@ -2400,6 +2386,8 @@ public class ChessGame {
             parent.children.remove(targetNode);
 
             removeNodeFromCache(targetNode);
+
+            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
@@ -2435,6 +2423,8 @@ public class ChessGame {
 
                 shouldNotifyHistory = true;
             }
+
+            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
@@ -2443,9 +2433,7 @@ public class ChessGame {
     }
 
     /**
-     * Get Root node on move history <br>
-     *
-     * @return Root node
+     * Get Root node on move history
      */
     public MoveNodeDTO getRootNode() {
         readLock.lock();
@@ -2457,17 +2445,24 @@ public class ChessGame {
     }
 
     /**
-     * Get current node's UUID
-     * When current node is null, returns -1
-     *
-     * @return current node's uuid string
+     * Get current node's long id
      */
     public long getCurrentNodeId() {
         readLock.lock();
         try {
-            if (currentNode == null) return -1;
-
             return currentNode.id;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get current move info
+     */
+    public MoveInfo getCurrentMoveInfo() {
+        readLock.lock();
+        try {
+            return new MoveInfo(currentNode.moveData.originEncodedData());
         } finally {
             readLock.unlock();
         }
@@ -2476,12 +2471,12 @@ public class ChessGame {
     /**
      * Move position to node (nodeId)
      *
-     * @param nodeId node uuid
+     * @param nodeId node id
      */
     public void jumpToNode(long nodeId) {
         writeLock.lock();
 
-        GameResult gameResult = GameResult.UNKNOWN;
+        GameResult gameResult;
 
         try {
             // get node
@@ -2508,9 +2503,7 @@ public class ChessGame {
             }
 
             this.currentNode = targetNode;
-            if(autoChangeGameOver) {
-                gameResult = evaluateGameState(currentNode);
-            }
+            gameResult = evaluateGameState(currentNode);
         } finally {
             writeLock.unlock();
         }
@@ -2530,7 +2523,7 @@ public class ChessGame {
      *
      * @param targetPly ply
      *
-     * @throws MoveNotFoundException - if move is not found or targetPly is out of bounds
+     * @throws MoveNotFoundException if move is not found or targetPly is out of bounds
      */
     public void jumpToMainlinePly(int targetPly) {
         writeLock.lock();
@@ -2633,27 +2626,10 @@ public class ChessGame {
     }
 
     /**
-     * Change flag changing game over state when moved / unmoved. <br>
-     * if you want efficiency, disable this to get more NPS. but you can't use Listener on onGameOver method. <br>
-     *
-     * @param autoChangeGameOver en/disable flag changing game over state when moved
-     */
-    public void setAutoChangingGameOver(boolean autoChangeGameOver) {
-        writeLock.lock();
-        try {
-            this.autoChangeGameOver = autoChangeGameOver;
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
      * Update this node's game over state and return result.
      * if this node's game over state is already there, just return cached value.
      *
      * @param node node
-     *
-     * @return Game result
      */
     private GameResult evaluateGameState(MoveNode node) {
         // when resign / agreement draw
@@ -2945,8 +2921,6 @@ public class ChessGame {
     /**
      * Generate new MoveNodeDTO with san move data
      *
-     * @return new MoveNodeDTO with san move data
-     *
      * @throws NodesOverflowException if move count is too large
      */
     public MoveNodeDTO getRootNodeWithSan() {
@@ -2966,7 +2940,6 @@ public class ChessGame {
      * Generate new MoveNodeDTO with san move data
      *
      * @param maxNodesCount max nodes count
-     * @return new MoveNodeDTO with san move data
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
@@ -2989,7 +2962,6 @@ public class ChessGame {
      * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
      * @param maxNodes max nodes count
-     * @return pgn string
      *
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
@@ -3013,8 +2985,6 @@ public class ChessGame {
      * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
      * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
-     * @return pgn string
-     *
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
      */
     public String getPGN() {
@@ -3029,7 +2999,6 @@ public class ChessGame {
      * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
      * @param maxNodes max nodes count
-     * @return pgn string
      *
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
@@ -3054,8 +3023,6 @@ public class ChessGame {
      * Warning : if this ChessGame is chess 960 and gameVariant is not standard, it's going to be overwritten. <br>
      * chess 960 = true, gameVariant = Crazyhouse, PGN header is [Variant "Crazyhouse"].
      *
-     * @return pgn string
-     *
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getPGN(int maxNodes)})
      */
     public String getPurePGN() {
@@ -3068,8 +3035,6 @@ public class ChessGame {
      * Example : <br>
      * e4 e5 Nf3 Nc6 (Nf6 Nxe5) 'Bc4' <br>
      * and the result is Bc4
-     *
-     * @return last main line node
      */
     private MoveNode getLastMainlineNode() {
         readLock.lock();
@@ -3152,9 +3117,8 @@ public class ChessGame {
     }
 
     /**
-     * Get game start position fen
-     *
-     * @return game start position fen
+     * Get game start position fen <br>
+     * if this ChessGame generated with {@link #fromFEN(String)} methods, the result is the reset fen string
      */
     public String getStartPositionFEN() {
         readLock.lock();
@@ -3167,8 +3131,6 @@ public class ChessGame {
 
     /**
      * Get whether this ChessGame is chess960
-     *
-     * @return whether this ChessGame is chess960
      */
     public boolean isChess960() {
         readLock.lock();
@@ -3181,8 +3143,6 @@ public class ChessGame {
 
     /**
      * Get game variants
-     *
-     * @return game variants
      */
     public GameVariants getGameVariants() {
         readLock.lock();
@@ -3195,8 +3155,6 @@ public class ChessGame {
 
     /**
      * Add chess game listener
-     *
-     * @param listener listener
      */
     public void addChessGameListener(ChessGameListener listener) {
         listeners.addIfAbsent(listener);
@@ -3204,8 +3162,6 @@ public class ChessGame {
 
     /**
      * Remove chess game listener
-     *
-     * @param listener listener
      */
     public void removeChessGameListener(ChessGameListener listener) {
         listeners.remove(listener);
@@ -3214,7 +3170,7 @@ public class ChessGame {
     /**
      * Notify listeners when move made
      *
-     * @param moveInfo move data
+     * @param moveInfo maked move data
      */
     private void notifyMoveMade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
@@ -3247,7 +3203,7 @@ public class ChessGame {
     /**
      * Notify listeners when position jumped to node (pgn move)
      *
-     * @param targetFen jumped position fen
+     * @param targetFen jumped to position fen
      */
     private void notifyPositionJumped(String targetFen) {
         for (ChessGameListener listener : listeners) {
@@ -3287,8 +3243,6 @@ public class ChessGame {
 
     /**
      * Get total nodes count
-     *
-     * @return nodes count
      */
     public int getTotalNodeCount() {
         readLock.lock();
@@ -3301,8 +3255,6 @@ public class ChessGame {
 
     /**
      * Get current chess board copy (snapshot)
-     *
-     * @return current chess board copy
      */
     Chessboard getBoardSnapshot() {
         readLock.lock();
@@ -3315,8 +3267,6 @@ public class ChessGame {
 
     /**
      * Get this board to ascii
-     *
-     * @return Ascii board
      */
     public String toAscii() {
         readLock.lock();
@@ -3444,8 +3394,6 @@ public class ChessGame {
 
     /**
      * Return String FEN
-     *
-     * @return fen
      */
     @Override
     public String toString() {
@@ -3454,8 +3402,6 @@ public class ChessGame {
 
     /**
      * Get whether this Chessboard and obj is equal "position"
-     *
-     * @return whether this Chessboard and obj is equal "position"
      */
     @Override
     public boolean equals(Object obj) {
@@ -3465,9 +3411,7 @@ public class ChessGame {
     }
 
     /**
-     * Hash key for deciding equal position
-     *
-     * @return hash key
+     * Get hash key for deciding equal position
      */
     @Override
     public int hashCode() {

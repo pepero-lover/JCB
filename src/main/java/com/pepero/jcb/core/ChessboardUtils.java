@@ -368,7 +368,7 @@ public class ChessboardUtils {
                 chessboard.side == white ?
                         chessboard.bitboards[K] : chessboard.bitboards[k]);
 
-        return isSquareAttacked(chessboard, kingPos, chessboard.side == white ? black : white);
+        return isSquareAttacked(chessboard, kingPos, chessboard.side ^ 1);
     }
 
     /**
@@ -399,7 +399,7 @@ public class ChessboardUtils {
     public static int getChecker(Chessboard chessboard, int kingSquare) {
         int firstAttacker = -1;
         int secondAttacker = -1;
-        int oppSide = chessboard.side == white ? black : white;
+        int oppSide = chessboard.side ^ 1;
 
         // get all checker
         long checkersMask = 0L;

@@ -4,7 +4,6 @@ import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
-import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
@@ -634,5 +633,18 @@ public class ChessGameTest {
         chessGame.makeMoveSan("Qxg5#");
         assertEquals(GameResult.BLACK_WON, chessGame.getGameResult());
         assertEquals(GameOverReason.HORDE, chessGame.isGameOver());
+    }
+
+    @Test
+    @DisplayName("게임이 이미 끝났다면 되돌려도 결과는 같아야 한다")
+    void gameResult() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
+        chessGame.goBackward();
+        chessGame.goBackward();
+        chessGame.goForward();
+        chessGame.makeMoveSan("Qf3");
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameoverReason());
     }
 }

@@ -1,7 +1,9 @@
 package com.pepero.jcb.constant;
 
-import com.pepero.jcb.bitboard.BitBoardUtils;
-
+/**
+ * Board square constants <br>
+ * The square data is integer and starting square is 'a1'
+ */
 public class BoardSquares {
     // For human reading board numbers (a1 = 0, LERF: Little-Endian Rank-File)
     public static final int a1 = 0;     public static final int b1 = 1;     public static final int c1 = 2;     public static final int d1 = 3;     public static final int e1 = 4;     public static final int f1 = 5;     public static final int g1 = 6;     public static final int h1 = 7;
@@ -49,6 +51,12 @@ public class BoardSquares {
             "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
     };
 
+    /**
+     * Convert coordinate string square to integer square data
+     *
+     * @param coordinate coordinate square like 'e1', 'd6'
+     * @return converted integer square data
+     */
     public static int coordinates_to_square(String coordinate) {
         if (coordinate == null || coordinate.length() != 2) {
             return -1; // return if the coordinate is not right
