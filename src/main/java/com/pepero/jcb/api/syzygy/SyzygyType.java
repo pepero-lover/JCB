@@ -4,24 +4,30 @@ package com.pepero.jcb.api.syzygy;
  * Syzygy tablebase file type (WDL / DTZ) <p>
  */
 enum SyzygyType {
-    WDL(0x5d23e871, ".rtbw"),
-    DTZ(0xa50c66d7, ".rtbz");
+    // for standard
+    WDL(0x5d23e871, ".rtbw", false),
+    DTZ(0xa50c66d7, ".rtbz", false),
 
-    private final int magic;        // magic number to identify type
-    private final String extension; // file extension string
+    // for atomic
+    ATOMIC_WDL(0x49a48d55, ".atbw", true),
+    ATOMIC_DTZ(0xeb5ea991, ".atbz", true);
 
-    SyzygyType(int magic, String extension) {
+    private final int magic;
+    private final String extension;
+    private final boolean connectedKings;
+
+    SyzygyType(int magic, String extension, boolean connectedKings) {
         this.magic = magic;
         this.extension = extension;
+        this.connectedKings = connectedKings;
     }
 
-    public int getMagic() {
-        return magic;
-    }
+    public int getMagic() { return magic; }
+    public String getExtension() { return extension; }
+    public boolean isConnectedKings() { return connectedKings; }
 
-    public String getExtension() {
-        return extension;
-    }
+    public boolean isWdl() { return this == WDL || this == ATOMIC_WDL; }
+    public boolean isDtz() { return this == DTZ || this == ATOMIC_DTZ; }
 
     /**
      * Get Syzygy type by the magic number

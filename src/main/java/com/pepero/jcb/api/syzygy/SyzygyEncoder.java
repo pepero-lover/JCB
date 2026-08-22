@@ -49,7 +49,19 @@ class SyzygyEncoder {
             }
 
             if (material.isKkEnc()) {
-                idx = SyzygyIndexTables.KK_IDX[SyzygyEncodeTables.TRIANGLE[p[0]]][p[1]];
+                if (material.isConnectedKings()) {
+                    int i2 = (p[1] > p[0]) ? 1 : 0;
+                    if (SyzygyEncodeTables.OFF_DIAG[p[0]] != 0) {
+                        idx = (long) SyzygyEncodeTables.TRIANGLE[p[0]] * 63 + (p[1] - i2);
+                    } else if (SyzygyEncodeTables.OFF_DIAG[p[1]] != 0) {
+                        idx = 6L * 63 + (long) SyzygyEncodeTables.DIAG[p[0]] * 28 + SyzygyEncodeTables.LOWER[p[1]];
+                    } else {
+                        idx = 6L * 63 + 4L * 28 + (long) SyzygyEncodeTables.DIAG[p[0]] * 7
+                                + (SyzygyEncodeTables.DIAG[p[1]] - i2);
+                    }
+                } else {
+                    idx = SyzygyIndexTables.KK_IDX[SyzygyEncodeTables.TRIANGLE[p[0]]][p[1]];
+                }
                 k = 2;
             } else {
                 int s1 = (p[1] > p[0]) ? 1 : 0;

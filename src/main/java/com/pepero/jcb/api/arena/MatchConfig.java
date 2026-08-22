@@ -2,7 +2,7 @@ package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 
 public class MatchConfig {
     private final int totalGames;
@@ -14,7 +14,7 @@ public class MatchConfig {
     private final FENSettingConfig fenSettingConfig;
 
     private final boolean isChess960;
-    private final GameVariants variants;
+    private final GameVariant variant;
 
     private final int seed;
 
@@ -46,7 +46,7 @@ public class MatchConfig {
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
 
-        this.variants = builder.variants;
+        this.variant = builder.variant;
 
         this.isChess960 = builder.isChess960;
 
@@ -76,8 +76,8 @@ public class MatchConfig {
     public EngineConfig getEngine1Config() { return engine1Config; }
     public EngineConfig getEngine2Config() { return engine2Config; }
 
-    // game variants
-    public GameVariants getVariants() { return variants; }
+    // game variant
+    public GameVariant getVariant() { return variant; }
 
     // is chess 960
     public boolean isChess960() { return isChess960; }
@@ -116,7 +116,7 @@ public class MatchConfig {
 
         private FENSettingConfig fenSettingConfig;
 
-        private GameVariants variants = GameVariants.STANDARD;
+        private GameVariant variant = GameVariant.STANDARD;
         private boolean isChess960 = false;
 
         private PolyglotBookReader openingBook = null;
@@ -169,8 +169,8 @@ public class MatchConfig {
             return this;
         }
 
-        public Builder variants(GameVariants variants) {
-            this.variants = variants;
+        public Builder variant(GameVariant variant) {
+            this.variant = variant;
             return this;
         }
 

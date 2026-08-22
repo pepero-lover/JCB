@@ -2,7 +2,6 @@ package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.SyzygyAnalyzer;
-import com.pepero.jcb.core.GameVariants;
 
 import java.io.IOException;
 import java.nio.file.Path;

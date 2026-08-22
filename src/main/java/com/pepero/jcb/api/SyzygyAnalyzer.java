@@ -7,7 +7,7 @@ import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -27,7 +27,7 @@ public class SyzygyAnalyzer {
      * @param tablebase table base class
      * @param containCastle do not throw exception when game has castling rights <br>
      *                      Warning : if you enable this, the position that contained castling rights
-     *                      wdl probing going to be inaccurate.
+     *                      wdl probing might be inaccurate.
      * @return WDL result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
@@ -60,7 +60,7 @@ public class SyzygyAnalyzer {
      * @param tablebase table base class
      * @param containCastle do not throw exception when game has castling rights <br>
      *                      Warning : if you enable this, the position that contained castling rights
-     *                      wdl probing going to be inaccurate.
+     *                      wdl probing might be inaccurate.
      * @return DTZ result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
@@ -91,13 +91,29 @@ public class SyzygyAnalyzer {
      * if is checkmate or stalemate, return null
      *
      * @param tablebase Syzygy tablebase
+     * @param containCastle do not throw exception when game has castling rights <br>
+     *                      Warning : if you enable this, the position that contained castling rights
+     *                      wdl probing might be inaccurate.
+     * @return best move
+     * @throws IOException if tablebase could not find or something
+     */
+    public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+        List<SyzygyMoveDTO> bestMoves = findRankedMoves(game, tablebase, containCastle);
+        if (bestMoves.isEmpty()) return null;
+        return bestMoves.getFirst().move();
+    }
+
+    /**
+     * Get the best move based on Syzygy tablebase <br>
+     * if is checkmate or stalemate, return null
+     *
+     * @param tablebase Syzygy tablebase
+     *
      * @return best move
      * @throws IOException if tablebase could not find or something
      */
     public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase) throws IOException {
-        List<SyzygyMoveDTO> bestMoves = findRankedMoves(game, tablebase);
-        if (bestMoves.isEmpty()) return null;
-        return bestMoves.getFirst().move();
+        return findBestMove(game, tablebase, false);
     }
 
     /**
@@ -106,11 +122,16 @@ public class SyzygyAnalyzer {
      * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}.
      *
      * @param tablebase Syzygy table base
+     * @param containCastle do not throw exception when game has castling rights <br>
+     *                      Warning : if you enable this, the position that contained castling rights
+     *                      wdl probing might be inaccurate.
+     *
      * @return sorted moves list
      * @throws IOException if tablebase could not find or something
      */
-    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         validateVariant(game);
+        if(!containCastle) validateCastling(game);
 
         Chessboard board = game.getBoardSnapshot();
         int halfMoveClock = game.getHalfMove();
@@ -155,8 +176,22 @@ public class SyzygyAnalyzer {
         return ranked;
     }
 
+    /**
+     * Get Sorted moves based on Syzygy tablebase (first is best move, last is worst move)
+     * <p>
+     * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}.
+     *
+     * @param tablebase Syzygy table base
+     *
+     * @return sorted moves list
+     * @throws IOException if tablebase could not find or something
+     */
+    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+        return findRankedMoves(game, tablebase, false);
+    }
+
     private static void validateVariant(ChessGame game) {
-        if (game.getGameVariants() != GameVariants.STANDARD && game.isChess960()) {
+        if (game.getGameVariant() != GameVariant.STANDARD && game.getGameVariant() != GameVariant.ATOMIC) {
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
         }
     }

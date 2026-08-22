@@ -4,7 +4,7 @@ import com.pepero.jcb.api.exception.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
 import static com.pepero.jcb.constant.EncodedPieces.*;
@@ -18,7 +18,7 @@ public class FENValidator {
      *
      * @throws FENConvertException - if this fen string is illegal
      */
-    public static void validateString(String fen, boolean isChess960, GameVariants variants) {
+    public static void validateString(String fen, boolean isChess960, GameVariant variant) {
         if (fen == null || fen.trim().isEmpty())
             throw new FENConvertException("Invalid FEN: FEN string cannot be null or empty!",
                     FENErrorType.FEN_NULL);
@@ -53,7 +53,7 @@ public class FENValidator {
         String castling = parts[2];
         String enPassant = parts[3];
 
-        validateBoard(board, variants);
+        validateBoard(board, variant);
         validateTurn(turn);
         validateCastling(castling, isChess960);
         validateEnPassant(turn, enPassant);
@@ -81,7 +81,7 @@ public class FENValidator {
         }
     }
 
-    private static void validateBoard(String board, GameVariants variants) {
+    private static void validateBoard(String board, GameVariant variant) {
         String[] ranks = board.split("/");
 
         if (ranks.length != 8) {
@@ -112,7 +112,7 @@ public class FENValidator {
                     if (c == 'K') whiteKingCount++;
                     if (c == 'k') blackKingCount++;
 
-                    if(variants != GameVariants.HORDE) {
+                    if(variant != GameVariant.HORDE) {
                         if ((c == 'p' || c == 'P') && (i == 0 || i == 7)) {
                             throw new FENConvertException("Invalid FEN: Pawns cannot exist on the 1st or 8th rank.",
                                     FENErrorType.PAWN_EXIST_LAST_RANK);
@@ -145,10 +145,10 @@ public class FENValidator {
             }
         }
 
-        if(variants == GameVariants.ANTICHESS) {
+        if(variant == GameVariant.ANTICHESS) {
             return;
         }
-        if(variants != GameVariants.HORDE) {
+        if(variant != GameVariant.HORDE) {
             if (whiteKingCount != 1 || blackKingCount != 1) {
                 throw new FENConvertException("Invalid FEN: There must be exactly one white king and one black king.",
                         FENErrorType.KING_COUNT);
@@ -223,14 +223,14 @@ public class FENValidator {
         }
     }
 
-    public static void validateLogicalState(Chessboard chessboard, GameVariants variants) {
-        if(variants == GameVariants.ANTICHESS) {
+    public static void validateLogicalState(Chessboard chessboard, GameVariant variant) {
+        if(variant == GameVariant.ANTICHESS) {
             return;
         }
 
         int oppositeSide = chessboard.side ^ 1;
 
-        if(variants == GameVariants.HORDE && oppositeSide == white){
+        if(variant == GameVariant.HORDE && oppositeSide == white){
             return;
         }
 

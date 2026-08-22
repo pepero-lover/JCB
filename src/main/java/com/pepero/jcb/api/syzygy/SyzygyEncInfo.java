@@ -68,7 +68,9 @@ class SyzygyEncInfo {
                 } else if (encType == SyzygyEncType.RANK_ENC) {
                     f *= SyzygyIndexTables.PAWN_FACTOR_RANK[norm[0] - 1][fileClassIndex];
                 } else {
-                    f *= material.isKkEnc() ? 462 : 31332;
+                    f *= material.isKkEnc()
+                            ? (material.isConnectedKings() ? 518 : 462)
+                            : 31332;
                 }
             } else if (i == order2) {
                 factor[norm[0]] = f;

@@ -103,7 +103,7 @@ public class Chessboard {
     // checked count
     public int[] check_count = new int[2];
 
-    public GameVariants gameVariants;
+    public GameVariant gameVariant;
 
     public boolean isChess960 = false;
 
@@ -129,30 +129,30 @@ public class Chessboard {
     public boolean[] promoted_captured_history = new boolean[MAX_DEPTH];
 
     public Chessboard() {
-        this(GameVariants.STANDARD);
+        this(GameVariant.STANDARD);
     }
 
-    public Chessboard(GameVariants gameVariants) {
-        resetBoard(gameVariants);
+    public Chessboard(GameVariant gameVariant) {
+        resetBoard(gameVariant);
     }
 
     public Chessboard(String fen) {
-        this(fen, GameVariants.STANDARD);
+        this(fen, GameVariant.STANDARD);
     }
 
-    public Chessboard(String fen, GameVariants gameVariants) {
-        this(fen, false, gameVariants);
+    public Chessboard(String fen, GameVariant gameVariant) {
+        this(fen, false, gameVariant);
     }
 
     public Chessboard(String fen, boolean isChess960) {
-        this(fen, isChess960, GameVariants.STANDARD);
+        this(fen, isChess960, GameVariant.STANDARD);
     }
 
-    public Chessboard(String fen, boolean isChess960, GameVariants gameVariants) {
+    public Chessboard(String fen, boolean isChess960, GameVariant gameVariant) {
         ChessboardUtils.parseFen(this, fen);
 
         this.isChess960 = isChess960;
-        this.gameVariants = gameVariants;
+        this.gameVariant = gameVariant;
     }
 
     public Chessboard(Chessboard source) {
@@ -188,8 +188,8 @@ public class Chessboard {
         this.enpassant = no_sq;
         this.castle = 0;
 
-        // game variants
-        this.gameVariants = GameVariants.STANDARD;
+        // game variant
+        this.gameVariant = GameVariant.STANDARD;
 
         // chess 960
         this.king_side_rook_file = -1;
@@ -216,9 +216,9 @@ public class Chessboard {
         Arrays.fill(this.check_count, 0);
     }
 
-    public void resetBoard(GameVariants gameVariants) {
+    public void resetBoard(GameVariant gameVariant) {
         resetBoard();
-        this.gameVariants = gameVariants;
+        this.gameVariant = gameVariant;
     }
 
     public void setStartPos() {
@@ -246,7 +246,7 @@ public class Chessboard {
         this.full_move = source.full_move;
         this.half_ply = source.half_ply;
 
-        this.gameVariants = source.gameVariants;
+        this.gameVariant = source.gameVariant;
         this.isChess960 = source.isChess960;
 
         this.king_side_rook_file = source.king_side_rook_file;

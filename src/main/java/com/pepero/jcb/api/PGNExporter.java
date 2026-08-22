@@ -9,7 +9,7 @@ import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
 import java.util.LinkedHashMap;
@@ -22,7 +22,7 @@ class PGNExporter {
     static PGNGame createPGNGame(
             Map<String, String> originalHeaders,
             String startFen,
-            GameVariants variant,
+            GameVariant variant,
             boolean isChess960,
             GameResult result,
             MoveNode rootNode,
@@ -31,7 +31,7 @@ class PGNExporter {
 
         if (isChess960) pgnHeaders.put("Variant", "Chess960");
 
-        if (variant != GameVariants.STANDARD) {
+        if (variant != GameVariant.STANDARD) {
             switch (variant) {
                 case CRAZY_HOUSE -> pgnHeaders.put("Variant", "Crazyhouse");
                 case THREE_CHECK -> pgnHeaders.put("Variant", "Three-check");
@@ -54,7 +54,7 @@ class PGNExporter {
         pgnHeaders.put("Result", PGNUtils.getGameResultString(result));
 
         Chessboard tempBoard = new Chessboard(startFen);
-        tempBoard.gameVariants = variant;
+        tempBoard.gameVariant = variant;
         tempBoard.isChess960 = isChess960;
 
         MoveNodeDTO rootDTO = buildPGNTreeWithSan(rootNode, tempBoard, maxNodes, new int[1]);
