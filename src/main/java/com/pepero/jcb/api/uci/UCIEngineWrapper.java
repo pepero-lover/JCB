@@ -5,7 +5,7 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.UCIEngineException;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.FENDialect;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -165,7 +165,7 @@ public class UCIEngineWrapper implements AutoCloseable {
             setOptionSync("UCI_Chess960", "true");
         }
 
-        supportVariant(chessGame.getGameVariants());
+        supportVariant(chessGame.getGameVariant());
 
         sendCommand(buildPositionCommand(chessGame));
 
@@ -179,15 +179,15 @@ public class UCIEngineWrapper implements AutoCloseable {
     /**
      * Throw UCIEngineException if this chess engine doesn't support this variant
      *
-     * @param variants variant
+     * @param variant variant
      */
-    private void supportVariant(GameVariants variants) {
-        if(variants != GameVariants.STANDARD) {
+    private void supportVariant(GameVariant variant) {
+        if(variant != GameVariant.STANDARD) {
             if(!hasOption("UCI_Variant")) {
                 throw new UCIEngineException("Variant option not found!");
             }
 
-            switch (variants) {
+            switch (variant) {
                 case CRAZY_HOUSE :
                     setOptionSync("UCI_Variant", "crazyhouse");
                     break;
@@ -243,8 +243,8 @@ public class UCIEngineWrapper implements AutoCloseable {
         if (startFen.equals(defaultStartFen)) {
             positionCmd.append("position startpos");
         } else {
-            if (chessGame.getGameVariants() == GameVariants.THREE_CHECK) {
-                ChessGame tempForFen = ChessGame.fromFEN(startFen, chessGame.getGameVariants());
+            if (chessGame.getGameVariant() == GameVariant.THREE_CHECK) {
+                ChessGame tempForFen = ChessGame.fromFEN(startFen, chessGame.getGameVariant());
                 startFen = tempForFen.getFEN(FENDialect.FAIRY_STOCKFISH);
             }
             positionCmd.append("position fen ").append(startFen);
@@ -542,7 +542,7 @@ public class UCIEngineWrapper implements AutoCloseable {
             setOptionSync("UCI_Chess960", "true");
         }
 
-        supportVariant(chessGame.getGameVariants());
+        supportVariant(chessGame.getGameVariant());
 
         sendCommand(buildPositionCommand(chessGame));
 

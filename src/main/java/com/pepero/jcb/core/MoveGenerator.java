@@ -766,33 +766,33 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
-        if(chessboard.gameVariants == GameVariants.ANTICHESS) {
+        if(chessboard.gameVariant == GameVariant.ANTICHESS) {
             return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
-        if(chessboard.gameVariants == GameVariants.ATOMIC) {
+        if(chessboard.gameVariant == GameVariant.ATOMIC) {
             return generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
-        if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
+        if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
             if(ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
                 return 0;
             }
         }
 
         // when horde and it's white's turn
-        if(chessboard.gameVariants == GameVariants.HORDE && chessboard.side == white) {
+        if(chessboard.gameVariant == GameVariant.HORDE && chessboard.side == white) {
             return generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
         }
 
         // when 3 check
-        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+        if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
             if(chessboard.check_count[white] >= 3) return 0;
             if(chessboard.check_count[black] >= 3) return 0;
         }
 
         // when king of the hill
-        if (chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {
+        if (chessboard.gameVariant == GameVariant.KING_OF_THE_HILL) {
             if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return 0;
             if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return 0;
         }
@@ -835,7 +835,7 @@ public class MoveGenerator {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
 
             // if racing kings, check move is not possible
-            if (chessboard.gameVariants == GameVariants.RACING_KINGS
+            if (chessboard.gameVariant == GameVariant.RACING_KINGS
                     && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, targetSq,
                     -1, oppKingSq, 0)) {
                 kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
@@ -911,7 +911,7 @@ public class MoveGenerator {
                         int targetSq = BitBoardUtils.getLS1BIndex(pieceMoves);
 
                         // if racing kings, check move is not possible
-                        if (chessboard.gameVariants == GameVariants.RACING_KINGS
+                        if (chessboard.gameVariant == GameVariant.RACING_KINGS
                                 && wouldGiveCheck(chessboard, side, piece, sourceSq, targetSq,
                                 -1, oppKingSq, 0)) {
                             pieceMoves = BitBoardUtils.popBit(pieceMoves, targetSq);
@@ -936,7 +936,7 @@ public class MoveGenerator {
                         if (BitBoardUtils.getBit(pinRay, pushSq) /*make sure target square is on pin ray (pin mask)*/ &&
                                 BitBoardUtils.getBit(checkMask, pushSq) /*make sure this move is avoiding check*/) {
                             // if racing kings, check move is not possible
-                            if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+                            if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
                                 moveCount = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,moveArray, moveCount,
                                         sourceSq, pushSq, piece, false, -1);
                             } else {
@@ -954,7 +954,7 @@ public class MoveGenerator {
                                 !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
                             if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
                                 // if racing kings, check move is not possible
-                                if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+                                if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
                                     if (!wouldGiveCheck(chessboard, side, piece, sourceSq, doublePushSq,
                                             -1, oppKingSq, 0)) {
                                         moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
@@ -985,7 +985,7 @@ public class MoveGenerator {
                     while (pawnAttacks != 0) {
                         int targetSq = BitBoardUtils.getLS1BIndex(pawnAttacks);
 
-                        if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+                        if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
                             moveCount = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,
                                     moveArray, moveCount, sourceSq, targetSq, piece, true, -1);
                         } else {
@@ -1012,7 +1012,7 @@ public class MoveGenerator {
                                 if (BitBoardUtils.getBit(pinRay, targetSq) &&
                                         isEnPassantSafe(chessboard, kingSq, sourceSq, targetSq, side)) {
                                     // if racing kings, check move is not possible
-                                    if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
+                                    if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
                                         if (!wouldGiveCheck(chessboard, side, piece, sourceSq, targetSq, capturedPawnSq,
                                                 oppKingSq, 0)) {
                                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
@@ -1041,7 +1041,7 @@ public class MoveGenerator {
             moveCount = generateCastlingMovesStrict(chessboard, moveArray, moveCount, kingSq, side, stopAtFirstMove);
         }
 
-        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             // generate crazy house drop moves
             moveCount = generateDropMoves(chessboard, moveArray, moveCount, checkMask, stopAtFirstMove);
         }
@@ -1323,7 +1323,7 @@ public class MoveGenerator {
      */
     private static int generateCastlingMovesStrict(Chessboard chessboard, int[] moveArray,
                                                    int moveCount, int kingSq, int side, boolean stopAtFirstMove) {
-        if (chessboard.gameVariants == GameVariants.RACING_KINGS) return moveCount;
+        if (chessboard.gameVariant == GameVariant.RACING_KINGS) return moveCount;
         int oppSide = side ^ 1;
 
         long occupancy = chessboard.occupancies[both];
@@ -1463,7 +1463,7 @@ public class MoveGenerator {
     public static int generateDropMoves(Chessboard chessboard, int[] moveArray,
                                         int currentMoveCount, long checkMask, boolean stopAtFirstMove) {
         // if it's not the crazy house variant, just returns current move count
-        if (chessboard.gameVariants != GameVariants.CRAZY_HOUSE) return currentMoveCount;
+        if (chessboard.gameVariant != GameVariant.CRAZY_HOUSE) return currentMoveCount;
         int moveCount = currentMoveCount;
         int mySide = chessboard.side;
         int startPiece = (mySide == white) ? P : p;
@@ -1578,7 +1578,7 @@ public class MoveGenerator {
         chessboard.half_ply_history[chessboard.ply] = chessboard.half_ply;
         chessboard.hash_key_history[chessboard.ply] = chessboard.hash_key;
         chessboard.captured_piece_history[chessboard.ply] = -1;
-        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             chessboard.promoted_captured_history[chessboard.ply] = false;
         }
 
@@ -1595,7 +1595,7 @@ public class MoveGenerator {
 
         int captured_bb_piece = chessboard.mailbox[target_square];
 
-        boolean isAtomic = chessboard.gameVariants == GameVariants.ATOMIC;
+        boolean isAtomic = chessboard.gameVariant == GameVariant.ATOMIC;
         int atomicCastleMask = 0xF;
 
         if (capture && !enpass && !castling && !is_drop) {
@@ -1606,7 +1606,7 @@ public class MoveGenerator {
 
             chessboard.captured_piece_history[chessboard.ply] = captured_bb_piece;
 
-            if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 if (BitBoardUtils.getBit(chessboard.promoted_pieces, target_square)) {
                     int pawnToPocket = chessboard.side == white ? P : p;
 
@@ -1636,7 +1636,7 @@ public class MoveGenerator {
         // crazy house drop
         if (is_drop) {
             // hash pocket key
-            if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE && chessboard.pocket[piece] > 0) {
+            if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE && chessboard.pocket[piece] > 0) {
                 chessboard.hash_key ^= Zobrist.pocket_keys[piece][chessboard.pocket[piece]];
                 chessboard.pocket[piece]--;
                 chessboard.hash_key ^= Zobrist.pocket_keys[piece][chessboard.pocket[piece]];
@@ -1657,7 +1657,7 @@ public class MoveGenerator {
 
             // crazy house
             if (BitBoardUtils.getBit(chessboard.promoted_pieces, source_square) &&
-                    chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                    chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, source_square);
                 chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, target_square);
 
@@ -1750,7 +1750,7 @@ public class MoveGenerator {
 
             chessboard.mailbox[target_square] = promoted_piece;
 
-            if(chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            if(chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 chessboard.promoted_pieces |= (1L << target_square);
                 chessboard.hash_key ^= Zobrist.promoted_keys[target_square];
             }
@@ -1771,7 +1771,7 @@ public class MoveGenerator {
                 chessboard.mailbox[target_square - 8] = NO_PIECE_CONSTANT;
                 chessboard.hash_key ^= Zobrist.piece_keys[p][target_square - 8];
 
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                     chessboard.hash_key ^= Zobrist.pocket_keys[P][chessboard.pocket[P]];
                     chessboard.pocket[P]++;
                     chessboard.hash_key ^= Zobrist.pocket_keys[P][chessboard.pocket[P]];
@@ -1781,7 +1781,7 @@ public class MoveGenerator {
                 chessboard.mailbox[target_square + 8] = NO_PIECE_CONSTANT;
                 chessboard.hash_key ^= Zobrist.piece_keys[P][target_square + 8];
 
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                     chessboard.hash_key ^= Zobrist.pocket_keys[p][chessboard.pocket[p]];
                     chessboard.pocket[p]++;
                     chessboard.hash_key ^= Zobrist.pocket_keys[p][chessboard.pocket[p]];
@@ -1869,7 +1869,7 @@ public class MoveGenerator {
         chessboard.hash_key ^= Zobrist.side_key;
 
         // if three check variant,
-        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+        if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
             chessboard.check_count_history[white][chessboard.ply] = chessboard.check_count[white];
             chessboard.check_count_history[black][chessboard.ply] = chessboard.check_count[black];
 
@@ -1879,7 +1879,7 @@ public class MoveGenerator {
             // if king is in check, (opponent)
             boolean inCheck = (checkersInfo & (1 << 12)) != 0;
 
-            if (chessboard.gameVariants == GameVariants.THREE_CHECK && inCheck) {
+            if (chessboard.gameVariant == GameVariant.THREE_CHECK && inCheck) {
                 int side = chessboard.side;
                 int oldCount = chessboard.check_count[side];
 
@@ -1921,7 +1921,7 @@ public class MoveGenerator {
         chessboard.hash_key = chessboard.hash_key_history[chessboard.ply];
 
         // if 3 check,
-        if (chessboard.gameVariants == GameVariants.THREE_CHECK) {
+        if (chessboard.gameVariant == GameVariant.THREE_CHECK) {
             chessboard.check_count[white] = chessboard.check_count_history[white][chessboard.ply];
             chessboard.check_count[black] = chessboard.check_count_history[black][chessboard.ply];
         }
@@ -1938,7 +1938,7 @@ public class MoveGenerator {
         boolean castling = EncodeMove.getMoveCastling(move);
         boolean is_drop = EncodeMove.getMoveDrop(move);
 
-        boolean isAtomic = chessboard.gameVariants == GameVariants.ATOMIC;
+        boolean isAtomic = chessboard.gameVariant == GameVariant.ATOMIC;
         boolean hadExplosion = isAtomic && capture;
 
         // if had explosion on last move,
@@ -2008,7 +2008,7 @@ public class MoveGenerator {
                         BitBoardUtils.popBit(chessboard.bitboards[promoted_piece],
                                 target_square);
 
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                     chessboard.promoted_pieces =
                             BitBoardUtils.popBit(chessboard.promoted_pieces,
                                     target_square);
@@ -2016,7 +2016,7 @@ public class MoveGenerator {
             } else {
                 chessboard.bitboards[piece] = BitBoardUtils.popBit(chessboard.bitboards[piece], target_square);
 
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE &&
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE &&
                         BitBoardUtils.getBit(chessboard.promoted_pieces, target_square)) {
                     chessboard.promoted_pieces = BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
                     chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, source_square);
@@ -2034,7 +2034,7 @@ public class MoveGenerator {
                     BitBoardUtils.setBit(chessboard.bitboards[captured_piece], target_square);
             chessboard.mailbox[target_square] = captured_piece;
 
-            if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 boolean was_promoted = chessboard.promoted_captured_history[chessboard.ply];
                 if (was_promoted) {
                     chessboard.pocket[(chessboard.side == white) ? P : p]--;
@@ -2050,11 +2050,11 @@ public class MoveGenerator {
             if (chessboard.side == white) {
                 chessboard.bitboards[p] = BitBoardUtils.setBit(chessboard.bitboards[p], target_square - 8);
                 chessboard.mailbox[target_square - 8] = p;
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) chessboard.pocket[P]--;
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) chessboard.pocket[P]--;
             } else {
                 chessboard.bitboards[P] = BitBoardUtils.setBit(chessboard.bitboards[P], target_square + 8);
                 chessboard.mailbox[target_square + 8] = P;
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) chessboard.pocket[p]--;
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) chessboard.pocket[p]--;
             }
         }
 
@@ -2162,7 +2162,7 @@ public class MoveGenerator {
         if ((Attacks.getRookAttacks(square, occupancy) & rooksQueens) != 0) return true;
 
         // attacked by kings
-        if (chessboard.gameVariants != GameVariants.ATOMIC &&
+        if (chessboard.gameVariant != GameVariant.ATOMIC &&
                 (Attacks.king_attacks[square] & (side == white ?
                         chessboard.bitboards[K] : chessboard.bitboards[k])) != 0) return true;
 

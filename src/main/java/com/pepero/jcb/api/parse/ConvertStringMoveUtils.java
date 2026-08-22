@@ -8,7 +8,7 @@ import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -43,16 +43,16 @@ public class ConvertStringMoveUtils {
      * @return whether this position should show the # symbol
      */
     public static boolean shouldShowCheckmateSymbol(Chessboard chessboard) {
-        if (chessboard.gameVariants == GameVariants.ANTICHESS) {
+        if (chessboard.gameVariant == GameVariant.ANTICHESS) {
             return ChessboardUtils.isAntiChessOver(chessboard);
         }
-        if (chessboard.gameVariants == GameVariants.ATOMIC) {
+        if (chessboard.gameVariant == GameVariant.ATOMIC) {
             return ChessboardUtils.isAtomicOver(chessboard) || ChessboardUtils.isCheckmate(chessboard);
         }
-        if (chessboard.gameVariants == GameVariants.HORDE) {
+        if (chessboard.gameVariant == GameVariant.HORDE) {
             return ChessboardUtils.isHordePiecesGone(chessboard) || ChessboardUtils.isCheckmate(chessboard);
         }
-        if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+        if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
             return ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
         }
         return ChessboardUtils.isThreeCheck(chessboard) ||
@@ -67,19 +67,19 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      */
     private static void appendCheckOrMateSymbol(StringBuilder sb, Chessboard chessboard) {
-        boolean isAntichessLike = chessboard.gameVariants == GameVariants.ANTICHESS
-                || chessboard.gameVariants == GameVariants.RACING_KINGS;
+        boolean isAntichessLike = chessboard.gameVariant == GameVariant.ANTICHESS
+                || chessboard.gameVariant == GameVariant.RACING_KINGS;
 
         boolean inCheck = !isAntichessLike && ChessboardUtils.isCheck(chessboard);
 
         boolean isMate;
-        if (chessboard.gameVariants == GameVariants.ANTICHESS) {
+        if (chessboard.gameVariant == GameVariant.ANTICHESS) {
             isMate = ChessboardUtils.isAntiChessOver(chessboard);
-        } else if (chessboard.gameVariants == GameVariants.ATOMIC) {
+        } else if (chessboard.gameVariant == GameVariant.ATOMIC) {
             isMate = ChessboardUtils.isAtomicOver(chessboard) || (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
-        } else if (chessboard.gameVariants == GameVariants.HORDE) {
+        } else if (chessboard.gameVariant == GameVariant.HORDE) {
             isMate = ChessboardUtils.isHordePiecesGone(chessboard) || (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
-        } else if (chessboard.gameVariants == GameVariants.RACING_KINGS) {
+        } else if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
             isMate = ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
         } else {
             isMate = ChessboardUtils.isThreeCheck(chessboard) ||
@@ -226,7 +226,7 @@ public class ConvertStringMoveUtils {
                 sb.append(ascii_pieces[type % 6]);
 
                 // add disambiguation
-                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariants != GameVariants.ANTICHESS;
+                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.ANTICHESS;
 
                 if (!skipDisambiguation) {
                     int going_piece_count = 0;

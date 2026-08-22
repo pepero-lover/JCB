@@ -5,6 +5,7 @@ import com.pepero.jcb.bitboard.BitBoardUtils;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
@@ -31,18 +32,29 @@ public class SyzygyTablebase {
 
     private final int maxPieces;
 
+    private final boolean atomic;
+    private final String wdlExt, dtzExt;
+
     public SyzygyTablebase(Path syzygyDir) {
-        this(syzygyDir, DEFAULT_MAX_PIECES);
+        this(syzygyDir, DEFAULT_MAX_PIECES, GameVariant.STANDARD);
     }
 
     public SyzygyTablebase(Path syzygyDir, int maxPieces) {
-        this.syzygyDir = syzygyDir;
-        this.maxPieces = maxPieces;
+        this(syzygyDir, maxPieces, GameVariant.STANDARD);
     }
 
-    /**
-     * Everything we need to probe a material's .rtbw file, parsed once and reused.
-     */
+    public SyzygyTablebase(Path syzygyDir, GameVariant variant) {
+        this(syzygyDir, DEFAULT_MAX_PIECES, variant);
+    }
+
+    public SyzygyTablebase(Path syzygyDir, int maxPieces, GameVariant variant) {
+        this.syzygyDir = syzygyDir;
+        this.maxPieces = maxPieces;
+        this.atomic = (variant == GameVariant.ATOMIC);
+        this.wdlExt = atomic ? ".atbw" : ".rtbw";
+        this.dtzExt = atomic ? ".atbz" : ".rtbz";
+    }
+
     private record WdlTable(
             SyzygyMaterial material,
             MappedByteBuffer header,
@@ -54,9 +66,6 @@ public class SyzygyTablebase {
             boolean colorFlipped
     ) {}
 
-    /**
-     * Everything we need to probe a material's .rtbz file, parsed once and reused.
-     */
     private record DtzTable(
             SyzygyMaterial material,
             MappedByteBuffer header,
@@ -358,13 +367,13 @@ public class SyzygyTablebase {
 
     private WdlTable loadWdlTable(String naturalMaterialName) {
         try {
-            Path path = syzygyDir.resolve(naturalMaterialName + ".rtbw");
+            Path path = syzygyDir.resolve(naturalMaterialName + wdlExt);
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;
 
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
-                Path mirroredPath = syzygyDir.resolve(mirrored + ".rtbw");
+                Path mirroredPath = syzygyDir.resolve(mirrored + dtzExt);
                 if (!Files.exists(mirroredPath)) {
                     throw new IOException(
                             "No tablebase file for " + naturalMaterialName + " or its mirror " + mirrored);
@@ -375,7 +384,7 @@ public class SyzygyTablebase {
             }
 
             SyzygyFile file = SyzygyFile.open(path);
-            SyzygyMaterial material = SyzygyMaterial.parse(materialName);
+            SyzygyMaterial material = SyzygyMaterial.parse(materialName, atomic);
             MappedByteBuffer header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
@@ -405,7 +414,7 @@ public class SyzygyTablebase {
 
     private DtzTable loadDtzTable(String naturalMaterialName) {
         try {
-            Path path = syzygyDir.resolve(naturalMaterialName + ".rtbz");
+            Path path = syzygyDir.resolve(naturalMaterialName + dtzExt);
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;
 
@@ -417,7 +426,7 @@ public class SyzygyTablebase {
 
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
-                Path mirroredPath = syzygyDir.resolve(mirrored + ".rtbz");
+                Path mirroredPath = syzygyDir.resolve(mirrored + dtzExt);
                 if (!Files.exists(mirroredPath)) {
                     throw new IOException(
                             "No tablebase file for " + naturalMaterialName + " or its mirror " + mirrored);
@@ -428,7 +437,7 @@ public class SyzygyTablebase {
             }
 
             SyzygyFile file = SyzygyFile.open(path); // split is always false for DTZ
-            SyzygyMaterial material = SyzygyMaterial.parse(materialName);
+            SyzygyMaterial material = SyzygyMaterial.parse(materialName, atomic);
             MappedByteBuffer header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);

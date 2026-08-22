@@ -94,9 +94,9 @@ public class EngineArena {
                 chessGame = ChessGame.fromFEN(isEngine1White
                                 ? matchConfig.fenSettingConfig().fenWhenEngine1White()
                                 : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
-                        matchConfig.getVariants());
+                        matchConfig.getVariant());
             } else {
-                chessGame = ChessGame.startPosition(matchConfig.getVariants());
+                chessGame = ChessGame.startPosition(matchConfig.getVariant());
             }
         }
 

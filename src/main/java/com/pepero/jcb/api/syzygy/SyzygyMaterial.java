@@ -14,6 +14,7 @@ class SyzygyMaterial {
     private final boolean hasPawns;
     private final int[] pawnCount;
     private final boolean pawnGroup0IsWhite;
+    private final boolean connectedKings;
 
     private static final char[] pieceArray = new char[]{'P', 'N', 'B', 'R', 'Q', 'K'};
 
@@ -28,13 +29,14 @@ class SyzygyMaterial {
     }
 
     private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount,
-                          boolean hasPawns, int[] pawnCount, boolean pawnGroup0IsWhite) {
+                          boolean hasPawns, int[] pawnCount, boolean pawnGroup0IsWhite, boolean connectedKings) {
         this.whiteCounts = whiteCounts;
         this.blackCounts = blackCounts;
         this.totalPieceCount = totalPieceCount;
         this.hasPawns = hasPawns;
         this.pawnCount = pawnCount;
         this.pawnGroup0IsWhite = pawnGroup0IsWhite;
+        this.connectedKings = connectedKings;
     }
 
     /**
@@ -59,6 +61,17 @@ class SyzygyMaterial {
      * @return Syzygy Material data
      */
     public static SyzygyMaterial parse(String pieceString) {
+        return parse(pieceString, false);
+    }
+
+    /**
+     * Parse piece string (like KRvKB) to SyzygyMaterial
+     *
+     * @param pieceString piece string like KRRvKQ
+     * @param connectedKings can kings connected (for atomic, antichess)
+     * @return Syzygy Material data
+     */
+    public static SyzygyMaterial parse(String pieceString, boolean connectedKings) {
         pieceString = pieceString.trim();
         // KRvK
         String[] sidePiece = pieceString.split("v");
@@ -96,7 +109,7 @@ class SyzygyMaterial {
         }
 
         return new SyzygyMaterial(whitePieceCount, blackPieceCount, totalPiece,
-                hasPawns, pawnCount, pawnGroup0IsWhite);
+                hasPawns, pawnCount, pawnGroup0IsWhite, connectedKings);
     }
 
     // magic(4 bytes) + flags(1 byte) = 5, per-table info starts right after
@@ -193,7 +206,7 @@ class SyzygyMaterial {
     public SyzygyPairsHeader readOnePairsHeader(ByteBuffer header, int startOffset, SyzygyType syzygyType) {
         if ((readU8(header, startOffset) & 0x80) == 0x80) {
             return new SyzygyPairsHeader(
-                    true, (syzygyType == SyzygyType.WDL) ? readU8(header, startOffset + 1) : 0,
+                    true, (syzygyType.isWdl()) ? readU8(header, startOffset + 1) : 0,
                     readU8(header, startOffset), 0, 0, 0, 0, 0, 0,
                     null
             );
@@ -302,6 +315,10 @@ class SyzygyMaterial {
 
     public int getTotalPieceCount() {
         return totalPieceCount;
+    }
+
+    public boolean isConnectedKings() {
+        return connectedKings;
     }
 
     /**

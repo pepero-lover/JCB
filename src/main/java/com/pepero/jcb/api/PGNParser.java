@@ -11,7 +11,7 @@ import com.pepero.jcb.api.parse.pgn.PGNLexer;
 import com.pepero.jcb.api.parse.pgn.TokenType;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
 import java.util.HashMap;
@@ -35,32 +35,32 @@ class PGNParser {
      * @param variantValue "Variant" section on PGN header
      * @return GameVariant enum
      */
-    public static GameVariants parseVariantHeader(String variantValue) {
-        if (variantValue == null) return GameVariants.STANDARD;
+    public static GameVariant parseVariantHeader(String variantValue) {
+        if (variantValue == null) return GameVariant.STANDARD;
 
         return switch (variantValue.trim().toLowerCase()) {
-            case "crazyhouse" -> GameVariants.CRAZY_HOUSE;
-            case "three-check", "threecheck", "3-check", "3check" -> GameVariants.THREE_CHECK;
-            case "king of the hill", "kingofthehill", "koth" -> GameVariants.KING_OF_THE_HILL;
-            case "horde", "hord", "hd" -> GameVariants.HORDE;
+            case "crazyhouse" -> GameVariant.CRAZY_HOUSE;
+            case "three-check", "threecheck", "3-check", "3check" -> GameVariant.THREE_CHECK;
+            case "king of the hill", "kingofthehill", "koth" -> GameVariant.KING_OF_THE_HILL;
+            case "horde", "hord", "hd" -> GameVariant.HORDE;
             case "racing kings", "racing king", "racingkings", "racingking"
-            ,"king race", "kingrace", "kr" -> GameVariants.RACING_KINGS;
+            ,"king race", "kingrace", "kr" -> GameVariant.RACING_KINGS;
             case "antichess", "anti chess", "ac", "anti", "giveaway", "losing chess",
-                 "losingchess", "suicide chess", "suicidechess" -> GameVariants.ANTICHESS;
+                 "losingchess", "suicide chess", "suicidechess" -> GameVariant.ANTICHESS;
             case "atomic", "atomic chess", "atom", "at", "nuclear", "nuclear chess",
-                 "explosion chess", "bomb chess" -> GameVariants.ATOMIC;
-            default -> GameVariants.STANDARD;
+                 "explosion chess", "bomb chess" -> GameVariant.ATOMIC;
+            default -> GameVariant.STANDARD;
         };
     }
 
     /**
      * Get default start position
      *
-     * @param gameVariants game variant
+     * @param gameVariant game variant
      * @return default start position
      */
-    public static String getDefaultStartPosition(GameVariants gameVariants) {
-        return switch (gameVariants) {
+    public static String getDefaultStartPosition(GameVariant gameVariant) {
+        return switch (gameVariant) {
             case HORDE -> Chessboard.horde_start_position;
             case RACING_KINGS -> Chessboard.racing_kings_start_position;
             case ANTICHESS -> Chessboard.antichess_start_position;
@@ -123,7 +123,7 @@ class PGNParser {
         Stack<VariationState> variationStack = new Stack<>();
 
         Chessboard pgnChessboard;
-        GameVariants parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
+        GameVariant parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
         boolean isChess960 = false;
         if(parsedHeaders.containsKey("Variant")) {
             switch (parsedHeaders.get("Variant").trim().toLowerCase()) {

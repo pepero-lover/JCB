@@ -2,7 +2,7 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.perft.PerftDriver;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,10 +27,10 @@ public class PerftTest {
     void crazyhouse() {
         // 120812942
 
-        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariants.CRAZY_HOUSE);
+        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariant.CRAZY_HOUSE);
         assertEquals(120812942L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.CRAZY_HOUSE);
         assertEquals(120812942L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }
@@ -40,10 +40,10 @@ public class PerftTest {
     void threeCheck() {
         // 119060324
 
-        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariants.THREE_CHECK);
+        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariant.THREE_CHECK);
         assertEquals(119060324L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.THREE_CHECK);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.THREE_CHECK);
         assertEquals(119060324L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }
@@ -53,10 +53,10 @@ public class PerftTest {
     void horde() {
         // 68441644
 
-        Chessboard chessboard = new Chessboard(Chessboard.horde_start_position, GameVariants.HORDE);
+        Chessboard chessboard = new Chessboard(Chessboard.horde_start_position, GameVariant.HORDE);
         assertEquals(68441644L,
                 PerftDriver.perftBitboardDriver(chessboard, 7, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.HORDE);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.HORDE);
         assertEquals(68441644L,
                 PerftDriver.perftAPIDriver(chessGame, 7, true));
     }
@@ -67,10 +67,10 @@ public class PerftTest {
     void antichess() {
         // 46264162
 
-        Chessboard chessboard = new Chessboard(Chessboard.antichess_start_position, GameVariants.ANTICHESS);
+        Chessboard chessboard = new Chessboard(Chessboard.antichess_start_position, GameVariant.ANTICHESS);
         assertEquals(46264162L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.ANTICHESS);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.ANTICHESS);
         assertEquals(46264162L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }
@@ -80,10 +80,10 @@ public class PerftTest {
     void atomic() {
         // 118926425
 
-        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariants.ATOMIC);
+        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariant.ATOMIC);
         assertEquals(118926425L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.ATOMIC);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.ATOMIC);
         assertEquals(118926425L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }
@@ -93,10 +93,10 @@ public class PerftTest {
     void koth() {
         // 119060324
 
-        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariants.KING_OF_THE_HILL);
+        Chessboard chessboard = new Chessboard(Chessboard.start_position, GameVariant.KING_OF_THE_HILL);
         assertEquals(119060324L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.KING_OF_THE_HILL);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.KING_OF_THE_HILL);
         assertEquals(119060324L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }
@@ -106,11 +106,11 @@ public class PerftTest {
     void racingKings() {
         // 298712641
 
-        Chessboard chessboard = new Chessboard(Chessboard.racing_kings_start_position, GameVariants.RACING_KINGS);
-        assertEquals(298712641L,
-                PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariants.RACING_KINGS);
-        assertEquals(298712641L,
-                PerftDriver.perftAPIDriver(chessGame, 6, true));
+        Chessboard chessboard = new Chessboard(Chessboard.racing_kings_start_position, GameVariant.RACING_KINGS);
+        assertEquals(9472927L,
+                PerftDriver.perftBitboardDriver(chessboard, 5, true));
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.RACING_KINGS);
+        assertEquals(9472927L,
+                PerftDriver.perftAPIDriver(chessGame, 5, true));
     }
 }

@@ -1,6 +1,5 @@
 package com.pepero.jcb.perft.crazyhouse;
 
-import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
@@ -78,7 +77,7 @@ public class PerftCrazyHouse {
     public static void main(String[] args) {
         Initializer.init();
 
-        Chessboard chessboard = new Chessboard(GameVariants.CRAZY_HOUSE);
+        Chessboard chessboard = new Chessboard(GameVariant.CRAZY_HOUSE);
 
         ChessboardUtils.parseFen(chessboard, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1");
 

@@ -1,9 +1,8 @@
 package com.pepero.jcb.hash;
 
 import com.pepero.jcb.bitboard.BitBoardUtils;
-import com.pepero.jcb.constant.BoardSquares;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.util.Random;
 
 import static com.pepero.jcb.constant.BoardSquares.*;
@@ -127,7 +126,7 @@ public class Zobrist {
         // hash the side only if black is to move
         if (chessboard.side == black) final_key ^= side_key;
 
-        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             // hash promoted piece
             long promoted = chessboard.promoted_pieces;
             while (promoted != 0) {
@@ -145,7 +144,7 @@ public class Zobrist {
             }
         }
 
-        if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+        if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
             // hash check count
             final_key ^= check_count_keys[white][chessboard.check_count[white]];
             final_key ^= check_count_keys[black][chessboard.check_count[black]];

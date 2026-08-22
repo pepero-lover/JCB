@@ -91,7 +91,7 @@ class SyzygyFile {
      * split = (type != DTZ) && (byte4 bit0 set). DTZ is always single-sided.
      */
     private static boolean computeSplit(byte[] header, SyzygyType type) {
-        if (type == SyzygyType.DTZ) {
+        if (type.isDtz()) {
             return false;
         }
         int byte4 = header[4] & 0xff;

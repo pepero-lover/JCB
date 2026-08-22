@@ -3,7 +3,6 @@ package com.pepero.jcb.perft.crazyhouse;
 import com.pepero.jcb.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.perft.bitboard.PerftBitboardMultiThread;
 import com.pepero.jcb.util.TimeUtils;
 
 import java.util.ArrayList;
@@ -106,7 +105,7 @@ public class PerftCrazyHouseMultiThread {
     public static void main(String[] args) {
         Initializer.init();
 
-        Chessboard chessboard = new Chessboard(GameVariants.CRAZY_HOUSE);
+        Chessboard chessboard = new Chessboard(GameVariant.CRAZY_HOUSE);
         ChessboardUtils.parseFen(chessboard, Chessboard.start_position);
 
         System.out.println("Preheating...");

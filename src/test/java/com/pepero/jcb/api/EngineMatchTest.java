@@ -2,11 +2,8 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
-import com.pepero.jcb.api.syzygy.SyzygyTablebase;
-import com.pepero.jcb.core.GameVariants;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;

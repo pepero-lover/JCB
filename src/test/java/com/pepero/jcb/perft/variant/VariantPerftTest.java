@@ -4,7 +4,7 @@ import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.perft.PerftDriver;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.GameVariants;
+import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
 public class VariantPerftTest {
@@ -16,7 +16,7 @@ public class VariantPerftTest {
         Chessboard chessboard = new Chessboard(
                 Chessboard.start_position,
                 false,
-                GameVariants.ATOMIC
+                GameVariant.ATOMIC
         );
 
         ChessboardUtils.printChessBoard(chessboard);

@@ -26,7 +26,7 @@ public class ChessboardUtils {
 
     public static void parseFen(Chessboard chessboard, String fen) {
         // reset chessboard
-        chessboard.resetBoard(chessboard.gameVariants);
+        chessboard.resetBoard(chessboard.gameVariant);
 
         // divide fen
         String[] fenDivided = fen.trim().split("\\s+");
@@ -82,7 +82,7 @@ public class ChessboardUtils {
             }
             // if last square was promoted piece
             else if(fenChar == '~') {
-                if (last_square != -1 && chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+                if (last_square != -1 && chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                     chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, last_square);
                 }
             }
@@ -183,7 +183,7 @@ public class ChessboardUtils {
             }
         }
 
-        if (chessboard.gameVariants == GameVariants.THREE_CHECK) {
+        if (chessboard.gameVariant == GameVariant.THREE_CHECK) {
             int whiteChecksGiven = 0;
             int blackChecksGiven = 0;
 
@@ -260,7 +260,7 @@ public class ChessboardUtils {
 
                 fen.append(ascii_pieces[type]);
 
-                if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE &&
+                if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE &&
                         BitBoardUtils.getBit(chessboard.promoted_pieces, square)) {
                     fen.append("~");
                 }
@@ -275,7 +275,7 @@ public class ChessboardUtils {
             }
         }
 
-        if (chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             String pocketStr =
                     "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
                     "R".repeat(Math.max(0, chessboard.pocket[R])) +
@@ -323,7 +323,7 @@ public class ChessboardUtils {
         }
 
         // lichess 3 check
-        if (chessboard.gameVariants == GameVariants.THREE_CHECK && dialect == FENDialect.LICHESS) {
+        if (chessboard.gameVariant == GameVariant.THREE_CHECK && dialect == FENDialect.LICHESS) {
             int whiteRemaining = 3 - chessboard.check_count[white];
             int blackRemaining = 3 - chessboard.check_count[black];
             fen.append(whiteRemaining).append("+").append(blackRemaining).append(" ");
@@ -333,7 +333,7 @@ public class ChessboardUtils {
         fen.append((chessboard.full_move / 2) + 1);
 
         // fairy-stockfish 3 check
-        if (chessboard.gameVariants == GameVariants.THREE_CHECK && dialect == FENDialect.FAIRY_STOCKFISH) {
+        if (chessboard.gameVariant == GameVariant.THREE_CHECK && dialect == FENDialect.FAIRY_STOCKFISH) {
             int whiteGiven = chessboard.check_count[black];
             int blackGiven = chessboard.check_count[white];
             fen.append(" +").append(whiteGiven).append("+").append(blackGiven);
@@ -361,8 +361,12 @@ public class ChessboardUtils {
      * @return whether king is under attack
      */
     public static boolean isCheck(Chessboard chessboard) {
-        if(chessboard.gameVariants == GameVariants.ANTICHESS) return false;
-        if(chessboard.gameVariants == GameVariants.HORDE && chessboard.side == white) return false;
+        if(chessboard.gameVariant == GameVariant.ANTICHESS) return false;
+        if(chessboard.gameVariant == GameVariant.HORDE && chessboard.side == white) return false;
+        if(chessboard.gameVariant == GameVariant.ATOMIC) {
+            if((chessboard.side == white ?
+                    chessboard.bitboards[K] : chessboard.bitboards[k]) == 0L) return true;
+        }
 
         int kingPos = BitBoardUtils.getLS1BIndex(
                 chessboard.side == white ?
@@ -485,7 +489,7 @@ public class ChessboardUtils {
      * @return whether this position is three checked
      */
     public static boolean isThreeCheck(Chessboard chessboard) {
-        if(chessboard.gameVariants != GameVariants.THREE_CHECK) return false;
+        if(chessboard.gameVariant != GameVariant.THREE_CHECK) return false;
 
         if(chessboard.check_count[white] >= 3) return true;
         if(chessboard.check_count[black] >= 3) return true;
@@ -499,7 +503,7 @@ public class ChessboardUtils {
      * @return whether this position's white/black king gone to the hill
      */
     public static boolean isKingGoneToHill(Chessboard chessboard) {
-        if(chessboard.gameVariants != GameVariants.KING_OF_THE_HILL) return false;
+        if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) return false;
 
         if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return true;
         if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return true;
@@ -513,7 +517,7 @@ public class ChessboardUtils {
      * @return whether this horde position's white pieces is all gone
      */
     public static boolean isHordePiecesGone(Chessboard chessboard) {
-        if(chessboard.gameVariants != GameVariants.HORDE) return false;
+        if(chessboard.gameVariant != GameVariant.HORDE) return false;
 
         return chessboard.occupancies[white] == 0L;
     }
@@ -524,7 +528,7 @@ public class ChessboardUtils {
      * @return whether this antichess position overed
      */
     public static boolean isAntiChessOver(Chessboard chessboard) {
-        if(chessboard.gameVariants != GameVariants.ANTICHESS) return false;
+        if(chessboard.gameVariant != GameVariant.ANTICHESS) return false;
 
         return
                 chessboard.occupancies[chessboard.side] == 0L ||
@@ -537,7 +541,7 @@ public class ChessboardUtils {
      * @return whether this antichess position overed
      */
     public static boolean isAtomicOver(Chessboard chessboard) {
-        if(chessboard.gameVariants != GameVariants.ATOMIC) return false;
+        if(chessboard.gameVariant != GameVariant.ATOMIC) return false;
 
         return chessboard.bitboards[K] == 0L || chessboard.bitboards[k] == 0L;
     }
@@ -758,7 +762,7 @@ public class ChessboardUtils {
                 .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
                 .append("\n");
 
-        if(chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+        if(chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             sb
                     .append("      Pocket:  [")
                     .append("Q".repeat(Math.max(0, chessboard.pocket[Q])))

@@ -466,7 +466,7 @@ public class ChessGameTest {
     void testMakeDropMoveAPI() {
         // 백 포켓에 Q, 흑 포켓에 p 가 있는 상태
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[Qp] w KQkq - 0 1";
-        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariant.CRAZY_HOUSE);
 
         // API 메서드를 이용한 퀸 드랍
         chessGame.makeDropMove(PieceType.QUEEN, Square.e4);
@@ -479,7 +479,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 문자열로 드랍 이동이 정상 파싱 및 처리되어야 한다")
     void testDropMoveFromString() {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
-        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariant.CRAZY_HOUSE);
 
         chessGame.makeMove("P@e4");
 
@@ -491,7 +491,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 폰을 1랭크나 8랭크에 드랍하려고 하면 예외가 발생해야 한다")
     void testIllegalPawnDrop() {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
-        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariant.CRAZY_HOUSE);
 
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e8"), "8랭크 폰 드랍은 불법수입니다.");
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e1"), "1랭크 폰 드랍은 불법수입니다.");
@@ -501,7 +501,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 포켓 기물이 기물 점수에 정상적으로 합산되어야 한다")
     void testPocketPieceScore() {
         String fen = "8/8/8/8/8/8/8/k6K[Q] w - - 0 1";
-        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariant.CRAZY_HOUSE);
 
         assertEquals(9, chessGame.getPieceScore());
     }
@@ -510,7 +510,7 @@ public class ChessGameTest {
     @DisplayName("크레이지하우스: 포켓에 기물이 있으면 기물 부족 무승부가 발생하지 않아야 한다")
     void testPocketPreventsInsufficientMaterial() {
         String fen = "8/8/8/8/8/8/8/k6K[P] w - - 0 1";
-        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariants.CRAZY_HOUSE);
+        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariant.CRAZY_HOUSE);
 
         assertFalse(chessGame.isInsufficientMaterial(), "포켓에 기물이 있으므로 기물 부족이 아닙니다.");
         assertNotEquals(GameOverReason.INSUFFICIENTMATERIAL, chessGame.isGameOver());
@@ -584,11 +584,11 @@ public class ChessGameTest {
     @DisplayName("3 Check : FEN 을 잘 파싱 해야 한다.")
     void threeCheckParsing() {
         ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 +1+1",
-                GameVariants.THREE_CHECK);
+                GameVariant.THREE_CHECK);
         assertEquals(1, chessGame.getWhiteCheckedCount());
         assertEquals(1, chessGame.getBlackCheckedCount());
         chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 3+3 0 1",
-                GameVariants.THREE_CHECK);
+                GameVariant.THREE_CHECK);
         assertEquals(0, chessGame.getWhiteCheckedCount());
         assertEquals(0, chessGame.getBlackCheckedCount());
     }
@@ -597,7 +597,7 @@ public class ChessGameTest {
     @DisplayName("3 Check : 체크가 3번 된다면 종료되어야 한다.")
     void threeCheckGameOver() {
         ChessGame chessGame = ChessGame.fromFEN("r1b2k1r/p5qp/2pNpp1Q/8/2B5/8/PpP2bPP/R4R1K w - - 1+2 6 20",
-                GameVariants.THREE_CHECK);
+                GameVariant.THREE_CHECK);
         assertEquals(GameOverReason.NOTGAMEOVER, chessGame.isGameOver());
         chessGame.makeMoveSan("Qxg7#");
         assertEquals(GameOverReason.THREE_CHECK, chessGame.isGameOver());
@@ -608,7 +608,7 @@ public class ChessGameTest {
     void threeCheckRepetition() {
         ChessGame chessGame = ChessGame.fromFEN(
                 "rnbq1bnr/1ppp1ppp/p2k4/4p2Q/2B1P3/2N5/PPPP1PPP/R1B1K1NR w KQ - 3+3 0 5",
-                GameVariants.THREE_CHECK
+                GameVariant.THREE_CHECK
         );
         int previous = chessGame.hashCode();
         chessGame.makeMoveSanAll("Qg6+ Ke7 Qh5 Kd6");
@@ -620,7 +620,7 @@ public class ChessGameTest {
     void kingGoneToHill() {
         ChessGame chessGame = ChessGame.fromFEN(
                 "rnbq1bnr/ppppkppp/8/4p3/4K3/4P3/PPPP1PPP/RNBQ1BNR b - - 1 4",
-                GameVariants.KING_OF_THE_HILL
+                GameVariant.KING_OF_THE_HILL
         );
         assertEquals(GameOverReason.KING_OF_THE_HILL, chessGame.isGameOver());
         assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
@@ -629,7 +629,7 @@ public class ChessGameTest {
     @Test
     @DisplayName("Horde : 백 기물이 모두 없어졌다면 게임이 종료되어야 한다.")
     void hordePieceGone() {
-        ChessGame chessGame = ChessGame.fromFEN("3q2k1/8/8/6P1/8/7q/8/8 b - - 0 62", GameVariants.HORDE);
+        ChessGame chessGame = ChessGame.fromFEN("3q2k1/8/8/6P1/8/7q/8/8 b - - 0 62", GameVariant.HORDE);
         chessGame.makeMoveSan("Qxg5#");
         assertEquals(GameResult.BLACK_WON, chessGame.getGameResult());
         assertEquals(GameOverReason.HORDE, chessGame.isGameOver());

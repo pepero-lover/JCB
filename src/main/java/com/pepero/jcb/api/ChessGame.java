@@ -151,7 +151,7 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #fromPGN(String, int maxNodesCount)})
      */
     public static ChessGame fromPGN(String pgn) {
-        ChessGame result = new ChessGame(false, GameVariants.STANDARD);
+        ChessGame result = new ChessGame(false, GameVariant.STANDARD);
         result.loadPGN(pgn);
         return result;
     }
@@ -165,7 +165,7 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
     public static ChessGame fromPGN(String pgn, int maxNodesCount) {
-        ChessGame result = new ChessGame(false, GameVariants.STANDARD);
+        ChessGame result = new ChessGame(false, GameVariant.STANDARD);
         result.loadPGN(pgn, maxNodesCount);
         return result;
     }
@@ -174,13 +174,13 @@ public class ChessGame {
      * Initialize position with FEN string
      *
      * @param fen fen string
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      *
      * @throws FENConvertException if converting fen string failed
      */
-    public static ChessGame fromFEN(String fen, GameVariants gameVariants) {
-        return new ChessGame(fen, false, gameVariants);
+    public static ChessGame fromFEN(String fen, GameVariant gameVariant) {
+        return new ChessGame(fen, false, gameVariant);
     }
 
     /**
@@ -194,7 +194,7 @@ public class ChessGame {
      * @throws FENConvertException if converting fen string failed
      */
     public static ChessGame fromFEN(String fen, boolean isChess960) {
-        return new ChessGame(fen, isChess960, GameVariants.STANDARD);
+        return new ChessGame(fen, isChess960, GameVariant.STANDARD);
     }
 
     /**
@@ -204,13 +204,13 @@ public class ChessGame {
      * @param isChess960 is Chess 960 variant <br>
      *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
      *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      *
      * @throws FENConvertException if converting fen string failed
      */
-    public static ChessGame fromFEN(String fen, boolean isChess960, GameVariants gameVariants) {
-        return new ChessGame(fen, isChess960, gameVariants);
+    public static ChessGame fromFEN(String fen, boolean isChess960, GameVariant gameVariant) {
+        return new ChessGame(fen, isChess960, gameVariant);
     }
 
     /**
@@ -221,7 +221,7 @@ public class ChessGame {
      * @throws FENConvertException if converting fen string failed
      */
     public static ChessGame fromFEN(String fen) {
-        return fromFEN(fen, GameVariants.STANDARD);
+        return fromFEN(fen, GameVariant.STANDARD);
     }
 
     /**
@@ -231,7 +231,7 @@ public class ChessGame {
      * go to {@link Chessboard}
      */
     public static ChessGame startPosition() {
-        return new ChessGame(false, GameVariants.STANDARD);
+        return new ChessGame(false, GameVariant.STANDARD);
     }
 
     /**
@@ -245,32 +245,32 @@ public class ChessGame {
      *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
      */
     public static ChessGame startPosition(boolean isChess960) {
-        return new ChessGame(isChess960, GameVariants.STANDARD);
+        return new ChessGame(isChess960, GameVariant.STANDARD);
     }
 
     /**
      * Initialize position to start position <br>
-     * this method automatically set the right start position for <b>gameVariants</b>
+     * this method automatically set the right start position for <b>gameVariant</b>
      *
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      */
-    public static ChessGame startPosition(GameVariants gameVariants) {
-        return new ChessGame(false, gameVariants);
+    public static ChessGame startPosition(GameVariant gameVariant) {
+        return new ChessGame(false, gameVariant);
     }
 
     /**
      * Initialize position to start position <br>
-     * this method automatically set the right start position for <b>gameVariants</b>
+     * this method automatically set the right start position for <b>gameVariant</b>
      *
      * @param isChess960 is Chess 960 variant <br>
      *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
      *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      */
-    public static ChessGame startPosition(boolean isChess960, GameVariants gameVariants) {
-        return new ChessGame(isChess960, gameVariants);
+    public static ChessGame startPosition(boolean isChess960, GameVariant gameVariant) {
+        return new ChessGame(isChess960, gameVariant);
     }
 
     /**
@@ -290,19 +290,19 @@ public class ChessGame {
      * @param isChess960 is Chess 960 variant <br>
      *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
      *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      *
      * @throws FENConvertException if converting fen string failed
      */
-    private ChessGame(String fen, boolean isChess960, GameVariants gameVariants) {
-        FENValidator.validateString(fen, isChess960, gameVariants);
+    private ChessGame(String fen, boolean isChess960, GameVariant gameVariant) {
+        FENValidator.validateString(fen, isChess960, gameVariant);
 
         chessboard = new Chessboard();
         startPositionFEN = fen;
 
         chessboard.isChess960 = isChess960;
-        chessboard.gameVariants = gameVariants;
+        chessboard.gameVariant = gameVariant;
 
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
@@ -310,27 +310,27 @@ public class ChessGame {
             throw new FENConvertException("Could not parse the fen.", FENErrorType.UNKNOWN);
         }
 
-        FENValidator.validateLogicalState(chessboard, gameVariants);
+        FENValidator.validateLogicalState(chessboard, gameVariant);
 
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
     }
 
     /**
      * Initialize position to start position <br>
-     * this method automatically set the right start position for <b>gameVariants</b>
+     * this method automatically set the right start position for <b>gameVariant</b>
      *
      * @param isChess960 is Chess 960 variant <br>
      *                   if chess 960 variant is true, the castling LAN(UCI) is a little different. <br>
      *                   the standard chess is 'e1g1', but if chess960, it's going to be 'e1h1' on standard position
-     * @param gameVariants game variants ( standard, crazyhouse ... ) <br>
-     *                     you can get this variants type on {@link GameVariants}
+     * @param gameVariant game variant ( standard, crazyhouse ... ) <br>
+     *                     you can get this variant type on {@link GameVariant}
      */
-    private ChessGame(boolean isChess960, GameVariants gameVariants) {
+    private ChessGame(boolean isChess960, GameVariant gameVariant) {
         this.chessboard = new Chessboard();
         this.chessboard.isChess960 = isChess960;
-        this.chessboard.gameVariants = gameVariants;
+        this.chessboard.gameVariant = gameVariant;
 
-        String startFen = getDefaultStartPosition(gameVariants);
+        String startFen = getDefaultStartPosition(gameVariant);
         ChessboardUtils.parseFen(this.chessboard, startFen);
 
         startPositionFEN = startFen;
@@ -1237,7 +1237,7 @@ public class ChessGame {
         readLock.lock();
         try {
             Map<PieceType, Integer> captured = new EnumMap<>(PieceType.class);
-            if(getGameVariants() == GameVariants.CRAZY_HOUSE) {
+            if(getGameVariant() == GameVariant.CRAZY_HOUSE) {
                 if (isWhite) {
                     captured.put(PieceType.PAWN, chessboard.pocket[p]);
                     captured.put(PieceType.KNIGHT, chessboard.pocket[n]);
@@ -1298,7 +1298,7 @@ public class ChessGame {
             }
 
             // crazy house pocket
-            if (this.chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            if (this.chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 piece_score += this.chessboard.pocket[P] * 1;
                 piece_score += this.chessboard.pocket[N] * 3;
                 piece_score += this.chessboard.pocket[B] * 3;
@@ -1675,7 +1675,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Three check variant
      */
     public boolean isThreeChecked() {
-        if(chessboard.gameVariants != GameVariants.THREE_CHECK) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.THREE_CHECK) throw new VariantNotMatchException(
                 "The variant should be three check!"
         );
 
@@ -1696,7 +1696,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't King of the hill variant
      */
     public boolean isKingGoneToHill() {
-        if(chessboard.gameVariants != GameVariants.KING_OF_THE_HILL) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) throw new VariantNotMatchException(
                 "The variant should be king of the hill!"
         );
 
@@ -1714,7 +1714,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Horde variant
      */
     public boolean isHordePiecesGone() {
-        if(chessboard.gameVariants != GameVariants.HORDE) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.HORDE) throw new VariantNotMatchException(
                 "The variant should be horde!"
         );
 
@@ -1732,7 +1732,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't AntiChess variant
      */
     public boolean isAntiChessOver() {
-        if(chessboard.gameVariants != GameVariants.ANTICHESS) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.ANTICHESS) throw new VariantNotMatchException(
                 "The variant should be antichess!"
         );
 
@@ -1750,7 +1750,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Atomic variant
      */
     public boolean isAtomicOver() {
-        if(chessboard.gameVariants != GameVariants.ATOMIC) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.ATOMIC) throw new VariantNotMatchException(
                 "The variant should be atomic!"
         );
 
@@ -1768,7 +1768,7 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't racing kings variant
      */
     public boolean isKingRaceOver() {
-        if(chessboard.gameVariants != GameVariants.RACING_KINGS) throw new VariantNotMatchException(
+        if(chessboard.gameVariant != GameVariant.RACING_KINGS) throw new VariantNotMatchException(
                 "The variant should be racing kings!"
         );
 
@@ -1811,16 +1811,16 @@ public class ChessGame {
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
-            if (chessboard.gameVariants == GameVariants.ANTICHESS
-                    || chessboard.gameVariants == GameVariants.ATOMIC
-                    || chessboard.gameVariants == GameVariants.THREE_CHECK
-                    || chessboard.gameVariants == GameVariants.KING_OF_THE_HILL
-                    || chessboard.gameVariants == GameVariants.RACING_KINGS
-                    || chessboard.gameVariants == GameVariants.HORDE) {
+            if (chessboard.gameVariant == GameVariant.ANTICHESS
+                    || chessboard.gameVariant == GameVariant.ATOMIC
+                    || chessboard.gameVariant == GameVariant.THREE_CHECK
+                    || chessboard.gameVariant == GameVariant.KING_OF_THE_HILL
+                    || chessboard.gameVariant == GameVariant.RACING_KINGS
+                    || chessboard.gameVariant == GameVariant.HORDE) {
                 return false;
             }
 
-            if (this.chessboard.gameVariants == GameVariants.CRAZY_HOUSE) {
+            if (this.chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
                 int totalPocketPieces = 0;
                 for (int piece = P; piece <= k; piece++) totalPocketPieces += this.chessboard.pocket[piece];
                 if (totalPocketPieces > 0) return false;
@@ -1921,22 +1921,22 @@ public class ChessGame {
         readLock.lock();
 
         try {
-            if(chessboard.gameVariants == GameVariants.ANTICHESS) {
+            if(chessboard.gameVariant == GameVariant.ANTICHESS) {
                 if(isAntiChessOver()) return GameOverReason.ANTICHESS;
             }
-            if(chessboard.gameVariants == GameVariants.ATOMIC) {
+            if(chessboard.gameVariant == GameVariant.ATOMIC) {
                 if(isAtomicOver()) return GameOverReason.ATOMIC;
             }
-            if(chessboard.gameVariants == GameVariants.THREE_CHECK) {
+            if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
                 if(isThreeChecked()) return GameOverReason.THREE_CHECK;
             }
-            if(chessboard.gameVariants == GameVariants.KING_OF_THE_HILL) {
+            if(chessboard.gameVariant == GameVariant.KING_OF_THE_HILL) {
                 if(isKingGoneToHill()) return GameOverReason.KING_OF_THE_HILL;
             }
-            if(chessboard.gameVariants == GameVariants.HORDE) {
+            if(chessboard.gameVariant == GameVariant.HORDE) {
                 if(isHordePiecesGone()) return GameOverReason.HORDE;
             }
-            if(chessboard.gameVariants == GameVariants.RACING_KINGS) {
+            if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
                 if(isKingRaceOver()) return GameOverReason.KING_RACE;
             }
 
@@ -1947,7 +1947,7 @@ public class ChessGame {
                 if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
             }
 
-            if(chessboard.gameVariants != GameVariants.ANTICHESS) {
+            if(chessboard.gameVariant != GameVariant.ANTICHESS) {
                 boolean inCheck = isCheck();
 
                 if (inCheck) {
@@ -2131,7 +2131,7 @@ public class ChessGame {
     public int[] getCheckCount() {
         readLock.lock();
         try {
-            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+            if (chessboard.gameVariant != GameVariant.THREE_CHECK)
                 throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
             return new int[]{chessboard.check_count[white], chessboard.check_count[black]};
         } finally {
@@ -2148,7 +2148,7 @@ public class ChessGame {
     public int getWhiteCheckedCount() {
         readLock.lock();
         try {
-            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+            if (chessboard.gameVariant != GameVariant.THREE_CHECK)
                 throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
             return chessboard.check_count[white];
         } finally {
@@ -2165,7 +2165,7 @@ public class ChessGame {
     public int getBlackCheckedCount() {
         readLock.lock();
         try {
-            if (chessboard.gameVariants != GameVariants.THREE_CHECK)
+            if (chessboard.gameVariant != GameVariant.THREE_CHECK)
                 throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
             return chessboard.check_count[black];
         } finally {
@@ -2862,7 +2862,7 @@ public class ChessGame {
             PGNParsedData parsedData = PGNParser.parse(pgnString, MAX_PGN_NODE_COUNT);
 
             String fenToLoad = parsedData.startFEN();
-            this.chessboard.gameVariants = parsedData.variants();
+            this.chessboard.gameVariant = parsedData.variant();
             this.chessboard.isChess960 = parsedData.isChess960();
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
             this.startPositionFEN = fenToLoad;
@@ -2897,7 +2897,7 @@ public class ChessGame {
             PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount);
 
             String fenToLoad = parsedData.startFEN();
-            this.chessboard.gameVariants = parsedData.variants();
+            this.chessboard.gameVariant = parsedData.variant();
             this.chessboard.isChess960 = parsedData.isChess960();
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
             this.startPositionFEN = fenToLoad;
@@ -2927,7 +2927,7 @@ public class ChessGame {
         readLock.lock();
         try {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
-            tempBoard.gameVariants = this.getGameVariants();
+            tempBoard.gameVariant = this.getGameVariant();
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT,
                     new int[1]);
@@ -2947,7 +2947,7 @@ public class ChessGame {
         readLock.lock();
         try {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
-            tempBoard.gameVariants = this.getGameVariants();
+            tempBoard.gameVariant = this.getGameVariant();
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount,
                     new int[1]);
@@ -2973,7 +2973,7 @@ public class ChessGame {
             evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
 
             return PGNUtils.export(this,
-                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariants(),
+                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), getGameResult(), moveHistoryRoot, maxNodes), false);
         } finally {
             writeLock.unlock();
@@ -3010,7 +3010,7 @@ public class ChessGame {
             evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
 
             return PGNUtils.export(this,
-                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariants(),
+                    PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                     isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
         } finally {
             writeLock.unlock();
@@ -3142,12 +3142,12 @@ public class ChessGame {
     }
 
     /**
-     * Get game variants
+     * Get game variant
      */
-    public GameVariants getGameVariants() {
+    public GameVariant getGameVariant() {
         readLock.lock();
         try {
-            return chessboard.gameVariants;
+            return chessboard.gameVariant;
         } finally {
             readLock.unlock();
         }
