@@ -34,7 +34,6 @@ public class SyzygyTablebase {
 
     private final GameVariant variant;
     private final boolean connectedKingsEnc;
-    private final String wdlExt, dtzExt;
 
     public SyzygyTablebase(Path syzygyDir) {
         this(syzygyDir, DEFAULT_MAX_PIECES, GameVariant.STANDARD);
@@ -53,18 +52,28 @@ public class SyzygyTablebase {
         this.maxPieces = maxPieces;
         this.variant = variant;
         this.connectedKingsEnc = (
-                        variant == GameVariant.ATOMIC ||
+                variant == GameVariant.ATOMIC ||
                         variant == GameVariant.GIVEAWAY ||
                         variant == GameVariant.SUICIDE
         );
-        this.wdlExt = switch (variant) {
+    }
+
+    private String wdlExtFor(String materialName) {
+        boolean hasPawns = materialName.indexOf('P') >= 0;
+        return switch (variant) {
             case ATOMIC -> ".atbw";
-            case GIVEAWAY -> ".gtbw";
+            case GIVEAWAY -> hasPawns ? ".gtbw" : ".stbw";
+            case SUICIDE -> ".stbw";
             default -> ".rtbw";
         };
-        this.dtzExt = switch (variant) {
+    }
+
+    private String dtzExtFor(String materialName) {
+        boolean hasPawns = materialName.indexOf('P') >= 0;
+        return switch (variant) {
             case ATOMIC -> ".atbz";
-            case GIVEAWAY -> ".gtbz";
+            case GIVEAWAY -> hasPawns ? ".gtbz" : ".stbz";
+            case SUICIDE -> ".stbz";
             default -> ".rtbz";
         };
     }
@@ -110,11 +119,16 @@ public class SyzygyTablebase {
         }
 
         int bestWdl = 0;
+        boolean hasCapture = false;
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveArray[i];
 
             boolean isCapture = EncodeMove.getMoveCapture(move);
+            if (isCapture) {
+                hasCapture = true;
+            }
+
             int turn = (EncodeMove.getMovePiece(move) == P) ? white : black;
             int piece = EncodeMove.getMovePiece(move);
             boolean isPromotion = (piece == P || piece == p) &&
@@ -137,7 +151,12 @@ public class SyzygyTablebase {
             }
         }
 
+        if (hasCapture && (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY)) {
+            return bestWdl;
+        }
+
         int tableWdl = probeWdlTable(board);
+
         return Math.max(bestWdl, tableWdl);
     }
 
@@ -385,12 +404,15 @@ public class SyzygyTablebase {
 
     private WdlTable loadWdlTable(String naturalMaterialName) {
         try {
+            String wdlExt = wdlExtFor(naturalMaterialName);
             Path path = syzygyDir.resolve(naturalMaterialName + wdlExt);
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;
 
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
+                // pawn count/presence is unchanged by mirroring (just swaps which
+                // side owns which pieces), so the same extension applies to both.
                 Path mirroredPath = syzygyDir.resolve(mirrored + wdlExt);
                 if (!Files.exists(mirroredPath)) {
                     throw new IOException(
@@ -433,6 +455,7 @@ public class SyzygyTablebase {
 
     private DtzTable loadDtzTable(String naturalMaterialName) {
         try {
+            String dtzExt = dtzExtFor(naturalMaterialName);
             Path path = syzygyDir.resolve(naturalMaterialName + dtzExt);
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;

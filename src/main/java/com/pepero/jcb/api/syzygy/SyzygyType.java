@@ -12,9 +12,13 @@ enum SyzygyType {
     ATOMIC_WDL(0x49a48d55, ".atbw", true),
     ATOMIC_DTZ(0xeb5ea991, ".atbz", true),
 
-    // for antichess (giveaway rules — matches Lichess antichess)
+    // for giveaway
     ANTICHESS_WDL(0x21bc55bc, ".gtbw", true),
-    ANTICHESS_DTZ(0x501bf5d6, ".gtbz", true);
+    ANTICHESS_DTZ(0x501bf5d6, ".gtbz", true),
+
+    // for suicide
+    SUICIDE_WDL(0x1593f67b, ".stbw", true),
+    SUICIDE_DTZ(0x23e7cfe4, ".stbz", true);
 
     private final int magic;
     private final String extension;
@@ -30,8 +34,8 @@ enum SyzygyType {
     public String getExtension() { return extension; }
     public boolean isConnectedKings() { return connectedKings; }
 
-    public boolean isWdl() { return this == WDL || this == ATOMIC_WDL || this == ANTICHESS_WDL; }
-    public boolean isDtz() { return this == DTZ || this == ATOMIC_DTZ || this == ANTICHESS_DTZ; }
+    public boolean isWdl() { return this == WDL || this == ATOMIC_WDL || this == ANTICHESS_WDL || this == SUICIDE_WDL; }
+    public boolean isDtz() { return this == DTZ || this == ATOMIC_DTZ || this == ANTICHESS_DTZ || this == SUICIDE_DTZ; }
 
     /**
      * Get Syzygy type by the magic number
