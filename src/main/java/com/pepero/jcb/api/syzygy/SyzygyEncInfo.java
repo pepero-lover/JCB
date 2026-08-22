@@ -40,10 +40,13 @@ class SyzygyEncInfo {
 
         int[] norm = new int[totalPieceCount];
 
-
-        int k = norm[0] = (encType != SyzygyEncType.PIECE_ENC)
-                ? material.getPawnCount()[0]
-                : (material.isKkEnc() ? 2 : 3);
+        int k;
+        if (encType != SyzygyEncType.PIECE_ENC) {
+            k = norm[0] = material.getPawnCount()[0];
+        } else {
+            int encTypeCase = material.getEncTypeCase();
+            k = norm[0] = (encTypeCase == 0) ? 3 : (encTypeCase == 2 ? 2 : encTypeCase - 1);
+        }
 
         if (morePawns) {
             norm[k] = material.getPawnCount()[1];
@@ -68,9 +71,16 @@ class SyzygyEncInfo {
                 } else if (encType == SyzygyEncType.RANK_ENC) {
                     f *= SyzygyIndexTables.PAWN_FACTOR_RANK[norm[0] - 1][fileClassIndex];
                 } else {
-                    f *= material.isKkEnc()
-                            ? (material.isConnectedKings() ? 518 : 462)
-                            : 31332;
+                    int encTypeCase = material.getEncTypeCase();
+                    if (encTypeCase == 0) {
+                        f *= 31332;
+                    } else if (encTypeCase == 2) {
+                        f *= material.isConnectedKings() ? 518 : 462;
+                    } else if (encTypeCase == 3) {
+                        f *= 278;
+                    } else {
+                        f *= SyzygyIndexTables.MFACTOR[encTypeCase - 2];
+                    }
                 }
             } else if (i == order2) {
                 factor[norm[0]] = f;

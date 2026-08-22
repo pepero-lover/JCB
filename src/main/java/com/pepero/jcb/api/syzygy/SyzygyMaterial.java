@@ -345,4 +345,29 @@ class SyzygyMaterial {
 
         return count == 2;
     }
+
+    public int getSingularPieceTypeCount() {
+        int count = 0;
+        for (int i = 1; i <= 6; i++) {
+            if (whiteCounts[i] == 1) count++;
+            if (blackCounts[i] == 1) count++;
+        }
+        return count;
+    }
+
+    public int getMinDuplicateGroupSize() {
+        int j = 16;
+        for (int i = 1; i <= 6; i++) {
+            if (whiteCounts[i] > 1 && whiteCounts[i] < j) j = whiteCounts[i];
+            if (blackCounts[i] > 1 && blackCounts[i] < j) j = blackCounts[i];
+        }
+        return j;
+    }
+
+    public int getEncTypeCase() {
+        int singular = getSingularPieceTypeCount();
+        if (singular >= 3) return 0;
+        if (singular == 2) return 2;
+        return 1 + getMinDuplicateGroupSize();
+    }
 }

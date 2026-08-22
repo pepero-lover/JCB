@@ -2665,7 +2665,7 @@ public class ChessGame {
                     else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
                     else yield GameResult.UNKNOWN;
                 }
-                case ANTICHESS -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+                case ANTICHESS -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
                 case ATOMIC -> {
                     if(chessboard.bitboards[k] == 0L) yield GameResult.WHITE_WON;
                     if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;

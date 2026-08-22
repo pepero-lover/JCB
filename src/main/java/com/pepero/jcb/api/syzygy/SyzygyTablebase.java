@@ -32,7 +32,8 @@ public class SyzygyTablebase {
 
     private final int maxPieces;
 
-    private final boolean atomic;
+    private final GameVariant variant;
+    private final boolean connectedKingsEnc;
     private final String wdlExt, dtzExt;
 
     public SyzygyTablebase(Path syzygyDir) {
@@ -50,9 +51,18 @@ public class SyzygyTablebase {
     public SyzygyTablebase(Path syzygyDir, int maxPieces, GameVariant variant) {
         this.syzygyDir = syzygyDir;
         this.maxPieces = maxPieces;
-        this.atomic = (variant == GameVariant.ATOMIC);
-        this.wdlExt = atomic ? ".atbw" : ".rtbw";
-        this.dtzExt = atomic ? ".atbz" : ".rtbz";
+        this.variant = variant;
+        this.connectedKingsEnc = (variant == GameVariant.ATOMIC || variant == GameVariant.ANTICHESS);
+        this.wdlExt = switch (variant) {
+            case ATOMIC -> ".atbw";
+            case ANTICHESS -> ".gtbw";
+            default -> ".rtbw";
+        };
+        this.dtzExt = switch (variant) {
+            case ATOMIC -> ".atbz";
+            case ANTICHESS -> ".gtbz";
+            default -> ".rtbz";
+        };
     }
 
     private record WdlTable(
@@ -87,6 +97,10 @@ public class SyzygyTablebase {
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
         if (moveCount == 0) {
+            if (variant == GameVariant.ANTICHESS) {
+                return 4;
+            }
+
             boolean inCheck = ChessboardUtils.isCheck(board);
             return inCheck ? 0 : 2;
         }
@@ -127,7 +141,8 @@ public class SyzygyTablebase {
 
     private int probeWdlTable(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if(boardPiece == 2) return 2;
+        if (variant != GameVariant.ANTICHESS && boardPiece == 2) return 2;
+        if(boardPiece <= 1) return 2;
 
         if(boardPiece > maxPieces)
             throw new SyzygyUnsupportedMaterialException(
@@ -195,7 +210,8 @@ public class SyzygyTablebase {
      * */
     public int probeDtz(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if (boardPiece == 2) return 0;
+        if (variant != GameVariant.ANTICHESS && boardPiece == 2) return 2;
+        if(boardPiece <= 1) return 2;
 
         int wdlResult = probeWdl(board);
         if (wdlResult == 2) return 0;
@@ -373,10 +389,11 @@ public class SyzygyTablebase {
 
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
-                Path mirroredPath = syzygyDir.resolve(mirrored + dtzExt);
+                Path mirroredPath = syzygyDir.resolve(mirrored + wdlExt);
                 if (!Files.exists(mirroredPath)) {
                     throw new IOException(
-                            "No tablebase file for " + naturalMaterialName + " or its mirror " + mirrored);
+                            "No WDL tablebase file for " + naturalMaterialName + " (" + path + ") "
+                                    + "or its mirror " + mirrored + " (" + mirroredPath + ")");
                 }
                 materialName = mirrored;
                 path = mirroredPath;
@@ -384,7 +401,7 @@ public class SyzygyTablebase {
             }
 
             SyzygyFile file = SyzygyFile.open(path);
-            SyzygyMaterial material = SyzygyMaterial.parse(materialName, atomic);
+            SyzygyMaterial material = SyzygyMaterial.parse(materialName, connectedKingsEnc);
             MappedByteBuffer header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
@@ -429,7 +446,8 @@ public class SyzygyTablebase {
                 Path mirroredPath = syzygyDir.resolve(mirrored + dtzExt);
                 if (!Files.exists(mirroredPath)) {
                     throw new IOException(
-                            "No tablebase file for " + naturalMaterialName + " or its mirror " + mirrored);
+                            "No DTZ tablebase file for " + naturalMaterialName + " (" + path + ") "
+                                    + "or its mirror " + mirrored + " (" + mirroredPath + ")");
                 }
                 materialName = mirrored;
                 path = mirroredPath;
@@ -437,7 +455,7 @@ public class SyzygyTablebase {
             }
 
             SyzygyFile file = SyzygyFile.open(path); // split is always false for DTZ
-            SyzygyMaterial material = SyzygyMaterial.parse(materialName, atomic);
+            SyzygyMaterial material = SyzygyMaterial.parse(materialName, connectedKingsEnc);
             MappedByteBuffer header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
@@ -499,13 +517,14 @@ public class SyzygyTablebase {
         int fileClass = (fileIdx >= 4) ? (7 - fileIdx) : fileIdx;
         return new FileClassResult(fileClass, bestSquare);
     }
+
     private static String buildMaterialString(Chessboard board) {
-        return "K" + countedPieces(board, true) + "vK" + countedPieces(board, false);
+        return countedPieces(board, true) + "v" + countedPieces(board, false);
     }
 
     private static String countedPieces(Chessboard board, boolean isWhite) {
-        int[] codes = isWhite ? new int[]{Q, R, B, N, P} : new int[]{q, r, b, n, p};
-        char[] letters = {'Q', 'R', 'B', 'N', 'P'};
+        int[] codes = isWhite ? new int[]{K, Q, R, B, N, P} : new int[]{k, q, r, b, n, p};
+        char[] letters = {'K', 'Q', 'R', 'B', 'N', 'P'};
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < codes.length; i++) {
             int count = BitBoardUtils.countBits(board.bitboards[codes[i]]);
@@ -518,9 +537,9 @@ public class SyzygyTablebase {
 
     private static String mirrorMaterialString(String materialName) {
         int vIdx = materialName.indexOf('v');
-        String whiteSide = materialName.substring(1, vIdx);
-        String blackSide = materialName.substring(vIdx + 2);
-        return "K" + blackSide + "vK" + whiteSide;
+        String whiteSide = materialName.substring(0, vIdx);
+        String blackSide = materialName.substring(vIdx + 1);
+        return blackSide + "v" + whiteSide;
     }
 
 

@@ -63,4 +63,20 @@ class SyzygyIndexTables {
             }
         }
     }
+
+    public static final long[][] MULTIDX = new long[5][10];
+    public static final long[] MFACTOR = new long[5];
+
+    static {
+        for (int i = 0; i < 5; i++) {
+            long s = 0;
+            for (int j = 0; j < 10; j++) {
+                MULTIDX[i][j] = s;
+                s += (i == 0)
+                        ? 1
+                        : SyzygyMaterial.binomial[i][SyzygyEncodeTables.MTWIST[SyzygyEncodeTables.INVTRIANGLE[j]]];
+            }
+            MFACTOR[i] = s;
+        }
+    }
 }
