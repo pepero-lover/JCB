@@ -63,14 +63,28 @@ public class PerftTest {
 
 
     @Test
-    @DisplayName("Antichess Perft 검증")
-    void antichess() {
+    @DisplayName("Giveaway Perft 검증")
+    void giveaway() {
         // 46264162
 
-        Chessboard chessboard = new Chessboard(Chessboard.antichess_start_position, GameVariant.ANTICHESS);
+        Chessboard chessboard = new Chessboard(Chessboard.antichess_start_position, GameVariant.GIVEAWAY);
         assertEquals(46264162L,
                 PerftDriver.perftBitboardDriver(chessboard, 6, true));
-        ChessGame chessGame = ChessGame.startPosition(GameVariant.ANTICHESS);
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.GIVEAWAY);
+        assertEquals(46264162L,
+                PerftDriver.perftAPIDriver(chessGame, 6, true));
+    }
+
+
+    @Test
+    @DisplayName("Suicide Perft 검증")
+    void suicide() {
+        // 46264162
+
+        Chessboard chessboard = new Chessboard(Chessboard.antichess_start_position, GameVariant.SUICIDE);
+        assertEquals(46264162L,
+                PerftDriver.perftBitboardDriver(chessboard, 6, true));
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.SUICIDE);
         assertEquals(46264162L,
                 PerftDriver.perftAPIDriver(chessGame, 6, true));
     }

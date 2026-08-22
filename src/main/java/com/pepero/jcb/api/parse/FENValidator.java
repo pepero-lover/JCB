@@ -145,7 +145,7 @@ public class FENValidator {
             }
         }
 
-        if(variant == GameVariant.ANTICHESS) {
+        if(variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
             return;
         }
         if(variant != GameVariant.HORDE) {
@@ -224,7 +224,7 @@ public class FENValidator {
     }
 
     public static void validateLogicalState(Chessboard chessboard, GameVariant variant) {
-        if(variant == GameVariant.ANTICHESS) {
+        if(variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
             return;
         }
 

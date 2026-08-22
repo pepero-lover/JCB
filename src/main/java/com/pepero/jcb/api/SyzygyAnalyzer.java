@@ -192,7 +192,7 @@ public class SyzygyAnalyzer {
 
     private static void validateVariant(ChessGame game) {
         if (game.getGameVariant() != GameVariant.STANDARD && game.getGameVariant() != GameVariant.ATOMIC &&
-            game.getGameVariant() != GameVariant.ANTICHESS) {
+            game.getGameVariant() != GameVariant.GIVEAWAY) {
             throw new VariantNotMatchException("Variant should be Standard chess or Chess 960!");
         }
     }

@@ -37,9 +37,12 @@ class PGNExporter {
                 case THREE_CHECK -> pgnHeaders.put("Variant", "Three-check");
                 case KING_OF_THE_HILL -> pgnHeaders.put("Variant", "King of the Hill");
                 case HORDE -> pgnHeaders.put("Variant", "Horde");
-                case ANTICHESS -> pgnHeaders.put("Variant", "Antichess");
+                case GIVEAWAY, SUICIDE -> pgnHeaders.put("Variant", "Antichess");
                 case ATOMIC -> pgnHeaders.put("Variant", "Atomic");
                 case RACING_KINGS -> pgnHeaders.put("Variant", "Racing Kings");
+            }
+            if (variant == GameVariant.SUICIDE) {
+                pgnHeaders.put("RuleVariants", "FICS");
             }
         }
 

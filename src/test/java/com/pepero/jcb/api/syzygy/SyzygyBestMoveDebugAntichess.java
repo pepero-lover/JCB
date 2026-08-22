@@ -14,12 +14,12 @@ import java.nio.file.Path;
 public class SyzygyBestMoveDebugAntichess {
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy-giveaway/");
-        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.ANTICHESS);
+        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.GIVEAWAY);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
         //ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
-        ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.ANTICHESS);
+        ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.GIVEAWAY);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
 

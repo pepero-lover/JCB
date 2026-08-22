@@ -43,8 +43,12 @@ public class ConvertStringMoveUtils {
      * @return whether this position should show the # symbol
      */
     public static boolean shouldShowCheckmateSymbol(Chessboard chessboard) {
-        if (chessboard.gameVariant == GameVariant.ANTICHESS) {
-            return ChessboardUtils.isAntiChessOver(chessboard);
+        if (chessboard.gameVariant == GameVariant.GIVEAWAY) {
+            return ChessboardUtils.isGiveawayOver(chessboard);
+        }
+        if(chessboard.gameVariant == GameVariant.SUICIDE) {
+            int result = ChessboardUtils.getGameResultForSuicide(chessboard);
+            return result != ChessboardUtils.DREW_VALUE && result != ChessboardUtils.ONGOING_VALUE;
         }
         if (chessboard.gameVariant == GameVariant.ATOMIC) {
             return ChessboardUtils.isAtomicOver(chessboard) || ChessboardUtils.isCheckmate(chessboard);
@@ -67,14 +71,19 @@ public class ConvertStringMoveUtils {
      * @param chessboard chessboard
      */
     private static void appendCheckOrMateSymbol(StringBuilder sb, Chessboard chessboard) {
-        boolean isAntichessLike = chessboard.gameVariant == GameVariant.ANTICHESS
+        boolean isAntichessLike =
+                chessboard.gameVariant == GameVariant.GIVEAWAY
+                || chessboard.gameVariant == GameVariant.SUICIDE
                 || chessboard.gameVariant == GameVariant.RACING_KINGS;
 
         boolean inCheck = !isAntichessLike && ChessboardUtils.isCheck(chessboard);
 
         boolean isMate;
-        if (chessboard.gameVariant == GameVariant.ANTICHESS) {
-            isMate = ChessboardUtils.isAntiChessOver(chessboard);
+        if (chessboard.gameVariant == GameVariant.GIVEAWAY) {
+            isMate = ChessboardUtils.isGiveawayOver(chessboard);
+        } else if(chessboard.gameVariant == GameVariant.SUICIDE) {
+            int result = ChessboardUtils.getGameResultForSuicide(chessboard);
+            isMate = result != ChessboardUtils.DREW_VALUE && result != ChessboardUtils.ONGOING_VALUE;
         } else if (chessboard.gameVariant == GameVariant.ATOMIC) {
             isMate = ChessboardUtils.isAtomicOver(chessboard) || (inCheck && !ChessboardUtils.hasLegalMoves(chessboard));
         } else if (chessboard.gameVariant == GameVariant.HORDE) {
@@ -226,7 +235,7 @@ public class ConvertStringMoveUtils {
                 sb.append(ascii_pieces[type % 6]);
 
                 // add disambiguation
-                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.ANTICHESS;
+                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.GIVEAWAY;
 
                 if (!skipDisambiguation) {
                     int going_piece_count = 0;

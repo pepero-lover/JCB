@@ -200,8 +200,11 @@ public class UCIEngineWrapper implements AutoCloseable {
                 case HORDE:
                     setOptionSync("UCI_Variant", "horde");
                     break;
-                case ANTICHESS:
+                case GIVEAWAY:
                     setOptionSync("UCI_Variant", "antichess");
+                    break;
+                case SUICIDE:
+                    setOptionSync("UCI_Variant", "suicide");
                     break;
                 case ATOMIC:
                     setOptionSync("UCI_Variant", "atomic");

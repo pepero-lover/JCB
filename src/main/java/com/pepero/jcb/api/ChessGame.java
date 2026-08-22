@@ -1727,18 +1727,36 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this antichess position overed
+     * Get whether this Giveaway position overed
      *
-     * @throws VariantNotMatchException if this ChessGame isn't AntiChess variant
+     * @throws VariantNotMatchException if this ChessGame isn't Giveaway variant
      */
-    public boolean isAntiChessOver() {
-        if(chessboard.gameVariant != GameVariant.ANTICHESS) throw new VariantNotMatchException(
-                "The variant should be antichess!"
+    public boolean isGiveawayOver() {
+        if(chessboard.gameVariant != GameVariant.GIVEAWAY) throw new VariantNotMatchException(
+                "The variant should be Giveaway!"
         );
 
         readLock.lock();
         try {
-            return ChessboardUtils.isAntiChessOver(chessboard);
+            return ChessboardUtils.isGiveawayOver(chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether this Suicide position overed
+     *
+     * @throws VariantNotMatchException if this ChessGame isn't a Suicide variant
+     */
+    public boolean isSuicideOver() {
+        if(chessboard.gameVariant != GameVariant.SUICIDE) throw new VariantNotMatchException(
+                "The variant should be Suicide!"
+        );
+
+        readLock.lock();
+        try {
+            return ChessboardUtils.isSuicideOver(chessboard);
         } finally {
             readLock.unlock();
         }
@@ -1747,7 +1765,7 @@ public class ChessGame {
     /**
      * Get whether this atomic position overed
      *
-     * @throws VariantNotMatchException if this ChessGame isn't Atomic variant
+     * @throws VariantNotMatchException if this ChessGame isn't an Atomic variant
      */
     public boolean isAtomicOver() {
         if(chessboard.gameVariant != GameVariant.ATOMIC) throw new VariantNotMatchException(
@@ -1811,7 +1829,8 @@ public class ChessGame {
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
-            if (chessboard.gameVariant == GameVariant.ANTICHESS
+            if (chessboard.gameVariant == GameVariant.GIVEAWAY
+                    || chessboard.gameVariant == GameVariant.SUICIDE
                     || chessboard.gameVariant == GameVariant.ATOMIC
                     || chessboard.gameVariant == GameVariant.THREE_CHECK
                     || chessboard.gameVariant == GameVariant.KING_OF_THE_HILL
@@ -1921,8 +1940,11 @@ public class ChessGame {
         readLock.lock();
 
         try {
-            if(chessboard.gameVariant == GameVariant.ANTICHESS) {
-                if(isAntiChessOver()) return GameOverReason.ANTICHESS;
+            if(chessboard.gameVariant == GameVariant.GIVEAWAY) {
+                if(isGiveawayOver()) return GameOverReason.GIVEAWAY;
+            }
+            if(chessboard.gameVariant == GameVariant.SUICIDE) {
+                if(isSuicideOver()) return GameOverReason.SUICIDE;
             }
             if(chessboard.gameVariant == GameVariant.ATOMIC) {
                 if(isAtomicOver()) return GameOverReason.ATOMIC;
@@ -1947,7 +1969,7 @@ public class ChessGame {
                 if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
             }
 
-            if(chessboard.gameVariant != GameVariant.ANTICHESS) {
+            if(chessboard.gameVariant != GameVariant.GIVEAWAY && chessboard.gameVariant != GameVariant.SUICIDE) {
                 boolean inCheck = isCheck();
 
                 if (inCheck) {
@@ -2665,7 +2687,14 @@ public class ChessGame {
                     else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
                     else yield GameResult.UNKNOWN;
                 }
-                case ANTICHESS -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+                case GIVEAWAY -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+                case SUICIDE -> {
+                    int suicideResult = ChessboardUtils.getGameResultForSuicide(chessboard);
+                    if(suicideResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
+                    else if(suicideResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
+                    else if(suicideResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
+                    else yield GameResult.UNKNOWN;
+                }
                 case ATOMIC -> {
                     if(chessboard.bitboards[k] == 0L) yield GameResult.WHITE_WON;
                     if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;

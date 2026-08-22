@@ -46,7 +46,8 @@ class PGNParser {
             case "racing kings", "racing king", "racingkings", "racingking"
             ,"king race", "kingrace", "kr" -> GameVariant.RACING_KINGS;
             case "antichess", "anti chess", "ac", "anti", "giveaway", "losing chess",
-                 "losingchess", "suicide chess", "suicidechess" -> GameVariant.ANTICHESS;
+                 "losingchess" -> GameVariant.GIVEAWAY;
+            case "suicide chess", "suicidechess", "suicide" -> GameVariant.SUICIDE;
             case "atomic", "atomic chess", "atom", "at", "nuclear", "nuclear chess",
                  "explosion chess", "bomb chess" -> GameVariant.ATOMIC;
             default -> GameVariant.STANDARD;
@@ -63,7 +64,7 @@ class PGNParser {
         return switch (gameVariant) {
             case HORDE -> Chessboard.horde_start_position;
             case RACING_KINGS -> Chessboard.racing_kings_start_position;
-            case ANTICHESS -> Chessboard.antichess_start_position;
+            case GIVEAWAY, SUICIDE -> Chessboard.antichess_start_position;
             default -> Chessboard.start_position;
         };
     }

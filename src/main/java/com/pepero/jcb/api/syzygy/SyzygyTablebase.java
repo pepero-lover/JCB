@@ -52,15 +52,19 @@ public class SyzygyTablebase {
         this.syzygyDir = syzygyDir;
         this.maxPieces = maxPieces;
         this.variant = variant;
-        this.connectedKingsEnc = (variant == GameVariant.ATOMIC || variant == GameVariant.ANTICHESS);
+        this.connectedKingsEnc = (
+                        variant == GameVariant.ATOMIC ||
+                        variant == GameVariant.GIVEAWAY ||
+                        variant == GameVariant.SUICIDE
+        );
         this.wdlExt = switch (variant) {
             case ATOMIC -> ".atbw";
-            case ANTICHESS -> ".gtbw";
+            case GIVEAWAY -> ".gtbw";
             default -> ".rtbw";
         };
         this.dtzExt = switch (variant) {
             case ATOMIC -> ".atbz";
-            case ANTICHESS -> ".gtbz";
+            case GIVEAWAY -> ".gtbz";
             default -> ".rtbz";
         };
     }
@@ -97,7 +101,7 @@ public class SyzygyTablebase {
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
         if (moveCount == 0) {
-            if (variant == GameVariant.ANTICHESS) {
+            if (variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
                 return 4;
             }
 
@@ -134,14 +138,12 @@ public class SyzygyTablebase {
         }
 
         int tableWdl = probeWdlTable(board);
-        int result = Math.max(bestWdl, tableWdl);
-
-        return result;
+        return Math.max(bestWdl, tableWdl);
     }
 
     private int probeWdlTable(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if (variant != GameVariant.ANTICHESS && boardPiece == 2) return 2;
+        if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 2;
         if(boardPiece <= 1) return 2;
 
         if(boardPiece > maxPieces)
@@ -210,7 +212,7 @@ public class SyzygyTablebase {
      * */
     public int probeDtz(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if (variant != GameVariant.ANTICHESS && boardPiece == 2) return 2;
+        if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 2;
         if(boardPiece <= 1) return 2;
 
         int wdlResult = probeWdl(board);

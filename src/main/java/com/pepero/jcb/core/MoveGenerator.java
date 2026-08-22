@@ -766,7 +766,7 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
-        if(chessboard.gameVariant == GameVariant.ANTICHESS) {
+        if(chessboard.gameVariant == GameVariant.GIVEAWAY || chessboard.gameVariant == GameVariant.SUICIDE) {
             return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
         }
 

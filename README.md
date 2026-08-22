@@ -12,7 +12,7 @@
 ## Supported Features
 
 - Chess variant support (Standard / Chess960 / CrazyHouse /
-  Three-check / King of the Hill / Horde / Atomic / AntiChess(Giveaway) /
+  Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
   Racing Kings)
 - Syzygy tablebase probing (WDL / DTZ)
 - PGN parsing and export, variation tree
@@ -38,7 +38,8 @@
 | King of the Hill | ✅   | ✅ (`UCI_Variant`)     |
 | Horde            | ✅   | ✅ (`UCI_Variant`)     |
 | Atomic           | ✅   | ✅ (`UCI_Variant`)     |
-| Antichess        | ✅   | ✅ (`UCI_Variant`)     |
+| Giveaway         | ✅   | ✅ (`UCI_Variant`)     |
+| Suicide          | ✅   | ✅ (`UCI_Variant`)     |
 | Racing Kings     | ✅   | ✅ (`UCI_Variant`)     |
 
 ## Credits and References

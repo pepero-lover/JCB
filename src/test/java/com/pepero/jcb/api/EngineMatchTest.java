@@ -2,6 +2,7 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.core.GameVariant;
 
 import java.io.File;
 import java.util.List;
@@ -11,14 +12,14 @@ import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish.exe").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish.exe").getAbsolutePath();
+        String engine1Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
+        String engine2Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
         try {
             EngineConfig engine1Config = new EngineConfig(
-                    "Stockfish 18",
+                    "fairy-stockfish",
                     engine1Path,
                     folder,
                     List.of(),
@@ -28,7 +29,7 @@ public class EngineMatchTest {
             );
 
             EngineConfig engine2Config = new EngineConfig(
-                    "Stockfish 18",
+                    "fairy-stockfish",
                     engine2Path,
                     folder,
                     List.of(),
@@ -65,6 +66,7 @@ public class EngineMatchTest {
 //                            ))
                     .totalGames(10)
                     .concurrency(4)
+                    .variant(GameVariant.SUICIDE)
                     .showClk(true)
                     .showEval(false)
                     .showPv(false)

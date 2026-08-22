@@ -361,7 +361,7 @@ public class ChessboardUtils {
      * @return whether king is under attack
      */
     public static boolean isCheck(Chessboard chessboard) {
-        if(chessboard.gameVariant == GameVariant.ANTICHESS) return false;
+        if(chessboard.gameVariant == GameVariant.GIVEAWAY) return false;
         if(chessboard.gameVariant == GameVariant.HORDE && chessboard.side == white) return false;
         if(chessboard.gameVariant == GameVariant.ATOMIC) {
             if((chessboard.side == white ?
@@ -484,9 +484,6 @@ public class ChessboardUtils {
     /**
      * Get whether this position is three checked <br>
      * if this position isn't three check variant, returns false.
-     *
-     * @param chessboard chess board
-     * @return whether this position is three checked
      */
     public static boolean isThreeCheck(Chessboard chessboard) {
         if(chessboard.gameVariant != GameVariant.THREE_CHECK) return false;
@@ -498,9 +495,6 @@ public class ChessboardUtils {
 
     /**
      * Get whether this position's white/black king gone to the hill
-     *
-     * @param chessboard chessboard
-     * @return whether this position's white/black king gone to the hill
      */
     public static boolean isKingGoneToHill(Chessboard chessboard) {
         if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) return false;
@@ -513,8 +507,6 @@ public class ChessboardUtils {
 
     /**
      * Get whether this horde position's white pieces is all gone (black won)
-     *
-     * @return whether this horde position's white pieces is all gone
      */
     public static boolean isHordePiecesGone(Chessboard chessboard) {
         if(chessboard.gameVariant != GameVariant.HORDE) return false;
@@ -523,12 +515,21 @@ public class ChessboardUtils {
     }
 
     /**
-     * Get whether this antichess position overed
-     *
-     * @return whether this antichess position overed
+     * Get whether this Giveaway position overed
      */
-    public static boolean isAntiChessOver(Chessboard chessboard) {
-        if(chessboard.gameVariant != GameVariant.ANTICHESS) return false;
+    public static boolean isGiveawayOver(Chessboard chessboard) {
+        if(chessboard.gameVariant != GameVariant.GIVEAWAY) return false;
+
+        return
+                chessboard.occupancies[chessboard.side] == 0L ||
+                        !ChessboardUtils.hasLegalMoves(chessboard);
+    }
+
+    /**
+     * Get whether this suicide
+     */
+    public static boolean isSuicideOver(Chessboard chessboard) {
+        if(chessboard.gameVariant != GameVariant.SUICIDE) return false;
 
         return
                 chessboard.occupancies[chessboard.side] == 0L ||
@@ -537,8 +538,6 @@ public class ChessboardUtils {
 
     /**
      * Get whether this atomic position overed
-     *
-     * @return whether this antichess position overed
      */
     public static boolean isAtomicOver(Chessboard chessboard) {
         if(chessboard.gameVariant != GameVariant.ATOMIC) return false;
@@ -550,7 +549,6 @@ public class ChessboardUtils {
      * Get whether this position is checkmate
      *
      * @param chessboard chessboard
-     * @return whether this position is checkmate
      */
     public static boolean isCheckmate(Chessboard chessboard) {
         return isCheck(chessboard) && !hasLegalMoves(chessboard);
@@ -560,7 +558,6 @@ public class ChessboardUtils {
      * Get whether this position is stalemate
      *
      * @param chessboard chessboard
-     * @return whether this position is stalemate
      */
     public static boolean isStaleMate(Chessboard chessboard) {
         return !isCheck(chessboard) && !hasLegalMoves(chessboard);
@@ -570,6 +567,21 @@ public class ChessboardUtils {
     public static final int BLACK_WON_VALUE = 1;
     public static final int DREW_VALUE = 2;
     public static final int ONGOING_VALUE = 3;
+
+    public static int getGameResultForSuicide(Chessboard chessboard) {
+        if(!hasLegalMoves(chessboard)) {
+            int side = chessboard.side;
+            int oppSide = side ^ 1;
+
+            int myPieces = BitBoardUtils.countBits(chessboard.occupancies[side]);
+            int oppPieces = BitBoardUtils.countBits(chessboard.occupancies[oppSide]);
+            if (myPieces < oppPieces) return side == white ? WHITE_WON_VALUE : BLACK_WON_VALUE; // fewer piece side wins
+            if (myPieces == oppPieces) return DREW_VALUE; // if equal, draw
+            return side == white ? BLACK_WON_VALUE : WHITE_WON_VALUE; // fewer piece side wins
+        }
+
+        return ONGOING_VALUE;
+    }
 
     /**
      * Get game result for king racing <br>
