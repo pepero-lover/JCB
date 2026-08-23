@@ -110,8 +110,15 @@ public class SyzygyTablebase {
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
         if (moveCount == 0) {
-            if (variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
+            if (variant == GameVariant.GIVEAWAY) {
                 return 4;
+            }
+            if (variant == GameVariant.SUICIDE) {
+                int myPieces = BitBoardUtils.countBits(board.occupancies[board.side]);
+                int oppPieces = BitBoardUtils.countBits(board.occupancies[board.side ^ 1]);
+                if (myPieces < oppPieces) return 4;
+                if (myPieces == oppPieces) return 2;
+                return 0;
             }
 
             boolean inCheck = ChessboardUtils.isCheck(board);
@@ -176,35 +183,25 @@ public class SyzygyTablebase {
         WdlTable table = wdlCache.computeIfAbsent(materialName, this::loadWdlTable);
 
         SyzygyMaterial material = table.material();
-        FileClassResult fc = determineFileClass(board, material, table.colorFlipped());
-        int t = fc.fileClass();
 
-        // if we're reading a mirrored file, the file's notion of "white to move"
-        // corresponds to the board's actual side being black, and vice versa —
-        // XOR the flip flag against the real side to move to get which slot the
-        // file actually stores this position's data under.
         boolean actualWtm = (board.side == white);
         boolean mirrorFlip = table.colorFlipped();
         boolean isWtm = mirrorFlip != actualWtm;
 
-        // "no split" files (symmetric materials, e.g. KRvKR) only ever store side=0
-        // (wtm) data — side=1 doesn't exist. When isWtm resolves to false here but
-        // there's no second side to read, mentally color-flip the position ONE MORE
-        // TIME so it can be probed as if it were white to move, reusing the single
-        // stored side. The two flips (cross-file mirror + this same-file reuse) are
-        // independent booleans, so they combine via XOR.
         boolean noSplitReuse = (table.sides() == 1) && !isWtm;
         if (noSplitReuse) {
             isWtm = true;
         }
         boolean effectiveColorFlip = mirrorFlip ^ noSplitReuse;
 
+        FileClassResult fc = determineFileClass(board, material, effectiveColorFlip);
+        int t = fc.fileClass();
+
+        System.out.printf("mirrorFlip=%b actualWtm=%b isWtm=%b noSplitReuse=%b effFlip=%b fileClass=%d anchor=%d%n",
+                mirrorFlip, actualWtm, isWtm, noSplitReuse, effectiveColorFlip, fc.fileClass(), fc.anchorSquare());
+
         int side = isWtm ? 0 : 1;
-
         SyzygyPairsHeader ph = table.pairsHeaders()[t][side];
-
-        // constant sub-tables store no huffman/block data at all — every position in
-        // this (sub-table, side) has the same WDL result, so skip decompression entirely.
         if (ph.isConstant()) {
             return ph.constValue();
         }
@@ -233,6 +230,13 @@ public class SyzygyTablebase {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
         if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 2;
         if(boardPiece <= 1) return 2;
+
+        if (variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
+            long sideOccupancy = board.occupancies[board.side];
+            if (sideOccupancy == 0) {
+                return 0;
+            }
+        }
 
         int wdlResult = probeWdl(board);
         if (wdlResult == 2) return 0;
@@ -268,68 +272,42 @@ public class SyzygyTablebase {
     private Integer tryDirectDtz(Chessboard board, int wdlResult) throws IOException {
         String materialName = buildMaterialString(board);
         DtzTable table = dtzCache.computeIfAbsent(materialName, this::loadDtzTable);
-
         SyzygyMaterial material = table.material();
-        FileClassResult fc = determineFileClass(board, material, table.colorFlipped());
-        int t = fc.fileClass();
 
-        // Does this sub-table's stored side-to-move (flags bit 0) match the actual board?
-        // When reading a mirrored file, the board's real side-to-move must first be
-        // reinterpreted through the same color flip used for WDL above.
-        int flags = table.pairsHeaders()[t][0].flags();
-        boolean storedSideIsBlack = (flags & 1) != 0;
         boolean actualBoardSideIsBlack = (board.side == black);
 
-        // fillSquares() needs to know whether to mentally swap white<->black pieces
-        // when reading the board, on top of whatever cross-file mirror (colorFlipped)
-        // was already applied when this material's file was chosen.
         boolean fillColorFlip;
+        boolean storedSideIsBlack;
+        int flags;
 
         if (table.symmetric()) {
-            // Symmetric material (e.g. KRvKR, KNNvKNN — identical piece composition
-            // on both sides): matches Fathom's probe_table(), which for be->symmetric
-            // forces bside=false and ignores the stored-side flag entirely, always
-            // reusing the single stored side via an extra flip keyed only on whose
-            // turn it is. Same trick as WDL's noSplitReuse above — just applied to
-            // DTZ, which Fathom always does but this port previously didn't, causing
-            // an unnecessary probeDtzViaSearch() fallback for these materials.
             fillColorFlip = table.colorFlipped() != actualBoardSideIsBlack;
         } else {
             boolean effectiveBoardSideIsBlack = table.colorFlipped() != actualBoardSideIsBlack;
+            FileClassResult fcTmp = determineFileClass(board, material, table.colorFlipped());
+            flags = table.pairsHeaders()[fcTmp.fileClass()][0].flags();
+            storedSideIsBlack = (flags & 1) != 0;
             if (storedSideIsBlack != effectiveBoardSideIsBlack) {
-                return null; // wrong side stored in this file — caller must search instead
+                return null;
             }
             fillColorFlip = table.colorFlipped();
         }
 
-        // DTZ sub-tables only ever store ONE piece order (wtmPieces); the "btm" nibble
-        // parsed by SyzygyMaterial.parseSubTables is NOT meaningfully populated for DTZ
-        // files (it's just leftover/zero padding from reusing the same byte-layout code
-        // as WDL) — using it throws "Invalid Syzygy piece code: 0". Always use wtmPieces();
-        // fillColorFlip (above) already accounts for whichever side the file actually
-        // stores, so wtmPieces() IS the correct order regardless of what it's called.
-        boolean isWtm = true;
-
+        FileClassResult fc = determineFileClass(board, material, fillColorFlip);
+        int t = fc.fileClass();
         SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
+        flags = ph.flags();
+
+        boolean isWtm = true;
 
         int[] raw;
         if (ph.isConstant()) {
-            // constant DTZ sub-table: no huffman/block data to decompress at all.
-            // Verified against Fathom's decompress_pairs(): it short-circuits on
-            // idxBits==0 and returns constValue directly, and constValue[0] is
-            // hardcoded to 0 for DTZ (never read from the file) — the same
-            // map/parity post-processing below still applies afterward either way.
-            // So raw={0,0} here is exactly equivalent to going through the real
-            // decompress path for a constant table, not a placeholder/guess.
             raw = new int[]{0, 0};
         } else {
             SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
             int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip, fc.anchorSquare());
             long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
-            // NOTE: naive flatIndex==t breaks if any earlier sub-table (t' < t) was
-            // constant (it shifts every later entries[] index down) — must go through
-            // getEntryIndex() rather than assuming sides=1 means flatIndex==t.
             int flatIndex = table.layout().getEntryIndex(t, 0);
             SyzygyHuffmanTable huffman = ph.huffmanTable();
             SyzygyBlockLayout.Entry entry = table.layout().getEntries()[flatIndex];
@@ -338,7 +316,6 @@ public class SyzygyTablebase {
         }
 
         SyzygyDtzMapEntry mapEntry = table.dtzMapPerTable()[t];
-
         return SyzygyDtzPostProcess.postProcess(table.header(), raw[0], raw[1], wdlResult, flags, mapEntry);
     }
 
@@ -517,12 +494,12 @@ public class SyzygyTablebase {
 
     private record FileClassResult(int fileClass, int anchorSquare) {}
 
-    private static FileClassResult determineFileClass(Chessboard board, SyzygyMaterial material, boolean fileColorFlipped) {
+    private static FileClassResult determineFileClass(Chessboard board, SyzygyMaterial material, boolean effectiveColorFlip) {
         if (!material.isHasPawns()) {
             return new FileClassResult(0, -1);
         }
 
-        boolean group0IsBoardWhite = material.isPawnGroup0White() ^ fileColorFlipped;
+        boolean group0IsBoardWhite = material.isPawnGroup0White() ^ effectiveColorFlip;
         long pawns = group0IsBoardWhite ? board.bitboards[P] : board.bitboards[p];
 
         int bestSquare = -1;
@@ -530,10 +507,11 @@ public class SyzygyTablebase {
         long bb = pawns;
         while (bb != 0) {
             int sq = BitBoardUtils.getLS1BIndex(bb);
-            int twist = SyzygyIndexTables.PAWN_TWIST[0][sq];
+            int mirroredSq = effectiveColorFlip ? (sq ^ 0x38) : sq;
+            int twist = SyzygyIndexTables.PAWN_TWIST[0][mirroredSq];
             if (twist > bestTwist) {
                 bestTwist = twist;
-                bestSquare = sq;
+                bestSquare = mirroredSq;
             }
             bb = BitBoardUtils.popBit(bb, sq);
         }

@@ -13,23 +13,6 @@ import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.*;
 
 public class MoveGenerator {
-
-    /*
-                               castling   move     in      in
-                                  right update     binary  decimal
-
-     king & rooks didn't move:     1111 & 1111  =  1111    15
-
-            white king  moved:     1111 & 1100  =  1100    12
-      white king's rook moved:     1111 & 1110  =  1110    14
-     white queen's rook moved:     1111 & 1101  =  1101    13
-
-             black king moved:     1111 & 0011  =  1011    3
-      black king's rook moved:     1111 & 1011  =  1011    11
-     black queen's rook moved:     1111 & 0111  =  0111    7
-
-    */
-
     private static final int NO_PIECE_CONSTANT = -1;
 
     // pre calculated ray mask
@@ -590,7 +573,7 @@ public class MoveGenerator {
                 int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
 
                 // piece moves bitboard
-                long pieceMoves = 0L;
+                long pieceMoves;
                 boolean isPawn = (piece == P || piece == p);
 
                 // get whether this piece is pinned
@@ -884,7 +867,7 @@ public class MoveGenerator {
                 int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
 
                 // piece moves bitboard
-                long pieceMoves = 0L;
+                long pieceMoves;
                 boolean isPawn = (piece == P || piece == p);
 
                 // get whether this piece is pinned

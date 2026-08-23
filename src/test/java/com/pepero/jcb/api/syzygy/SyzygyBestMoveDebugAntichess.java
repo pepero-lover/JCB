@@ -13,48 +13,48 @@ import java.nio.file.Path;
 
 public class SyzygyBestMoveDebugAntichess {
     public static void main(String[] args) throws IOException {
-        Path syzygyDir = Path.of("syzygy-giveaway/");
+        Path syzygyDir = Path.of("syzygy-antichess/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.SUICIDE);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        //ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
-        ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
+        ChessGame game = ChessGame.fromFEN("4k3/8/3P1p2/8/8/8/8/4K3 b - - 0 1", GameVariant.SUICIDE);
+        //ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
-
-        int ply = 0;
-
-        boolean drawFiftyMoves = false;
-
-        while (true) {
-            MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
-
-            GameOverReason reason = game.isGameOver();
-
-            if(reason != GameOverReason.NOTGAMEOVER) {
-                if(drawFiftyMoves) {
-                    System.out.println(reason);
-                    break;
-                } else {
-                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
-                        System.out.println(reason);
-                        break;
-                    }
-                }
-            }
-            if(bestMove == null) break;
-
-            game.makeMove(bestMove);
-            game.printBoard();
-            System.out.println(bestMove);
-            System.out.println("ply : " + ply);
-
-            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-            System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
-            System.out.println("FEN : " + game.getFEN());
-
-            ply++;
-        }
+//
+//        int ply = 0;
+//
+//        boolean drawFiftyMoves = false;
+//
+//        while (true) {
+//            MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
+//
+//            GameOverReason reason = game.isGameOver();
+//
+//            if(reason != GameOverReason.NOTGAMEOVER) {
+//                if(drawFiftyMoves) {
+//                    System.out.println(reason);
+//                    break;
+//                } else {
+//                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
+//                        System.out.println(reason);
+//                        break;
+//                    }
+//                }
+//            }
+//            if(bestMove == null) break;
+//
+//            game.makeMove(bestMove);
+//            game.printBoard();
+//            System.out.println(bestMove);
+//            System.out.println("ply : " + ply);
+//
+//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+//            System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
+//            System.out.println("FEN : " + game.getFEN());
+//
+//            ply++;
+//        }
     }
 }
