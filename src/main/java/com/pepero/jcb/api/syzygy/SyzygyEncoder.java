@@ -88,7 +88,6 @@ class SyzygyEncoder {
                 k = 3;
             }
             idx *= ei.getFactor()[0];
-
         } else {
             // FILE_ENC -> PAWN_TWIST/PAWN_IDX/FLAP index 0, RANK_ENC -> index 1
             int encIdx = (enc == SyzygyEncType.FILE_ENC) ? 0 : 1;

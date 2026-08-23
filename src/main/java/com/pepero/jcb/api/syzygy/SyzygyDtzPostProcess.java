@@ -38,6 +38,8 @@ class SyzygyDtzPostProcess {
             v *= 2;
         }
 
+        v += 1;
+
         if ((s & 1) != 0) {
             v += 100;
         }

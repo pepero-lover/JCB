@@ -223,16 +223,13 @@ public class SyzygyTablebase {
      * @param board chess board
      * @return dtz result
      * */
-    public int probeDtz(Chessboard board) throws IOException {
+    private int probeDtz(Chessboard board) throws IOException {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
-        if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 2;
-        if(boardPiece <= 1) return 2;
+        if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 0;
+        if(boardPiece <= 1) return 0;
 
         if (variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
-            long sideOccupancy = board.occupancies[board.side];
-            if (sideOccupancy == 0) {
-                return 0;
-            }
+            if(!ChessboardUtils.hasLegalMoves(board)) return 0;
         }
 
         int wdlResult = probeWdl(board);
@@ -248,13 +245,44 @@ public class SyzygyTablebase {
                 boolean zeroing = EncodeMove.getMoveCapture(move)
                         || EncodeMove.getMovePiece(move) == P
                         || EncodeMove.getMovePiece(move) == p;
-                if (!zeroing) continue;
 
                 Chessboard child = new Chessboard(board);
                 MoveGenerator.makeMove(child, move);
-                int childWdl = probeWdl(child);
-                if (childWdl == requiredChildWdl) {
-                    return (wdlResult == 3) ? 101 : 1;
+                boolean opponentStuck = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY)
+                        && !ChessboardUtils.hasLegalMoves(child);
+
+                if (zeroing || opponentStuck) {
+                    int childWdl = probeWdl(child);
+                    if (childWdl == requiredChildWdl) {
+                        return (wdlResult == 3) ? 101 : 1;
+                    }
+                }
+                else if (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY) {
+                    int[] responseMoves = new int[MoveCache.MAX_MOVE_SIZE];
+                    int responseCount = MoveGenerator.generateMoves(child, responseMoves);
+
+                    boolean opponentHasCapture = false;
+                    boolean allResponsesLoseForOpponent = true;
+
+                    for (int j = 0; j < responseCount; j++) {
+                        int rMove = responseMoves[j];
+                        if (EncodeMove.getMoveCapture(rMove)) {
+                            opponentHasCapture = true;
+
+                            Chessboard grandchild = new Chessboard(child);
+                            MoveGenerator.makeMove(grandchild, rMove);
+
+                            int gcWdl = probeWdl(grandchild);
+                            if (gcWdl < wdlResult) {
+                                allResponsesLoseForOpponent = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (opponentHasCapture && allResponsesLoseForOpponent) {
+                        return (wdlResult == 3) ? 102 : 2;
+                    }
                 }
             }
         }
@@ -500,14 +528,16 @@ public class SyzygyTablebase {
         long pawns = group0IsBoardWhite ? board.bitboards[P] : board.bitboards[p];
 
         int bestSquare = -1;
-        int bestTwist = -1;
+        int bestFlap = 9999;
+
         long bb = pawns;
         while (bb != 0) {
             int sq = BitBoardUtils.getLS1BIndex(bb);
             int mirroredSq = effectiveColorFlip ? (sq ^ 0x38) : sq;
-            int twist = SyzygyIndexTables.PAWN_TWIST[0][mirroredSq];
-            if (twist > bestTwist) {
-                bestTwist = twist;
+
+            int flap = SyzygyEncodeTables.FLAP[0][mirroredSq];
+            if (flap < bestFlap) {
+                bestFlap = flap;
                 bestSquare = mirroredSq;
             }
             bb = BitBoardUtils.popBit(bb, sq);
