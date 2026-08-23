@@ -13,7 +13,7 @@
 - 체스 변형 지원 (Standard / Chess960 / CrazyHouse / 
 Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
 Racing Kings)
-- Syzygy tablebase 프로빙 (WDL / DTZ)
+- Syzygy tablebase 프로빙 (WDL / DTZ) 그리고 Standard, Atomic, Giveaway, Suicide 변형 지원
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
 - Perft (싱글/멀티스레드)

@@ -14,7 +14,7 @@
 - Chess variant support (Standard / Chess960 / CrazyHouse /
   Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
   Racing Kings)
-- Syzygy tablebase probing (WDL / DTZ)
+- Syzygy tablebase probing (WDL / DTZ) and supports Standard, Atomic, Giveaway, Suicide chess variants
 - PGN parsing and export, variation tree
 - Engine matches (EngineArena)
 - Perft (single/multi-threaded)
