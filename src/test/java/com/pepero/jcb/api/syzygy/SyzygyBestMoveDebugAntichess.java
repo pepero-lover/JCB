@@ -22,39 +22,39 @@ public class SyzygyBestMoveDebugAntichess {
         //ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
-//
-//        int ply = 0;
-//
-//        boolean drawFiftyMoves = false;
-//
-//        while (true) {
-//            MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
-//
-//            GameOverReason reason = game.isGameOver();
-//
-//            if(reason != GameOverReason.NOTGAMEOVER) {
-//                if(drawFiftyMoves) {
-//                    System.out.println(reason);
-//                    break;
-//                } else {
-//                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
-//                        System.out.println(reason);
-//                        break;
-//                    }
-//                }
-//            }
-//            if(bestMove == null) break;
-//
-//            game.makeMove(bestMove);
-//            game.printBoard();
-//            System.out.println(bestMove);
-//            System.out.println("ply : " + ply);
-//
-//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-//            System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
-//            System.out.println("FEN : " + game.getFEN());
-//
-//            ply++;
-//        }
+
+        int ply = 0;
+
+        boolean drawFiftyMoves = false;
+
+        while (true) {
+            MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
+
+            GameOverReason reason = game.isGameOver();
+
+            if(reason != GameOverReason.NOTGAMEOVER) {
+                if(drawFiftyMoves) {
+                    System.out.println(reason);
+                    break;
+                } else {
+                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
+                        System.out.println(reason);
+                        break;
+                    }
+                }
+            }
+            if(bestMove == null) break;
+
+            game.makeMove(bestMove);
+            game.printBoard();
+            System.out.println(bestMove);
+            System.out.println("ply : " + ply);
+
+            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+            System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
+            System.out.println("FEN : " + game.getFEN());
+
+            ply++;
+        }
     }
 }

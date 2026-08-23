@@ -197,9 +197,6 @@ public class SyzygyTablebase {
         FileClassResult fc = determineFileClass(board, material, effectiveColorFlip);
         int t = fc.fileClass();
 
-        System.out.printf("mirrorFlip=%b actualWtm=%b isWtm=%b noSplitReuse=%b effFlip=%b fileClass=%d anchor=%d%n",
-                mirrorFlip, actualWtm, isWtm, noSplitReuse, effectiveColorFlip, fc.fileClass(), fc.anchorSquare());
-
         int side = isWtm ? 0 : 1;
         SyzygyPairsHeader ph = table.pairsHeaders()[t][side];
         if (ph.isConstant()) {
