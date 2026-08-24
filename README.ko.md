@@ -14,6 +14,7 @@
 Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
 Racing Kings)
 - Syzygy tablebase 프로빙 (WDL / DTZ) 그리고 Standard, Atomic, Giveaway, Suicide 변형 지원
+- Gaviota tablebase 프로빙 (WDL / DTM)
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
 - Perft (싱글/멀티스레드)
@@ -24,7 +25,7 @@ Racing Kings)
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
 * 빌드된 jar 라이브러리 파일의 크기가 **240KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
 * 코어 비트보드 탐색 성능은 **70 MNPS (초당 7,000만 노드)** 입니다. (cpu i7-14700KF 기준)
-* Syzygy 테이블 베이스 디코더가 포함되어 있습니다.
+* Syzygy / Gaviota 테이블 베이스 디코더가 포함되어 있습니다.
 * 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
 
 ## 지원하는 변형 체스들
