@@ -44,6 +44,10 @@ class SyzygyDtzPostProcess {
             v += 100;
         }
 
+        if (s < 0) {
+            v = -v;
+        }
+
         return v;
     }
 }

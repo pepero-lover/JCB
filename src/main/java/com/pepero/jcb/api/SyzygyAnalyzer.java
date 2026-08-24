@@ -55,13 +55,16 @@ public class SyzygyAnalyzer {
 
     /**
      * Get DTZ result on this chess position <br>
-     * supports only Standard chess, Chess 960 chess
+     * supports only Standard chess, Chess 960 chess <br>
+     * Note: the returned value is signed — positive means the side to move is winning,
+     * negative means the side to move is losing (matches standard Syzygy DTZ convention).
+     * A value of 0 means a draw.
      *
      * @param tablebase table base class
      * @param containCastle do not throw exception when game has castling rights <br>
      *                      Warning : if you enable this, the position that contained castling rights
      *                      wdl probing might be inaccurate.
-     * @return DTZ result
+     * @return signed DTZ result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
      * @throws IllegalArgumentException if this position has castling right
@@ -74,10 +77,13 @@ public class SyzygyAnalyzer {
 
     /**
      * Get DTZ result on this chess position <br>
-     * supports only Standard chess, Chess 960 chess
+     * supports only Standard chess, Chess 960 chess <br>
+     * Note: the returned value is signed — positive means the side to move is winning,
+     * negative means the side to move is losing (matches standard Syzygy DTZ convention).
+     * A value of 0 means a draw.
      *
      * @param tablebase table base class
-     * @return DTZ result
+     * @return signed DTZ result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
      * @throws IllegalArgumentException if this position has castling right

@@ -379,7 +379,7 @@ public class SyzygyTablebase {
                 continue;
             }
 
-            int childDistance = zeroing ? 0 : probeDtz(child);
+            int childDistance = zeroing ? 0 : Math.abs(probeDtz(child));
             int candidate = 1 + childDistance;
 
             if (zeroing && wdlResult == 1) {
@@ -399,7 +399,7 @@ public class SyzygyTablebase {
                             + " — position may be illegal or a bug elsewhere in the probe");
         }
 
-        return best;
+        return weAreWinning ? best : -best;
     }
 
     // ---- per-material table loading (cached, called at most once per material) ----
@@ -590,7 +590,7 @@ public class SyzygyTablebase {
 
         int dtz = probeDtz(board);
 
-        if (board.half_ply + dtz >= 100) {
+        if (board.half_ply + Math.abs(dtz) >= 100) {
             return wdl < 0 ? -1 : 1;
         }
 
