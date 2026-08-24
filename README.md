@@ -15,6 +15,7 @@
   Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
   Racing Kings)
 - Syzygy tablebase probing (WDL / DTZ) and supports Standard, Atomic, Giveaway, Suicide chess variants
+- Gaviota tablebase probing (WDL / DTM)
 - PGN parsing and export, variation tree
 - Engine matches (EngineArena)
 - Perft (single/multi-threaded)
@@ -25,7 +26,7 @@
 * At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
 * The built jar library is only **240KB** in size, yet implements the complete rules and framework for chess.
 * Core bitboard search performance is **70 MNPS (70 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
-* Includes a built-in Syzygy tablebase decoder.
+* Includes a built-in Syzygy / Gaviota tablebase decoder.
 * This project has zero external library dependencies (except JUnit, used only for testing).
 
 ## Supported Chess Variants
