@@ -3,7 +3,7 @@ package com.pepero.jcb.example;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.event.ChessGameListener;
+import com.pepero.jcb.api.ChessGameListener;
 
 public class ListenerExample {
     public static void main(String[] args) {

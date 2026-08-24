@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.event;
+package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;

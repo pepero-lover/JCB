@@ -4,7 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.event.ChessGameListener;
+import com.pepero.jcb.api.ChessGameListener;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;

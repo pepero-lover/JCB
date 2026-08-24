@@ -3,7 +3,6 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.event.ChessGameListener;
 import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
