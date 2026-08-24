@@ -25,7 +25,7 @@ public class SyzygyBestMoveDebugAtomic {
 
 
 
-        int ply = 0;
+        int ply = 1;
 
         boolean drawFiftyMoves = false;
 

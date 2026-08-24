@@ -21,9 +21,9 @@ public class GaviotaBestMoveDebug {
         //ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
         ChessGame game = ChessGame.fromFEN(bf.readLine());
         System.out.println("First WDL" + GaviotaAnalyzer.probeWdl(game, tb));
-        System.out.println("First DTZ" + GaviotaAnalyzer.probeDtm(game, tb));
+        System.out.println("First DTM" + GaviotaAnalyzer.probeDtm(game, tb));
 
-        int ply = 0;
+        int ply = 1;
 
         boolean drawFiftyMoves = false;
 
@@ -51,7 +51,7 @@ public class GaviotaBestMoveDebug {
             System.out.println("ply : " + ply);
 
             System.out.println("WDL : " + GaviotaAnalyzer.probeWdl(game, tb));
-            System.out.println("DTZ : " + GaviotaAnalyzer.probeDtm(game, tb));
+            System.out.println("DTM : " + GaviotaAnalyzer.probeDtm(game, tb));
             System.out.println("FEN : " + game.getFEN());
 
             ply++;

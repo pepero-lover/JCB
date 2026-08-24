@@ -22,7 +22,7 @@ public class SyzygyBestMoveDebug {
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
 
-        int ply = 0;
+        int ply = 1;
 
         boolean drawFiftyMoves = false;
 
