@@ -12,6 +12,8 @@ import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.encode.EncodeMove;
 
+import static com.pepero.jcb.constant.BoardSquares.*;
+import static com.pepero.jcb.constant.BoardSquares.c8;
 import static com.pepero.jcb.constant.EncodedPieces.*;
 import static com.pepero.jcb.constant.SideToMove.black;
 import static com.pepero.jcb.constant.SideToMove.white;
@@ -170,11 +172,21 @@ public class ConvertStringMoveUtils {
         if(!chessboard.isChess960) {
             int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
             int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(pieceType == K && targetType == R) {
-                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            if(pieceType == K && targetType == R &&
+                    source_square == e1 && target_square == h1) {
+                target_square = g1;
             }
-            if(pieceType == k && targetType == r) {
-                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            if(pieceType == K && targetType == R &&
+                    source_square == e1 && target_square == a1) {
+                target_square = c1;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == h8) {
+                target_square = g8;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == a8) {
+                target_square = c8;
             }
         }
         for (int i = 0; i < move_count; i++) {
@@ -559,11 +571,21 @@ public class ConvertStringMoveUtils {
         if(!chessboard.isChess960) {
             int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
             int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(pieceType == K && targetType == R) {
-                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            if(pieceType == K && targetType == R &&
+                    source_square == e1 && target_square == h1) {
+                target_square = g1;
             }
-            if(pieceType == k && targetType == r) {
-                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            if(pieceType == K && targetType == R &&
+                    source_square == e1 && target_square == a1) {
+                target_square = c1;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == h8) {
+                target_square = g8;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == a8) {
+                target_square = c8;
             }
         }
 

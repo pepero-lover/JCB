@@ -647,4 +647,12 @@ public class ChessGameTest {
         assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
         assertEquals(GameOverReason.CHECKMATE, chessGame.getGameoverReason());
     }
+
+    @Test
+    @DisplayName("캐슬링을 e1h1 으로 줘도 잘 인식해야 한다")
+    void castlingE1H1() {
+        ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/2B1P3/5N2/PPPPRPPP/1NBQK2R w Kkq - 0 1");
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove(Square.e1, Square.e2));
+        chessGame.makeMove(Square.e1, Square.h1);
+    }
 }

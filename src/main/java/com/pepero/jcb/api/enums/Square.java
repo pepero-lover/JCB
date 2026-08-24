@@ -21,7 +21,9 @@ public enum Square {
     private static final Square[] VALUES = values();
 
     /**
-     * Find square from index
+     * Find square from index <p>
+     * The index starts at {@link #a1}(0), and {@link #b1}(1), {@link #c1}(2), and so on. <br>
+     * and the last square is of course {@link #h8}(63)
      *
      * @param index square index
      * @return found square
@@ -52,7 +54,9 @@ public enum Square {
     }
 
     /**
-     * Get Index on this square
+     * Get Index on this square <p>
+     * The index starts at {@link #a1}(0), and {@link #b1}(1), {@link #c1}(2), and so on. <br>
+     * and the last square is of course {@link #h8}(63)
      *
      * @return index on this square
      */

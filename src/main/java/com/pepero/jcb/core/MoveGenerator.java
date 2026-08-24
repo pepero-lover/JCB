@@ -2192,12 +2192,28 @@ public class MoveGenerator {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
+        int source_square = EncodeMove.getMoveSource(move);
+        int target_square = EncodeMove.getMoveTarget(move);
+        int promoted = EncodeMove.getMovePromoted(move);
+        boolean drop = EncodeMove.getMoveDrop(move);
+
+        if(!chessboard.isChess960) {
+            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
+            if(pieceType == K && targetType == R) {
+                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            }
+            if(pieceType == k && targetType == r) {
+                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            }
+        }
+
         for (int count = 0; count < move_count; count++) {
             int possible_move = move_list[count];
-            if (EncodeMove.getMoveSource(possible_move) == EncodeMove.getMoveSource(move)
-                    && EncodeMove.getMoveTarget(possible_move) == EncodeMove.getMoveTarget(move)
-                    && (EncodeMove.getMovePromoted(possible_move) == EncodeMove.getMovePromoted(move))
-                    && EncodeMove.getMoveDrop(possible_move) == EncodeMove.getMoveDrop(move)) {
+            if (EncodeMove.getMoveSource(possible_move) == source_square
+                    && EncodeMove.getMoveTarget(possible_move) == target_square
+                    && EncodeMove.getMovePromoted(possible_move) == promoted
+                    && EncodeMove.getMoveDrop(possible_move) == drop) {
                 return true;
             }
         }
@@ -2208,6 +2224,27 @@ public class MoveGenerator {
     public static int isLegalMove(Chessboard chessboard, int source_square, int target_square, int promotion_type) {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        if(!chessboard.isChess960) {
+            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
+            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
+            if(pieceType == K && targetType == R &&
+                source_square == e1 && target_square == h1) {
+                target_square = g1;
+            }
+            if(pieceType == K && targetType == R &&
+                    source_square == e1 && target_square == a1) {
+                target_square = c1;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == h8) {
+                target_square = g8;
+            }
+            if(pieceType == k && targetType == r &&
+                    source_square == e8 && target_square == a8) {
+                target_square = c8;
+            }
+        }
 
         if(promotion_type == -1) promotion_type = 0;
 

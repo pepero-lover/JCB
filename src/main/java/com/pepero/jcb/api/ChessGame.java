@@ -759,7 +759,7 @@ public class ChessGame {
      *
      * @param sourceSquare Source square
      * @param targetSquare Target square
-     * @param promotionType Promotion type like queen, rook, bishop and knight (PieceType.QUEEN, PieceType.ROOK ... )
+     * @param promotionType Promotion type like queen, rook, bishop and knight ({@link PieceType#QUEEN}, {@link PieceType#ROOK} ... )
      *
      * @throws IllegalMoveException if move is illegal move
      * @throws ConvertMoveException if move data is not correct
