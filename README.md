@@ -1,7 +1,7 @@
 # JCB (Java Chess Board)
 ![Java](https://img.shields.io/badge/Java-21%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Size](https://img.shields.io/badge/Size-240KB-orange)
+![Size](https://img.shields.io/badge/Size-316KB-orange)
 [![](https://jitpack.io/v/pepero-lover/JCB.svg)](https://jitpack.io/#pepero-lover/JCB)
 
 [한국어](README.ko.md) | English
@@ -24,7 +24,7 @@
 ## About JCB
 * This project ports the original C code into Java in an object-oriented style, while keeping the procedural C-style approach for the internal move-generation logic to maximize efficiency.
 * At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
-* The built jar library is only **240KB** in size, yet implements the complete rules and framework for chess.
+* The built jar library is only **316KB** in size, yet implements the complete rules and framework for chess.
 * Core bitboard search performance is **70 MNPS (70 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
 * Includes a built-in Syzygy / Gaviota tablebase decoder.
 * This project has zero external library dependencies (except JUnit, used only for testing).
