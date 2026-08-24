@@ -5,12 +5,12 @@ package com.pepero.jcb.api.gaviota;
  * Assumes JCB's square numbering is a1=0 LERF (same as python-chess's chess.SQUARES:
  * A1=0, B1=1, ..., H1=7, A2=8, ..., H8=63) — no remapping needed if so.
  * <p>
- * This file covers only the deterministic, board-independent static tables and
- * helper functions (flip/twist/index math). The per-material pctoindex() functions,
- * Request/EndgameKey registry, and the LZMA block-decoding engine are separate,
- * later files.
+ * Covers only the deterministic, board-independent static tables and helper
+ * functions (flip/twist/index math). The per-material pctoindex() functions,
+ * Request/EndgameKey registry, and the LZMA block-decoding engine live in
+ * separate files.
  */
-class GaviotaConstants {
+final class GaviotaConstants {
 
     private GaviotaConstants() {}
 
@@ -113,11 +113,11 @@ class GaviotaConstants {
         return x == -1;
     }
 
-    private static int squareFile(int sq) {
+    static int squareFile(int sq) {
         return sq & 7;
     }
 
-    private static int squareRank(int sq) {
+    static int squareRank(int sq) {
         return sq >> 3;
     }
 

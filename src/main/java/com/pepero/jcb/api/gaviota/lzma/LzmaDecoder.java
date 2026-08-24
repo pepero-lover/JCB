@@ -13,7 +13,7 @@ package com.pepero.jcb.api.gaviota.lzma;
  * window — matches are always resolved against bytes already written
  * earlier in this same buffer, so no separate ring buffer is needed.
  */
-final class LzmaDecoder {
+public final class LzmaDecoder {
 
     private static final int NUM_STATES = 12;
     private static final int NUM_POS_BITS_MAX = 4;
@@ -29,7 +29,7 @@ final class LzmaDecoder {
     // plus the "matched byte" extension doubling that range (see decodeLiteral()).
     private static final int LITERAL_CODER_SIZE = 0x300;
 
-    static byte[] decode(byte[] input, int headerOffset, int outSize) {
+    public static byte[] decode(byte[] input, int headerOffset, int outSize) {
         LzmaProps props = LzmaProps.parse(input, headerOffset);
         if (props.uncompressedSize != outSize) {
             throw new IllegalStateException(
