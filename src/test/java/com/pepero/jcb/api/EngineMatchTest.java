@@ -1,7 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
-import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.api.arena.MatchResult;
 import com.pepero.jcb.core.GameVariant;
 
 import java.io.File;

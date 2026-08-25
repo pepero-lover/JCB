@@ -1,6 +1,5 @@
-package com.pepero.jcb.api.dto;
+package com.pepero.jcb.api.arena;
 
-import com.pepero.jcb.api.arena.EngineWinner;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 

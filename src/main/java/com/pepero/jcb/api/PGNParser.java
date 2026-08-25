@@ -1,7 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.dto.PGNToken;
+import com.pepero.jcb.api.parse.pgn.PGNToken;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.NodesOverflowException;

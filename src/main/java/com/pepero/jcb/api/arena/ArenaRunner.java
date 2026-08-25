@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.arena;
 
-import com.pepero.jcb.api.dto.MatchResult;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;

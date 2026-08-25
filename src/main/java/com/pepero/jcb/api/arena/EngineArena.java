@@ -3,13 +3,11 @@ package com.pepero.jcb.api.arena;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.book.PolyglotBookReader;
-import com.pepero.jcb.api.dto.MatchResult;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.EngineArenaException;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
-import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.chess960.Chess960Utils;
 
 import java.io.IOException;

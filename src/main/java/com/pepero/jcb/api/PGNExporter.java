@@ -2,7 +2,7 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveAnnotationDTO;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
-import com.pepero.jcb.api.dto.PGNGame;
+import com.pepero.jcb.api.parse.pgn.PGNGame;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.NodesOverflowException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;

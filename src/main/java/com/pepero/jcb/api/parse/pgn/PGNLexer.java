@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.parse.pgn;
 
-import com.pepero.jcb.api.dto.PGNToken;
-
 public class PGNLexer {
     private final String pgn;
     private int pointer = 0;

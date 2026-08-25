@@ -2,9 +2,7 @@ package com.pepero.jcb.api.parse.pgn;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
-import com.pepero.jcb.api.dto.PGNGame;
 import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.exception.PGNConvertException;
 
 import java.util.List;
 import java.util.Map;

@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.arena;
 
-import com.pepero.jcb.api.dto.MatchResult;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MatchStatistics {

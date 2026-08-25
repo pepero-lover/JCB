@@ -210,7 +210,7 @@ public class GameStateExample {
 
 ```java
 import com.pepero.jcb.api.arena.*;
-import com.pepero.jcb.api.dto.MatchResult;
+import com.pepero.jcb.api.arena.MatchResult;
 
 import java.io.File;
 import java.util.List;
