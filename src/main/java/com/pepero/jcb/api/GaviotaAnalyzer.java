@@ -12,6 +12,12 @@ import com.pepero.jcb.core.MoveGenerator;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Probe and get the DTM (Distance to mate) / WDL (Win Draw Loss) data. <br>
+ * If you want to use Syzygy Analyzer, go to {@link SyzygyAnalyzer}.
+ * This uses {@link ChessGame} to probe the data, if you want to probe the data with {@link Chessboard},
+ * go to {@link GaviotaTablebase}.
+ */
 public class GaviotaAnalyzer {
 
     /**

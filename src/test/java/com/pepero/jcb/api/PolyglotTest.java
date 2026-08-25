@@ -1,6 +1,6 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.dto.BookEntry;
+import com.pepero.jcb.api.book.BookEntry;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 
 public class PolyglotTest {

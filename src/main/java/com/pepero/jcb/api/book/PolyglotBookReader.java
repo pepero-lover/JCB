@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.book;
 
-import com.pepero.jcb.api.dto.BookEntry;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;

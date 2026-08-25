@@ -3,6 +3,7 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 import com.pepero.jcb.api.exception.VariantNotMatchException;
+import com.pepero.jcb.api.gaviota.GaviotaTablebase;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -18,6 +19,12 @@ import java.util.List;
 import static com.pepero.jcb.core.constant.EncodedPieces.P;
 import static com.pepero.jcb.core.constant.EncodedPieces.p;
 
+/**
+ * Probe and get the DTZ (Distance to zero) / WDL (Win Draw Loss) data. <br>
+ * If you want to use Gaviota Analyzer, go to {@link GaviotaAnalyzer}.
+ * This uses {@link ChessGame} to probe the data, if you want to probe the data with {@link Chessboard},
+ * go to {@link SyzygyTablebase}.
+ */
 public class SyzygyAnalyzer {
 
     /**

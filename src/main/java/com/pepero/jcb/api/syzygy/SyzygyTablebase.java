@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.syzygy;
 
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.exception.SyzygyUnsupportedMaterialException;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.MoveCache;
@@ -20,6 +22,11 @@ import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
+/**
+ * Probe and get the DTZ (Distance to zero) / WDL (Win Draw Loss) data.
+ * This uses {@link Chessboard} to probe the data, if you want to probe the data with {@link ChessGame},
+ * go to {@link SyzygyAnalyzer}.
+ */
 public class SyzygyTablebase {
 
     private final Path syzygyDir;

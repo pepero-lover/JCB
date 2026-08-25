@@ -4,6 +4,9 @@ import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariant;
 
+/**
+ * Match config data for {@link ArenaRunner} ({@link EngineArena}).
+ */
 public class MatchConfig {
     private final int totalGames;
     private final int concurrency;
@@ -134,87 +137,139 @@ public class MatchConfig {
 
         private int seed = 1111;
 
+        /**
+         * Total playing games count (<b>Necessary</b>)
+         */
         public Builder totalGames(int totalGames) {
             this.totalGames = totalGames;
             return this;
         }
 
+        /**
+         * Using this amount of threads
+         */
         public Builder concurrency(int concurrency) {
             this.concurrency = concurrency;
             return this;
         }
 
+        /**
+         * Using this opening book
+         */
         public Builder openingBook(String bookFilePath) {
             this.openingBook = new PolyglotBookReader(bookFilePath);
             return this;
         }
 
+        /**
+         * Change white and black side with equal opening
+         */
         public Builder repeatOpening(boolean repeatOpening) {
             this.repeatOpening = repeatOpening;
             return this;
         }
 
+        /**
+         * Engine 1 config (<b>Necessary</b>)
+         */
         public Builder engine1Config(EngineConfig config) {
             this.engine1Config = config;
             return this;
         }
 
+        /**
+         * Engine 2 config (<b>Necessary</b>)
+         */
         public Builder engine2Config(EngineConfig config) {
             this.engine2Config = config;
             return this;
         }
 
+        /**
+         * Starting FEN Setting like handicap
+         */
         public Builder fenSetting(FENSettingConfig config) {
             this.fenSettingConfig = config;
             return this;
         }
 
+        /**
+         * Chess variant option
+         */
         public Builder variant(GameVariant variant) {
             this.variant = variant;
             return this;
         }
 
+        /**
+         * Is Chess 960 mode
+         */
         public Builder isChess960(boolean isChess960) {
             this.isChess960 = isChess960;
             return this;
         }
 
+        /**
+         * Set resign adjudication rule
+         */
         public Builder resignRule(AdjudicationRule resignRule) {
             this.resignRule = resignRule;
             return this;
         }
 
+        /**
+         * Set draw adjudication rule
+         */
         public Builder drawRule(AdjudicationRule drawRule) {
             this.drawRule = drawRule;
             return this;
         }
 
+        /**
+         * Syzygy tablebase for {@link #syzygyRule(SyzygyRule)} <br>
+         * If using {@link #syzygyRule(SyzygyRule)}, this is necessary.
+         */
         public Builder syzygyTablebase(SyzygyTablebase tablebase) {
             this.syzygyTablebase = tablebase;
             return this;
         }
 
+        /**
+         * Set Syzygy adjudication rule
+         */
         public Builder syzygyRule(SyzygyRule rule) {
             this.syzygyRule = rule;
             return this;
         }
 
+        /**
+         * Show pv string on PGN result
+         */
         public Builder showPv(boolean showPv) {
             this.showPv = showPv;
             return this;
         }
 
+        /**
+         * Show eval on PGN result
+         */
         public Builder showEval(boolean showEval) {
             this.showEval = showEval;
             return this;
         }
 
+        /**
+         * Show clock data and time stamp on PGN result
+         */
         public Builder showClk(boolean showClk) {
             this.showClk = showClk;
             return this;
         }
 
 
+        /**
+         * Opening (or Chess 960) random seed
+         */
         public Builder seed(int seed) {
             this.seed = seed;
             return this;

@@ -2,6 +2,9 @@ package com.pepero.jcb.api.uci;
 
 import java.util.List;
 
+/**
+ * Engine analysis listener for {@link UCIEngineWrapper}
+ */
 public interface EngineAnalysisListener {
         default void onAnalysisBundled(List<EngineLine> bundledLines) {}
         default void onBestMoveFound(String bestMove) {}

@@ -1,5 +1,8 @@
 package com.pepero.jcb.api.parse.pgn;
 
+/**
+ * Move annotation for pgn annotation
+ */
 public class MoveAnnotation {
     public String eval; // engine eval data
     public String csl; // square light data

@@ -3,6 +3,9 @@ package com.pepero.jcb.api.enums;
 import com.pepero.jcb.api.exception.PieceNotFoundException;
 import com.pepero.jcb.core.constant.EncodedPieces;
 
+/**
+ * Piece type without piece color distinguishing
+ */
 public enum PieceType {
     PAWN(0),
     KNIGHT(1),

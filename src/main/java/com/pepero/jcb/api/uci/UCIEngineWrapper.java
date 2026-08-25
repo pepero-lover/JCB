@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * UCI engine wrapper for analyzing, best move finding.
+ */
 public class UCIEngineWrapper implements AutoCloseable {
     private Process engineProcess;
     private BufferedReader reader;
@@ -57,6 +60,13 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private int currentCp = 0;
 
+    /**
+     * Build and initialize engine.
+     *
+     * @param engine engine process builder class
+     * @param tickRateMs tick rate (for analyze delay)
+     * @param listener listener
+     */
     public UCIEngineWrapper(ProcessBuilder engine, int tickRateMs, EngineAnalysisListener listener) {
         this.tickRateMs = tickRateMs;
         this.listener = listener;

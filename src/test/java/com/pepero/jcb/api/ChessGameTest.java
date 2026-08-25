@@ -513,7 +513,7 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.fromFEN(fen, GameVariant.CRAZY_HOUSE);
 
         assertFalse(chessGame.isInsufficientMaterial(), "포켓에 기물이 있으므로 기물 부족이 아닙니다.");
-        assertNotEquals(GameOverReason.INSUFFICIENTMATERIAL, chessGame.isGameOver());
+        assertNotEquals(GameOverReason.INSUFFICIENT_MATERIAL, chessGame.isGameOver());
     }
 
     @Test

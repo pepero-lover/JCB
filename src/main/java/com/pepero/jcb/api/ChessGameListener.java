@@ -4,6 +4,10 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 
+/**
+ * Listener for {@link ChessGame} update like {@link #onMoveMade(MoveInfo)}, {@link #onGameOver(GameResult, GameOverReason)} <br>
+ * You can use this on {@link ChessGame#addChessGameListener(ChessGameListener)}
+ */
 public interface ChessGameListener {
     /**
      * When moved

@@ -20,6 +20,9 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Parse PGN string data and return {@link PGNParsedData} for initializing {@link ChessGame} class.
+ */
 class PGNParser {
 
     // for pgn parsing pattern
@@ -70,11 +73,11 @@ class PGNParser {
     }
 
     /**
-     * Parse pgn string to PGNParsedData DTO
+     * Parse pgn string to {@link PGNParsedData} DTO
      *
      * @param pgnString pgn string
      * @param maxNodesCount max nodes calculating count
-     * @return PGNParsedData DTO (for initializing ChessGame
+     * @return {@link PGNParsedData} DTO (for initializing ChessGame)
      */
     public static PGNParsedData parse(String pgnString, int maxNodesCount) {
         long nodeCounter = 0;
@@ -270,7 +273,7 @@ class PGNParser {
                 lastNode.terminalReason = GameOverReason.STALEMATE;
             } else {
                 lastNode.terminalReason = (parsedGameResult == GameResult.DRAW) ?
-                        GameOverReason.AGREEMENTDRAW : GameOverReason.RESIGNATION;
+                        GameOverReason.AGREEMENT_DRAW : GameOverReason.RESIGNATION;
             }
         }
 

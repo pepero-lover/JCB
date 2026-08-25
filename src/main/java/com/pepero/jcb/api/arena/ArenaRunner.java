@@ -6,6 +6,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Engine tournament runner
+ */
 public class ArenaRunner {
 
     private final EngineArena arena;

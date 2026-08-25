@@ -14,6 +14,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+/**
+ * Perft driver for testing and validate the nodes count for debugging.
+ */
 public class PerftDriver {
     public static void apiExecutorWarmup(ExecutorService service, int concurrency, boolean silent) {
         if (!silent) System.out.println("Preheating...");
@@ -102,6 +105,13 @@ public class PerftDriver {
         return (stdDev / mean);
     }
 
+    /**
+     * Do a perft node counting with {@link ChessGame} class.
+     *
+     * @param depth perft depth
+     * @param bulkCounting do a bulk counting (<a href="https://chessprogramming.org/Perft#speed-up">about bulk counting</a>)
+     * @return calculated node count
+     */
     public static long perftAPIDriver(ChessGame chessGame, int depth, boolean bulkCounting) {
         if (depth == 0) {
             return 1;
@@ -122,6 +132,15 @@ public class PerftDriver {
         return localNodes;
     }
 
+    /**
+     * Do a perft testing with {@link ChessGame} class.
+     *
+     * @param depth perft depth
+     * @param concurrency thread count to test this perft test
+     * @param silent if true, print notting during this test
+     * @param bulkCounting do a bulk counting (<a href="https://chessprogramming.org/Perft#speed-up">about bulk counting</a>)
+     * @return return result of perft test like total nodes, time, nps.
+     */
     public static PerftResult perftAPITest(ChessGame chessGame, int depth, int concurrency, boolean silent,
                                            boolean bulkCounting) {
         chessGame = ChessGame.lightWeightCopy(chessGame);
@@ -195,6 +214,13 @@ public class PerftDriver {
         );
     }
 
+    /**
+     * Do a perft node counting with {@link Chessboard} class.
+     *
+     * @param depth perft depth
+     * @param bulkCounting do a bulk counting (<a href="https://chessprogramming.org/Perft#speed-up">about bulk counting</a>)
+     * @return calculated node count
+     */
     public static long perftBitboardDriver(Chessboard chessboard, int depth, boolean bulkCounting) {
         if (depth == 0) {
             return 1;
@@ -218,6 +244,15 @@ public class PerftDriver {
         return nodes;
     }
 
+    /**
+     * Do a perft testing with {@link Chessboard} class.
+     *
+     * @param depth perft depth
+     * @param concurrency thread count to test this perft test
+     * @param silent if true, print notting during this test
+     * @param bulkCounting do a bulk counting (<a href="https://chessprogramming.org/Perft#speed-up">about bulk counting</a>)
+     * @return return result of perft test like total nodes, time, nps.
+     */
     public static PerftResult perftBitboardTest(Chessboard chessboard, int depth, int concurrency, boolean silent,
                                                 boolean bulkCounting) {
         int[] moveList = MoveCache.SEARCH_MOVE_CACHE.get()[chessboard.ply];

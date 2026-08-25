@@ -7,7 +7,6 @@ import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
-import com.pepero.jcb.api.parse.pgn.PGNUtils;
 import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.BoardSquares;
@@ -28,7 +27,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static com.pepero.jcb.api.PGNParser.getDefaultStartPosition;
 import static com.pepero.jcb.core.MoveGenerator.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
-import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
@@ -1982,7 +1980,7 @@ public class ChessGame {
 
             if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
             if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
-            if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENTMATERIAL;
+            if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENT_MATERIAL;
 
             return GameOverReason.NOTGAMEOVER;
         } finally {
@@ -2235,7 +2233,7 @@ public class ChessGame {
 
             this.gameResult = result;
             this.gameoverReason = reason;
-            this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+            this.headers.put("Result", PGNExporter.getGameResultString(this.gameResult));
 
             this.currentNode.terminalResult = result;
             this.currentNode.terminalReason = reason;
@@ -2299,7 +2297,7 @@ public class ChessGame {
      * If both players agreed draw
      */
     public void agreeDraw() {
-        forceEndGame(GameResult.DRAW, GameOverReason.AGREEMENTDRAW);
+        forceEndGame(GameResult.DRAW, GameOverReason.AGREEMENT_DRAW);
     }
 
     /**
@@ -2701,7 +2699,7 @@ public class ChessGame {
                     if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;
                     yield GameResult.UNKNOWN;
                 }
-                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENTMATERIAL,
+                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENT_MATERIAL,
                      SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
                 default -> GameResult.UNKNOWN;
             };
@@ -2715,7 +2713,7 @@ public class ChessGame {
         this.gameResult = result;
 
         if (result != GameResult.UNKNOWN) {
-            this.headers.put("Result", PGNUtils.getGameResultString(this.gameResult));
+            this.headers.put("Result", PGNExporter.getGameResultString(this.gameResult));
             return this.gameResult;
         }
 
@@ -3000,7 +2998,7 @@ public class ChessGame {
 
             evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
 
-            return PGNUtils.export(this,
+            return PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), getGameResult(), moveHistoryRoot, maxNodes), false);
         } finally {
@@ -3037,7 +3035,7 @@ public class ChessGame {
 
             evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
 
-            return PGNUtils.export(this,
+            return PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                     isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
         } finally {

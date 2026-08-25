@@ -35,4 +35,32 @@ public class ConvertMoveException extends RuntimeException {
         this.convertType = convertType;
         this.errorType = type;
     }
+
+    /**
+     * Get error type
+     */
+    public ConvertErrorType getErrorType() {
+        return errorType;
+    }
+
+    /**
+     * Get convert type
+     */
+    public ConvertType getConvertType() {
+        return convertType;
+    }
+
+    /**
+     * Get occurred move <b>(can be null!)</b>
+     */
+    public String getOccurredMove() {
+        return occurredMove;
+    }
+
+    /**
+     * Get occurred fen <b>(can be null!)</b>
+     */
+    public String getOccurredFen() {
+        return occurredFen;
+    }
 }

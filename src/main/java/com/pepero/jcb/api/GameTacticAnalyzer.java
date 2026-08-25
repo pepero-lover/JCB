@@ -3,10 +3,18 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.analyze.ChessTacticUtils;
 import com.pepero.jcb.api.analyze.TacticAnalyzer;
 import com.pepero.jcb.api.analyze.TacticFinding;
+import com.pepero.jcb.api.analyze.TacticType;
 import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.core.Chessboard;
 
 import java.util.List;
 
+/**
+ * Get game tactic on this position. <br>
+ * This tactic analyzer finds tactics like {@link TacticType#PIN}, {@link TacticType#FORK}. <br>
+ * The difference between {@link TacticAnalyzer} and this is the {@link TacticAnalyzer} uses {@link Chessboard}
+ * class, but this class uses {@link ChessGame} class.
+ */
 public class GameTacticAnalyzer {
 
     /**

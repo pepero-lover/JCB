@@ -10,6 +10,10 @@ import java.util.List;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
+/**
+ * Get game tactic on this position. <br>
+ * This tactic analyzer finds tactics like {@link TacticType#PIN}, {@link TacticType#FORK}.
+ */
 public class TacticAnalyzer {
 
     /**

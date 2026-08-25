@@ -1,5 +1,9 @@
 package com.pepero.jcb.api.parse.pgn;
 
+/**
+ * PGN token type for identifying what's the type of this token like {@link #COMMENT} data, {@link #MOVE} data, etc. <br>
+ * Used on {@link PGNLexer}.
+ */
 public enum TokenType {
     NUMBER_INDICATOR,  // move number '1.', '5...' ...
     MOVE,              // san move string 'e4', 'e5'

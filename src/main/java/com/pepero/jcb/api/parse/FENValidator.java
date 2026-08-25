@@ -10,6 +10,11 @@ import com.pepero.jcb.core.MoveGenerator;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
+/**
+ * Validate this FEN is correct. <br>
+ * If the FEN is incorrect, throws {@link FENConvertException} with FEN Error type.
+ * About error types on {@link FENConvertException}, go to {@link FENErrorType}.
+ */
 public class FENValidator {
     /**
      * Get fen string exception

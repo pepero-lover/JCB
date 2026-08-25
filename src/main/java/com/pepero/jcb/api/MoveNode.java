@@ -10,6 +10,9 @@ import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Move node class for storing move data on history tree.
+ */
 class MoveNode {
     final long id;
     final MoveNode parent;
