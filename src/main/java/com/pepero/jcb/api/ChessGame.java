@@ -64,7 +64,7 @@ public class ChessGame {
     /**
      * Node cache for going instantly to other node (Long id)
      */
-    private final Map<Long, MoveNode> nodeCache = new HashMap<>();
+    private LongObjectOpenHashMap<MoveNode> nodeCache = new LongObjectOpenHashMap<>();
 
     // multi-thread safe lock
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -1436,9 +1436,9 @@ public class ChessGame {
             Map<Square, Piece> result = new EnumMap<>(Square.class);
 
             for(Square square : Square.values()) {
-                Piece piece = getPieceOnSquare(square);
-                if (piece != Piece.NONE) {
-                    result.put(square, piece);
+                int piece_type = ChessboardUtils.getPieceTypeOnSquare(this.chessboard, square.getIndex());
+                if (piece_type != -1) {
+                    result.put(square, Piece.fromIndex(piece_type));
                 }
             }
 
@@ -1456,7 +1456,7 @@ public class ChessGame {
     public boolean isEmpty(Square square) {
         readLock.lock();
         try {
-            return getPieceOnSquare(square) == Piece.NONE;
+            return ChessboardUtils.getPieceTypeOnSquare(this.chessboard, square.getIndex()) == -1;
         } finally {
             readLock.unlock();
         }
@@ -2898,8 +2898,7 @@ public class ChessGame {
             this.moveHistoryRoot = parsedData.rootNode();
             this.currentNode = parsedData.rootNode();
 
-            this.nodeCache.clear();
-            this.nodeCache.putAll(parsedData.cache());
+            this.nodeCache = parsedData.cache();
 
             this.headers.clear();
             setDefaultHeaders();
@@ -2933,8 +2932,7 @@ public class ChessGame {
             this.moveHistoryRoot = parsedData.rootNode();
             this.currentNode = parsedData.rootNode();
 
-            this.nodeCache.clear();
-            this.nodeCache.putAll(parsedData.cache());
+            this.nodeCache = parsedData.cache();
 
             this.headers.clear();
             setDefaultHeaders();

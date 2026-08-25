@@ -10,7 +10,7 @@ record PGNParsedData(
         GameVariant variant,
         boolean isChess960,
         MoveNode rootNode,
-        Map<Long, MoveNode> cache,
+        LongObjectOpenHashMap<MoveNode> cache,
         Map<String, String> header,
         GameResult gameResult
 ) {

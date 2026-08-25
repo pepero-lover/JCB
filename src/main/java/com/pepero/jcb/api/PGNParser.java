@@ -117,7 +117,7 @@ class PGNParser {
 
         MoveNode rootNode = new MoveNode(nodeCounter++);
         MoveNode currentParsedNode = rootNode;
-        Map<Long, MoveNode> tempNodeCache = new HashMap<>();
+        LongObjectOpenHashMap<MoveNode> tempNodeCache = new LongObjectOpenHashMap<>();
         tempNodeCache.put(rootNode.id, rootNode);
 
         record VariationState(MoveNode node, Chessboard snapshotBoard) {}

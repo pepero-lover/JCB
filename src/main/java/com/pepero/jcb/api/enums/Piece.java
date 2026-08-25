@@ -107,7 +107,8 @@ public enum Piece {
     /**
      * Get piece type from index
      * <p>
-     * Example : 4 -> WHITE_QUEEN || 7 -> BLACK_KNIGHT
+     * Example : 4 -> {@link #WHITE_QUEEN} || 7 -> {@link #BLACK_KNIGHT} <br>
+     * You can find the index value on {@link EncodedPieces}
      *
      * @param index piece index
      * @return piece
