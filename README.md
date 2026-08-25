@@ -9,9 +9,17 @@
 ## Requirements
 - Java 21 or higher
 
+## About JCB
+* This project ports the original C code into Java in an object-oriented style, while keeping the procedural C-style approach for the internal move-generation logic to maximize efficiency.
+* At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
+* The built jar library is only **316KB** in size, yet implements the complete rules and framework for chess.
+* Core bitboard search performance is **60 MNPS (60 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
+* Includes a built-in Syzygy / Gaviota tablebase decoder.
+* This project has zero external library dependencies (except JUnit, used only for testing).
+
 ## Supported Features
 
-- Chess variant support (Standard / Chess960 / CrazyHouse /
+- Chess variant support (Standard / Chess960 / Crazyhouse /
   Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
   Racing Kings)
 - Syzygy tablebase probing (WDL / DTZ) and supports Standard, Atomic, Giveaway, Suicide chess variants
@@ -20,14 +28,6 @@
 - Engine matches (EngineArena)
 - Perft (single/multi-threaded)
 - No external library dependencies
-
-## About JCB
-* This project ports the original C code into Java in an object-oriented style, while keeping the procedural C-style approach for the internal move-generation logic to maximize efficiency.
-* At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
-* The built jar library is only **316KB** in size, yet implements the complete rules and framework for chess.
-* Core bitboard search performance is **70 MNPS (70 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
-* Includes a built-in Syzygy / Gaviota tablebase decoder.
-* This project has zero external library dependencies (except JUnit, used only for testing).
 
 ## Supported Chess Variants
 | Variant          | FEN | UCI Integration      |

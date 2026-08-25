@@ -8,6 +8,16 @@
 
 ## 요구 사항
 - Java 21 이상
+
+## JCB 에 대해
+
+* 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높였습니다.
+* 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
+* 빌드된 jar 라이브러리 파일 크기가 316KB에 불과하지만, 체스의 모든 규칙과 엔진 프레임워크를 완벽히 구현했습니다.
+* 코어 비트보드 탐색 성능은 **60 MNPS (초당 6,000만 노드)** 입니다. (cpu i7-14700KF 기준)
+* Syzygy / Gaviota 테이블베이스 디코더가 포함되어 있습니다.
+* 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
+
 ## 지원 기능
 
 - 체스 변형 지원 (Standard / Chess960 / CrazyHouse / 
@@ -19,14 +29,6 @@ Racing Kings)
 - 엔진 대전 (EngineArena)
 - Perft (싱글/멀티스레드)
 - 외부 라이브러리 의존성 없음
-
-## JCB 에 대해
-* 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높였습니다.
-* 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
-* 빌드된 jar 라이브러리 파일의 크기가 **316KB** 로 체스 모든 규칙과 프레임 워크를 구현하였습니다.
-* 코어 비트보드 탐색 성능은 **70 MNPS (초당 7,000만 노드)** 입니다. (cpu i7-14700KF 기준)
-* Syzygy / Gaviota 테이블 베이스 디코더가 포함되어 있습니다.
-* 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
 
 ## 지원하는 변형 체스들
 | 변형               | FEN | UCI 연동             |
@@ -43,7 +45,7 @@ Racing Kings)
 | Racing Kings     | ✅   | ✅ (`UCI_Variant`)  |
 
 ## 참고 및 출처
-* 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 는 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
+* 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 은 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
 
 ## 설치 방법
 
@@ -209,7 +211,7 @@ public class GameStateExample {
 
 ```java
 import com.pepero.jcb.api.arena.*;
-링import com.pepero.jcb.api.arena.MatchResult;
+import com.pepero.jcb.api.arena.MatchResult;
 
 import java.io.File;
 import java.util.List;
@@ -298,9 +300,9 @@ import java.nio.file.Path;
 public class SyzygyExample {
 
     public static void main(String[] args) throws IOException {
-        // 테이블 베이스 폴더를 가져옵니다.
+        // 테이블베이스 폴더를 가져옵니다.
         Path syzygyDir = Path.of("syzygy/");
-        // 테이블 베이스를 로드합니다.
+        // 테이블베이스를 로드합니다.
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
 
         // 예시 포지션
@@ -348,9 +350,9 @@ import java.nio.file.Path;
 public class GaviotaExample {
 
     public static void main(String[] args) {
-        // 테이블 베이스 폴더를 가져옵니다.
+        // 테이블베이스 폴더를 가져옵니다.
         Path gaviotaDir = Path.of("gaviota/");
-        // 테이블 베이스를 로드합니다.
+        // 테이블베이스를 로드합니다.
         GaviotaTablebase tb = new GaviotaTablebase(gaviotaDir);
 
         // 예시 포지션
