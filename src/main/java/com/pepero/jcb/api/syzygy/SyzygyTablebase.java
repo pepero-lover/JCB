@@ -150,10 +150,13 @@ public class SyzygyTablebase {
                             || (turn == black && EncodeMove.getMoveTarget(move) <= h1));
 
             if (isCapture || isPromotion) {
-                Chessboard child = new Chessboard(board);
-                MoveGenerator.makeMove(child, move);
-
-                int childWdl = probeWdl(child);
+                MoveGenerator.makeMove(board, move);
+                int childWdl;
+                try {
+                    childWdl = probeWdl(board);
+                } finally {
+                    MoveGenerator.unmakeMove(board, move);
+                }
                 int ourWdl = 4 - childWdl;
 
                 if (ourWdl > bestWdl) {
@@ -253,43 +256,49 @@ public class SyzygyTablebase {
                         || EncodeMove.getMovePiece(move) == P
                         || EncodeMove.getMovePiece(move) == p;
 
-                Chessboard child = new Chessboard(board);
-                MoveGenerator.makeMove(child, move);
-                boolean opponentStuck = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY)
-                        && !ChessboardUtils.hasLegalMoves(child);
+                MoveGenerator.makeMove(board, move);
+                try {
+                    boolean opponentStuck = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY)
+                            && !ChessboardUtils.hasLegalMoves(board);
 
-                if (zeroing || opponentStuck) {
-                    int childWdl = probeWdl(child);
-                    if (childWdl == requiredChildWdl) {
-                        return (wdlResult == 3) ? 101 : 1;
-                    }
-                }
-                else if (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY) {
-                    int[] responseMoves = new int[MoveCache.MAX_MOVE_SIZE];
-                    int responseCount = MoveGenerator.generateMoves(child, responseMoves);
-
-                    boolean opponentHasCapture = false;
-                    boolean allResponsesLoseForOpponent = true;
-
-                    for (int j = 0; j < responseCount; j++) {
-                        int rMove = responseMoves[j];
-                        if (EncodeMove.getMoveCapture(rMove)) {
-                            opponentHasCapture = true;
-
-                            Chessboard grandchild = new Chessboard(child);
-                            MoveGenerator.makeMove(grandchild, rMove);
-
-                            int gcWdl = probeWdl(grandchild);
-                            if (gcWdl < wdlResult) {
-                                allResponsesLoseForOpponent = false;
-                                break;
-                            }
+                    if (zeroing || opponentStuck) {
+                        int childWdl = probeWdl(board);
+                        if (childWdl == requiredChildWdl) {
+                            return (wdlResult == 3) ? 101 : 1;
                         }
                     }
+                    else if (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY) {
+                        int[] responseMoves = new int[MoveCache.MAX_MOVE_SIZE];
+                        int responseCount = MoveGenerator.generateMoves(board, responseMoves);
 
-                    if (opponentHasCapture && allResponsesLoseForOpponent) {
-                        return (wdlResult == 3) ? 102 : 2;
+                        boolean opponentHasCapture = false;
+                        boolean allResponsesLoseForOpponent = true;
+
+                        for (int j = 0; j < responseCount; j++) {
+                            int rMove = responseMoves[j];
+                            if (EncodeMove.getMoveCapture(rMove)) {
+                                opponentHasCapture = true;
+
+                                MoveGenerator.makeMove(board, rMove);
+                                int gcWdl;
+                                try {
+                                    gcWdl = probeWdl(board);
+                                } finally {
+                                    MoveGenerator.unmakeMove(board, rMove);
+                                }
+                                if (gcWdl < wdlResult) {
+                                    allResponsesLoseForOpponent = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (opponentHasCapture && allResponsesLoseForOpponent) {
+                            return (wdlResult == 3) ? 102 : 2;
+                        }
                     }
+                } finally {
+                    MoveGenerator.unmakeMove(board, move);
                 }
             }
         }
@@ -378,28 +387,30 @@ public class SyzygyTablebase {
                     || EncodeMove.getMovePiece(move) == P
                     || EncodeMove.getMovePiece(move) == p;
 
-            Chessboard child = new Chessboard(board);
-            MoveGenerator.makeMove(child, move);
+            MoveGenerator.makeMove(board, move);
+            try {
+                int childWdl = probeWdl(board);
+                boolean consistent = weAreWinning
+                        ? childWdl <= requiredChildWdl
+                        : childWdl >= requiredChildWdl;
+                if (!consistent) {
+                    continue;
+                }
 
-            int childWdl = probeWdl(child);
-            boolean consistent = weAreWinning
-                    ? childWdl <= requiredChildWdl
-                    : childWdl >= requiredChildWdl;
-            if (!consistent) {
-                continue;
-            }
+                int childDistance = zeroing ? 0 : Math.abs(probeDtz(board));
+                int candidate = 1 + childDistance;
 
-            int childDistance = zeroing ? 0 : Math.abs(probeDtz(child));
-            int candidate = 1 + childDistance;
+                if (zeroing && wdlResult == 1) {
+                    candidate += 100;
+                }
 
-            if (zeroing && wdlResult == 1) {
-                candidate += 100;
-            }
-
-            if (best == null
-                    || (weAreWinning && candidate < best)
-                    || (!weAreWinning && candidate > best)) {
-                best = candidate;
+                if (best == null
+                        || (weAreWinning && candidate < best)
+                        || (!weAreWinning && candidate > best)) {
+                    best = candidate;
+                }
+            } finally {
+                MoveGenerator.unmakeMove(board, move);
             }
         }
 
