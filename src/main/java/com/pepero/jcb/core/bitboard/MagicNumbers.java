@@ -1,4 +1,4 @@
-package com.pepero.jcb.bitboard;
+package com.pepero.jcb.core.bitboard;
 
 public class MagicNumbers {
     // rook magic numbers

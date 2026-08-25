@@ -1,4 +1,4 @@
-package com.pepero.jcb.bitboard;
+package com.pepero.jcb.core.bitboard;
 
 public class BitBoardUtils {
     // The bitboard type is just 'long'

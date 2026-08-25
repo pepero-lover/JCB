@@ -1,13 +1,13 @@
 package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.api.exception.SyzygyUnsupportedMaterialException;
-import com.pepero.jcb.bitboard.BitBoardUtils;
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
-import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.core.encode.EncodeMove;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -16,9 +16,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class SyzygyTablebase {
 

@@ -2,13 +2,13 @@ package com.pepero.jcb.api.parse;
 
 import com.pepero.jcb.api.exception.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
-import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class FENValidator {
     /**

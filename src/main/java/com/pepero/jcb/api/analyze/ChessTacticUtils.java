@@ -1,18 +1,18 @@
 package com.pepero.jcb.api.analyze;
 
 import com.pepero.jcb.api.enums.Square;
-import com.pepero.jcb.bitboard.Attacks;
-import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.bitboard.Attacks;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
 import static com.pepero.jcb.core.ChessboardUtils.getPieceTypeOnSquare;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class ChessTacticUtils {
 

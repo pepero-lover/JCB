@@ -1,13 +1,13 @@
-package com.pepero.jcb.encode;
+package com.pepero.jcb.core.encode;
 
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.EncodedPieces;
+import com.pepero.jcb.core.constant.BoardSquares;
+import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.Chessboard;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
  * Encode move data to just one 32 bits integer data <br>

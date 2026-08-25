@@ -2,11 +2,11 @@ package com.pepero.jcb.api.perft;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
-import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.util.TimeUtils;
+import com.pepero.jcb.core.encode.EncodeMove;
+import com.pepero.jcb.core.util.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.List;

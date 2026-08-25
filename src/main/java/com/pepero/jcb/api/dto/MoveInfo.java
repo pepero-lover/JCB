@@ -3,9 +3,7 @@ package com.pepero.jcb.api.dto;
 import com.pepero.jcb.api.enums.Piece;
 import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
-import com.pepero.jcb.encode.EncodeMove;
-
-import java.util.Objects;
+import com.pepero.jcb.core.encode.EncodeMove;
 
 /**
  * Move info class for storing move data <p>

@@ -1,8 +1,8 @@
-package com.pepero.jcb.constant;
+package com.pepero.jcb.core.constant;
 
 import java.util.Arrays;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
 
 /**
  * define castling rights

@@ -4,7 +4,7 @@ import com.pepero.jcb.api.dto.GaviotaMoveDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.VariantNotMatchException;
 import com.pepero.jcb.api.gaviota.GaviotaTablebase;
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;

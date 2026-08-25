@@ -1,6 +1,6 @@
-package com.pepero.jcb.bitboard;
+package com.pepero.jcb.core.bitboard;
 
-import com.pepero.jcb.util.Random;
+import com.pepero.jcb.core.util.Random;
 
 import java.util.Arrays;
 

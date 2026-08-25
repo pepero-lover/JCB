@@ -1,4 +1,4 @@
-package com.pepero.jcb.constant;
+package com.pepero.jcb.core.constant;
 
 /**
  * define side to move

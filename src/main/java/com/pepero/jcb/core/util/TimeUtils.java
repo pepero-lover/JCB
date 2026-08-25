@@ -1,4 +1,4 @@
-package com.pepero.jcb.util;
+package com.pepero.jcb.core.util;
 
 public class TimeUtils {
     // get time milliseconds

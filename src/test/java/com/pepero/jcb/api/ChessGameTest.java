@@ -8,9 +8,9 @@ import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.EmptyMoveUndoException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
-import com.pepero.jcb.constant.BoardSquares;
+import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.*;
-import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.core.encode.EncodeMove;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,12 +1,12 @@
 package com.pepero.jcb.api.syzygy;
 
-import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
  * Ported from Fathom's fill_squares(). Given an actual board position and the

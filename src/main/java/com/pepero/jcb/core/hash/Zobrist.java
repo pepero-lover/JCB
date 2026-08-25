@@ -1,13 +1,13 @@
-package com.pepero.jcb.hash;
+package com.pepero.jcb.core.hash;
 
-import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
-import com.pepero.jcb.util.Random;
+import com.pepero.jcb.core.util.Random;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
 
 public class Zobrist {
     // random piece keys [piece][square]

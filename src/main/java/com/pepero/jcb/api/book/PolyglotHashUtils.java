@@ -1,13 +1,13 @@
 package com.pepero.jcb.api.book;
 
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.constant.PolyglotConstant;
+import com.pepero.jcb.core.constant.BoardSquares;
+import com.pepero.jcb.core.constant.CastlingRights;
+import com.pepero.jcb.core.constant.PolyglotConstant;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class PolyglotHashUtils {
     private static int toPolyglotPiece(int enginePiece) {

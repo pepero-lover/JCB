@@ -1,15 +1,14 @@
 package com.pepero.jcb.api.analyze;
 
 import com.pepero.jcb.api.enums.Square;
-import com.pepero.jcb.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.black;
-import static com.pepero.jcb.constant.SideToMove.white;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class TacticAnalyzer {
 

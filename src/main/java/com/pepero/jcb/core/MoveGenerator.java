@@ -1,16 +1,16 @@
 package com.pepero.jcb.core;
 
-import com.pepero.jcb.bitboard.Attacks;
-import com.pepero.jcb.bitboard.BitBoardUtils;
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.CastlingRights;
-import com.pepero.jcb.constant.MoveCache;
-import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.hash.Zobrist;
+import com.pepero.jcb.core.bitboard.Attacks;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.constant.BoardSquares;
+import com.pepero.jcb.core.constant.CastlingRights;
+import com.pepero.jcb.core.constant.MoveCache;
+import com.pepero.jcb.core.encode.EncodeMove;
+import com.pepero.jcb.core.hash.Zobrist;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 public class MoveGenerator {
     private static final int NO_PIECE_CONSTANT = -1;

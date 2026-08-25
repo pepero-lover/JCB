@@ -1,9 +1,9 @@
 package com.pepero.jcb.perft.crazyhouse;
 
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.*;
-import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.util.TimeUtils;
+import com.pepero.jcb.core.encode.EncodeMove;
+import com.pepero.jcb.core.util.TimeUtils;
 
 public class PerftCrazyHouse {
 

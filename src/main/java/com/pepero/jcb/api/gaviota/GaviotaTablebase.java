@@ -1,10 +1,12 @@
 package com.pepero.jcb.api.gaviota;
 
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.EncodedPieces;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.MoveGenerator;
-import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.core.bitboard.BitBoardUtils;
+import com.pepero.jcb.core.encode.EncodeMove;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -358,8 +360,8 @@ public final class GaviotaTablebase {
                     "gaviota tables support up to 5 pieces, not " + pieceCount);
         }
 
-        long kingsOnly = board.bitboards[com.pepero.jcb.constant.EncodedPieces.K]
-                | board.bitboards[com.pepero.jcb.constant.EncodedPieces.k];
+        long kingsOnly = board.bitboards[EncodedPieces.K]
+                | board.bitboards[EncodedPieces.k];
         if (occupied == kingsOnly) {
             return 0; // KvK is always a draw
         }
@@ -464,13 +466,13 @@ public final class GaviotaTablebase {
     private static int[][] extractSide(Chessboard board, boolean isWhite) {
         int[] pieceIndices = isWhite
                 ? new int[]{
-                com.pepero.jcb.constant.EncodedPieces.P, com.pepero.jcb.constant.EncodedPieces.N,
-                com.pepero.jcb.constant.EncodedPieces.B, com.pepero.jcb.constant.EncodedPieces.R,
-                com.pepero.jcb.constant.EncodedPieces.Q, com.pepero.jcb.constant.EncodedPieces.K}
+                EncodedPieces.P, EncodedPieces.N,
+                EncodedPieces.B, EncodedPieces.R,
+                EncodedPieces.Q, EncodedPieces.K}
                 : new int[]{
-                com.pepero.jcb.constant.EncodedPieces.p, com.pepero.jcb.constant.EncodedPieces.n,
-                com.pepero.jcb.constant.EncodedPieces.b, com.pepero.jcb.constant.EncodedPieces.r,
-                com.pepero.jcb.constant.EncodedPieces.q, com.pepero.jcb.constant.EncodedPieces.k};
+                EncodedPieces.p, EncodedPieces.n,
+                EncodedPieces.b, EncodedPieces.r,
+                EncodedPieces.q, EncodedPieces.k};
         int[] gaviotaTypes = {
                 GaviotaRequest.PAWN, GaviotaRequest.KNIGHT, GaviotaRequest.BISHOP,
                 GaviotaRequest.ROOK, GaviotaRequest.QUEEN, GaviotaRequest.KING
@@ -485,8 +487,8 @@ public final class GaviotaTablebase {
         for (int i = 0; i < pieceIndices.length; i++) {
             long bb = board.bitboards[pieceIndices[i]];
             while (bb != 0L) {
-                int sq = com.pepero.jcb.bitboard.BitBoardUtils.getLS1BIndex(bb);
-                bb = com.pepero.jcb.bitboard.BitBoardUtils.popBit(bb, sq);
+                int sq = BitBoardUtils.getLS1BIndex(bb);
+                bb = BitBoardUtils.popBit(bb, sq);
                 squares[idx] = sq;
                 types[idx] = gaviotaTypes[i];
                 idx++;

@@ -1,12 +1,12 @@
 package com.pepero.jcb.core;
 
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.hash.Zobrist;
+import com.pepero.jcb.core.constant.BoardSquares;
+import com.pepero.jcb.core.hash.Zobrist;
 
 import java.util.Arrays;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
 
 public class Chessboard {
     static {

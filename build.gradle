@@ -6,20 +6,6 @@ group = 'com.pepero.jcb'
 version = '1.7.0'
 base.archivesName = 'JCB'
 
-/*
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java']
-
-            exclude 'com/pepero/jcb/api/**'
-        }
-    }
-}
-
-version = 'bitboard-only-1.7.0'
- */
-
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21

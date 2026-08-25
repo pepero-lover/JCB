@@ -1,6 +1,6 @@
-package com.pepero.jcb.bitboard;
+package com.pepero.jcb.core.bitboard;
 
-import static com.pepero.jcb.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.SideToMove.*;
 
 public class Attacks {
     //  -------

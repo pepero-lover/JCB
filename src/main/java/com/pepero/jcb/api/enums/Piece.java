@@ -1,8 +1,7 @@
 package com.pepero.jcb.api.enums;
 
 import com.pepero.jcb.api.exception.PieceNotFoundException;
-import com.pepero.jcb.constant.EncodedPieces;
-import com.pepero.jcb.core.ChessboardUtils;
+import com.pepero.jcb.core.constant.EncodedPieces;
 
 public enum Piece {
     WHITE_PAWN(0),

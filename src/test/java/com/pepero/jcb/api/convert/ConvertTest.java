@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.convert;
 
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 

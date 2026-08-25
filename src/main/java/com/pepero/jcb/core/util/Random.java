@@ -1,4 +1,4 @@
-package com.pepero.jcb.util;
+package com.pepero.jcb.core.util;
 
 public class Random {
     // i love pepero

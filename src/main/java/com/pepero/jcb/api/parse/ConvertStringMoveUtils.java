@@ -4,20 +4,19 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.ConvertMoveException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.exception.type.ConvertErrorType;
-import com.pepero.jcb.constant.BoardSquares;
-import com.pepero.jcb.constant.MoveCache;
+import com.pepero.jcb.core.constant.BoardSquares;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
-import com.pepero.jcb.encode.EncodeMove;
+import com.pepero.jcb.core.encode.EncodeMove;
 
-import static com.pepero.jcb.constant.BoardSquares.*;
-import static com.pepero.jcb.constant.BoardSquares.c8;
-import static com.pepero.jcb.constant.EncodedPieces.*;
-import static com.pepero.jcb.constant.SideToMove.black;
-import static com.pepero.jcb.constant.SideToMove.white;
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
+
+import static com.pepero.jcb.core.constant.SideToMove.*;
+import static com.pepero.jcb.core.constant.BoardSquares.*;
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
  * Convert string or move data to move data or string <br>

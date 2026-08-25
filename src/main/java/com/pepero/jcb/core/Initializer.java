@@ -1,10 +1,10 @@
 package com.pepero.jcb.core;
 
-import com.pepero.jcb.bitboard.Attacks;
-import com.pepero.jcb.bitboard.Magics;
-import com.pepero.jcb.constant.EncodedPieces;
-import com.pepero.jcb.encode.EncodeMove;
-import com.pepero.jcb.hash.Zobrist;
+import com.pepero.jcb.core.bitboard.Attacks;
+import com.pepero.jcb.core.bitboard.Magics;
+import com.pepero.jcb.core.constant.EncodedPieces;
+import com.pepero.jcb.core.encode.EncodeMove;
+import com.pepero.jcb.core.hash.Zobrist;
 
 public class Initializer {
     /**
