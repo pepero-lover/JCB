@@ -590,7 +590,7 @@ public class SyzygyTablebase {
 
         int dtz = probeDtz(board);
 
-        if (board.half_ply + Math.abs(dtz) >= 100) {
+        if (board.half_ply + Math.abs(dtz) > 100) {
             return wdl < 0 ? -1 : 1;
         }
 

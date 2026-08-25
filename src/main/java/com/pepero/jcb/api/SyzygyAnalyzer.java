@@ -162,7 +162,7 @@ public class SyzygyAnalyzer {
             int ourWdl = triggersRepetition ? 0 : -childWdl;
             int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(board)));
 
-            if (!zeroing && (halfMoveClock + distance >= 100)) {
+            if (!zeroing && (halfMoveClock + distance > 100)) {
                 if (ourWdl == 2) ourWdl = 1;
                 else if (ourWdl == -2) ourWdl = -1;
             }
