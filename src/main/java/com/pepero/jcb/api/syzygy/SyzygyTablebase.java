@@ -361,7 +361,10 @@ public class SyzygyTablebase {
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
         if (moveCount == 0) {
-            return 0;
+            // wdlResult == 2 (Draw) is already handled above, so reaching here with
+            // no legal moves means checkmate (Loss), not stalemate. Per the
+            // WDL_TO_DTZ[Loss] = -1 convention, this must not be reported as 0.
+            return -1;
         }
 
         int requiredChildWdl = 4 - wdlResult;
