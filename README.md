@@ -109,8 +109,6 @@ dependencies {
 
 ## Usage Examples
 
-> ⚠️ **Note:** The example code provided below might differ slightly from the actual implementation in the current release due to ongoing updates.
-
 ### 1. Basic Gameplay
 This is the most standard way to create a chess game and make moves in sequence, whether from the console or from user input (using LAN format).
 
