@@ -65,7 +65,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle 에 추가하세요.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.6.0'
+    implementation 'com.github.pepero-lover:JCB:v1.7.0'
 }
 ```
 
@@ -85,7 +85,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle.kts 에 추가하세요.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.6.0")
+    implementation("com.github.pepero-lover:JCB:v1.7.0")
 }
 ```
 
@@ -104,13 +104,11 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.6.0</version>
+    <version>v1.7.0</version>
 </dependency>
 ```
 
 ## 사용 예시
-
-> ⚠️ **참고:** 아래 제공된 예제 코드는 지속적인 라이브러리 업데이트로 인해 현재 최신 릴리즈의 실제 API 구현과 약간 다를 수 있습니다.
 
 ### 1. 가장 기본적인 게임 플레이
 체스 게임을 생성하고, 콘솔이나 입력값을 받아 차례대로 수를 두는 가장 표준적인 방법입니다. (LAN 포멧 사용)
