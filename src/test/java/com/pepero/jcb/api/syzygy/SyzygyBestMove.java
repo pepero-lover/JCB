@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 
-public class SyzygyBestMoveDebug {
+public class SyzygyBestMove {
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 6);
