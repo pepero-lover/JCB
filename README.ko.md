@@ -20,9 +20,9 @@
 
 ## 지원 기능
 
-- 체스 변형 지원 (Standard / Chess960 / CrazyHouse / 
-Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
-Racing Kings)
+- 체스 변형 지원 (Standard / Chess960 / CrazyHouse /
+  Three-check / King of the Hill / Horde / Atomic / Giveaway / Suicide /
+  Racing Kings)
 - Syzygy tablebase 프로빙 (WDL / DTZ) 그리고 Standard, Atomic, Giveaway, Suicide 변형 지원
 - Gaviota tablebase 프로빙 (WDL / DTM)
 - PGN 파싱 및 export, variation tree
@@ -109,6 +109,8 @@ dependencies {
 ```
 
 ## 사용 예시
+
+> 간단한 UCI 엔진 뼈대 예제(`SimpleEngine`)를 포함한 더 많은 실행 가능한 예제 코드는 저장소의 [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) 경로에서 확인하실 수 있습니다.
 
 ### 1. 가장 기본적인 게임 플레이
 체스 게임을 생성하고, 콘솔이나 입력값을 받아 차례대로 수를 두는 가장 표준적인 방법입니다. (LAN 포멧 사용)

@@ -109,6 +109,8 @@ dependencies {
 
 ## Usage Examples
 
+> More runnable examples, including a minimal UCI engine skeleton (`SimpleEngine`), are available under [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) in the repository.
+
 ### 1. Basic Gameplay
 This is the most standard way to create a chess game and make moves in sequence, whether from the console or from user input (using LAN format).
 
