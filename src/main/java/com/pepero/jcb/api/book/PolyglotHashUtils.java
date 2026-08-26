@@ -2,7 +2,6 @@ package com.pepero.jcb.api.book;
 
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.constant.CastlingRights;
-import com.pepero.jcb.core.constant.PolyglotConstant;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 

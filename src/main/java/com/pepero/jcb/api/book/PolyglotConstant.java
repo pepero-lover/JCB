@@ -1,4 +1,4 @@
-package com.pepero.jcb.core.constant;
+package com.pepero.jcb.api.book;
 
 public class PolyglotConstant {
     public static final long[] POLYGLOT_RAND = {
