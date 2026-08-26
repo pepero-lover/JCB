@@ -2056,6 +2056,9 @@ public class ChessGame {
      *
      * @param moveData moves data
      * @return converted SAN move
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public String toSan(List<MoveInfo> moveData){
         readLock.lock();
@@ -2076,6 +2079,8 @@ public class ChessGame {
      *
      * @param moveData move data
      * @return converted SAN move
+     *
+     * @throws IllegalMoveException if move is illegal
      */
     public String toSan(MoveInfo moveData){
         readLock.lock();
@@ -2095,6 +2100,9 @@ public class ChessGame {
      * if you want to know what's the <b>encodedMoves</b>, go to {@link EncodeMove}
      *
      * @return converted SAN move
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public String toSan(int[] encodedMoves) {
         readLock.lock();
@@ -2114,6 +2122,8 @@ public class ChessGame {
      * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      *
      * @return converted SAN move
+     *
+     * @throws IllegalMoveException if move is illegal
      */
     public String toSan(int encodedMove){
         readLock.lock();
@@ -2130,6 +2140,8 @@ public class ChessGame {
      *
      * @param san SAN move
      * @return Translated string result
+     *
+     * @throws ConvertMoveException if converting move failed
      */
     public String toLanString(String san) {
         readLock.lock();
@@ -2145,6 +2157,9 @@ public class ChessGame {
      *
      * @param san SAN move
      * @return Translated move data result
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public MoveInfo sanToMoveData(String san) {
         Chessboard tempBoard;
@@ -2162,6 +2177,9 @@ public class ChessGame {
      *
      * @param lan LAN move
      * @return Translated move data result
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
      */
     public MoveInfo lanToMoveData(String lan) {
         Chessboard tempBoard;
