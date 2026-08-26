@@ -224,6 +224,15 @@ public class ChessGame {
     }
 
     /**
+     * Initialize position with {@link Chessboard} class
+     *
+     * @param chessboard chess board class
+     */
+    public static ChessGame fromChessboard(Chessboard chessboard) {
+        return new ChessGame(chessboard);
+    }
+
+    /**
      * Initialize position to start position <br>
      * Note that the start position constant on {@link #START_POSITION}
      * or if you want to get other start position fen like {@link Chessboard#racing_kings_start_position},
@@ -357,9 +366,33 @@ public class ChessGame {
             this.gameResult = other.gameResult;
             this.gameoverReason = other.gameoverReason;
 
-            setDefaultHeaders();
+            this.headers.clear();
+            this.headers.putAll(other.headers);
         } finally {
             other.readLock.unlock();
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Initialize position with {@link Chessboard} class <br>
+     * Copies the original {@link Chessboard} class. <br>
+     * and this method doesn't get the history on {@link Chessboard}
+     *
+     * @param chessboard chess board class
+     */
+    private ChessGame(Chessboard chessboard) {
+        writeLock.lock();
+        try {
+            this.chessboard = new Chessboard(chessboard);
+            this.startPositionFEN = ChessboardUtils.getFen(chessboard);
+
+            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
+            this.currentNode = this.moveHistoryRoot;
+            this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
+
+            setDefaultHeaders();
+        } finally {
             writeLock.unlock();
         }
     }
@@ -3282,7 +3315,7 @@ public class ChessGame {
     /**
      * Get current chess board copy (snapshot)
      */
-    Chessboard getBoardSnapshot() {
+    public Chessboard getBoardSnapshot() {
         readLock.lock();
         try {
             return new Chessboard(this.chessboard);
