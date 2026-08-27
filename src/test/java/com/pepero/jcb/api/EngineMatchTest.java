@@ -40,7 +40,7 @@ public class EngineMatchTest {
 
             MatchConfig config = new MatchConfig.Builder()
                     //.openingBook("engine/opening.bin")
-                    .epdOpeningBook("engine/UHO.epd")
+                    .openingBook("engine/UHO.epd")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,

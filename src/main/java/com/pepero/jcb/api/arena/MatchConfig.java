@@ -163,18 +163,32 @@ public class MatchConfig {
         }
 
         /**
-         * Using this opening book
+         * Set the opening book by file path. Extension is auto-detected:
+         * <ul>
+         *     <li>.bin -> Polyglot opening book</li>
+         *     <li>.epd -> EPD opening book (list of starting positions)</li>
+         * </ul>
+         * .pgn files are not directly supported; convert to .bin first using
+         * {@link com.pepero.jcb.api.book.PolyglotBookBuilder}.
          */
         public Builder openingBook(String bookFilePath) {
-            this.openingBook = new PolyglotBookReader(bookFilePath);
-            return this;
-        }
+            String lowerPath = bookFilePath.toLowerCase();
 
-        /**
-         * Using this EPD opening book (list of starting positions, one per game)
-         */
-        public Builder epdOpeningBook(String epdFilePath) {
-            this.epdBook = new EpdBookReader(epdFilePath);
+            if (lowerPath.endsWith(".pgn")) {
+                throw new IllegalArgumentException("This opening book reader doesn't support " +
+                        ".pgn extension. if you want to translate into .bin, go to" +
+                        " 'com.pepero.jcb.api.book.PolyglotBookBuilder'.");
+            } else if (lowerPath.endsWith(".bin")) {
+                this.openingBook = new PolyglotBookReader(bookFilePath);
+                this.epdBook = null;
+            } else if (lowerPath.endsWith(".epd")) {
+                this.epdBook = new EpdBookReader(bookFilePath);
+                this.openingBook = null;
+            } else {
+                throw new IllegalArgumentException("Unsupported opening book file extension: " + bookFilePath +
+                        " (supported: .bin, .epd)");
+            }
+
             return this;
         }
 
