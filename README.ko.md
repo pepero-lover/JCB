@@ -622,5 +622,8 @@ public class PerftResultTest {
 ```
 </details>
 
+## 피드백 & 이슈
+예상대로 작동하지 않는 경우, 사용 중인 Java 버전과 운영 체제, 그리고 가능하다면 문제를 재현할 수 있는 최소한의 코드를 포함하여 [GitHub Issues](https://github.com/pepero-lover/JCB/issues)에 이슈를 등록해 주시면 감사하겠습니다.
+
 ## 라이선스
 이 프로젝트는 MIT License 에 따라 라이선스가 부여됩니다.
