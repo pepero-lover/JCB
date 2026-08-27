@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.book;
 
+import com.pepero.jcb.core.Chessboard;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -20,8 +22,7 @@ public class PolyglotBookReader {
     /**
      * Get suggested all opening moves on chess opening data
      *
-     * @param polyglotHash chess board hash
-     * @return suggested all opening moves on chess opening data
+     * @param polyglotHash chess board hash which can be gotten on {@link PolyglotHashUtils#getPolyglotHash(Chessboard)}
      */
     public List<BookEntry> findMoves(long polyglotHash) {
         List<BookEntry> entries = new ArrayList<>();
@@ -83,7 +84,7 @@ public class PolyglotBookReader {
      * Pick random book move
      *
      * @param polyglotHash position polyglot hash
-     * @return lan book move
+     * @return lan (or uci) book move
      */
     public String pickRandomMove(long polyglotHash) {
         List<BookEntry> entries = findMoves(polyglotHash);
