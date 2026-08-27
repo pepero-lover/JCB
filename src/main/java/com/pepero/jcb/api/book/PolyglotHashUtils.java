@@ -84,12 +84,12 @@ public class PolyglotHashUtils {
     }
 
     /**
-     * Decode Polyglot 16bit number move data to lan string
+     * Decode Polyglot 16bit number move data to lan (or uci) string
      *
      * @param polyglotMove encoded polyglot move
-     * @return decoded lan move data
+     * @return decoded lan (or uci) move data
      */
-    public static String decodePolyglotMove(int polyglotMove) {
+    public static String decodePolyglotMoveLan(int polyglotMove) {
         int source_file = (polyglotMove >> 6) & 7;
         int source_rank = (polyglotMove >> 9) & 7;
         int target_file = (polyglotMove) & 7;

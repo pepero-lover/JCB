@@ -69,7 +69,7 @@ public class PolyglotBookReader {
                     int weight = raf.readUnsignedShort();
                     raf.readInt();
 
-                    String lanMove = PolyglotHashUtils.decodePolyglotMove(moveData);
+                    String lanMove = PolyglotHashUtils.decodePolyglotMoveLan(moveData);
                     entries.add(new BookEntry(key, lanMove, weight));
                 }
             }
@@ -81,10 +81,10 @@ public class PolyglotBookReader {
     }
 
     /**
-     * Pick random book move
+     * Pick random book move from .bin data (Can be null)
      *
-     * @param polyglotHash position polyglot hash
-     * @return lan (or uci) book move
+     * @param polyglotHash this position's polyglot hash
+     * @return picked random book move
      */
     public String pickRandomMove(long polyglotHash) {
         List<BookEntry> entries = findMoves(polyglotHash);
@@ -106,6 +106,14 @@ public class PolyglotBookReader {
         return entries.getFirst().lanMove();
     }
 
+    /**
+     * Pick seed random book move from .bin data (Can be null) <br>
+     * the seed number is 'roundNumber' param (for arena)
+     *
+     * @param polyglotHash this position's polyglot hash
+     * @param roundNumber round number (for arena)
+     * @return picked seed random book move
+     */
     public String pickSequentialMove(long polyglotHash, int roundNumber) {
         List<BookEntry> entries = findMoves(polyglotHash);
         if (entries.isEmpty()) return null;

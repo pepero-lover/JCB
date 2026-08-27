@@ -524,6 +524,8 @@ public class ChessGame {
      * @throws ConvertMoveException if move string is incorrect
      */
     public void makeMove(String lan) {
+        if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
+
         writeLock.lock();
         try {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
@@ -543,6 +545,8 @@ public class ChessGame {
      * @throws ConvertMoveException if move string is incorrect
      */
     public String makeMoveReturningSan(String lan) {
+        if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
+
         writeLock.lock();
         try {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(chessboard, lan);
@@ -563,6 +567,8 @@ public class ChessGame {
      * @throws ConvertMoveException if move string is incorrect
      */
     public void makeMoveSan(String sanString) {
+        if(sanString == null) throw new NullPointerException("San data can not be null!");
+
         makeMove(toLanString(sanString));
     }
 
@@ -594,6 +600,8 @@ public class ChessGame {
      * @throws ConvertMoveException if move data is not correct
      */
     public void makeMoveSanAll(String sanString) {
+        if(sanString == null) throw new NullPointerException("San string can not be null!");
+
         writeLock.lock();
         try {
             sanString = sanString.trim();
@@ -628,6 +636,8 @@ public class ChessGame {
      * @throws ConvertMoveException if move data is not correct
      */
     public void makeMoveAll(String lanString) {
+        if(lanString == null) throw new NullPointerException("Lan string can not be null!");
+
         writeLock.lock();
         try {
             lanString = lanString.trim();
@@ -718,6 +728,8 @@ public class ChessGame {
      * @return true if the move was legal and applied, false otherwise
      */
     public boolean tryMakeMoveRaw(String lanMove) {
+        if(lanMove == null) throw new NullPointerException("Lan string can not be null!");
+
         try {
             makeMoveRaw(lanMove);
             return true;
@@ -743,6 +755,8 @@ public class ChessGame {
      * @param moveString lan move string
      */
     public void makeMoveRaw(String moveString) {
+        if(moveString == null) throw new NullPointerException("Lan string can not be null!");
+
         int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, moveString);
         internalMakeMoveRaw(encodedMove);
     }
@@ -873,6 +887,8 @@ public class ChessGame {
      * @throws ConvertMoveException if converting move failed
      */
     public boolean tryMakeMoveSan(String sanString) {
+        if(sanString == null) throw new NullPointerException("San string can not be null!");
+
         try {
             makeMoveSan(sanString);
             return true;
@@ -909,6 +925,8 @@ public class ChessGame {
      * @return true if all moves were legal and applied, false if it stopped partway through
      */
     public boolean tryMakeMoveSanAll(String sanString) {
+        if(sanString == null) throw new NullPointerException("San string can not be null!");
+
         try {
             makeMoveSanAll(sanString);
             return true;
@@ -929,6 +947,8 @@ public class ChessGame {
      * @throws ConvertMoveException if converting move failed
      */
     public boolean tryMakeMoveAll(String lanString) {
+        if(lanString == null) throw new NullPointerException("Lan string can not be null!");
+
         try {
             makeMoveAll(lanString);
             return true;
@@ -2043,6 +2063,8 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal
      */
     public String toSan(String lanMove){
+        if(lanMove == null) throw new NullPointerException("Lan data can not be null!");
+
         readLock.lock();
         try {
             return ConvertStringMoveUtils.parseLanSequenceToSan(this.chessboard, lanMove).trim();
@@ -2083,6 +2105,8 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal
      */
     public String toSan(MoveInfo moveData){
+        if(moveData == null) throw new NullPointerException("Move data can not be null!");
+
         readLock.lock();
         try {
             return ConvertStringMoveUtils.toSanString(this.chessboard,
@@ -2144,6 +2168,8 @@ public class ChessGame {
      * @throws ConvertMoveException if converting move failed
      */
     public String toLanString(String san) {
+        if(san == null) throw new NullPointerException("San data can not be null!");
+
         readLock.lock();
         try {
             return ConvertStringMoveUtils.toLanString(this.chessboard, san);
@@ -2162,6 +2188,8 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal
      */
     public MoveInfo sanToMoveData(String san) {
+        if(san == null) throw new NullPointerException("San data can not be null!");
+
         Chessboard tempBoard;
         readLock.lock();
         try {
@@ -2182,6 +2210,8 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal
      */
     public MoveInfo lanToMoveData(String lan) {
+        if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
+
         Chessboard tempBoard;
         readLock.lock();
         try {
