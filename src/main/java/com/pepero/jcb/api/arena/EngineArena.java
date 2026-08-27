@@ -2,6 +2,7 @@ package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.SyzygyAnalyzer;
+import com.pepero.jcb.api.book.BookMoveSelector;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
@@ -73,18 +74,16 @@ public class EngineArena {
         }
 
         if (matchConfig.hasEpdOpeningBook()) {
-            return matchConfig.isRepeatOpening()
-                    ? matchConfig.getEpdOpeningBook().pickSequentialPosition(roundNumber)
-                    : matchConfig.getEpdOpeningBook().pickRandomPosition();
+            int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
+            int openingSeed = Objects.hash(matchConfig.getSeed(), effectiveRound);
+            return matchConfig.getEpdOpeningBook().pickSequentialPosition(openingSeed);
         }
 
         if (matchConfig.isChess960()) {
             return Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber));
         }
 
-        return matchConfig.isChess960()
-                ? Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber))
-                : ChessboardUtils.getDefaultStartPosition(matchConfig.getVariant());
+        return ChessboardUtils.getDefaultStartPosition(matchConfig.getVariant());
     }
 
     /**
@@ -157,7 +156,8 @@ public class EngineArena {
                     int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
                     int openingSeed = Objects.hash(matchConfig.getSeed(), effectiveRound);
 
-                    move = bookReader.pickSequentialMove(polyglotHash, openingSeed);
+                    move = BookMoveSelector.pickWeightedBySeed(
+                            bookReader.findMoves(polyglotHash), openingSeed);
 
                     if(move != null) {
                         String san = chessGame.toSan(move);

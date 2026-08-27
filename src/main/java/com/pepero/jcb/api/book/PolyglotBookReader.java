@@ -5,7 +5,6 @@ import com.pepero.jcb.core.Chessboard;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,50 +77,5 @@ public class PolyglotBookReader {
         }
 
         return entries;
-    }
-
-    /**
-     * Pick random book move from .bin data (Can be null)
-     *
-     * @param polyglotHash this position's polyglot hash
-     * @return picked random book move
-     */
-    public String pickRandomMove(long polyglotHash) {
-        List<BookEntry> entries = findMoves(polyglotHash);
-        if (entries.isEmpty()) return null;
-
-        int totalWeight = entries.stream().mapToInt(BookEntry::weight).sum();
-
-        if (totalWeight == 0) return entries.getFirst().lanMove();
-
-        int randomVal = new SecureRandom().nextInt(totalWeight);
-        int currentWeightSum = 0;
-
-        for (BookEntry entry : entries) {
-            currentWeightSum += entry.weight();
-            if (randomVal < currentWeightSum) {
-                return entry.lanMove();
-            }
-        }
-        return entries.getFirst().lanMove();
-    }
-
-    /**
-     * Pick seed random book move from .bin data (Can be null) <br>
-     * the seed number is 'roundNumber' param (for arena)
-     *
-     * @param polyglotHash this position's polyglot hash
-     * @param roundNumber round number (for arena)
-     * @return picked seed random book move
-     */
-    public String pickSequentialMove(long polyglotHash, int roundNumber) {
-        List<BookEntry> entries = findMoves(polyglotHash);
-        if (entries.isEmpty()) return null;
-
-        entries.sort((a, b) -> Integer.compare(b.weight(), a.weight()));
-
-        int index = (roundNumber - 1) % entries.size();
-
-        return entries.get(index).lanMove();
     }
 }

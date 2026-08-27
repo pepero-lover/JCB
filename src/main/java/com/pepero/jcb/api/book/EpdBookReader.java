@@ -36,11 +36,6 @@ public class EpdBookReader {
         }
     }
 
-    /**
-     * EPD lines only contain piece placement, side to move, castling, en passant
-     * (no halfmove/fullmove counters, and may have trailing EPD opcodes like "bm", "id").
-     * Convert to a full FEN by trimming opcodes and appending default counters.
-     */
     private String toFullFen(String epdLine) {
         String[] tokens = epdLine.split("\\s+");
         if (tokens.length < 4) {
@@ -54,7 +49,7 @@ public class EpdBookReader {
     }
 
     /**
-     * Pick random position from .epd data
+     * Pick random position from .epd data (non-reproducible)
      *
      * @return picked random position
      */
@@ -63,14 +58,14 @@ public class EpdBookReader {
     }
 
     /**
-     * Pick seed random position from .epd data <br>
-     * the seed number is 'roundNumber' param (for arena)
+     * Pick a position deterministically from an arbitrary seed value
+     * (round number, hash-derived seed, etc). Reproducible given the same seed.
      *
-     * @param roundNumber round number (for arena)
-     * @return picked seed random position
+     * @param seed arbitrary seed value (can be negative, e.g. from Objects.hash)
+     * @return picked position
      */
-    public String pickSequentialPosition(int roundNumber) {
-        int index = (roundNumber - 1) % positions.size();
+    public String pickSequentialPosition(int seed) {
+        int index = Math.floorMod(seed, positions.size());
         return positions.get(index);
     }
 }

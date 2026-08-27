@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.book.BookMoveSelector;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 
 import java.io.IOException;
@@ -12,7 +13,9 @@ public class PolyglotTest {
         ChessGame game = ChessGame.startPosition();
         reader.findMoves(game.getPolyglotHash());
         for(int i = 0; i < 20; i++) {
-            String move = reader.pickSequentialMove(game.getPolyglotHash(), 1);
+            String move = BookMoveSelector.pickBestMove(
+                    reader.findMoves(game.getPolyglotHash())
+            );
             if(move == null) break;
             game.makeMove(move);
         }
