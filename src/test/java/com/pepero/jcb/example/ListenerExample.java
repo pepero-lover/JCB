@@ -18,7 +18,7 @@ public class ListenerExample {
 
             @Override
             public void onHistoryChanged() {
-                System.out.println("기보가 변경되었습니다.");
+                System.out.println("The move history has changed.");
             }
         });
 

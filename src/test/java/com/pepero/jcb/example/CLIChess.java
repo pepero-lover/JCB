@@ -11,19 +11,18 @@ import java.io.InputStreamReader;
 
 public class CLIChess {
     public static void main(String[] args) throws IOException {
-        // 시작 포지션으로 ChessGame 겍체를 생성합니다.
+        // Initialize chess game
         ChessGame chessGame = ChessGame.startPosition();
 
         BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 
-        // 무한루프로 계속 사용자의 인풋을 받습니다.
         while (true) {
             chessGame.printBoard();
 
             GameOverReason reason = chessGame.isGameOver();
             if (reason != GameOverReason.NOTGAMEOVER) {
-                System.out.println("\n*** 게임 종료! 사유: " + reason + " ***");
-                System.out.println("결과: " + chessGame.getGameResult());
+                System.out.println("\n*** Game over! Reason: " + reason + " ***");
+                System.out.println("Result: " + chessGame.getGameResult());
                 System.out.println();
             }
 
@@ -34,45 +33,45 @@ public class CLIChess {
             String[] arg = input.trim().split("\\s+");
             String command = arg[0].toLowerCase();
 
-            if(command.equals("u") || command.equals("undo")) { // 만약 언도를 할 경우
+            if(command.equals("u") || command.equals("undo")) { // if undo,
                 if(chessGame.canUndo()) {
                     chessGame.unmakeMove();
 
                     continue;
                 }
 
-                System.err.println("수를 되돌릴 수 없습니다!");
+                System.err.println("Could not undo move!");
                 System.out.println();
 
                 continue;
             }
 
             if (command.equals("r") || command.equals("redo")) {
-                if (arg.length == 1) { // 메인 라인 되돌리기
+                if (arg.length == 1) { // mainline redo
                     if (chessGame.canRedo()) {
                         chessGame.remakeMove();
                     } else {
-                        System.err.println("수를 앞으로 되돌릴 수 없습니다!");
+                        System.err.println("Could not redo mainline move!");
                     }
-                } else { // 바리에이션 되돌리기
+                } else { // variation redo
                     try {
                         int variationIndex = Integer.parseInt(arg[1]);
                         if (chessGame.canRedo(variationIndex)) {
                             chessGame.remakeMove(variationIndex);
                         } else {
-                            System.err.println("해당 바리에이션 번호로 되돌릴 수 없습니다!");
+                            System.err.println("Could not redo that variation index move!");
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("바리에이션 인덱스는 숫자여야 합니다!");
+                        System.err.println("variation index should be integer!");
                     }
                 }
                 continue;
             }
 
-            // 무브 히스토리 출력
+            // print move history
             if(input.equals("movehistory") || input.equals("history") || input.equals("h")) {
-                // san 을 포함한 무브 히스토리
-                System.out.println("\n[ 기보 히스토리 ]");
+                // move history with san
+                System.out.println("\n[ Move history ]");
                 chessGame.printHistory();
                 System.out.println();
                 continue;
@@ -80,45 +79,45 @@ public class CLIChess {
 
             if(command.equals("move")) {
                 if (arg.length < 2) {
-                    System.err.println("SAN 기보를 입력해주세요! (예: move e4)");
+                    System.err.println("Please enter SAN move format!");
                     continue;
                 }
                 String san = arg[1];
                 try {
-                    // San 무브를 무브 데이터로 가져옵니다.
-                    MoveInfo encoded_data = chessGame.sanToMoveData(san);
-                    chessGame.makeMove(encoded_data);
+                    // san move to MoveInfo class
+                    MoveInfo moveInfo = chessGame.sanToMoveData(san);
+                    chessGame.makeMove(moveInfo);
                 } catch (ConvertMoveException e) {
-                    System.err.println("SAN 무브를 해석할 수 없습니다!");
+                    System.err.println("Could not parse the SAN move!");
                 }
                 continue;
             }
 
             if(command.equals("moves")) {
                 if (arg.length < 2) {
-                    System.err.println("SAN 기보를 입력해주세요! (예: moves e4 e5)");
+                    System.err.println("Please enter SAN move format!");
                     continue;
                 }
                 try {
                     for(int i = 1; i < arg.length; i++) {
                         String san = arg[i];
 
-                        // San 무브를 무브 데이터로 가져옵니다.
-                        MoveInfo encodedData = chessGame.sanToMoveData(san);
-                        chessGame.makeMove(encodedData);
+                        // get San data to MoveInfo
+                        MoveInfo moveInfo = chessGame.sanToMoveData(san);
+                        chessGame.makeMove(moveInfo);
                     }
                 } catch (ConvertMoveException e) {
-                    System.err.println("SAN 무브를 해석할 수 없습니다!");
+                    System.err.println("Could not parse the SAN move!");
                 }
                 continue;
             }
 
-            // 종료
+            // exit
             if(input.equals("exit")) {
                 break;
             }
 
-            System.err.println("알 수 없는 명령어입니다. (move, undo, redo, movehistory, exit)");
+            System.err.println("Unknown command. (move, undo, redo, movehistory, exit)");
         }
     }
 }

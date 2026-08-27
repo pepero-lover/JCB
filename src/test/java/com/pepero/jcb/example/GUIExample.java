@@ -9,18 +9,18 @@ public class GUIExample {
     public static void main(String[] args) {
         ChessGame chessGame = ChessGame.startPosition();
 
-        // 사용자가 e2 칸에 있는 백 폰을 클릭했다고 가정합니다.
+        // Assume the user clicked on the white pawn on e2.
         Square clickedSquare = Square.e2;
 
-        // e2 기물이 이동 할 수 있는 모든 수를 가져옵니다.
+        // Get all legal moves for the piece on e2.
         List<MoveInfo> legalMoves = chessGame.getLegalMovesForSource(clickedSquare);
 
-        System.out.println("e2 기물이 갈 수 있는 수 목록 ( LAN )");
+        System.out.println("List of moves available for the piece on e2 (LAN)");
         for (MoveInfo move : legalMoves) {
             System.out.println("- " + move.toString());
         }
 
-        // 현재 체스판의 기물 점수 확인 (백 유리: 양수 / 흑 유리: 음수)
-        System.out.println("현재 백 기준 기물 점수: " + chessGame.getPieceScore());
+        // Check the current piece score (positive: White is ahead / negative: Black is ahead)
+        System.out.println("Current piece score (from White's perspective): " + chessGame.getPieceScore());
     }
 }

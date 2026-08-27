@@ -9,28 +9,29 @@ import java.util.Map;
 
 public class EngineExample {
     public static void main(String[] args) {
-        // 엔진들의 실행 경로를 지정합니다.
+        // Specify the executable paths for the engines.
         String engine1Path = new File("engine/stockfish").getAbsolutePath();
         String engine2Path = new File("engine/stockfish").getAbsolutePath();
 
-        // 엔진의 작업 폴더를 지정합니다.
+        // Specify the engines' working directory.
         String folder = new File("engine/").getAbsolutePath();
 
         try {
-            // 엔진 1의 설정을 생성합니다.
+            // Create the configuration for Engine 1.
             EngineConfig engine1Config = new EngineConfig(
-                    "Stockfish 18", // 엔진 표시용 이름
-                    engine1Path, // 엔진 실행 경로
-                    folder, // 작업 폴더
-                    List.of(), // 엔진의 args 설정
-                    EngineConfig.Protocol.UCI, // 프로토콜 종류
-                    Map.of(), // 옵션 설정
-                    new EngineLimit(10) // 엔진의 제한사항 (타임 컨트롤 및 depth 설정)
-                    // 지금에서는 10 depth 만 하지만 만약 시간 제한을 두고 하고 싶다면
-                    // new EngineLimit(10_000, 300) 으로 한다면 10000 밀리초 에 피셔 300 밀리초로 10+0.3 초 로 설정 할 수 있습니다.
+                    "Stockfish 18", // Display name of the engine
+                    engine1Path, // Engine executable path
+                    folder, // Working directory
+                    List.of(), // Engine args
+                    EngineConfig.Protocol.UCI, // Protocol type
+                    Map.of(), // Option settings
+                    new EngineLimit(10) // Engine limits (time control and depth settings)
+                    // Here we only use a depth of 10, but if you want a time control instead,
+                    // you could use new EngineLimit(10_000, 300) for a 10+0.3 setup
+                    // (10000 ms base time, 300 ms Fischer increment).
             );
 
-            // 엔진 2의 설정을 생성합니다.
+            // Create the configuration for Engine 2.
             EngineConfig engine2Config = new EngineConfig(
                     "Stockfish 18",
                     engine2Path,
@@ -41,21 +42,24 @@ public class EngineExample {
                     new EngineLimit(10)
             );
 
-            // 매치의 설정을 생성합니다.
+            // Create the match configuration.
+            // openingBook() auto-detects the file extension:
+            //   .bin -> Polyglot opening book (queried move by move)
+            //   .epd -> EPD opening book (a fixed starting position per game)
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
-                    .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
-                    .totalGames(10) // 총 진행할 게임 수
-                    .concurrency(1) // 사용할 스레드 수 (지금은 1개만 설정했습니다.)
-                    .engine1Config(engine1Config) // 엔진 1의 설정을 가져옵니다.
-                    .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
+                    .openingBook("engine/opening.bin") // You can set an opening book.
+                    .repeatOpening(true) // Play each opening twice, swapping colors.
+                    .totalGames(10) // Total number of games to play
+                    .concurrency(1) // Number of threads to use (only 1 here)
+                    .engine1Config(engine1Config) // Pull in Engine 1's configuration
+                    .engine2Config(engine2Config) // Pull in Engine 2's configuration
                     .build();
 
-            // 매치 진행 클래스를 생성합니다.
+            // Create the match runner class.
             ArenaRunner arena = new ArenaRunner(config);
 
-            // 아레나 매치를 시작합니다.
-            // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
+            // Start the arena match.
+            // As a listener, we'll export the PGN whenever a game finishes.
             MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {

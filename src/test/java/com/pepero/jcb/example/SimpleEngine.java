@@ -8,8 +8,6 @@ import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.encode.EncodeMove;
 
-import java.util.Arrays;
-
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 

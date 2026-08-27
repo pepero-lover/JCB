@@ -6,7 +6,7 @@ public class JumpExample {
     public static void main(String[] args) {
         ChessGame chessGame = ChessGame.startPosition();
 
-        // 포지션 설정 ...
+        // Set up the position ...
 
         chessGame.makeMove("e2e4");
         chessGame.makeMove("e7e5");
@@ -15,15 +15,15 @@ public class JumpExample {
 
         chessGame.makeMove("b8c6");
 
-        // 무브 히스토리는 이렇게 됩니다.
+        // The move history now looks like this:
         // e4 e5 Nf3 Nc6
 
         System.out.println("Position e4 e5 Nf3 Nf6");
         chessGame.printBoard();
 
-        // 이때 Jump to node 를 호출 합니다.
+        // Now let's jump to that saved node.
         chessGame.jumpToNode(uuid_g1f3);
-        // 이렇게 되면 e4 e5 Nf3 <-- 여기로 이동하게 됩니다
+        // This moves the game back to: e4 e5 Nf3 <-- here
 
         System.out.println("Position e4 e5 Nf3");
         chessGame.printBoard();

@@ -26,6 +26,7 @@
 - Gaviota tablebase probing (WDL / DTM)
 - PGN parsing and export, variation tree
 - Engine matches (EngineArena)
+- Opening books: build a Polyglot (`.bin`) book from PGN games, and read Polyglot / EPD (`.epd`) opening books
 - Perft (single/multi-threaded)
 - No external library dependencies
 
@@ -447,6 +448,48 @@ public class PerftExample {
         );
     }
 }
+```
+
+### 8. Building and Using Opening Books
+
+JCB can build a Polyglot opening book (`.bin`) directly from a multi-game PGN file, and use either a Polyglot (`.bin`) or an EPD (`.epd`) file as an opening book for engine matches.
+
+**Building a `.bin` book from PGN games:**
+
+```java
+import com.pepero.jcb.api.book.PolyglotBookBuilder;
+
+import java.io.IOException;
+
+public class PGNtoPolyglotConvertExample {
+    public static void main(String[] args) throws IOException {
+        String inputPgn = "games.pgn";
+        String outputBin = "opening.bin";
+        int maxPly = 30; // 15 moves
+
+        PolyglotBookBuilder.build(inputPgn, outputBin, maxPly);
+
+        System.out.println("Opening book built successfully: " + outputBin);
+    }
+}
+```
+
+**Using an opening book in `MatchConfig`:**
+
+`openingBook(String)` auto-detects the opening book type from the file extension:
+- `.bin` &rarr; a Polyglot opening book, queried move by move during the game
+- `.epd` &rarr; an EPD opening book, a list of positions where one is picked as the game's starting position
+- `.pgn` &rarr; not supported directly; throws a helpful error pointing to `PolyglotBookBuilder`, which converts PGN games into a `.bin` book first
+
+```java
+MatchConfig config = new MatchConfig.Builder()
+        .openingBook("engine/opening.bin") // or "engine/opening.epd"
+        .repeatOpening(true) // play each opening twice, swapping colors
+        .totalGames(10)
+        .concurrency(1)
+        .engine1Config(engine1Config)
+        .engine2Config(engine2Config)
+        .build();
 ```
 
 ## Performance

@@ -27,6 +27,7 @@
 - Gaviota tablebase 프로빙 (WDL / DTM)
 - PGN 파싱 및 export, variation tree
 - 엔진 대전 (EngineArena)
+- 오프닝북: PGN 게임들을 Polyglot(`.bin`) 북으로 빌드, Polyglot / EPD(`.epd`) 오프닝북 읽기 지원
 - Perft (싱글/멀티스레드)
 - 외부 라이브러리 의존성 없음
 
@@ -448,6 +449,48 @@ public class PerftExample {
         );
     }
 }
+```
+
+### 8. 오프닝북 빌드하기 & 사용하기
+
+JCB는 여러 게임이 들어있는 PGN 파일로부터 Polyglot 오프닝북(`.bin`)을 바로 빌드할 수 있고, 엔진 대전 시 Polyglot(`.bin`) 또는 EPD(`.epd`) 파일을 오프닝북으로 사용할 수 있습니다.
+
+**PGN 게임들로 `.bin` 북 빌드하기:**
+
+```java
+import com.pepero.jcb.api.book.PolyglotBookBuilder;
+
+import java.io.IOException;
+
+public class PGNtoPolyglotConvertExample {
+    public static void main(String[] args) throws IOException {
+        String inputPgn = "games.pgn";
+        String outputBin = "opening.bin";
+        int maxPly = 30; // 15수
+
+        PolyglotBookBuilder.build(inputPgn, outputBin, maxPly);
+
+        System.out.println("Opening book built successfully: " + outputBin);
+    }
+}
+```
+
+**`MatchConfig`에서 오프닝북 사용하기:**
+
+`openingBook(String)`은 파일 확장자를 보고 자동으로 오프닝북 종류를 인식합니다.
+- `.bin` &rarr; Polyglot 오프닝북, 게임 진행 중 매 수마다 조회
+- `.epd` &rarr; EPD 오프닝북, 포지션 목록 중 하나를 골라 게임 시작 포지션으로 사용
+- `.pgn` &rarr; 직접 지원하지 않으며, `PolyglotBookBuilder`로 먼저 `.bin`으로 변환하라는 안내 메시지와 함께 에러가 발생합니다.
+
+```java
+MatchConfig config = new MatchConfig.Builder()
+        .openingBook("engine/opening.bin") // 또는 "engine/opening.epd"
+        .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
+        .totalGames(10)
+        .concurrency(1)
+        .engine1Config(engine1Config)
+        .engine2Config(engine2Config)
+        .build();
 ```
 
 ## 성능

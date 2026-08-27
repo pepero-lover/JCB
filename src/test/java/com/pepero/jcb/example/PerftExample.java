@@ -14,23 +14,23 @@ public class PerftExample {
         System.out.println("Perft API 1 threads");
         System.out.println("--------------------");
 
-        // Perft 를 실행하고 결과를 저장합니다.
+        // Run Perft and store the result.
 
-        // Javadoc 설명에도 나와 있듯이, perft(int depth) 는 싱글 스레드, JVM warmup 을 적용한 결과입니다.
+        // As noted in the Javadoc, perft(int depth) is single-threaded and includes JVM warmup.
         chessGame.perft(5);
 
-        // 이번에는 스레드를 4개로 했을 때의 결과를 출력해보겠습니다.
+        // Now let's see the result with 4 threads.
         System.out.println();
         System.out.println("--------------------");
         System.out.println("Perft API 4 threads");
         System.out.println("--------------------");
 
         chessGame.perft(
-                6, // perft 깊이
-                4 // 사용할 스레드 수
+                6, // Perft depth
+                4 // Number of threads to use
         );
 
-        // 이제는 Chessboard 기준으로 Perft 를 진행해보겠습니다.
+        // Now let's run Perft using Chessboard instead.
         Chessboard chessboard = new Chessboard(fen);
 
         System.out.println();
@@ -40,10 +40,10 @@ public class PerftExample {
 
         PerftDriver.perftBitboardTest(
                 chessboard,
-                6, // perft 깊이
-                1, // 사용할 스레드 수
-                false, // 테스트 결과 및 출력을 하지 않을 것인지
-                false // 벌크 카운팅을 할 것인지
+                6, // Perft depth
+                1, // Number of threads to use
+                false, // Whether to suppress the test result and output
+                false // Whether to use bulk counting
         );
 
         System.out.println();
@@ -53,10 +53,10 @@ public class PerftExample {
 
         PerftDriver.perftBitboardTest(
                 chessboard,
-                7, // perft 깊이
-                4, // 사용할 스레드 수
-                false, // 테스트 결과 및 출력을 하지 않을 것인지
-                false // 벌크 카운팅을 할 것인지
+                7, // Perft depth
+                4, // Number of threads to use
+                false, // Whether to suppress the test result and output
+                false // Whether to use bulk counting
         );
     }
 }

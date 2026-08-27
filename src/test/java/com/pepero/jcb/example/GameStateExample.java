@@ -5,22 +5,22 @@ import com.pepero.jcb.api.enums.GameOverReason;
 
 public class GameStateExample {
     public static void main(String[] args) {
-        // FEN 스트링으로 게임을 시작할 수 있습니다.
-        // 예: 체크메이트 직전 상태의 FEN
+        // A game can be started from a FEN string.
+        // Example: a position right before checkmate
         String scholarMateFen = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4";
         ChessGame game = ChessGame.fromFEN(scholarMateFen);
 
-        // 백이 체크메이트 하는 상황을 가정합니다.
+        // Assume White delivers checkmate.
         game.makeMove("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
 
-        // 게임 종료 여부 판단
+        // Check whether the game has ended
         GameOverReason reason = game.isGameOver();
         if (reason != GameOverReason.NOTGAMEOVER) {
-            System.out.println("게임 종료! 사유: " + reason);
+            System.out.println("Game over! Reason: " + reason);
         }
 
-        // 개별 상태 체크도 가능 합니다.
-        System.out.println("체크메이트 상태인가? : " + game.isCheckmate());
-        System.out.println("체크 상태인가? : " + game.isCheck());
+        // Individual state checks are also available.
+        System.out.println("Is it checkmate? : " + game.isCheckmate());
+        System.out.println("Is it check? : " + game.isCheck());
     }
 }
