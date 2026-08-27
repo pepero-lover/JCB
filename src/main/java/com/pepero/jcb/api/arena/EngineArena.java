@@ -8,6 +8,7 @@ import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.EngineArenaException;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.chess960.Chess960Utils;
 
 import java.io.IOException;
@@ -64,6 +65,28 @@ public class EngineArena {
         this.listener = listener;
     }
 
+    private String resolveStartFen(MatchConfig matchConfig, boolean isEngine1White, int roundNumber) {
+        if (matchConfig.hasFENSetting()) {
+            return isEngine1White
+                    ? matchConfig.fenSettingConfig().fenWhenEngine1White()
+                    : matchConfig.fenSettingConfig().fenWhenEngine1Black();
+        }
+
+        if (matchConfig.hasEpdOpeningBook()) {
+            return matchConfig.isRepeatOpening()
+                    ? matchConfig.getEpdOpeningBook().pickSequentialPosition(roundNumber)
+                    : matchConfig.getEpdOpeningBook().pickRandomPosition();
+        }
+
+        if (matchConfig.isChess960()) {
+            return Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber));
+        }
+
+        return matchConfig.isChess960()
+                ? Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber))
+                : ChessboardUtils.getDefaultStartPosition(matchConfig.getVariant());
+    }
+
     /**
      * Start Engine match
      *
@@ -75,28 +98,11 @@ public class EngineArena {
         boolean isEngine1White = roundNumber % 2 == 1;
 
         ChessGame chessGame;
-        if(matchConfig.isChess960()) {
-            if(matchConfig.hasFENSetting()) {
-                chessGame = ChessGame.fromFEN(isEngine1White
-                        ? matchConfig.fenSettingConfig().fenWhenEngine1White()
-                        : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
-                        true);
-            } else {
-                chessGame = ChessGame.fromFEN(
-                        Chess960Utils.generate960FenByIndex(getPositionIndex(roundNumber)),
-                        true
-                );
-            }
-        } else {
-            if(matchConfig.hasFENSetting()) {
-                chessGame = ChessGame.fromFEN(isEngine1White
-                                ? matchConfig.fenSettingConfig().fenWhenEngine1White()
-                                : matchConfig.fenSettingConfig().fenWhenEngine1Black(),
-                        matchConfig.getVariant());
-            } else {
-                chessGame = ChessGame.startPosition(matchConfig.getVariant());
-            }
-        }
+        String startFen = resolveStartFen(matchConfig, isEngine1White, roundNumber);
+
+        chessGame = matchConfig.isChess960()
+                ? ChessGame.fromFEN(startFen, true)
+                : ChessGame.fromFEN(startFen, matchConfig.getVariant());
 
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());

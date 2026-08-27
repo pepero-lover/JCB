@@ -58,21 +58,6 @@ class PGNParser {
     }
 
     /**
-     * Get default start position
-     *
-     * @param gameVariant game variant
-     * @return default start position
-     */
-    public static String getDefaultStartPosition(GameVariant gameVariant) {
-        return switch (gameVariant) {
-            case HORDE -> Chessboard.horde_start_position;
-            case RACING_KINGS -> Chessboard.racing_kings_start_position;
-            case GIVEAWAY, SUICIDE -> Chessboard.antichess_start_position;
-            default -> Chessboard.start_position;
-        };
-    }
-
-    /**
      * Parse pgn string to {@link PGNParsedData} DTO
      *
      * @param pgnString pgn string
@@ -140,7 +125,7 @@ class PGNParser {
         if ("1".equals(parsedHeaders.get("SetUp")) && parsedHeaders.containsKey("FEN")) {
             parsedFen = parsedHeaders.get("FEN");
         } else {
-            parsedFen = getDefaultStartPosition(parsedVariant);
+            parsedFen = ChessboardUtils.getDefaultStartPosition(parsedVariant);
         }
 
         pgnChessboard = new Chessboard(parsedFen, isChess960, parsedVariant);

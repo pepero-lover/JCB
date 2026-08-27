@@ -1,5 +1,6 @@
 package com.pepero.jcb.api.arena;
 
+import com.pepero.jcb.api.book.EpdBookReader;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariant;
@@ -22,6 +23,7 @@ public class MatchConfig {
     private final int seed;
 
     private final PolyglotBookReader openingBook;
+    private final EpdBookReader epdBook;
     private final boolean repeatOpening;
 
     private final AdjudicationRule resignRule;
@@ -54,6 +56,8 @@ public class MatchConfig {
         this.isChess960 = builder.isChess960;
 
         this.openingBook = builder.openingBook;
+        this.epdBook = builder.epdBook;
+
         this.repeatOpening = builder.repeatOpening;
 
         this.resignRule = builder.resignRule;
@@ -87,8 +91,12 @@ public class MatchConfig {
 
     // opening book
     public PolyglotBookReader getOpeningBook() { return openingBook; }
-    public boolean isRepeatOpening() { return repeatOpening; }
     public boolean hasOpeningBook() { return openingBook != null; }
+
+    public EpdBookReader getEpdOpeningBook() { return epdBook; }
+    public boolean hasEpdOpeningBook() { return epdBook != null; }
+
+    public boolean isRepeatOpening() { return repeatOpening; }
 
     // fen setting
     public FENSettingConfig fenSettingConfig() { return fenSettingConfig; }
@@ -123,6 +131,7 @@ public class MatchConfig {
         private boolean isChess960 = false;
 
         private PolyglotBookReader openingBook = null;
+        private EpdBookReader epdBook = null;
         private boolean repeatOpening = true;
 
         private AdjudicationRule resignRule = null;
@@ -158,6 +167,14 @@ public class MatchConfig {
          */
         public Builder openingBook(String bookFilePath) {
             this.openingBook = new PolyglotBookReader(bookFilePath);
+            return this;
+        }
+
+        /**
+         * Using this EPD opening book (list of starting positions, one per game)
+         */
+        public Builder epdOpeningBook(String epdFilePath) {
+            this.epdBook = new EpdBookReader(epdFilePath);
             return this;
         }
 
@@ -282,11 +299,16 @@ public class MatchConfig {
             if(concurrency <= 0) throw new IllegalArgumentException("Concurrency should be positive number!");
             if(resignRule != null && resignRule.scoreThresholdCP() < 0)
                 throw new IllegalArgumentException("Resign rule threshold cp should be positive!");
-            if (fenSettingConfig != null && openingBook != null) {
-                throw new IllegalArgumentException("Fen setting and opening book can't have both!");
-            }
             if(syzygyTablebase == null && syzygyRule != null) {
                 throw new IllegalArgumentException("Syzygy adjudication rule exists, but Syzygy tablebase not found!");
+            }
+            int startingPositionSources = 0;
+            if (fenSettingConfig != null) startingPositionSources++;
+            if (openingBook != null) startingPositionSources++;
+            if (epdBook != null) startingPositionSources++;
+            if (startingPositionSources > 1) {
+                throw new IllegalArgumentException(
+                        "Only one of FEN setting, Polyglot opening book, or EPD opening book can be used!");
             }
 
             return new MatchConfig(this);

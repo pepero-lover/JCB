@@ -13,6 +13,15 @@ public class PolyglotBookReader {
     private final File bookFile;
 
     public PolyglotBookReader(String filePath) {
+        if(!filePath.endsWith(".bin")) {
+            if(filePath.endsWith(".pgn")) {
+                throw new IllegalArgumentException("This opening book reader doesn't support " +
+                        ".pgn extension. if you want to translate into .bin, go to" +
+                        " 'com.pepero.jcb.api.book.PolyglotBookBuilder'.");
+            }
+            throw new IllegalArgumentException("File extension type not matches. (Expected : '.bin'");
+        }
+
         this.bookFile = new File(filePath);
         if (!this.bookFile.exists()) {
             throw new RuntimeException("Could not find opening book file! (file path : " + filePath + ")");

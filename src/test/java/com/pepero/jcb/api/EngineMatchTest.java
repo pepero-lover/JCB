@@ -12,14 +12,14 @@ import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
-        String engine2Path = new File("engine/fairy-stockfish.exe").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
         try {
             EngineConfig engine1Config = new EngineConfig(
-                    "fairy-stockfish",
+                    "Stockfish 18",
                     engine1Path,
                     folder,
                     List.of(),
@@ -29,7 +29,7 @@ public class EngineMatchTest {
             );
 
             EngineConfig engine2Config = new EngineConfig(
-                    "fairy-stockfish",
+                    "Stockfish 18",
                     engine2Path,
                     folder,
                     List.of(),
@@ -39,7 +39,8 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin")
+                    //.openingBook("engine/opening.bin")
+                    .epdOpeningBook("engine/UHO.epd")
                     .drawRule(new AdjudicationRule(
                             40,
                             16,
@@ -66,7 +67,7 @@ public class EngineMatchTest {
 //                            ))
                     .totalGames(10)
                     .concurrency(4)
-                    .variant(GameVariant.SUICIDE)
+                    //.variant(GameVariant.SUICIDE)
                     .showClk(true)
                     .showEval(false)
                     .showPv(false)

@@ -719,6 +719,21 @@ public class ChessboardUtils {
         return false;
     }
 
+    /**
+     * Get default start position
+     *
+     * @param gameVariant game variant
+     * @return default start position
+     */
+    public static String getDefaultStartPosition(GameVariant gameVariant) {
+        return switch (gameVariant) {
+            case HORDE -> Chessboard.horde_start_position;
+            case RACING_KINGS -> Chessboard.racing_kings_start_position;
+            case GIVEAWAY, SUICIDE -> Chessboard.antichess_start_position;
+            default -> Chessboard.start_position;
+        };
+    }
+
     public static String toStringChessboard(Chessboard chessboard) {
         StringBuilder sb = new StringBuilder(256);
         char[] board = new char[64];

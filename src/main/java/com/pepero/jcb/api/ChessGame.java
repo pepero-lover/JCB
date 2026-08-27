@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.pepero.jcb.api.PGNParser.getDefaultStartPosition;
 import static com.pepero.jcb.core.MoveGenerator.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
@@ -338,7 +337,7 @@ public class ChessGame {
         this.chessboard.isChess960 = isChess960;
         this.chessboard.gameVariant = gameVariant;
 
-        String startFen = getDefaultStartPosition(gameVariant);
+        String startFen = ChessboardUtils.getDefaultStartPosition(gameVariant);
         ChessboardUtils.parseFen(this.chessboard, startFen);
 
         startPositionFEN = startFen;

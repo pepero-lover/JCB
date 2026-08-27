@@ -1,6 +1,5 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.core.Chessboard;
 import java.util.ArrayList;
 import java.util.List;
 

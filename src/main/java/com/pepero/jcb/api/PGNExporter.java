@@ -8,6 +8,7 @@ import com.pepero.jcb.api.exception.NodesOverflowException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
@@ -15,8 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import static com.pepero.jcb.api.PGNParser.getDefaultStartPosition;
 
 /**
  * Export {@link ChessGame} class to PGN string. <br>
@@ -51,7 +50,7 @@ class PGNExporter {
             }
         }
 
-        if (!startFen.equals(getDefaultStartPosition(variant))) {
+        if (!startFen.equals(ChessboardUtils.getDefaultStartPosition(variant))) {
             pgnHeaders.put("SetUp", "1");
             pgnHeaders.put("FEN", startFen);
         } else {
