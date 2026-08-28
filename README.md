@@ -506,19 +506,19 @@ JCB provides two levels of API.
 
 | Threads  | NPS (5 ply) | NPS (6 ply) |
 |----------|-------------|-------------|
-| 1 thread | 7.22MNPS    | 7.48MNPS    |
-| 2 threads| 14.56MNPS   | 14.33MNPS   |
-| 4 threads| 28.32MNPS   | 27.33MNPS   |
-| 8 threads| 48.14MNPS   | 46.81MNPS   |
+| 1 thread | 6.94MNPS    | 7.26MNPS    |
+| 2 threads| 14.02MNPS   | 14.05MNPS   |
+| 4 threads| 26.78MNPS   | 27.25MNPS   |
+| 8 threads| 45.28MNPS   | 50.72MNPS   |
 
 #### Perft with `Chessboard`
 
 | Threads  | NPS (6 ply) | NPS (7 ply) |
 |----------|-------------|-------------|
-| 1 thread | 59.11MNPS   | 61.57MNPS   |
-| 2 threads| 122.62MNPS  | 120.81MNPS  |
-| 4 threads| 236.69MNPS  | 233.51MNPS  |
-| 8 threads| 409.37MNPS  | 419.33MNPS  |
+| 1 thread | 57.61MNPS   | 57.99MNPS   |
+| 2 threads| 112.62MNPS  | 112.27MNPS  |
+| 4 threads| 220.68MNPS  | 217.74MNPS  |
+| 8 threads| 385.11MNPS  | 398.76MNPS  |
 
 > For performance-critical projects like engine development, using `Chessboard` directly is recommended.
 
