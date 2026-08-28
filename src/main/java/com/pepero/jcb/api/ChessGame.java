@@ -1146,8 +1146,13 @@ public class ChessGame {
      * @throws EmptyMoveRedoException if move to go forward not found
      */
     public MoveInfo goForward() {
-        if (canRedo()) return remakeMove();
-        return null;
+        writeLock.lock();
+        try {
+            if (!canRedo()) return null;
+            return remakeMove();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -1158,8 +1163,13 @@ public class ChessGame {
      * @throws EmptyMoveUndoException if move to go backward not found
      */
     public MoveInfo goBackward() {
-        if (canUndo()) return unmakeMove();
-        return null;
+        writeLock.lock();
+        try {
+            if (!canUndo()) return null;
+            return unmakeMove();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
