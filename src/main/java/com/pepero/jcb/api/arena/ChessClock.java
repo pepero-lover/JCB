@@ -24,9 +24,11 @@ public class ChessClock {
     public void spendTime(boolean isWhite, long elapsedMs) {
         if (isWhite) {
             whiteTimeMs -= elapsedMs;
+            if(isTimeUp(isWhite)) return;
             whiteTimeMs += whiteIncMs;
         } else {
             blackTimeMs -= elapsedMs;
+            if(isTimeUp(isWhite)) return;
             blackTimeMs += blackIncMs;
         }
     }

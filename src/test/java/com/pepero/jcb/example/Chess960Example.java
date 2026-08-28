@@ -17,5 +17,10 @@ public class Chess960Example {
 
         // print chess 960 position
         chessGame.printBoard();
+
+        // make moves on san
+        chessGame.makeMoveSanAll("g3 g6 f4 f5 Bf2 Bf7 O-O");
+
+        chessGame.printBoard();
     }
 }

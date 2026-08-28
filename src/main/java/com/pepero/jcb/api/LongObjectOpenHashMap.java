@@ -19,7 +19,12 @@ public final class LongObjectOpenHashMap<V> {
     }
 
     public LongObjectOpenHashMap(int initialCapacity, float loadFactor) {
-        int cap = Integer.highestOneBit(Math.max(16, initialCapacity - 1) - 1) << 1;
+        if (loadFactor <= 0f || loadFactor >= 1f) {
+            throw new IllegalArgumentException("loadFactor must be in (0, 1)");
+        }
+
+        int minCap = Math.max(16, initialCapacity);
+        int cap = Integer.highestOneBit(minCap - 1) << 1;
         this.loadFactor = loadFactor;
         this.keys = new long[cap];
         Arrays.fill(this.keys, EMPTY);

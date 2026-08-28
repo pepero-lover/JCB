@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.arena.ChessClock;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
@@ -654,5 +655,15 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/2B1P3/5N2/PPPPRPPP/1NBQK2R w Kkq - 0 1");
         assertThrows(IllegalMoveException.class, () -> chessGame.makeMove(Square.e1, Square.e2));
         chessGame.makeMove(Square.e1, Square.h1);
+    }
+
+    @Test
+    void spendTime_doesNotAddIncrementAfterTimeUp() {
+        ChessClock clock = new ChessClock(500, 2000, 500, 2000); // 예시 생성자
+
+        clock.spendTime(true, 800);
+
+        assertTrue(clock.isTimeUp(true));
+        assertTrue(clock.getWhiteTimeMs() <= 0);
     }
 }
