@@ -238,8 +238,8 @@ public class SyzygyTablebase {
         if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 0;
         if(boardPiece <= 1) return 0;
 
-        if (variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
-            if(!ChessboardUtils.hasLegalMoves(board)) return 0;
+        if (!ChessboardUtils.hasLegalMoves(board)) {
+            return 0;
         }
 
         int wdlResult = probeWdl(board);
@@ -339,7 +339,7 @@ public class SyzygyTablebase {
         SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
         flags = ph.flags();
 
-        boolean isWtm = true;
+        boolean isWtm = (flags & 1) == 0;
 
         int[] raw;
         if (ph.isConstant()) {
@@ -368,11 +368,11 @@ public class SyzygyTablebase {
 
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
-
         if (moveCount == 0) {
             // wdlResult == 2 (Draw) is already handled above, so reaching here with
             // no legal moves means checkmate (Loss), not stalemate. Per the
             // WDL_TO_DTZ[Loss] = -1 convention, this must not be reported as 0.
+
             return -1;
         }
 

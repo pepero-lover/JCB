@@ -18,11 +18,10 @@ public class SyzygyBestMoveAtomic {
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        //ChessGame game = ChessGame.fromFEN("8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1");
+        //ChessGame game = ChessGame.fromFEN("8/8/8/8/8/1Q6/8/k3n1K1 w - - 23 17", GameVariant.ATOMIC);
         ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.ATOMIC);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
-
 
 
         int ply = 1;
