@@ -3,6 +3,8 @@ package com.pepero.jcb.core.constant;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pepero.jcb.core.constant.SideToMove.*;
+
 /**
  * Encoded Pieces constant for bitboard
  */
@@ -31,6 +33,20 @@ public class EncodedPieces {
     public static final char[] promotion_pieces = {
             'p','n','b','r','q','k'
     };
+
+    /**
+     * Normalize a color-agnostic piece type constant (0~5) to match the given side.
+     * If the piece is already color-correct, returns it unchanged.
+     *
+     * @param pieceType piece type constant (can be either color, e.g. N or n)
+     * @param side side to normalize to (white/black)
+     * @return piece type constant matching {@code side}
+     */
+    public static int normalizePieceColor(int pieceType, int side) {
+        if (side == black && pieceType < 6) return pieceType + 6;
+        if (side == white && pieceType >= 6) return pieceType - 6;
+        return pieceType;
+    }
 
     // convert char pieces to encoded constants
     public static final Map<Character, Integer> char_to_encoded_piece = new HashMap<>();

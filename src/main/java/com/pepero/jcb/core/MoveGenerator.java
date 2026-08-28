@@ -2188,29 +2188,37 @@ public class MoveGenerator {
         System.out.print(sb);
     }
 
+    /**
+     * Check whether this move is legal or not
+     *
+     * @param move encoded move data
+     * @return whether this move is legal or not
+     */
     public static boolean isLegalMove(Chessboard chessboard, int move) {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
+        int piece = EncodeMove.getMovePiece(move);
         int source_square = EncodeMove.getMoveSource(move);
         int target_square = EncodeMove.getMoveTarget(move);
         int promoted = EncodeMove.getMovePromoted(move);
         boolean drop = EncodeMove.getMoveDrop(move);
 
         if(!chessboard.isChess960) {
-            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
             int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(pieceType == K && targetType == R) {
+            if(piece == K && targetType == R) {
                 target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
             }
-            if(pieceType == k && targetType == r) {
+            if(piece == k && targetType == r) {
                 target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
             }
         }
 
         for (int count = 0; count < move_count; count++) {
             int possible_move = move_list[count];
-            if (EncodeMove.getMoveSource(possible_move) == source_square
+            if (
+                    EncodeMove.getMovePiece(possible_move) == piece
+                    && EncodeMove.getMoveSource(possible_move) == source_square
                     && EncodeMove.getMoveTarget(possible_move) == target_square
                     && EncodeMove.getMovePromoted(possible_move) == promoted
                     && EncodeMove.getMoveDrop(possible_move) == drop) {
@@ -2221,6 +2229,15 @@ public class MoveGenerator {
         return false;
     }
 
+    /**
+     * Check whether this move is legal or not <br>
+     * This doesn't check the drop move. if you want to check drop move, go to {@link #isLegalDrop(Chessboard, int, int)}.
+     *
+     * @param source_square source square
+     * @param target_square target square
+     * @param promotion_type promotion type
+     * @return whether this move is legal or not
+     */
     public static int isLegalMove(Chessboard chessboard, int source_square, int target_square, int promotion_type) {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
@@ -2253,7 +2270,8 @@ public class MoveGenerator {
 
             if (EncodeMove.getMoveSource(possible_move) == source_square
                     && EncodeMove.getMoveTarget(possible_move) == target_square
-                    && EncodeMove.getMovePromoted(possible_move) == promotion_type) {
+                    && EncodeMove.getMovePromoted(possible_move) == promotion_type
+                    && !EncodeMove.getMoveDrop(possible_move)) {
                 return possible_move;
             }
         }
@@ -2261,9 +2279,23 @@ public class MoveGenerator {
         return ILLEGAL_MOVE;
     }
 
+    /**
+     * Check whether dropping the given piece type on the target square is legal (Crazyhouse).
+     * <p>
+     * The piece type's color is normalized to match {@code chessboard.side} automatically,
+     * so callers do not need to pass a color-correct piece constant
+     * (e.g. passing {@code N} while Black to move is treated the same as passing {@code n}).
+     *
+     * @param chessboard chessboard
+     * @param target_square drop destination square
+     * @param piece_type piece type to drop (color is normalized to the side to move)
+     * @return the encoded move if legal, otherwise {@link MoveGenerator#ILLEGAL_MOVE}
+     */
     public static int isLegalDrop(Chessboard chessboard, int target_square, int piece_type) {
         int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        piece_type = normalizePieceColor(piece_type, chessboard.side);
 
         for (int count = 0; count < move_count; count++) {
             int possible_move = move_list[count];

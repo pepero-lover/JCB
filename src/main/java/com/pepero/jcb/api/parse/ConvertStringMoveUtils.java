@@ -164,7 +164,7 @@ public class ConvertStringMoveUtils {
         int promotion_type = 0;
         if (lan.length() == 5) {
             promotion_type = char_to_encoded_piece.get(lan.charAt(4));
-            if (chessboard.side == white) promotion_type -= 6;
+            promotion_type = normalizePieceColor(promotion_type, chessboard.side);
         }
 
         int encoded_move = -1;
@@ -542,8 +542,8 @@ public class ConvertStringMoveUtils {
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
 
             int piece_type = char_to_encoded_piece.get(pieceChar);
-            if (chessboard.side == black && piece_type <= K) piece_type += 6;
-            else if (chessboard.side == white && piece_type > K) piece_type -= 6;
+
+            piece_type = normalizePieceColor(piece_type, chessboard.side);
 
             int isLegal = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
             if (isLegal != ILLEGAL_MOVE) return isLegal;
@@ -564,7 +564,7 @@ public class ConvertStringMoveUtils {
         int promotion_type = 0;
         if(lan.length() == 5){
             promotion_type = char_to_encoded_piece.get(lan.charAt(4));
-            if(chessboard.side == white) promotion_type -= 6;
+            promotion_type = normalizePieceColor(promotion_type, chessboard.side);
         }
 
         if(!chessboard.isChess960) {
@@ -634,8 +634,7 @@ public class ConvertStringMoveUtils {
             target_square = BoardSquares.coordinates_to_square(parts[1]);
 
             int piece_type = char_to_encoded_piece.get(pieceChar);
-            if (chessboard.side == black && piece_type <= K) piece_type += 6;
-            else if (chessboard.side == white && piece_type > K) piece_type -= 6;
+            piece_type = normalizePieceColor(piece_type, chessboard.side);
 
             int move_result = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
 
@@ -862,12 +861,7 @@ public class ConvertStringMoveUtils {
         }
 
         if (promotion_type != 0) {
-            if (promotion_type >= 6) {
-                promotion_type -= 6;
-            }
-            if (chessboard.side != white) {
-                promotion_type += 6;
-            }
+            promotion_type = normalizePieceColor(promotion_type, chessboard.side);
         }
 
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);

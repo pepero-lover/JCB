@@ -1241,7 +1241,9 @@ public class ChessGame {
             int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
 
             if (encodedMove == ILLEGAL_MOVE) {
-                throw new IllegalMoveException(EncodeMove.moveToString(encodedMove), getFEN());
+                throw new IllegalMoveException("Illegal drop move! (Move : " +
+                        pieceType.toString().toUpperCase() + "@" + targetSquare + " FEN : " +
+                        ChessboardUtils.getFen(this.chessboard) + ")");
             }
 
             makeMove(new MoveInfo(encodedMove));
