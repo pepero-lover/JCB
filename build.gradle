@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.pepero.jcb'
-version = '1.7.1'
+version = '1.7.2'
 base.archivesName = 'JCB'
 
 java {
