@@ -497,9 +497,8 @@ JCB provides two levels of API.
 
 - `ChessGame` - High-level and object-oriented, designed for ease of use.
 - `Chessboard` - Low-level bitboard-based, designed for performance-critical projects (such as engine development).
-
-*The benchmark results below were measured on an i7-14700KF CPU, single-threaded,
-after JIT warmup, averaged over 3 runs (no bulk counting).*
+  *The benchmark results below were measured on an i7-14700KF CPU, single-threaded,
+  after JIT warmup, averaged over 3 runs (no bulk counting).*
 
 *(Note: shallower depths are more cache-friendly and can actually yield higher NPS.)*
 
@@ -525,104 +524,20 @@ after JIT warmup, averaged over 3 runs (no bulk counting).*
 
 > `ChessGame` is well suited for tooling, scripting, and analysis, but carries roughly 8x the overhead compared to the low-level API.
 
-<details>
-   <summary>View benchmark reproduction code</summary>
+#### SAN / LAN Move Conversion (`ConvertStringMoveUtils`)
 
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.perft.PerftDriver;
-import com.pepero.jcb.api.perft.PerftResult;
-import com.pepero.jcb.core.Chessboard;
+Since `ConvertStringMoveUtils` is called heavily during PGN parsing, opening book building, and UCI communication, its conversion throughput was also benchmarked (single-threaded, after JIT warmup, converting move sequences from randomly-played games).
 
-import java.util.ArrayList;
-import java.util.List;
+| Conversion            | Throughput                 |
+|------------------------|-----------------------------|
+| SAN &rarr; move data   | 2,246,771 conversions/sec  |
+| LAN &rarr; move data   | 2,603,415 conversions/sec  |
 
-public class PerftResultTest {
-    public static void main(String[] args) {
-        Chessboard chessboard = new Chessboard(Chessboard.start_position);
-        ChessGame chessGame = ChessGame.startPosition();
+> LAN conversion is faster because SAN parsing also has to resolve move ambiguity (e.g. disambiguating `Nbd2` from another knight) and determine whether to append `+`/`#`, on top of the move generation both conversions share.
 
-        int available_processor = Runtime.getRuntime().availableProcessors();
-
-        System.out.println("Available Processors : " + available_processor);
-
-        int averageCount = 3;
-
-        System.out.println();
-        System.out.println();
-        System.out.println("---- BITBOARD TEST ---- ");
-        System.out.println();
-        System.out.println();
-
-
-        for(int thread : new int[]{1,2,4,8}) {
-            for (int depth : new int[]{6,7}) {
-                if(available_processor < thread) break;
-
-                // Compute the average NPS.
-                List<Long> nps = new ArrayList<>();
-                for(int i=1;i<=averageCount;i++) {
-                    PerftResult result =
-                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true, false);
-                    nps.add(result.nps());
-                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
-                }
-                double npsAverage = nps.stream().mapToLong(Long::longValue)
-                        .average()
-                        .orElse(0.0);
-
-
-                System.out.println();
-                System.out.println();
-                System.out.println("Calculated perft(" + depth + ") * " + averageCount
-                        + " with " + thread + " thread(s)");
-                System.out.println("Average NPS : " + String.format(
-                        "%.2f", npsAverage / 1_000_000.
-                ) + "MNPS ( " +
-                        (long) npsAverage + "nps )");
-                System.out.println();
-            }
-        }
-        System.out.println();
-        System.out.println();
-        System.out.println("---- API TEST ---- ");
-        System.out.println();
-        System.out.println();
-
-        for(int thread : new int[]{1,2,4,8}) {
-            for (int depth : new int[]{5,6}) {
-                if(available_processor < thread) break;
-
-                List<Long> nps = new ArrayList<>();
-                for(int i=1;i<=averageCount;i++) {
-                    PerftResult result =
-                            PerftDriver.perftAPITest(chessGame, depth, thread, true, false);
-                    nps.add(result.nps());
-                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
-                }
-                double npsAverage = nps.stream().mapToLong(Long::longValue)
-                        .average()
-                        .orElse(0.0);
-
-
-                System.out.println();
-                System.out.println();
-                System.out.println("Calculated perft(" + depth + ") * " + averageCount
-                        + " with " + thread + " thread(s)");
-                System.out.println("Average NPS : " + String.format(
-                        "%.2f", npsAverage / 1_000_000.
-                ) + "MNPS ( " +
-                        (long) npsAverage + "nps )");
-                System.out.println();
-            }
-        }
-    }
-}
-```
-</details>
-
-## Feedback & Issues
-If something doesn't work as expected, please open an issue on [GitHub Issues](https://github.com/pepero-lover/JCB/issues) with your Java version, OS, and a minimal reproduction if possible.
-
+Reproduction code:
+[`PerftResultTest`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/perft/PerftResultTest.java)
+[`ConvertStringMoveUtilsBenchmark`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/ConvertStringMoveUtilsBenchmark.java)
+[`RandomGameGenerator`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/RandomGameGenerator.java)
 ## License
 This project is licensed under the MIT License.

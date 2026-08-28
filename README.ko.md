@@ -526,101 +526,21 @@ JIT warmup 을 하고 3회 평균을 낸 결과입니다. (벌크 카운팅 없�
 
 > `ChessGame`은 툴링, 스크립팅, 분석용으로 적합하며, 저수준 API 대비 약 8배 정도의 오버헤드가 있습니다.
 
-<details>
-   <summary>벤치마크 재현 코드 보기</summary>
+#### SAN / LAN 무브 변환 (`ConvertStringMoveUtils`)
 
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.perft.PerftDriver;
-import com.pepero.jcb.api.perft.PerftResult;
-import com.pepero.jcb.core.Chessboard;
+`ConvertStringMoveUtils`는 PGN 파싱, 오프닝북 빌드, UCI 통신 과정에서 매우 빈번하게 호출되는 클래스라 변환 처리량도 벤치마크했습니다 (싱글스레드, JIT warmup 이후, 랜덤 플레이로 생성한 게임들의 무브 시퀀스 기준).
 
-import java.util.ArrayList;
-import java.util.List;
+| 변환                      | 처리량                       |
+|-------------------------|---------------------------|
+| SAN &rarr; move data     | 2,246,771 conversions/sec |
+| LAN &rarr; move data     | 2,603,415 conversions/sec |
 
-public class PerftResultTest {
-    public static void main(String[] args) {
-        Chessboard chessboard = new Chessboard(Chessboard.start_position);
-        ChessGame chessGame = ChessGame.startPosition();
+> LAN 변환이 더 빠른 이유는, 둘 다 공유하는 무브 생성 비용 외에도 SAN 파싱은 모호성 해소(예: 같은 나이트 여러 개 중 `Nbd2` 구분)와 `+`/`#` 심볼 부착 여부 판단까지 추가로 처리해야 하기 때문입니다.
 
-        int available_processor = Runtime.getRuntime().availableProcessors();
-
-        System.out.println("Available Processors : " + available_processor);
-
-        int averageCount = 3;
-
-        System.out.println();
-        System.out.println();
-        System.out.println("---- BITBOARD TEST ---- ");
-        System.out.println();
-        System.out.println();
-
-
-        for(int thread : new int[]{1,2,4,8}) {
-            for (int depth : new int[]{6,7}) {
-                if(available_processor < thread) break;
-
-                // nps 의 평균을 구합니다.
-                List<Long> nps = new ArrayList<>();
-                for(int i=1;i<=averageCount;i++) {
-                    PerftResult result =
-                            PerftDriver.perftBitboardTest(chessboard, depth, thread, true, false);
-                    nps.add(result.nps());
-                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
-                }
-                double npsAverage = nps.stream().mapToLong(Long::longValue)
-                        .average()
-                        .orElse(0.0);
-
-
-                System.out.println();
-                System.out.println();
-                System.out.println("Calculated perft(" + depth + ") * " + averageCount
-                        + " with " + thread + " thread(s)");
-                System.out.println("Average NPS : " + String.format(
-                        "%.2f", npsAverage / 1_000_000.
-                ) + "MNPS ( " +
-                        (long) npsAverage + "nps )");
-                System.out.println();
-            }
-        }
-        System.out.println();
-        System.out.println();
-        System.out.println("---- API TEST ---- ");
-        System.out.println();
-        System.out.println();
-
-        for(int thread : new int[]{1,2,4,8}) {
-            for (int depth : new int[]{5,6}) {
-                if(available_processor < thread) break;
-
-                List<Long> nps = new ArrayList<>();
-                for(int i=1;i<=averageCount;i++) {
-                    PerftResult result =
-                            PerftDriver.perftAPITest(chessGame, depth, thread, true, false);
-                    nps.add(result.nps());
-                    System.out.println("Calculated perft(" + depth + ") with " + thread + " thread(s) (" + i + "/" + averageCount + ")");
-                }
-                double npsAverage = nps.stream().mapToLong(Long::longValue)
-                        .average()
-                        .orElse(0.0);
-
-
-                System.out.println();
-                System.out.println();
-                System.out.println("Calculated perft(" + depth + ") * " + averageCount
-                        + " with " + thread + " thread(s)");
-                System.out.println("Average NPS : " + String.format(
-                        "%.2f", npsAverage / 1_000_000.
-                ) + "MNPS ( " +
-                        (long) npsAverage + "nps )");
-                System.out.println();
-            }
-        }
-    }
-}
-```
-</details>
+재현 코드:
+[`PerftResultTest`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/perft/PerftResultTest.java) ·
+[`ConvertStringMoveUtilsBenchmark`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/ConvertStringMoveUtilsBenchmark.java) ·
+[`RandomGameGenerator`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/RandomGameGenerator.java)
 
 ## 피드백 & 이슈
 예상대로 작동하지 않는 경우, 사용 중인 Java 버전과 운영 체제, 그리고 가능하다면 문제를 재현할 수 있는 최소한의 코드를 포함하여 [GitHub Issues](https://github.com/pepero-lover/JCB/issues)에 이슈를 등록해 주시면 감사하겠습니다.
