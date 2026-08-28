@@ -65,7 +65,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle`.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.7.1'
+    implementation 'com.github.pepero-lover:JCB:v1.7.2'
 }
 ```
 
@@ -85,7 +85,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle.kts`.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.7.1")
+    implementation("com.github.pepero-lover:JCB:v1.7.2")
 }
 ```
 
@@ -104,7 +104,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.7.1</version>
+    <version>v1.7.2</version>
 </dependency>
 ```
 
@@ -504,21 +504,21 @@ JCB provides two levels of API.
 
 #### Perft with `ChessGame`
 
-| Threads  | NPS (5 ply) | NPS (6 ply) |
-|----------|-------------|-------------|
-| 1 thread | 6.94MNPS    | 7.26MNPS    |
-| 2 threads| 14.02MNPS   | 14.05MNPS   |
-| 4 threads| 26.78MNPS   | 27.25MNPS   |
-| 8 threads| 45.28MNPS   | 50.72MNPS   |
+| Threads   | NPS (5 ply) | NPS (6 ply) |
+|-----------|-------------|-------------|
+| 1 thread  | 6.94MNPS    | 7.26MNPS    |
+| 2 threads | 14.02MNPS   | 14.05MNPS   |
+| 4 threads | 26.78MNPS   | 27.25MNPS   |
+| 8 threads | 45.28MNPS   | 50.72MNPS   |
 
 #### Perft with `Chessboard`
 
-| Threads  | NPS (6 ply) | NPS (7 ply) |
-|----------|-------------|-------------|
-| 1 thread | 57.61MNPS   | 57.99MNPS   |
-| 2 threads| 112.62MNPS  | 112.27MNPS  |
-| 4 threads| 220.68MNPS  | 217.74MNPS  |
-| 8 threads| 385.11MNPS  | 398.76MNPS  |
+| Threads   | NPS (6 ply) | NPS (7 ply) |
+|-----------|-------------|-------------|
+| 1 thread  | 57.61MNPS   | 57.99MNPS   |
+| 2 threads | 112.62MNPS  | 112.27MNPS  |
+| 4 threads | 220.68MNPS  | 217.74MNPS  |
+| 8 threads | 385.11MNPS  | 398.76MNPS  |
 
 > For performance-critical projects like engine development, using `Chessboard` directly is recommended.
 
