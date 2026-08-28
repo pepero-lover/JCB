@@ -788,20 +788,22 @@ public class ChessboardUtils {
                 .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
                 .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
                 .append("\n");
+        sb.append("      FEN : ")
+                .append(getFen(chessboard));
 
         if(chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             sb
                     .append("      Pocket:  [")
-                    .append("Q".repeat(Math.max(0, chessboard.pocket[Q])))
-                    .append("R".repeat(Math.max(0, chessboard.pocket[R])))
-                    .append("B".repeat(Math.max(0, chessboard.pocket[B])))
-                    .append("N".repeat(Math.max(0, chessboard.pocket[N])))
-                    .append("P".repeat(Math.max(0, chessboard.pocket[P])))
-                    .append("q".repeat(Math.max(0, chessboard.pocket[q])))
-                    .append("r".repeat(Math.max(0, chessboard.pocket[r])))
-                    .append("b".repeat(Math.max(0, chessboard.pocket[b])))
-                    .append("n".repeat(Math.max(0, chessboard.pocket[n])))
-                    .append("p".repeat(Math.max(0, chessboard.pocket[p])))
+                    .repeat("Q", Math.max(0, chessboard.pocket[Q]))
+                    .repeat("R", Math.max(0, chessboard.pocket[R]))
+                    .repeat("B", Math.max(0, chessboard.pocket[B]))
+                    .repeat("N", Math.max(0, chessboard.pocket[N]))
+                    .repeat("P", Math.max(0, chessboard.pocket[P]))
+                    .repeat("q", Math.max(0, chessboard.pocket[q]))
+                    .repeat("r", Math.max(0, chessboard.pocket[r]))
+                    .repeat("b", Math.max(0, chessboard.pocket[b]))
+                    .repeat("n", Math.max(0, chessboard.pocket[n]))
+                    .repeat("p", Math.max(0, chessboard.pocket[p]))
                     .append("]\n");
         }
 
