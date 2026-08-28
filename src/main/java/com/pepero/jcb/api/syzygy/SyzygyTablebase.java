@@ -339,7 +339,7 @@ public class SyzygyTablebase {
         SyzygyPairsHeader ph = table.pairsHeaders()[t][0];
         flags = ph.flags();
 
-        boolean isWtm = (flags & 1) == 0;
+        boolean isWtm = true;
 
         int[] raw;
         if (ph.isConstant()) {
