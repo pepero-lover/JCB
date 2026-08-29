@@ -92,4 +92,33 @@ public class SyzygyTest {
             assertSyzygy(fen, GameVariant.SUICIDE);
         }
     }
+
+    @Test
+    @DisplayName("Giveaway Syzygy 검증")
+    void syzygyGiveaway() throws IOException {
+        List<String> testCases = List.of(
+                "K7/6p1/8/8/8/8/8/1q6 w - - 0 8",
+                "8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2",
+                "8/1pp3KK/8/8/8/8/8/8 w - - 0 2",
+                "8/1pp4K/2k5/8/4K3/8/8/8 w - - 6 5"
+        );
+
+        for(String fen : testCases){
+            assertSyzygy(fen, GameVariant.GIVEAWAY);
+        }
+    }
+
+    @Test
+    @DisplayName("Atomic Syzygy 검증")
+    void syzygyAtomic() throws IOException {
+        List<String> testCases = List.of(
+                "8/8/8/8/8/1Q6/8/k3n1K1 w - - 23 17",
+                "8/4rk2/5r2/8/6R1/3K4/8/8 b - - 1 1",
+                "2b2b2/8/4k3/2n5/3K4/8/8/8 b - - 13 7"
+        );
+
+        for(String fen : testCases){
+            assertSyzygy(fen, GameVariant.ATOMIC);
+        }
+    }
 }
