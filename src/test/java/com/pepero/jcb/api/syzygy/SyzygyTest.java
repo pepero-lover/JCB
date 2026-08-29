@@ -31,6 +31,10 @@ public class SyzygyTest {
 
         int previousDtz = SyzygyAnalyzer.probeDtz(game, tb);
 
+        game.printBoard();
+        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+        System.out.println("DTZ : " + previousDtz);
+
         while (true) {
             MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
 
@@ -47,20 +51,26 @@ public class SyzygyTest {
 
             int dtz = SyzygyAnalyzer.probeDtz(game, tb);
 
-//            game.printBoard();
-//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-//            System.out.println("DTZ : " + dtz);
-//            System.out.println("FEN : " + game.getFEN());
+            game.printBoard();
+            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+            System.out.println("DTZ : " + dtz);
 
-            if(!bestMove.capture() && !bestMove.enpassant() && bestMove.pieceType().getPieceTypeEnum() != PieceType.PAWN) {
-                if(Math.abs(Math.abs(previousDtz) - Math.abs(dtz)) > 2) throw new IllegalStateException("DTZ value is weird!");
+            boolean isZeroing = bestMove.capture() || bestMove.enpassant()
+                    || bestMove.pieceType().getPieceTypeEnum() == PieceType.PAWN;
+
+            if (!isZeroing) {
+                int delta = Math.abs(previousDtz) - Math.abs(dtz);
+                if (delta < 0 || delta > 2) {
+                    throw new IllegalStateException(
+                            "DTZ value is weird!  " + previousDtz + " -> " + dtz);
+                }
             }
 
             previousDtz = dtz;
         }
 
-//        System.out.println();
-//        System.out.println();
+        System.out.println();
+        System.out.println();
     }
 
     @Test

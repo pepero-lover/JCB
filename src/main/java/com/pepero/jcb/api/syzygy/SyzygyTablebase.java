@@ -214,7 +214,7 @@ public class SyzygyTablebase {
         }
 
         SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, effectiveColorFlip, fc.anchorSquare());
+        int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, effectiveColorFlip, material.isHasPawns(), fc.anchorSquare());
         long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
         // NOTE: naive t*sides+side arithmetic breaks the moment ANY earlier (t,s) entry
@@ -245,14 +245,55 @@ public class SyzygyTablebase {
         int wdlResult = probeWdl(board);
         if (wdlResult == 2) return 0;
 
+        // Capture-compulsory shortcut, ported from python-chess's sprobe_ab
+        // (success == 2) / probe_dtz_no_ep ("if success == 2: return dtz_before_zeroing(wdl)").
+        // If THIS position already has a legal capture, mandatory-capture rules make
+        // EVERY legal move here a capture -- i.e. a zeroing move -- so DTZ is forced
+        // to be +-1 (unconditional win/loss) or +-101 (cursed win / blessed loss),
+        // regardless of what the DTZ table or a deeper search would say. No table
+        // probe or recursive search is needed (or correct) here.
+        if (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY) {
+            int[] rootMoveArray = new int[MoveCache.MAX_MOVE_SIZE];
+            int rootMoveCount = MoveGenerator.generateMoves(board, rootMoveArray);
+            boolean hasCaptureAtRoot = false;
+            for (int i = 0; i < rootMoveCount; i++) {
+                if (EncodeMove.getMoveCapture(rootMoveArray[i])) {
+                    hasCaptureAtRoot = true;
+                    break;
+                }
+            }
+            if (hasCaptureAtRoot) {
+                int s = wdlResult - 2;
+                int sign = Integer.signum(s);
+                int magnitude = (Math.abs(s) == 2) ? 1 : 101;
+                return sign * magnitude;
+            }
+        }
+
         if (wdlResult > 2) {
             int requiredChildWdl = 4 - wdlResult;
             int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
             int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
+            boolean mandatoryCaptureVariant = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY);
+            boolean hasCaptureHere = false;
+            if (mandatoryCaptureVariant) {
+                for (int i = 0; i < moveCount; i++) {
+                    if (EncodeMove.getMoveCapture(moveArray[i])) {
+                        hasCaptureHere = true;
+                        break;
+                    }
+                }
+            }
+
             for (int i = 0; i < moveCount; i++) {
                 int move = moveArray[i];
-                boolean zeroing = EncodeMove.getMoveCapture(move)
+                boolean isCapture = EncodeMove.getMoveCapture(move);
+                if (hasCaptureHere && !isCapture) {
+                    continue; // illegal quiet move under the forced-capture rule
+                }
+
+                boolean zeroing = isCapture
                         || EncodeMove.getMovePiece(move) == P
                         || EncodeMove.getMovePiece(move) == p;
 
@@ -343,10 +384,10 @@ public class SyzygyTablebase {
 
         int[] raw;
         if (ph.isConstant()) {
-            raw = new int[]{0, 0};
+            raw = new int[]{ph.constValue(), 0};
         } else {
             SyzygyEncInfo encInfo = SyzygyEncInfo.build(table.subTables()[t], isWtm, material, t, table.encType());
-            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip, fc.anchorSquare());
+            int[] p = SyzygyFillSquares.fillSquares(board, table.subTables()[t], isWtm, fillColorFlip, material.isHasPawns(), fc.anchorSquare());
             long idx = SyzygyEncoder.encode(p, encInfo, material, table.encType());
 
             int flatIndex = table.layout().getEntryIndex(t, 0);
@@ -369,11 +410,22 @@ public class SyzygyTablebase {
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
         if (moveCount == 0) {
-            // wdlResult == 2 (Draw) is already handled above, so reaching here with
-            // no legal moves means checkmate (Loss), not stalemate. Per the
-            // WDL_TO_DTZ[Loss] = -1 convention, this must not be reported as 0.
-
             return -1;
+        }
+
+        // Antichess/Giveaway: captures are mandatory. If ANY capture is legal here,
+        // every non-capturing move is actually illegal and must be excluded —
+        // otherwise the "losing side delays as long as possible" logic below can
+        // pick a phantom quiet-move line that was never legal to begin with.
+        boolean mandatoryCaptureVariant = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY);
+        boolean hasCaptureHere = false;
+        if (mandatoryCaptureVariant) {
+            for (int i = 0; i < moveCount; i++) {
+                if (EncodeMove.getMoveCapture(moveArray[i])) {
+                    hasCaptureHere = true;
+                    break;
+                }
+            }
         }
 
         int requiredChildWdl = 4 - wdlResult;
@@ -383,7 +435,13 @@ public class SyzygyTablebase {
 
         for (int i = 0; i < moveCount; i++) {
             int move = moveArray[i];
-            boolean zeroing = EncodeMove.getMoveCapture(move)
+            boolean isCapture = EncodeMove.getMoveCapture(move);
+
+            if (hasCaptureHere && !isCapture) {
+                continue; // illegal quiet move under the forced-capture rule
+            }
+
+            boolean zeroing = isCapture
                     || EncodeMove.getMovePiece(move) == P
                     || EncodeMove.getMovePiece(move) == p;
 
@@ -400,7 +458,9 @@ public class SyzygyTablebase {
                 int childDistance = zeroing ? 0 : Math.abs(probeDtz(board));
                 int candidate = 1 + childDistance;
 
-                if (zeroing && wdlResult == 1) {
+                // wdlResult 1 (BlessedLoss) and 3 (CursedWin) both carry the ±100
+                // 50-move-rule offset, matching Fathom's WdlToDtz[wdl±1] = ±101.
+                if (zeroing && (wdlResult == 1 || wdlResult == 3)) {
                     candidate += 100;
                 }
 
@@ -454,8 +514,9 @@ public class SyzygyTablebase {
             SyzygySubTable[] subTables = material.parseSubTables(header);
 
             int pairsStartOffset = material.computePairsHeaderStartOffset();
+            boolean capturesCompulsory = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY);
             SyzygyPairsHeadersResult pairsResult =
-                    material.parsePairsHeaders(header, pairsStartOffset, file.isSplit(), file.getType());
+                    material.parsePairsHeaders(header, pairsStartOffset, file.isSplit(), file.getType(), capturesCompulsory);
             SyzygyPairsHeader[][] pairsHeaders = pairsResult.headers();
 
             SyzygyEncType encType = material.isHasPawns() ? SyzygyEncType.FILE_ENC : SyzygyEncType.PIECE_ENC;
@@ -509,8 +570,9 @@ public class SyzygyTablebase {
             SyzygySubTable[] subTables = material.parseSubTables(header);
 
             int pairsStartOffset = material.computePairsHeaderStartOffset();
+            boolean capturesCompulsory = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY);
             SyzygyPairsHeadersResult pairsResult =
-                    material.parsePairsHeaders(header, pairsStartOffset, file.isSplit(), file.getType());
+                    material.parsePairsHeaders(header, pairsStartOffset, file.isSplit(), file.getType(), capturesCompulsory);
             SyzygyPairsHeader[][] pairsHeaders = pairsResult.headers();
 
             SyzygyPairsHeader[] flatDtzHeaders = new SyzygyPairsHeader[subTables.length];

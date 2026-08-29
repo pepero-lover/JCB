@@ -33,8 +33,8 @@ public class SyzygyBestMoveAntichess {
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        //ChessGame game = ChessGame.fromFEN("K7/6p1/8/8/8/8/8/1q6 w - - 0 8", GameVariant.SUICIDE);
-        ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
+        ChessGame game = ChessGame.fromFEN("8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2", GameVariant.SUICIDE);
+        //ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
 
@@ -65,10 +65,8 @@ public class SyzygyBestMoveAntichess {
             System.out.println(bestMove);
             System.out.println("ply : " + ply);
 
-            int wdl = SyzygyAnalyzer.probeWdl(game, tb);
-            int dtz = SyzygyAnalyzer.probeDtz(game, tb);
-            System.out.println(resultString(wdl, dtz, game.isWhiteTurn()));
-            System.out.println("FEN : " + game.getFEN());
+            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+            System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
 
             ply++;
         }

@@ -51,7 +51,6 @@ public class SyzygyBestMove {
 
             System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
             System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
-            System.out.println("FEN : " + game.getFEN());
 
             ply++;
         }

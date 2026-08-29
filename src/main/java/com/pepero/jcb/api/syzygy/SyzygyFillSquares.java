@@ -13,16 +13,25 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * expected piece-type order for a sub-table/side (from SyzygySubTable), builds
  * the square array that SyzygyEncoder.encode() needs.
  * <p>
- * NOTE: this does NOT yet handle the "no split, reuse via color-flip" case
- * (symmetric materials that only store one side's data and need the position
- * mentally color-flipped to probe the other side to move). That's a separate,
- * later refinement — for now this assumes split data is used directly (true
- * for every case we've tested so far, e.g. KPvK, KRvK).
+ * IMPORTANT: "colorFlipped" (Fathom/python-chess's "cmirror") and the actual
+ * SQUARE mirror (python-chess's "mirror", i.e. {@code ^ 0x38}) are two
+ * independent things:
+ *   - colorFlipped always flips which side's bitboard we pull pieces from
+ *     (swap white/black piece codes) whenever the natural material string
+ *     wasn't the one actually stored on disk.
+ *   - the square itself must ONLY be flipped when the material HAS PAWNS.
+ *     For pawnless material, SyzygyEncoder's own symmetry normalization
+ *     (TRIANGLE/OFF_DIAG/FLIP_DIAG etc.) already handles full board symmetry
+ *     internally, so pre-flipping squares here would corrupt the encoded index.
+ *     See python-chess's _probe_wdl_table / _probe_dtz_table: in the
+ *     has_pawns==False branch it's "p[i] = square" (no ^ mirror); the
+ *     "p[i] = square ^ mirror" line only exists in the has_pawns==True branch.
  */
 class SyzygyFillSquares {
 
     /**
      * Build the square array for encode(), matching subTable's declared piece order.
+     * No color flip, so hasPawns is irrelevant here.
      *
      * @param chessboard current board position
      * @param subTable   the sub-table whose piece order we must follow
@@ -30,7 +39,19 @@ class SyzygyFillSquares {
      * @return int[] of board squares (0~63), one per piece, in subTable's order
      */
     public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable, boolean isWtm) {
-        return fillSquares(chessboard, subTable, isWtm, false);
+        return fillSquares(chessboard, subTable, isWtm, false, false);
+    }
+
+    /**
+     * @deprecated square-mirroring must depend on whether the material has pawns
+     * (see class javadoc). This overload preserves the OLD (always-mirror-when-
+     * colorFlipped) behavior for callers not yet updated to pass hasPawns
+     * explicitly — it is WRONG for pawnless material and should be migrated.
+     */
+    @Deprecated
+    public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
+                                    boolean isWtm, boolean colorFlipped) {
+        return fillSquares(chessboard, subTable, isWtm, colorFlipped, true);
     }
 
     /**
@@ -39,14 +60,21 @@ class SyzygyFillSquares {
      * @param chessboard   current board position
      * @param subTable     the sub-table whose piece order we must follow
      * @param isWtm        true to use the white-to-move piece order, false for black-to-move
-     * @param colorFlipped is color flipped
+     * @param colorFlipped whether we're reading from the color-swapped bitboards
+     *                     (matches Fathom/python-chess's "cmirror")
+     * @param hasPawns     whether this material has pawns; ONLY when true does
+     *                     colorFlipped also trigger the actual square ({@code ^ 0x38})
+     *                     mirror (matches python-chess's "mirror"). Pawnless
+     *                     material must never have its squares mirrored here.
      * @return int[] of board squares (0~63), one per piece, in subTable's order
      */
     public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
-                                    boolean isWtm, boolean colorFlipped) {
+                                    boolean isWtm, boolean colorFlipped, boolean hasPawns) {
         int[] pieceCodes = isWtm ? subTable.wtmPieces() : subTable.btmPieces();
         int n = pieceCodes.length;
         int[] squares = new int[n];
+
+        boolean mirrorSquares = colorFlipped && hasPawns;
 
         Map<Integer, Long> remainingBitboards = new HashMap<>();
 
@@ -65,7 +93,7 @@ class SyzygyFillSquares {
             }
 
             int square = BitBoardUtils.getLS1BIndex(bb);
-            squares[i] = colorFlipped ? (square ^ 0x38) : square;
+            squares[i] = mirrorSquares ? (square ^ 0x38) : square;
 
             bb = BitBoardUtils.popBit(bb, square);
             remainingBitboards.put(actualCode, bb);
@@ -74,9 +102,19 @@ class SyzygyFillSquares {
         return squares;
     }
 
+    /**
+     * @deprecated see the other deprecated overload — this preserves old behavior
+     * (hasPawns=true) for callers not yet migrated.
+     */
+    @Deprecated
     public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
                                     boolean isWtm, boolean colorFlipped, int anchorSquare) {
-        int[] squares = fillSquares(chessboard, subTable, isWtm, colorFlipped);
+        return fillSquares(chessboard, subTable, isWtm, colorFlipped, true, anchorSquare);
+    }
+
+    public static int[] fillSquares(Chessboard chessboard, SyzygySubTable subTable,
+                                    boolean isWtm, boolean colorFlipped, boolean hasPawns, int anchorSquare) {
+        int[] squares = fillSquares(chessboard, subTable, isWtm, colorFlipped, hasPawns);
 
         if (anchorSquare >= 0) {
             for (int i = 0; i < squares.length; i++) {

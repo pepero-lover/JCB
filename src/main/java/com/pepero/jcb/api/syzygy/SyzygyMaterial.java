@@ -178,7 +178,8 @@ class SyzygyMaterial {
      * @param syzygyType  syzygy type
      * @return Syzygy Pairs Header
      */
-    public SyzygyPairsHeadersResult parsePairsHeaders(ByteBuffer header, int startOffset, boolean split, SyzygyType syzygyType) {
+    public SyzygyPairsHeadersResult parsePairsHeaders(ByteBuffer header, int startOffset, boolean split,
+                                                      SyzygyType syzygyType, boolean capturesCompulsory) {
         int subTableCount = getSubTableCount();
         int sides = split ? 2 : 1;
 
@@ -187,7 +188,7 @@ class SyzygyMaterial {
         int offset = startOffset;
         for (int t = 0; t < subTableCount; t++) {
             for (int s = 0; s < sides; s++) {
-                SyzygyPairsHeader h = readOnePairsHeader(header, offset, syzygyType);
+                SyzygyPairsHeader h = readOnePairsHeader(header, offset, syzygyType, capturesCompulsory);
                 result[t][s] = h;
                 offset += h.totalByteSize();
             }
@@ -203,10 +204,20 @@ class SyzygyMaterial {
      * @param startOffset start offset
      * @return one pairs header
      */
-    public SyzygyPairsHeader readOnePairsHeader(ByteBuffer header, int startOffset, SyzygyType syzygyType) {
+    public SyzygyPairsHeader readOnePairsHeader(ByteBuffer header, int startOffset, SyzygyType syzygyType,
+                                                boolean capturesCompulsory) {
         if ((readU8(header, startOffset) & 0x80) == 0x80) {
+            int constValue;
+            if (syzygyType.isWdl()) {
+                constValue = readU8(header, startOffset + 1);
+            } else {
+                // Ronald de Man's DTZ quirk (see python-chess syzygy.py setup_pairs / the
+                // linked talkchess post): for capture-compulsory variants a "constant"
+                // DTZ sub-table implicitly encodes raw value 1, never explicitly stored.
+                constValue = capturesCompulsory ? 1 : 0;
+            }
             return new SyzygyPairsHeader(
-                    true, (syzygyType.isWdl()) ? readU8(header, startOffset + 1) : 0,
+                    true, constValue,
                     readU8(header, startOffset), 0, 0, 0, 0, 0, 0,
                     null
             );
