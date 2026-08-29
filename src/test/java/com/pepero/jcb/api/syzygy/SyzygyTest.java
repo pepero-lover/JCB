@@ -27,13 +27,18 @@ public class SyzygyTest {
                 }
         );
 
+        if(!path.toFile().exists()) {
+            System.err.println("Skipped " + variant + " variant syzygy.");
+            return;
+        }
+
         SyzygyTablebase tb = new SyzygyTablebase(path, variant);
 
         int previousDtz = SyzygyAnalyzer.probeDtz(game, tb);
 
-        game.printBoard();
-        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-        System.out.println("DTZ : " + previousDtz);
+//        game.printBoard();
+//        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+//        System.out.println("DTZ : " + previousDtz);
 
         while (true) {
             MoveInfo bestMove = SyzygyAnalyzer.findBestMove(game, tb);
@@ -51,9 +56,9 @@ public class SyzygyTest {
 
             int dtz = SyzygyAnalyzer.probeDtz(game, tb);
 
-            game.printBoard();
-            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-            System.out.println("DTZ : " + dtz);
+//            game.printBoard();
+//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+//            System.out.println("DTZ : " + dtz);
 
             boolean isZeroing = bestMove.capture() || bestMove.enpassant()
                     || bestMove.pieceType().getPieceTypeEnum() == PieceType.PAWN;
@@ -69,8 +74,8 @@ public class SyzygyTest {
             previousDtz = dtz;
         }
 
-        System.out.println();
-        System.out.println();
+//        System.out.println();
+//        System.out.println();
     }
 
     @Test
@@ -96,7 +101,10 @@ public class SyzygyTest {
                 "8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2",
                 "8/1pp3KK/8/8/8/8/8/8 w - - 0 2",
                 "8/1pp4K/2k5/8/4K3/8/8/8 w - - 6 5",
-                "8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2"
+                "8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2",
+                "2k5/8/8/8/8/8/8/3K1NNN w - - 0 1",
+                "2k5/8/8/8/8/8/8/3K2BN w - - 0 1",
+                "8/8/3k4/8/8/8/3P4/3K3N w - - 4 3"
         );
 
         for(String fen : testCases){
@@ -112,7 +120,10 @@ public class SyzygyTest {
                 "8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2",
                 "8/1pp3KK/8/8/8/8/8/8 w - - 0 2",
                 "8/1pp4K/2k5/8/4K3/8/8/8 w - - 6 5",
-                "8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2"
+                "8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2",
+                "2k5/8/8/8/8/8/8/3K1NNN w - - 0 1",
+                "2k5/8/8/8/8/8/8/3K2BN w - - 0 1",
+                "8/8/3k4/8/8/8/3P4/3K3N w - - 4 3"
         );
 
         for(String fen : testCases){
