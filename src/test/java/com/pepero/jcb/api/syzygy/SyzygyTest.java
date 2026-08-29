@@ -83,7 +83,9 @@ public class SyzygyTest {
     void syzygyAntichess() throws IOException {
         List<String> testCases = List.of(
                 "K7/6p1/8/8/8/8/8/1q6 w - - 0 8",
-                "8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2"
+                "8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2",
+                "8/1pp3KK/8/8/8/8/8/8 w - - 0 2",
+                "8/1pp4K/2k5/8/4K3/8/8/8 w - - 6 5"
         );
 
         for(String fen : testCases){
