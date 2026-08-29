@@ -1,6 +1,5 @@
-package com.pepero.jcb.api.parse.pgn;
+package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.GameResult;
 
@@ -13,7 +12,7 @@ import java.util.Map;
  * @param rootNode
  * @param matchResult
  */
-public record PGNGame(
+record PGNGame(
         Map<String, String> headers,
         MoveNodeDTO rootNode,
         GameResult matchResult

@@ -1,14 +1,11 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.parse.pgn.PGNToken;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.NodesOverflowException;
 import com.pepero.jcb.api.exception.PGNConvertException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
-import com.pepero.jcb.api.parse.pgn.PGNLexer;
-import com.pepero.jcb.api.parse.pgn.TokenType;
 import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;

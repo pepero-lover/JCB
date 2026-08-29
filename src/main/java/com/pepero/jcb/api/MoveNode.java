@@ -5,7 +5,6 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
 
 import java.util.ArrayList;
 import java.util.List;

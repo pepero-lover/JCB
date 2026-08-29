@@ -1,11 +1,9 @@
-package com.pepero.jcb.api.parse.pgn;
-
-import com.pepero.jcb.api.ChessGame;
+package com.pepero.jcb.api;
 
 /**
  * Get PGN string tokens data for converting into {@link ChessGame}
  */
-public class PGNLexer {
+class PGNLexer {
     private final String pgn;
     private int pointer = 0;
 

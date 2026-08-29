@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.parse.pgn;
+package com.pepero.jcb.api;
 
 /**
  * Move annotation for pgn annotation

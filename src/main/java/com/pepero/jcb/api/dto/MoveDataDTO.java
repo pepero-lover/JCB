@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.dto;
 
-import com.pepero.jcb.api.parse.pgn.MoveAnnotation;
+import com.pepero.jcb.api.MoveAnnotation;
 
 /**
  * Move data DTO
