@@ -246,7 +246,8 @@ public class ConvertStringMoveUtils {
                 sb.append(ascii_pieces[type % 6]);
 
                 // add disambiguation
-                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.GIVEAWAY;
+                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.GIVEAWAY
+                        && chessboard.gameVariant != GameVariant.SUICIDE;
 
                 if (!skipDisambiguation) {
                     int going_piece_count = 0;
@@ -369,7 +370,11 @@ public class ConvertStringMoveUtils {
             if (!castle) {
                 sb.append(ascii_pieces[type % 6]);
 
-                if (!(type == k || type == K)) {
+                // add disambiguation
+                boolean skipDisambiguation = (type == k || type == K) && chessboard.gameVariant != GameVariant.GIVEAWAY
+                        && chessboard.gameVariant != GameVariant.SUICIDE;
+
+                if (!skipDisambiguation) {
                     int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
                     int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
