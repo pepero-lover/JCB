@@ -9,6 +9,7 @@ import com.pepero.jcb.api.exception.PGNConvertException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.pgn.PGNLexer;
 import com.pepero.jcb.api.parse.pgn.TokenType;
+import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;

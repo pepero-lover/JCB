@@ -1,6 +1,7 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.enums.GameResult;
+import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.GameVariant;
 
 import java.util.Map;

@@ -7,6 +7,7 @@ import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
+import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.BoardSquares;

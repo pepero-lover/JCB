@@ -1,4 +1,4 @@
-package com.pepero.jcb.api;
+package com.pepero.jcb.api.util;
 
 import java.util.Arrays;
 
