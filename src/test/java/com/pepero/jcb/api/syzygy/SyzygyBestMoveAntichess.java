@@ -12,28 +12,13 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 
 public class SyzygyBestMoveAntichess {
-    public static String resultString(int wdl, int dtz, boolean white) {
-        String wdlString = switch (wdl) {
-            case -2 -> white ? "White is losing." : "Black is losing.";
-            case -1 -> white ? "White is losing, but because of 50 moves rule, it's a draw." :
-                "Black is losing, but because of 50 moves rule, it's a draw.";
-            case 0 -> "Drew position";
-            case 1 -> white ? "White is winning, but because of 50 moves rule, it's a draw." :
-                    "Black is winning, but because of 50 moves rule, it's a draw.";
-            case 2 -> white ? "White is winning." : "Black is winning.";
-            default -> "Could not find the wdl data.";
-        };
-
-        return wdlString + "  Progress in " + dtz + " ply";
-    }
-
     public static void main(String[] args) throws IOException {
         Path syzygyDir = Path.of("syzygy-antichess/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.SUICIDE);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("8/3r4/2b5/1b6/8/4B3/5B2/8 w - - 0 2", GameVariant.SUICIDE);
+        ChessGame game = ChessGame.fromFEN("8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2", GameVariant.SUICIDE);
         //ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));

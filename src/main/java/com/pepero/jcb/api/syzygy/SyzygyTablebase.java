@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.pepero.jcb.api.syzygy.SyzygyMaterial.keyFromPieces;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
@@ -93,7 +94,8 @@ public class SyzygyTablebase {
             SyzygyBlockLayout layout,
             SyzygyEncType encType,
             int sides,
-            boolean colorFlipped
+            boolean colorFlipped,
+            boolean symmetric
     ) {}
 
     private record DtzTable(
@@ -195,20 +197,25 @@ public class SyzygyTablebase {
         SyzygyMaterial material = table.material();
 
         boolean actualWtm = (board.side == white);
+        boolean symmetric = table.symmetric();
         boolean mirrorFlip = table.colorFlipped();
-        boolean isWtm = mirrorFlip != actualWtm;
 
-        boolean noSplitReuse = (table.sides() == 1) && !isWtm;
-        if (noSplitReuse) {
+        boolean isWtm;
+        boolean effectiveColorFlip;
+        if (!symmetric) {
+            isWtm = mirrorFlip != actualWtm;
+            effectiveColorFlip = mirrorFlip;
+        } else {
             isWtm = true;
+            effectiveColorFlip = !actualWtm;
         }
-        boolean effectiveColorFlip = mirrorFlip ^ noSplitReuse;
 
         FileClassResult fc = determineFileClass(board, material, effectiveColorFlip);
         int t = fc.fileClass();
 
         int side = isWtm ? 0 : 1;
         SyzygyPairsHeader ph = table.pairsHeaders()[t][side];
+
         if (ph.isConstant()) {
             return ph.constValue();
         }
@@ -492,6 +499,8 @@ public class SyzygyTablebase {
             String materialName = naturalMaterialName;
             boolean colorFlipped = false;
 
+            boolean symmetric = naturalMaterialName.equals(mirrorMaterialString(naturalMaterialName));
+
             if (!Files.exists(path)) {
                 String mirrored = mirrorMaterialString(naturalMaterialName);
                 // pawn count/presence is unchanged by mirroring (just swaps which
@@ -513,6 +522,12 @@ public class SyzygyTablebase {
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
 
+            boolean probeColorFlipped = colorFlipped;
+            if (!material.isHasPawns()) {
+                String fileKey = keyFromPieces(subTables[0].wtmPieces());
+                probeColorFlipped = !naturalMaterialName.equals(fileKey);
+            }
+
             int pairsStartOffset = material.computePairsHeaderStartOffset();
             boolean capturesCompulsory = (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY);
             SyzygyPairsHeadersResult pairsResult =
@@ -531,7 +546,7 @@ public class SyzygyTablebase {
 
             SyzygyBlockLayout layout = SyzygyBlockLayout.compute(pairsResult.nextOffset(), tbSizes, pairsHeaders);
 
-            return new WdlTable(material, header, subTables, pairsHeaders, layout, encType, sides, colorFlipped);
+            return new WdlTable(material, header, subTables, pairsHeaders, layout, encType, sides, probeColorFlipped, symmetric);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load WDL table for material " + naturalMaterialName, e);
         }

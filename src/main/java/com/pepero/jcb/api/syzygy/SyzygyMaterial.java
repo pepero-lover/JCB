@@ -54,6 +54,25 @@ class SyzygyMaterial {
         return hasPawns ? 4 : 1;
     }
 
+    static String keyFromPieces(int[] pieces) {
+        int[] whiteCodes = {6, 5, 4, 3, 2, 1}; // K,Q,R,B,N,P (white)
+        int[] blackCodes = {14, 13, 12, 11, 10, 9}; // K,Q,R,B,N,P (black)
+        char[] letters = {'K','Q','R','B','N','P'};
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            int count = 0;
+            for (int p : pieces) if (p == whiteCodes[i]) count++;
+            for (int c = 0; c < count; c++) sb.append(letters[i]);
+        }
+        sb.append('v');
+        for (int i = 0; i < 6; i++) {
+            int count = 0;
+            for (int p : pieces) if (p == blackCodes[i]) count++;
+            for (int c = 0; c < count; c++) sb.append(letters[i]);
+        }
+        return sb.toString();
+    }
+
     /**
      * Parse piece string (like KRvKB) to SyzygyMaterial
      *
