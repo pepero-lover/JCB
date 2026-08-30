@@ -159,7 +159,7 @@ public class FENValidator {
                         FENErrorType.KING_COUNT);
             }
         } else {
-            if(whiteKingCount != 0 && blackKingCount != 1) {
+            if(whiteKingCount != 0 || blackKingCount != 1) {
                 throw new FENConvertException(
                         "Invalid FEN: There must be exactly zero white king and one black king.",
                         FENErrorType.KING_COUNT);
