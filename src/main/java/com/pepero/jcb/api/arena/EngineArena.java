@@ -163,7 +163,7 @@ public class EngineArena {
                         String san = chessGame.toSan(move);
 
                         clock.spendTime(whiteTurn, 0);
-                        chessGame.makeMove(move);
+                        chessGame.makeMoveLan(move);
                         if(matchConfig.isShowClk()) {
                             long time = (whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs());
                             chessGame.setCurrentMoveClockMilliSeconds(
@@ -302,7 +302,7 @@ public class EngineArena {
                 }
 
                 if(bestMove != null) {
-                    String san = chessGame.makeMoveReturningSan(bestMove);
+                    String san = chessGame.makeMoveLanReturningSan(bestMove);
 
                     EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
                     if(currentEngineLine != null) {

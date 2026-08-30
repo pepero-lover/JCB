@@ -11,7 +11,7 @@ public class GameStateExample {
         ChessGame game = ChessGame.fromFEN(scholarMateFen);
 
         // Assume White delivers checkmate.
-        game.makeMove("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
+        game.makeMoveLan("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
 
         // Check whether the game has ended
         GameOverReason reason = game.isGameOver();

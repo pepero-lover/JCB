@@ -17,7 +17,7 @@ public class PolyglotTest {
                     reader.findMoves(game.getPolyglotHash())
             );
             if(move == null) break;
-            game.makeMove(move);
+            game.makeMoveLan(move);
         }
 
         System.out.println(game.getPGN());

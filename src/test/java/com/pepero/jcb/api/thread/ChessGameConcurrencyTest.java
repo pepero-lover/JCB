@@ -51,7 +51,7 @@ public class ChessGameConcurrencyTest {
             try {
                 startLatch.await();
                 for (int i = 0; i < repeatCount; i++) {
-                    game.makeMove("e2e4");
+                    game.makeMoveLan("e2e4");
                     Thread.yield(); 
                     game.unmakeMove();
                 }

@@ -17,7 +17,7 @@ public class CrazyhouseExample {
         // first, make move with san or lan (uci)
 
         // lan (uci)
-        chessGame.makeMove("N@c6");
+        chessGame.makeMoveLan("N@c6");
         System.out.println("UCI place knight on c6");
         chessGame.printBoard();
         chessGame.unmakeMove();

@@ -6,8 +6,7 @@ import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.exception.EmptyMoveUndoException;
-import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.exception.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.*;
@@ -15,6 +14,7 @@ import com.pepero.jcb.core.encode.EncodeMove;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public class ChessGameTest {
     @DisplayName("LAN 문자열로 수를 두면 상태가 변해야 한다")
     void makeMove() {
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.makeMove("e2e4");
+        chessGame.makeMoveLan("e2e4");
         assertFalse(chessGame.isEmpty(Square.e4));
         assertTrue(chessGame.isEmpty(Square.e2));
     }
@@ -48,14 +48,14 @@ public class ChessGameTest {
     void testIllegalMove() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("e2f3"));
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMoveLan("e2f3"));
     }
 
     @Test
     @DisplayName("Undo 를 하면 기보가 삭제되고 보드가 원상복구되어야 한다")
     void unmakeMove() {
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.makeMove("e2e4");
+        chessGame.makeMoveLan("e2e4");
         assertEquals(1, chessGame.getMoveHistory().size());
 
         MoveInfo undoneMove = chessGame.unmakeMove();
@@ -77,7 +77,7 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
         assertTrue(chessGame.getTurn());
 
-        chessGame.makeMove("e2e4");
+        chessGame.makeMoveLan("e2e4");
         assertFalse(chessGame.getTurn());
     }
 
@@ -86,9 +86,9 @@ public class ChessGameTest {
     void getCapturedPieces() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("d7d5");
-        chessGame.makeMove("e4d5");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("d7d5");
+        chessGame.makeMoveLan("e4d5");
 
         Map<PieceType, Integer> capturedByWhite = chessGame.getCapturedPieces(true);
         assertEquals(1, capturedByWhite.get(PieceType.PAWN));
@@ -100,9 +100,9 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
         assertEquals(0, chessGame.getPieceScore());
 
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("d7d5");
-        chessGame.makeMove("e4d5");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("d7d5");
+        chessGame.makeMoveLan("e4d5");
 
         assertEquals(1, chessGame.getPieceScore());
     }
@@ -188,25 +188,25 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
 
         for (int i = 0; i < 2; i++) {
-            chessGame.makeMove("g1f3");
-            chessGame.makeMove("g8f6");
-            chessGame.makeMove("f3g1");
-            chessGame.makeMove("f6g8");
+            chessGame.makeMoveLan("g1f3");
+            chessGame.makeMoveLan("g8f6");
+            chessGame.makeMoveLan("f3g1");
+            chessGame.makeMoveLan("f6g8");
         }
-        chessGame.makeMove("g1f3");
-        chessGame.makeMove("g8f6");
+        chessGame.makeMoveLan("g1f3");
+        chessGame.makeMoveLan("g8f6");
 
         assertTrue(chessGame.canClaimDraw());
         assertEquals(GameOverReason.THREEFOLD_CLAIM, chessGame.isGameOver(true));
 
-        chessGame.makeMove("f3g1");
-        chessGame.makeMove("f6g8");
+        chessGame.makeMoveLan("f3g1");
+        chessGame.makeMoveLan("f6g8");
 
         for (int i = 0; i < 3; i++) {
-            chessGame.makeMove("g1f3");
-            chessGame.makeMove("g8f6");
-            chessGame.makeMove("f3g1");
-            chessGame.makeMove("f6g8");
+            chessGame.makeMoveLan("g1f3");
+            chessGame.makeMoveLan("g8f6");
+            chessGame.makeMoveLan("f3g1");
+            chessGame.makeMoveLan("f6g8");
         }
 
         assertEquals(GameOverReason.FIVEFOLD, chessGame.isGameOver(false));
@@ -230,8 +230,8 @@ public class ChessGameTest {
         assertEquals("e2e4", chessGame.toLanString("e4"));
         assertEquals("g1f3", chessGame.toLanString("Nf3"));
 
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("d7d5");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("d7d5");
 
         assertEquals("e4d5", chessGame.toLanString("exd5"));
     }
@@ -243,9 +243,9 @@ public class ChessGameTest {
 
         String start = chessGame.getFEN();
 
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
 
         chessGame.unmakeMove();
         chessGame.unmakeMove();
@@ -263,18 +263,18 @@ public class ChessGameTest {
     @DisplayName("바리에이션이 정확히 작성되어야 한다.")
     void variation() {
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
         chessGame.unmakeMove();
 
-        chessGame.makeMove("d7d5");
+        chessGame.makeMoveLan("d7d5");
         chessGame.unmakeMove();
 
         chessGame.remakeMove(1);
 
         ChessGame test = ChessGame.startPosition();
-        test.makeMove("e2e4");
-        test.makeMove("d7d5");
+        test.makeMoveLan("e2e4");
+        test.makeMoveLan("d7d5");
 
         assertEquals(chessGame.getFEN(), test.getFEN());
     }
@@ -290,16 +290,16 @@ public class ChessGameTest {
     @DisplayName("FEN 이 정확히 작성되어야 한다.")
     void fenAdvanced(){
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
-        chessGame.makeMove("g8f6");
-        chessGame.makeMove("b1c3");
-        chessGame.makeMove("b8c6");
-        chessGame.makeMove("f1c4");
-        chessGame.makeMove("f8c5");
-        chessGame.makeMove("e1g1");
-        chessGame.makeMove("e8g8");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
+        chessGame.makeMoveLan("g8f6");
+        chessGame.makeMoveLan("b1c3");
+        chessGame.makeMoveLan("b8c6");
+        chessGame.makeMoveLan("f1c4");
+        chessGame.makeMoveLan("f8c5");
+        chessGame.makeMoveLan("e1g1");
+        chessGame.makeMoveLan("e8g8");
 
         assertEquals("r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQ1RK1 w - - 8 6",
                 chessGame.getFEN());
@@ -334,15 +334,15 @@ public class ChessGameTest {
     @DisplayName("메인 라인 노드 및 노드 아이디를 통한 체스 보드가 잘 불러와져야 한다.")
     public void jumpToNode() {
         ChessGame chessGame = ChessGame.startPosition();
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
         String fen1 = chessGame.getFEN();
         long uuid1 = chessGame.getCurrentNodeId();
 
-        chessGame.makeMove("b8c6");
+        chessGame.makeMoveLan("b8c6");
         chessGame.unmakeMove();
-        chessGame.makeMove("g8f6");
+        chessGame.makeMoveLan("g8f6");
         String fen2 = chessGame.getFEN();
         long uuid2 = chessGame.getCurrentNodeId();
 
@@ -444,13 +444,13 @@ public class ChessGameTest {
     void testManualClockSetting() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        chessGame.makeMove("e2e4");
+        chessGame.makeMoveLan("e2e4");
         chessGame.setCurrentMoveClock(0, 4, 55);
 
-        chessGame.makeMove("e7e5");
+        chessGame.makeMoveLan("e7e5");
         chessGame.setCurrentMoveClock("0:04:52");
 
-        MoveNodeDTO root = chessGame.getRootNodeWithSan();
+        MoveNodeDTO root = chessGame.getRootNode();
         MoveNodeDTO move1 = root.children().getFirst();
         MoveNodeDTO move2 = move1.children().getFirst();
 
@@ -482,7 +482,7 @@ public class ChessGameTest {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
         ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariant.CRAZY_HOUSE);
 
-        chessGame.makeMove("P@e4");
+        chessGame.makeMoveLan("P@e4");
 
         assertEquals(Piece.WHITE_PAWN, chessGame.getPieceOnSquare(Square.e4));
         assertTrue(chessGame.getMoveHistory().getFirst().isDrop(), "히스토리에 기록된 DTO의 isDrop 플래그가 true여야 합니다.");
@@ -494,8 +494,8 @@ public class ChessGameTest {
         String crazyFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[P] w KQkq - 0 1";
         ChessGame chessGame = ChessGame.fromFEN(crazyFen, GameVariant.CRAZY_HOUSE);
 
-        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e8"), "8랭크 폰 드랍은 불법수입니다.");
-        assertThrows(IllegalMoveException.class, () -> chessGame.makeMove("P@e1"), "1랭크 폰 드랍은 불법수입니다.");
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMoveLan("P@e8"), "8랭크 폰 드랍은 불법수입니다.");
+        assertThrows(IllegalMoveException.class, () -> chessGame.makeMoveLan("P@e1"), "1랭크 폰 드랍은 불법수입니다.");
     }
 
     @Test
@@ -561,15 +561,15 @@ public class ChessGameTest {
     @DisplayName("Full move 를 설정 했을 때 ply 와 같이 써지지 않아야 한다")
     void fullMovePly() {
         ChessGame chessGame = ChessGame.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 10000");
-        chessGame.makeMove("e2e4");
+        chessGame.makeMoveLan("e2e4");
     }
 
     @Test
     @DisplayName("Make move all 을 하는 도중 예외가 발생한다면 다시 그 함수를 실행하기 전 포지션으로 돌아가야 한다")
-    void makeMoveAll() {
+    void makeMoveLanAll() {
         ChessGame chessGame = ChessGame.startPosition();
         try {
-            chessGame.makeMoveAll("e2e4 e7e5 g1f4");
+            chessGame.makeMoveLanAll("e2e4 e7e5 g1f4");
         } catch (Exception ignored) {}
         assertEquals(START_FEN, chessGame.getFEN());
         try {
@@ -665,5 +665,419 @@ public class ChessGameTest {
 
         assertTrue(clock.isTimeUp(true));
         assertTrue(clock.getWhiteTimeMs() <= 0);
+    }
+
+    @Test
+    @DisplayName("tryMakeMove: 합법수면 true를 반환하고 실제로 반영되어야 한다")
+    void tryMakeMove_legal() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        assertTrue(chessGame.tryMakeMoveLan("e2e4"));
+        assertFalse(chessGame.isEmpty(Square.e4));
+    }
+
+    @Test
+    @DisplayName("tryMakeMove: 불법수면 예외 없이 false만 반환하고 상태는 그대로여야 한다")
+    void tryMakeMove_illegal_doesNotThrowAndKeepsState() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        assertFalse(chessGame.tryMakeMoveLan("e2f3"));
+        assertEquals(START_FEN, chessGame.getFEN());
+        assertEquals(0, chessGame.getMoveHistory().size());
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveSan: 불법 SAN이면 false, 히스토리도 그대로여야 한다")
+    void tryMakeMoveSan_illegal() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        assertFalse(chessGame.tryMakeMoveSan("Qh5#")); // 시작 포지션에서 불가능한 수
+        assertEquals(0, chessGame.getMoveHistory().size());
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveAll: 중간에 불법수가 있으면 false 반환하고, 실제 동작은 부분 적용 없이 원래 포지션으로 남는다")
+    void tryMakeMoveLanAll_partialFailure_currentlyRollsBackFully() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        boolean result = chessGame.tryMakeMoveLanAll("e2e4 e7e5 g1f4"); // g1f4는 불법수
+
+        assertFalse(result);
+        assertEquals(START_FEN, chessGame.getFEN(),
+                "makeMoveAll처럼 원자적으로 롤백된다면 시작 포지션 그대로여야 합니다. " +
+                        "만약 이 assert가 깨진다면 javadoc이 실제로 맞게 고쳐진 것이니 문서/동작 불일치 이슈를 닫으면 됩니다.");
+        assertEquals(0, chessGame.getRootNode().children().size());
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveRaw: 반영은 되지만 history/listener 업데이트는 없어야 한다")
+    void tryMakeMoveRaw_doesNotUpdateHistory() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        List<String> notified = new ArrayList<>();
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onMoveMade(MoveInfo moveInfo) {
+                notified.add("onMoveMade");
+            }
+        });
+
+        assertTrue(chessGame.tryMakeMoveRawLan("e2e4"));
+        assertFalse(chessGame.isEmpty(com.pepero.jcb.api.enums.Square.e4), "보드 상태 자체는 반영되어야 합니다.");
+        assertEquals(0, chessGame.getMoveHistory().size(), "raw 메서드는 히스토리를 갱신하지 않아야 합니다.");
+        assertTrue(notified.isEmpty(), "raw 메서드는 리스너도 호출하지 않아야 합니다.");
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveRaw: 불법수면 false, 보드도 그대로여야 한다")
+    void tryMakeMoveRaw_illegal() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        assertFalse(chessGame.tryMakeMoveRawLan("e2f3"));
+        assertEquals(START_FEN, chessGame.getFEN());
+    }
+
+    @Test
+    @DisplayName("isAtomicOver: 표준 체스(ATOMIC이 아님)에서 호출하면 VariantNotMatchException")
+    void isAtomicOver_wrongVariant_throws() {
+        ChessGame chessGame = ChessGame.startPosition(); // 기본은 STANDARD
+        assertThrows(VariantNotMatchException.class, chessGame::isAtomicOver);
+    }
+
+    @Test
+    @DisplayName("isGiveawayOver: 표준 체스에서 호출하면 VariantNotMatchException")
+    void isGiveawayOver_wrongVariant_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(VariantNotMatchException.class, chessGame::isGiveawayOver);
+    }
+
+    @Test
+    @DisplayName("isSuicideOver: 표준 체스에서 호출하면 VariantNotMatchException")
+    void isSuicideOver_wrongVariant_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(VariantNotMatchException.class, chessGame::isSuicideOver);
+    }
+
+    @Test
+    @DisplayName("isKingRaceOver: 표준 체스에서 호출하면 VariantNotMatchException")
+    void isKingRaceOver_wrongVariant_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(VariantNotMatchException.class, chessGame::isKingRaceOver);
+    }
+
+    @Test
+    @DisplayName("isAtomicOver: 시작 포지션에서는 당연히 false여야 한다")
+    void isAtomicOver_startPosition_isFalse() {
+        ChessGame chessGame = ChessGame.fromFEN(START_FEN, GameVariant.ATOMIC);
+        assertFalse(chessGame.isAtomicOver());
+    }
+
+    @Test
+    @DisplayName("isGiveawayOver: 시작 포지션에서는 당연히 false여야 한다")
+    void isGiveawayOver_startPosition_isFalse() {
+        ChessGame chessGame = ChessGame.fromFEN(START_FEN, GameVariant.GIVEAWAY);
+        assertFalse(chessGame.isGiveawayOver());
+    }
+
+    @Test
+    @DisplayName("isSuicideOver: 시작 포지션에서는 당연히 false여야 한다")
+    void isSuicideOver_startPosition_isFalse() {
+        ChessGame chessGame = ChessGame.fromFEN(START_FEN, GameVariant.SUICIDE);
+        assertFalse(chessGame.isSuicideOver());
+    }
+
+    @Test
+    @DisplayName("isKingRaceOver: 시작 포지션에서는 당연히 false여야 한다")
+    void isKingRaceOver_startPosition_isFalse() {
+        ChessGame chessGame = ChessGame.startPosition(GameVariant.RACING_KINGS);
+        assertFalse(chessGame.isKingRaceOver());
+    }
+
+    @Test
+    @DisplayName("isAtomicOver: 한쪽 킹이 폭발로 사라진 포지션은 true여야 한다")
+    void isAtomicOver_kingExploded_isTrue() {
+        String fen = "8/8/4k3/8/8/3KPr2/8/8 b - - 0 1";
+        ChessGame chessGame = ChessGame.fromFEN(fen, GameVariant.ATOMIC);
+        assertFalse(chessGame.isAtomicOver());
+        chessGame.makeMoveSan("Rxe3#");
+        assertTrue(chessGame.isAtomicOver());
+    }
+
+    @Test
+    @DisplayName("isGiveawayOver: 백 기물이 전부 사라지면(백 승리 조건) true여야 한다")
+    void isGiveawayOver_allPiecesGone_isTrue() {
+        String fenNoWhitePieces = "8/1p6/8/8/8/8/8/8 w - - 0 1";
+        ChessGame chessGame = ChessGame.fromFEN(fenNoWhitePieces, GameVariant.GIVEAWAY);
+        assertTrue(chessGame.isGiveawayOver());
+    }
+
+    @Test
+    @DisplayName("isKingRaceOver: 백 킹이 8랭크에 먼저 도달하면 true여야 한다")
+    void isKingRaceOver_kingReachedRank8_isTrue() {
+        String fenWhiteKingOnRank8 = "4K3/8/8/8/8/8/8/4k3 b - - 0 1";
+        ChessGame chessGame = ChessGame.fromFEN(fenWhiteKingOnRank8, GameVariant.RACING_KINGS);
+        assertTrue(chessGame.isKingRaceOver());
+    }
+
+    @Test
+    @DisplayName("deleteVariation: 존재하지 않는 nodeId면 MoveNotFoundException")
+    void deleteVariation_unknownNode_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(MoveNotFoundException.class, () -> chessGame.deleteVariation(999_999L));
+    }
+
+    @Test
+    @DisplayName("deleteVariation: 루트 노드를 지우려 하면 HistoryTreeException")
+    void deleteVariation_rootNode_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        long rootId = chessGame.getRootNode().id();
+        assertThrows(HistoryTreeException.class, () -> chessGame.deleteVariation(rootId));
+    }
+
+    @Test
+    @DisplayName("deleteVariation: 서브 variation을 지우면 부모의 children에서 사라지고, 나머지 mainline은 그대로여야 한다")
+    void deleteVariation_removesSubtree() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("d7d5");
+        long variationId = chessGame.getCurrentNodeId();
+        chessGame.unmakeMove();
+
+        MoveNodeDTO afterE4 = chessGame.getRootNode().children().getFirst();
+        assertEquals(2, afterE4.children().size(), "e5(메인)와 d5(변이) 두 개가 있어야 합니다.");
+
+        chessGame.deleteVariation(variationId);
+
+        MoveNodeDTO afterDelete = chessGame.getRootNode().children().getFirst();
+        assertEquals(1, afterDelete.children().size(), "변이가 지워지고 메인라인(e5)만 남아야 합니다.");
+        assertEquals("e5", afterDelete.children().getFirst().san());
+    }
+
+    @Test
+    @DisplayName("deleteVariation: 현재 위치한 노드를 지우면 부모 노드로 자동 점프해야 한다")
+    void deleteVariation_currentNode_jumpsToParent() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        long e4Id = chessGame.getCurrentNodeId();
+        chessGame.makeMoveLan("e7e5"); // 현재 위치 = e5
+
+        chessGame.deleteVariation(chessGame.getCurrentNodeId());
+
+        assertEquals(e4Id, chessGame.getCurrentNodeId(), "지운 노드의 부모(e4)로 이동해 있어야 합니다.");
+        assertEquals(0, chessGame.getRootNode().children().getFirst().children().size());
+    }
+
+    @Test
+    @DisplayName("promoteVariationLocal: 변이를 메인라인으로 승격시키면 순서가 바뀌어야 한다 (javadoc 예시: e4 e5 Nf3 (Nc3 Nf6) -> e4 e5 Nc3 (Nf3) Nf6)")
+    void promoteVariationLocal_swapsOrder() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("b1c3"); // Nf3 자리에 변이로 Nc3 추가됨
+        long nc3Id = chessGame.getCurrentNodeId();
+
+        MoveNodeDTO beforePromote = chessGame.getRootNode().children().getFirst().children().getFirst();
+        assertEquals("Nf3", beforePromote.children().getFirst().san(), "승격 전엔 Nf3가 메인(0번)이어야 합니다.");
+
+        chessGame.promoteVariationLocal(nc3Id);
+
+        MoveNodeDTO afterPromote = chessGame.getRootNode().children().getFirst().children().getFirst();
+        assertEquals("Nc3", afterPromote.children().getFirst().san(), "승격 후엔 Nc3가 메인(0번)이어야 합니다.");
+        assertEquals("Nf3", afterPromote.children().get(1).san(), "Nf3는 변이(1번)로 밀려나야 합니다.");
+    }
+
+    @Test
+    @DisplayName("promoteVariationLocal: 존재하지 않는 nodeId면 MoveNotFoundException")
+    void promoteVariationLocal_unknownNode_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(MoveNotFoundException.class, () -> chessGame.promoteVariationLocal(999_999L));
+    }
+
+    @Test
+    @DisplayName("jumpToMainlinePly: 메인라인의 특정 ply로 정확히 이동해야 한다 (javadoc 예시)")
+    void jumpToMainlinePly_movesToCorrectPly() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLanAll("e2e4 e7e5 g1f3 g8f6");
+
+        chessGame.jumpToMainlinePly(2);
+
+        assertEquals("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2", chessGame.getFEN(),
+                "ply 2(e7e5까지)로 이동해 있어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("jumpToMainlinePly: 음수 ply는 MoveNotFoundException")
+    void jumpToMainlinePly_negative_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        assertThrows(MoveNotFoundException.class, () -> chessGame.jumpToMainlinePly(-1));
+    }
+
+    @Test
+    @DisplayName("jumpToMainlinePly: 범위를 벗어난 ply는 MoveNotFoundException")
+    void jumpToMainlinePly_outOfBounds_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        assertThrows(MoveNotFoundException.class, () -> chessGame.jumpToMainlinePly(5));
+    }
+
+    private static class NoopListener implements ChessGameListener {
+        @Override public void onMoveMade(MoveInfo moveInfo) {}
+        @Override public void onMoveUnmade(MoveInfo moveInfo) {}
+        @Override public void onMoveRemade(MoveInfo moveInfo) {}
+        @Override public void onPositionJumped(String fen) {}
+        @Override public void onGameOver(GameResult result, GameOverReason reason) {}
+        @Override public void onHistoryChanged() {}
+    }
+
+    @Test
+    @DisplayName("makeMove -> unmakeMove -> remakeMove 순서대로 정확히 한 번씩만 콜백되어야 한다")
+    void listener_moveLifecycle_calledInOrder() {
+        ChessGame chessGame = ChessGame.startPosition();
+        List<String> events = new ArrayList<>();
+
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override public void onMoveMade(MoveInfo moveInfo) { events.add("made:" + moveInfo.toLanString()); }
+            @Override public void onMoveUnmade(MoveInfo moveInfo) { events.add("unmade:" + moveInfo.toLanString()); }
+            @Override public void onMoveRemade(MoveInfo moveInfo) { events.add("remade:" + moveInfo.toLanString()); }
+        });
+
+        chessGame.makeMoveLan("e2e4");
+        chessGame.unmakeMove();
+        chessGame.remakeMove();
+
+        assertEquals(List.of("made:e2e4", "unmade:e2e4", "remade:e2e4"), events);
+    }
+
+    @Test
+    @DisplayName("removeChessGameListener 이후에는 더 이상 콜백되지 않아야 한다")
+    void listener_removed_noLongerNotified() {
+        ChessGame chessGame = ChessGame.startPosition();
+        List<String> events = new ArrayList<>();
+
+        ChessGameListener listener = new NoopListener() {
+            @Override public void onMoveMade(MoveInfo moveInfo) { events.add("made"); }
+        };
+
+        chessGame.addChessGameListener(listener);
+        chessGame.makeMoveLan("e2e4");
+        assertEquals(1, events.size());
+
+        chessGame.removeChessGameListener(listener);
+        chessGame.makeMoveLan("e7e5");
+        assertEquals(1, events.size(), "제거 후에는 콜백이 더 늘어나지 않아야 합니다.");
+    }
+
+    @Test
+    @DisplayName("체크메이트가 나면 onGameOver가 정확한 결과/사유와 함께 호출되어야 한다")
+    void listener_onGameOver_calledWithCorrectResult() {
+        ChessGame chessGame = ChessGame.startPosition();
+        List<GameResult> results = new ArrayList<>();
+        List<GameOverReason> reasons = new ArrayList<>();
+
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override public void onGameOver(GameResult result, GameOverReason reason) {
+                results.add(result);
+                reasons.add(reason);
+            }
+        });
+
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
+
+        assertEquals(1, results.size(), "게임이 끝난 시점에 정확히 한 번 호출되어야 합니다.");
+        assertEquals(GameResult.WHITE_WON, results.getFirst());
+        assertEquals(GameOverReason.CHECKMATE, reasons.getFirst());
+    }
+
+    @Test
+    @DisplayName("jumpToNode / jumpToMainlinePly 호출 시 onPositionJumped가 이동 후 FEN과 함께 호출되어야 한다")
+    void listener_onPositionJumped_calledWithNewFen() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        long e4Id = chessGame.getCurrentNodeId();
+        chessGame.makeMoveLan("e7e5");
+
+        List<String> jumpedFens = new ArrayList<>();
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override public void onPositionJumped(String fen) { jumpedFens.add(fen); }
+        });
+
+        chessGame.jumpToNode(e4Id);
+
+        assertEquals(1, jumpedFens.size());
+        assertTrue(jumpedFens.getFirst().startsWith("rnbqkbnr/pppppppp/8/8/4P3/8"),
+                "e4를 둔 직후 포지션의 FEN이어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("deleteVariation / promoteVariationLocal은 onHistoryChanged를 호출해야 한다")
+    void listener_onHistoryChanged_calledOnTreeEdit() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("d7d5");
+        long variationId = chessGame.getCurrentNodeId();
+
+        int[] historyChangedCount = {0};
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override public void onHistoryChanged() { historyChangedCount[0]++; }
+        });
+
+        chessGame.deleteVariation(variationId);
+
+        assertEquals(1, historyChangedCount[0]);
+    }
+
+    @Test
+    @DisplayName("lightWeightCopy: 복사 시점의 포지션은 같아야 하지만, 리스너/히스토리는 복사되지 않아야 한다")
+    void lightWeightCopy_copiesPositionButNotHistoryOrListeners() {
+        ChessGame original = ChessGame.startPosition();
+        original.makeMoveLan("e2e4");
+        original.makeMoveLan("e7e5");
+
+        List<String> notifiedOnOriginalListener = new ArrayList<>();
+        original.addChessGameListener(new NoopListener() {
+            @Override public void onMoveMade(MoveInfo moveInfo) { notifiedOnOriginalListener.add("made"); }
+        });
+
+        ChessGame copy = ChessGame.lightWeightCopy(original);
+
+        assertEquals(original.getFEN(), copy.getFEN(), "복사 시점의 포지션(FEN)은 같아야 합니다.");
+        assertEquals(0, copy.getRootNode().children().size(), "히스토리 트리는 복사되지 않고 새로 시작해야 합니다.");
+
+        copy.makeMoveLan("g1f3");
+        assertTrue(notifiedOnOriginalListener.isEmpty(), "원본 리스너가 복사본의 이벤트에 반응하면 안 됩니다.");
+    }
+
+    @Test
+    @DisplayName("lightWeightCopy: 복사 후 원본을 변경해도 복사본의 보드 상태는 영향받지 않아야 한다 (얕은 복사 방지)")
+    void lightWeightCopy_isIndependentFromOriginal() {
+        ChessGame original = ChessGame.startPosition();
+        ChessGame copy = ChessGame.lightWeightCopy(original);
+
+        original.makeMoveLan("e2e4");
+
+        assertEquals(START_FEN, copy.getFEN(), "원본을 바꿔도 복사본은 그대로여야 합니다 (내부 배열/비트보드 공유 금지).");
+        assertNotEquals(original.getFEN(), copy.getFEN());
+    }
+
+    @Test
+    @DisplayName("getBoardSnapshot: 스냅샷 이후 원본에 수를 둬도 스냅샷 자체는 변하지 않아야 한다")
+    void getBoardSnapshot_isIndependentOfFurtherMoves() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+
+        Chessboard snapshot = chessGame.getBoardSnapshot();
+        String snapshotFenBefore = ChessboardUtils.getFen(snapshot);
+
+        chessGame.makeMoveLan("e7e5");
+
+        String snapshotFenAfter = ChessboardUtils.getFen(snapshot);
+        assertEquals(snapshotFenBefore, snapshotFenAfter,
+                "getBoardSnapshot()이 내부 chessboard 참조를 그대로 반환한다면 이 assert가 깨집니다 (얕은 복사 의심).");
     }
 }

@@ -8,12 +8,12 @@ public class JumpExample {
 
         // Set up the position ...
 
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
         long uuid_g1f3 = chessGame.getCurrentNodeId();
 
-        chessGame.makeMove("b8c6");
+        chessGame.makeMoveLan("b8c6");
 
         // The move history now looks like this:
         // e4 e5 Nf3 Nc6

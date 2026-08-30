@@ -8,9 +8,9 @@ public class MainExample {
         ChessGame chessGame = ChessGame.startPosition();
 
         // Make moves
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
 
         // Check the current turn and FEN
         System.out.println("Current turn: " + chessGame.getTurn());

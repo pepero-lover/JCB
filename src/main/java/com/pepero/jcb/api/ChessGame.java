@@ -523,7 +523,7 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal move
      * @throws ConvertMoveException if move string is incorrect
      */
-    public void makeMove(String lan) {
+    public void makeMoveLan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
         writeLock.lock();
@@ -544,7 +544,7 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal move
      * @throws ConvertMoveException if move string is incorrect
      */
-    public String makeMoveReturningSan(String lan) {
+    public String makeMoveLanReturningSan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
         writeLock.lock();
@@ -569,7 +569,7 @@ public class ChessGame {
     public void makeMoveSan(String sanString) {
         if(sanString == null) throw new NullPointerException("San data can not be null!");
 
-        makeMove(toLanString(sanString));
+        makeMoveLan(toLanString(sanString));
     }
 
     /**
@@ -630,12 +630,12 @@ public class ChessGame {
     /**
      * Make moves on this ChessGame
      *
-     * @param lanString san string like "e2e4 e7e5 g1f3 b8c6"
+     * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
      * @throws IllegalMoveException if move is illegal move
      * @throws ConvertMoveException if move data is not correct
      */
-    public void makeMoveAll(String lanString) {
+    public void makeMoveLanAll(String lanString) {
         if(lanString == null) throw new NullPointerException("Lan string can not be null!");
 
         writeLock.lock();
@@ -647,7 +647,7 @@ public class ChessGame {
             int[] encodedMoves = new int[lanStrings.length];
 
             for (int i = 0; i < lanStrings.length; i++) {
-                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, lanStrings[i]);
+                int encodedMove = ConvertStringMoveUtils.lanToMoveData(tempChessboard, lanStrings[i]);
                 if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
                     throw new IllegalMoveException(lanStrings[i],
                             ChessboardUtils.getFen(tempChessboard));
@@ -727,11 +727,11 @@ public class ChessGame {
      *
      * @return true if the move was legal and applied, false otherwise
      */
-    public boolean tryMakeMoveRaw(String lanMove) {
+    public boolean tryMakeMoveRawLan(String lanMove) {
         if(lanMove == null) throw new NullPointerException("Lan string can not be null!");
 
         try {
-            makeMoveRaw(lanMove);
+            makeMoveRawLan(lanMove);
             return true;
         } catch (IllegalMoveException | ConvertMoveException e) {
             return false;
@@ -752,12 +752,12 @@ public class ChessGame {
      * Make move on this ChessGame <br>
      * <b>Warning : This raw method doesn't update history, call listener, and update game over variable. </b>
      *
-     * @param moveString lan move string
+     * @param lan lan move string
      */
-    public void makeMoveRaw(String moveString) {
-        if(moveString == null) throw new NullPointerException("Lan string can not be null!");
+    public void makeMoveRawLan(String lan) {
+        if(lan == null) throw new NullPointerException("Lan string can not be null!");
 
-        int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, moveString);
+        int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
         internalMakeMoveRaw(encodedMove);
     }
 
@@ -864,13 +864,13 @@ public class ChessGame {
     /**
      * Try to make move on this ChessGame without throwing an exception (LAN MOVE)
      *
-     * @param moveString move like e2e4, e7e5 (LAN move string)
+     * @param lan move like e2e4, e7e5 (LAN move string)
      *
      * @return true if the move was legal and applied, false otherwise
      */
-    public boolean tryMakeMove(String moveString) {
+    public boolean tryMakeMoveLan(String lan) {
         try {
-            makeMove(moveString);
+            makeMoveLan(lan);
             return true;
         } catch (IllegalMoveException | ConvertMoveException e) {
             return false;
@@ -946,11 +946,11 @@ public class ChessGame {
      *
      * @throws ConvertMoveException if converting move failed
      */
-    public boolean tryMakeMoveAll(String lanString) {
+    public boolean tryMakeMoveLanAll(String lanString) {
         if(lanString == null) throw new NullPointerException("Lan string can not be null!");
 
         try {
-            makeMoveAll(lanString);
+            makeMoveLanAll(lanString);
             return true;
         } catch (IllegalMoveException e) {
             return false;
@@ -2547,18 +2547,6 @@ public class ChessGame {
     }
 
     /**
-     * Get Root node on move history
-     */
-    public MoveNodeDTO getRootNode() {
-        readLock.lock();
-        try {
-            return moveHistoryRoot.convertToDTO();
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
      * Get current node's long id
      */
     public long getCurrentNodeId() {
@@ -3042,7 +3030,7 @@ public class ChessGame {
      *
      * @throws NodesOverflowException if move count is too large
      */
-    public MoveNodeDTO getRootNodeWithSan() {
+    public MoveNodeDTO getRootNode() {
         readLock.lock();
         try {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
@@ -3062,7 +3050,7 @@ public class ChessGame {
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
-    public MoveNodeDTO getRootNodeWithSan(int maxNodesCount) {
+    public MoveNodeDTO getRootNode(int maxNodesCount) {
         readLock.lock();
         try {
             Chessboard tempBoard = new Chessboard(this.startPositionFEN);
@@ -3440,7 +3428,7 @@ public class ChessGame {
     public void printHistory() {
         readLock.lock();
         try {
-            printHistory(getRootNodeWithSan(), 0);
+            printHistory(getRootNode(), 0);
         } finally {
             readLock.unlock();
         }
@@ -3454,7 +3442,7 @@ public class ChessGame {
     public void printHistory(int maxNodeSize) {
         readLock.lock();
         try {
-            printHistory(getRootNodeWithSan(maxNodeSize), 0);
+            printHistory(getRootNode(maxNodeSize), 0);
         } finally {
             readLock.unlock();
         }

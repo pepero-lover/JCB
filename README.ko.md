@@ -125,9 +125,9 @@ public class MainExample {
         ChessGame chessGame = ChessGame.startPosition();
 
         // 수 두기
-        chessGame.makeMove("e2e4");
-        chessGame.makeMove("e7e5");
-        chessGame.makeMove("g1f3");
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.makeMoveLan("g1f3");
 
         // 현재 턴 및 FEN 데이터 확인
         System.out.println("현재 차례: " + chessGame.getTurn());
@@ -193,7 +193,7 @@ public class GameStateExample {
         ChessGame game = ChessGame.fromFEN(scholarMateFen);
 
         // 백이 체크메이트 하는 상황을 가정합니다.
-        game.makeMove("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
+        game.makeMoveLan("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
 
         // 게임 종료 여부 판단
         GameOverReason reason = game.isGameOver();
