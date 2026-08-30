@@ -252,6 +252,23 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: The side not to move is in check. (Impossible game state)",
                     FENErrorType.IMPOSSIBLE_GAME_STATE);
         }
+
+        if (variant == GameVariant.RACING_KINGS) {
+            int sideKingSquare = BitBoardUtils.getLS1BIndex(
+                    chessboard.bitboards[chessboard.side == white ? K : k]
+            );
+
+            if (sideKingSquare == -1) {
+                throw new FENConvertException("Invalid FEN: The side to move is missing their King.",
+                        FENErrorType.KING_COUNT);
+            }
+
+            if (MoveGenerator.isSquareAttacked(chessboard, sideKingSquare, oppositeSide)) {
+                throw new FENConvertException(
+                        "Invalid FEN: In Racing Kings, giving check is illegal, so the side to move cannot be in check.",
+                        FENErrorType.IMPOSSIBLE_GAME_STATE);
+            }
+        }
     }
 
     private static void validatePocket(String pocket) {
