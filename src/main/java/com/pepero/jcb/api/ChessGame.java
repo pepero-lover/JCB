@@ -593,6 +593,8 @@ public class ChessGame {
 
     /**
      * Make moves on this ChessGame (San string)
+     * <p>
+     * If a move in the middle of the string is illegal, the position will be roll backed.
      *
      * @param sanString san string like "e4 e5 Nf3 Nc6"
      *
@@ -629,6 +631,8 @@ public class ChessGame {
 
     /**
      * Make moves on this ChessGame
+     * <p>
+     * If a move in the middle of the string is illegal, the position will be roll backed.
      *
      * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
@@ -918,7 +922,7 @@ public class ChessGame {
     /**
      * Try to make moves on this ChessGame without throwing an exception (San string)
      * <p>
-     * If a move in the middle of the string is illegal, the moves made before it stay applied.
+     * If a move in the middle of the string is illegal, the position will be roll backed.
      *
      * @param sanString san string like "e4 e5 Nf3 Nc6"
      *
@@ -938,7 +942,7 @@ public class ChessGame {
     /**
      * Try to make moves on this ChessGame without throwing an exception (Lan string)
      * <p>
-     * If a move in the middle of the string is illegal, the moves made before it stay applied.
+     * If a move in the middle of the string is illegal, the position will be roll backed.
      *
      * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
