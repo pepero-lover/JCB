@@ -18,7 +18,7 @@ public class JumpExample {
         // The move history now looks like this:
         // e4 e5 Nf3 Nc6
 
-        System.out.println("Position e4 e5 Nf3 Nf6");
+        System.out.println("Position e4 e5 Nf3 Nc6");
         chessGame.printBoard();
 
         // Now let's jump to that saved node.
