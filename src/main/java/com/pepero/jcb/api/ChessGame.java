@@ -3628,6 +3628,13 @@ public class ChessGame {
     }
 
     /**
+     * Get a read-only snapshot view of the currently registered {@link ChessGameListener}s.
+     */
+    public List<ChessGameListener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    /**
      * Notify listeners when move made
      *
      * @param moveInfo maked move data

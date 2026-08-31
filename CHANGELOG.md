@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ChessGame.setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable>)` to
   customize how exceptions thrown by listener callbacks are handled. Defaults to logging
   via `java.util.logging.Logger`.
-- Added `getListeners` method on `ChessGame`
+- `ChessGame.getListeners()` — returns a read-only snapshot view of the currently
+  registered `ChessGameListener`s.
 - `ChessGame.getZobristHash()` — exposes JCB's internal Zobrist hash, which (unlike
   `getPolyglotHash()`) encodes variant-specific state such as Crazyhouse pocket contents
   and Atomic captured-piece state.
@@ -29,8 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a `ChessGame` to a `HashSet`/`HashMap` made it unreachable). Use the new `samePosition()`
   method to compare positions explicitly. **This is a breaking change** if you relied on
   position-based `equals`/`hashCode`.
-- Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()` **This is a breaking change** if you are using
-  `getGameoverReason` method.
+- Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()`.
+  **This is a breaking change** if you are using the `getGameoverReason` method.
 - `ChessGameListener` callbacks (`onMoveMade`, `onMoveUnmade`, `onMoveRemade`,
   `onPositionJumped`, `onGameOver`, `onHistoryChanged`) now receive the source `ChessGame`
   as their first parameter. Previously there was no way to tell which game an event came
@@ -42,19 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the hardcoded `System.out.println` calls from the internal implementation.
 
 ### Fixed
-- Added read lock on `getPieceCount` methods on `ChessGame` class
+- Added read lock on `getPieceCount` methods on `ChessGame` class.
 - `ChessGame` no longer lets an exception thrown by a `ChessGameListener` callback
   (`onMoveMade`, `onMoveUnmade`, `onMoveRemade`, `onPositionJumped`, `onGameOver`,
   `onHistoryChanged`) propagate out of `makeMove()`/`unmakeMove()`/etc. Previously, a
   misbehaving listener could both prevent subsequent listeners from being notified and
   cause the caller to receive an exception even though the move/state change had already
   been applied successfully.
-- Listener notifications for moves (`makeMove*`, `makeDropMove`) now always fire after `writeLock` is
-    released, matching the existing behavior of `unmakeMove`/`remakeMove`/`jumpToNode`/etc.
-    Previously the two families were inconsistent, and the same call (e.g. `unmakeMove()`)
-    could notify with or without the lock held depending on whether it was invoked directly
-    or via `goBackward()`.
-- `getGameResult()`/`getGameoverReason()` no longer re-fire `onGameOver` on every call once
+- Listener notifications for moves (`makeMove*`, `makeDropMove`) now always fire after
+  `writeLock` is released, matching the existing behavior of
+  `unmakeMove`/`remakeMove`/`jumpToNode`/etc. Previously the two families were
+  inconsistent, and the same call (e.g. `unmakeMove()`) could notify with or without
+  the lock held depending on whether it was invoked directly or via `goBackward()`.
+- `getGameResult()`/`getGameOverReason()` no longer re-fire `onGameOver` on every call once
   the game has ended; the event now only fires the first time a terminal state is discovered.
 - Fixed a bug where `goForward()` and `goBackward()` invoked listener callbacks
   (`onMoveMade`, `onMoveUnmade`, `onGameOver`) while `ChessGame`'s internal write
@@ -66,11 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deep, mostly-linear move histories (e.g. long imported PGNs with few
   variations).
 - Fixed `deleteVariation()` invoking `onPositionJumped` / `onGameOver` while the write
-    lock was still held, when deleting the current node caused an internal jump to its
-    parent. `jumpToNode()`'s logic was split into an internal step (runs under the lock)
-    and a notification step (runs after the lock is released), and `deleteVariation()`
-    now uses the internal step directly and defers notification until it releases its
-    own lock, alongside its own notifications.
+  lock was still held, when deleting the current node caused an internal jump to its
+  parent. `jumpToNode()`'s logic was split into an internal step (runs under the lock)
+  and a notification step (runs after the lock is released), and `deleteVariation()`
+  now uses the internal step directly and defers notification until it releases its
+  own lock, alongside its own notifications.
 - Fixed `deleteVariation()` and `promoteVariationLocal()` not firing `onGameOver` when
   the operation caused the game to become newly over (e.g. promoting a variation that
   ends in checkmate to the mainline). Both now use the same evaluate-then-notify-after-
@@ -125,20 +126,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strings embedded in each `MoveDataDTO`. Now sets `tempBoard.gameVariant`
   and `tempBoard.isChess960` from the live game before walking the mainline,
   matching `getRootNode()`.
-- **`ChessGame.forceEndGame()`**: the "already finished" guard checked the raw
-  `this.gameoverReason` field, which could still read `NOTGAMEOVER` even
-  though the mainline tip had already naturally reached a terminal state
-  (checkmate, stalemate, etc.) if no evaluating method (`getGameResult()`,
-  `isGameOver()`, ...) had been called since. This let `resign()` /
-  `agreeDraw()` / `timeOver()` / `adjudication()` silently overwrite a real
-  game result with a forced one. The guard now refreshes state from the
-  mainline tip first via `evaluateGameStateForNotification(...)` before
-  checking, and correctly notifies `onGameOver` for a naturally-discovered
-  terminal state (if this is the first time it's observed) before rejecting
-  the forced end with `IllegalStateException`.
-
-### Performance
-
+- **`ChessGame.forceEndGame()`** (used by `resign()`, `agreeDraw()`, `timeOver()`,
+  `adjudication()`, `forceEndGameExternal()`): forced game-ending events were
+  being recorded on `currentNode` instead of the mainline tip node. Since
+  `getGameResult()`, `getGameOverReason()`, `getPGN()`, and `getPurePGN()` all
+  re-evaluate state from `getLastMainlineNode(moveHistoryRoot)` rather than
+  `currentNode` (this is also why undoing a move doesn't change a finished
+  game's reported result), calling `resign()`/`agreeDraw()`/etc. while
+  browsing history (i.e. `currentNode` isn't the mainline tip) meant the
+  forced result was silently discarded the next time any of those methods was
+  called. Now marks `getLastMainlineNode(this.moveHistoryRoot)` instead,
+  consistent with how the rest of the class determines "the" game result.
+- **`ChessGame.forceEndGame()`**: separately, the "already finished" guard
+  checked the raw `this.gameoverReason` field, which could still read
+  `NOTGAMEOVER` even though the mainline tip had already naturally reached a
+  terminal state (checkmate, stalemate, etc.) if no evaluating method
+  (`getGameResult()`, `isGameOver()`, ...) had been called since. This let
+  `resign()` / `agreeDraw()` / `timeOver()` / `adjudication()` silently
+  overwrite a real game result with a forced one. The guard now refreshes
+  state from the mainline tip first via
+  `evaluateGameStateForNotification(...)` before checking, and correctly
+  notifies `onGameOver` for a naturally-discovered terminal state (if this is
+  the first time it's observed) before rejecting the forced end with
+  `IllegalStateException`.
 
 ## [1.8.0] - 2026-08-30
 
