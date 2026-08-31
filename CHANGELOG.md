@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- On `ChessGame`, the write lock on `getLegalMoves` method replaced to read lock
 
 ### Fixed
 
 ### Performance
-- On `MoveGenerator`, Replaced `if` cases on piece attack finding to `switch-case`.
+- On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
 - On `MoveGenerator`, added `isRacingKings` to store this variant is racing king variant.
 
 ## [1.9.0]

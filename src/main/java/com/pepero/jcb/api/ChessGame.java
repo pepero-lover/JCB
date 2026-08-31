@@ -1634,7 +1634,7 @@ public class ChessGame {
      * Get legal moves on this chess game
      */
     public List<MoveInfo> getLegalMoves() {
-        writeLock.lock();
+        readLock.lock();
         try {
             int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
@@ -1646,7 +1646,7 @@ public class ChessGame {
             }
             return result;
         } finally {
-            writeLock.unlock();
+            readLock.unlock();
         }
     }
 
