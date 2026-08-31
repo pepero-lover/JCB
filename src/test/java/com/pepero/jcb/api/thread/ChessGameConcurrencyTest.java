@@ -24,19 +24,19 @@ public class ChessGameConcurrencyTest {
 
         game.addChessGameListener(new ChessGameListener() {
             @Override
-            public void onMoveMade(MoveInfo moveInfo) {
+            public void onMoveMade(ChessGame source, MoveInfo moveInfo) {
                 moveMadeCount.incrementAndGet();
             }
 
             @Override
-            public void onMoveUnmade(MoveInfo moveInfo) {
+            public void onMoveUnmade(ChessGame source, MoveInfo moveInfo) {
                 moveUnmadeCount.incrementAndGet();
             }
 
-            @Override public void onMoveRemade(MoveInfo moveInfo) {}
-            @Override public void onPositionJumped(String targetFen) {}
-            @Override public void onGameOver(GameResult result, GameOverReason reason) {}
-            @Override public void onHistoryChanged() {}
+            @Override public void onMoveRemade(ChessGame source, MoveInfo moveInfo) {}
+            @Override public void onPositionJumped(ChessGame source, String targetFen) {}
+            @Override public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {}
+            @Override public void onHistoryChanged(ChessGame source) {}
         });
 
         int readerThreadCount = 10;

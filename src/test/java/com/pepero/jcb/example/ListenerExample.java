@@ -11,13 +11,13 @@ public class ListenerExample {
 
         chessGame.addChessGameListener(new ChessGameListener() {
             @Override
-            public void onGameOver(GameResult result, GameOverReason reason) {
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
                 System.out.println(result);
                 System.out.println(reason);
             }
 
             @Override
-            public void onHistoryChanged() {
+            public void onHistoryChanged(ChessGame source) {
                 System.out.println("The move history has changed.");
             }
         });

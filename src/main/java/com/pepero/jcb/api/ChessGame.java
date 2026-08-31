@@ -3422,7 +3422,7 @@ public class ChessGame {
      */
     private void notifyMoveMade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            safeNotify(listener, () -> listener.onMoveMade(moveInfo));
+            safeNotify(listener, () -> listener.onMoveMade(this, moveInfo));
         }
     }
 
@@ -3433,7 +3433,7 @@ public class ChessGame {
      */
     private void notifyMoveUnmade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            safeNotify(listener, () -> listener.onMoveUnmade(moveInfo));
+            safeNotify(listener, () -> listener.onMoveUnmade(this, moveInfo));
         }
     }
 
@@ -3444,7 +3444,7 @@ public class ChessGame {
      */
     private void notifyMoveRemade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            safeNotify(listener, () -> listener.onMoveRemade(moveInfo));
+            safeNotify(listener, () -> listener.onMoveRemade(this, moveInfo));
         }
     }
 
@@ -3455,7 +3455,7 @@ public class ChessGame {
      */
     private void notifyPositionJumped(String targetFen) {
         for (ChessGameListener listener : listeners) {
-            safeNotify(listener, () -> listener.onPositionJumped(targetFen));
+            safeNotify(listener, () -> listener.onPositionJumped(this, targetFen));
         }
     }
 
@@ -3467,7 +3467,7 @@ public class ChessGame {
      */
     private void notifyGameOver(GameResult result, GameOverReason reason) {
         for (ChessGameListener listener : listeners) {
-            safeNotify(listener, () -> listener.onGameOver(result, reason));
+            safeNotify(listener, () -> listener.onGameOver(this, result, reason));
         }
     }
 
@@ -3476,7 +3476,7 @@ public class ChessGame {
      */
     private void notifyHistoryChanged() {
         for (ChessGameListener listener : listeners) {
-            safeNotify(listener, listener::onHistoryChanged);
+            safeNotify(listener, () -> listener.onHistoryChanged(this));
         }
     }
 

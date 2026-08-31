@@ -717,7 +717,7 @@ public class ChessGameTest {
         List<String> notified = new ArrayList<>();
         chessGame.addChessGameListener(new NoopListener() {
             @Override
-            public void onMoveMade(MoveInfo moveInfo) {
+            public void onMoveMade(ChessGame source, MoveInfo moveInfo) {
                 notified.add("onMoveMade");
             }
         });
@@ -925,12 +925,12 @@ public class ChessGameTest {
     }
 
     private static class NoopListener implements ChessGameListener {
-        @Override public void onMoveMade(MoveInfo moveInfo) {}
-        @Override public void onMoveUnmade(MoveInfo moveInfo) {}
-        @Override public void onMoveRemade(MoveInfo moveInfo) {}
-        @Override public void onPositionJumped(String fen) {}
-        @Override public void onGameOver(GameResult result, GameOverReason reason) {}
-        @Override public void onHistoryChanged() {}
+        @Override public void onMoveMade(ChessGame source, MoveInfo moveInfo) {}
+        @Override public void onMoveUnmade(ChessGame source, MoveInfo moveInfo) {}
+        @Override public void onMoveRemade(ChessGame source, MoveInfo moveInfo) {}
+        @Override public void onPositionJumped(ChessGame source, String fen) {}
+        @Override public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {}
+        @Override public void onHistoryChanged(ChessGame source) {}
     }
 
     @Test
@@ -940,9 +940,20 @@ public class ChessGameTest {
         List<String> events = new ArrayList<>();
 
         chessGame.addChessGameListener(new NoopListener() {
-            @Override public void onMoveMade(MoveInfo moveInfo) { events.add("made:" + moveInfo.toLanString()); }
-            @Override public void onMoveUnmade(MoveInfo moveInfo) { events.add("unmade:" + moveInfo.toLanString()); }
-            @Override public void onMoveRemade(MoveInfo moveInfo) { events.add("remade:" + moveInfo.toLanString()); }
+            @Override
+            public void onMoveMade(ChessGame source, MoveInfo moveInfo) {
+                events.add("made:" + moveInfo.toLanString());
+            }
+
+            @Override
+            public void onMoveUnmade(ChessGame source, MoveInfo moveInfo) {
+                events.add("unmade:" + moveInfo.toLanString());
+            }
+
+            @Override
+            public void onMoveRemade(ChessGame source, MoveInfo moveInfo) {
+                events.add("remade:" + moveInfo.toLanString());
+            }
         });
 
         chessGame.makeMoveLan("e2e4");
@@ -959,7 +970,10 @@ public class ChessGameTest {
         List<String> events = new ArrayList<>();
 
         ChessGameListener listener = new NoopListener() {
-            @Override public void onMoveMade(MoveInfo moveInfo) { events.add("made"); }
+            @Override
+            public void onMoveMade(ChessGame source, MoveInfo moveInfo) {
+                events.add("made");
+            }
         };
 
         chessGame.addChessGameListener(listener);
@@ -979,7 +993,8 @@ public class ChessGameTest {
         List<GameOverReason> reasons = new ArrayList<>();
 
         chessGame.addChessGameListener(new NoopListener() {
-            @Override public void onGameOver(GameResult result, GameOverReason reason) {
+            @Override
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
                 results.add(result);
                 reasons.add(reason);
             }
@@ -1002,7 +1017,10 @@ public class ChessGameTest {
 
         List<String> jumpedFens = new ArrayList<>();
         chessGame.addChessGameListener(new NoopListener() {
-            @Override public void onPositionJumped(String fen) { jumpedFens.add(fen); }
+            @Override
+            public void onPositionJumped(ChessGame source, String fen) {
+                jumpedFens.add(fen);
+            }
         });
 
         chessGame.jumpToNode(e4Id);
@@ -1024,7 +1042,10 @@ public class ChessGameTest {
 
         int[] historyChangedCount = {0};
         chessGame.addChessGameListener(new NoopListener() {
-            @Override public void onHistoryChanged() { historyChangedCount[0]++; }
+            @Override
+            public void onHistoryChanged(ChessGame source) {
+                historyChangedCount[0]++;
+            }
         });
 
         chessGame.deleteVariation(variationId);
@@ -1041,7 +1062,10 @@ public class ChessGameTest {
 
         List<String> notifiedOnOriginalListener = new ArrayList<>();
         original.addChessGameListener(new NoopListener() {
-            @Override public void onMoveMade(MoveInfo moveInfo) { notifiedOnOriginalListener.add("made"); }
+            @Override
+            public void onMoveMade(ChessGame source, MoveInfo moveInfo) {
+                notifiedOnOriginalListener.add("made");
+            }
         });
 
         ChessGame copy = ChessGame.lightWeightCopy(original);

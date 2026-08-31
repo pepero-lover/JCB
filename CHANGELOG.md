@@ -23,8 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of comparing the internal Zobrist hash. Comparing by position while `ChessGame` is
   mutable violated the general hash-collection contract (mutating the position after adding
   a `ChessGame` to a `HashSet`/`HashMap` made it unreachable). Use the new `samePosition()`
-  method to compare positions explicitly.
+  method to compare positions explicitly. **This is a breaking change** if you relied on
+  position-based `equals`/`hashCode`.
 - Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()`
+- `ChessGameListener` callbacks (`onMoveMade`, `onMoveUnmade`, `onMoveRemade`,
+  `onPositionJumped`, `onGameOver`, `onHistoryChanged`) now receive the source `ChessGame`
+  as their first parameter. Previously there was no way to tell which game an event came
+  from when a single listener instance was shared across multiple `ChessGame`s (e.g. logging
+  or PGN-recording listeners reused across `ArenaRunner` matches). **This is a breaking
+  change** for any existing `ChessGameListener` implementations.
 
 ### Fixed
 - Added read lock on `getPieceCount` methods on `ChessGame` class
