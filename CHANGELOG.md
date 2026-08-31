@@ -11,8 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ChessGame.setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable>)` to
   customize how exceptions thrown by listener callbacks are handled. Defaults to logging
   via `java.util.logging.Logger`.
+- Added `getListeners` method on `ChessGame`
+- `ChessGame.getZobristHash()` — exposes JCB's internal Zobrist hash, which (unlike
+  `getPolyglotHash()`) encodes variant-specific state such as Crazyhouse pocket contents
+  and Atomic captured-piece state.
+- `ChessGame.samePosition(ChessGame other)` — explicit position-equality check based on
+  `getZobristHash()`, replacing the old `equals()`-based position comparison.
 
 ### Changed
+- `ChessGame.equals()`/`hashCode()` now use identity comparison (default `Object` behavior)
+  instead of comparing the internal Zobrist hash. Comparing by position while `ChessGame` is
+  mutable violated the general hash-collection contract (mutating the position after adding
+  a `ChessGame` to a `HashSet`/`HashMap` made it unreachable). Use the new `samePosition()`
+  method to compare positions explicitly.
 
 ### Fixed
 - Added read lock on `getPieceCount` methods on `ChessGame` class

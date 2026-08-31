@@ -611,9 +611,9 @@ public class ChessGameTest {
                 "rnbq1bnr/1ppp1ppp/p2k4/4p2Q/2B1P3/2N5/PPPP1PPP/R1B1K1NR w KQ - 3+3 0 5",
                 GameVariant.THREE_CHECK
         );
-        int previous = chessGame.hashCode();
+        long previous = chessGame.getZobristHash();
         chessGame.makeMoveSanAll("Qg6+ Ke7 Qh5 Kd6");
-        assertNotEquals(previous, chessGame.hashCode());
+        assertNotEquals(previous, chessGame.getZobristHash());
     }
 
     @Test

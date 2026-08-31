@@ -33,7 +33,13 @@ import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
- * Chess board class storing tree history data, board state, etc.
+ * Chess board class storing tree history data, board state, etc. <p>
+ *
+ * This class is internally synchronized via a {@link java.util.concurrent.locks.ReentrantReadWriteLock}:
+ * concurrent reads are safe, and reads/writes from different threads are mutually exclusive.
+ * However, individual sequences of calls (e.g. check-then-act patterns like
+ * {@code if (game.canUndo()) game.unmakeMove();}) are not atomic across calls &mdash;
+ * synchronize externally if you need that.
  */
 public class ChessGame {
     // start position constant
@@ -3411,6 +3417,13 @@ public class ChessGame {
     }
 
     /**
+     * Get current listeners
+     */
+    public List<ChessGameListener> getListeners() {
+        return List.copyOf(listeners);
+    }
+
+    /**
      * Get this position's polyglot hash
      */
     public long getPolyglotHash() {
@@ -3574,28 +3587,56 @@ public class ChessGame {
     }
 
     /**
+     * Get this position's internal Zobrist hash (JCB's own hashing scheme). <p>
+     *
+     * Unlike {@link #getPolyglotHash()}, which follows the Polyglot book format and does
+     * <b>not</b> encode variant-specific state (e.g. Crazyhouse pocket contents, Atomic
+     * captured-piece state), this hash reflects JCB's internal {@code Chessboard} state
+     * and is unique per variant-aware position. Use this when you need exact position
+     * equality across variants, e.g. for repetition detection or transposition dedup;
+     * use {@link #getPolyglotHash()} when interoperating with Polyglot opening books.
+     *
+     * @return internal Zobrist hash of the current position
+     */
+    public long getZobristHash() {
+        readLock.lock();
+        try {
+            return this.chessboard.hash_key;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether this ChessGame and other have the same board position. <p>
+     *
+     * Note: this compares position only (piece placement, side to move, castling rights,
+     * en passant square) &mdash; not move history. Two games that reached the same position
+     * via different move orders (transposition) are considered the same position.
+     *
+     * @param other other chess game to compare against
+     * @return true if both games are at the same position
+     */
+    public boolean samePosition(ChessGame other) {
+        if (other == null) return false;
+        readLock.lock();
+        try {
+            other.readLock.lock();
+            try {
+                return this.chessboard.hash_key == other.chessboard.hash_key;
+            } finally {
+                other.readLock.unlock();
+            }
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Return String FEN
      */
     @Override
     public String toString() {
         return this.getFEN();
-    }
-
-    /**
-     * Get whether this Chessboard and obj is equal "position"
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof ChessGame other)) return false;
-        return this.chessboard.hash_key == other.chessboard.hash_key;
-    }
-
-    /**
-     * Get hash key for deciding equal position
-     */
-    @Override
-    public int hashCode() {
-        return Long.hashCode(this.chessboard.hash_key);
     }
 }
