@@ -29,7 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a `ChessGame` to a `HashSet`/`HashMap` made it unreachable). Use the new `samePosition()`
   method to compare positions explicitly. **This is a breaking change** if you relied on
   position-based `equals`/`hashCode`.
-- Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()`
+- Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()` **This is a breaking change** if you are using
+  `getGameoverReason` method.
 - `ChessGameListener` callbacks (`onMoveMade`, `onMoveUnmade`, `onMoveRemade`,
   `onPositionJumped`, `onGameOver`, `onHistoryChanged`) now receive the source `ChessGame`
   as their first parameter. Previously there was no way to tell which game an event came
@@ -82,14 +83,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already-processed checker bit (`checkersMask &= 1L << square`) instead of
   clearing it, so the loop condition (`checkersMask != 0L`) could never become
   false. Now clears the bit correctly (`checkersMask &= ~(1L << square)`).
-
 - **`ChessGame.getHeaders()`**: no longer returns a direct reference to the
   internal `headers` map. Callers mutating the returned map outside of the
   class's read/write lock could corrupt game state read or written
   concurrently by another thread, breaking the thread-safety guarantee
   documented on the class. Now returns a defensive copy
   (`new LinkedHashMap<>(headers)`), consistent with `getMoveHistory()`.
-
 - **`ChessGame.getPGN(int)` / `getPurePGN(int)`**: fixed a lock-reentrancy bug
   where these methods called the public `getGameResult()` while already
   holding `writeLock`. Since `getGameResult()` notifies listeners
@@ -126,6 +125,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strings embedded in each `MoveDataDTO`. Now sets `tempBoard.gameVariant`
   and `tempBoard.isChess960` from the live game before walking the mainline,
   matching `getRootNode()`.
+- **`ChessGame.forceEndGame()`**: the "already finished" guard checked the raw
+  `this.gameoverReason` field, which could still read `NOTGAMEOVER` even
+  though the mainline tip had already naturally reached a terminal state
+  (checkmate, stalemate, etc.) if no evaluating method (`getGameResult()`,
+  `isGameOver()`, ...) had been called since. This let `resign()` /
+  `agreeDraw()` / `timeOver()` / `adjudication()` silently overwrite a real
+  game result with a forced one. The guard now refreshes state from the
+  mainline tip first via `evaluateGameStateForNotification(...)` before
+  checking, and correctly notifies `onGameOver` for a naturally-discovered
+  terminal state (if this is the first time it's observed) before rejecting
+  the forced end with `IllegalStateException`.
 
 ### Performance
 

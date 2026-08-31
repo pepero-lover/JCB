@@ -2528,20 +2528,34 @@ public class ChessGame {
      * @param reason game over reason
      */
     private void forceEndGame(GameResult result, GameOverReason reason) {
+        GameOverCheckOutcome refreshedOutcome;
+        boolean alreadyOver;
+
         writeLock.lock();
         try {
-            if (this.gameoverReason != GameOverReason.NOTGAMEOVER) {
-                throw new IllegalStateException("This game is already finished!");
+            MoveNode tipNode = getLastMainlineNode(this.moveHistoryRoot);
+
+            refreshedOutcome = evaluateGameStateForNotification(tipNode);
+            alreadyOver = this.gameoverReason != GameOverReason.NOTGAMEOVER;
+
+            if (!alreadyOver) {
+                this.gameResult = result;
+                this.gameoverReason = reason;
+                this.headers.put("Result", PGNExporter.getGameResultString(this.gameResult));
+
+                tipNode.terminalResult = result;
+                tipNode.terminalReason = reason;
             }
-
-            this.gameResult = result;
-            this.gameoverReason = reason;
-            this.headers.put("Result", PGNExporter.getGameResultString(this.gameResult));
-
-            this.currentNode.terminalResult = result;
-            this.currentNode.terminalReason = reason;
         } finally {
             writeLock.unlock();
+        }
+
+        if (refreshedOutcome.newlyOver()) {
+            notifyGameOver(refreshedOutcome.gameResult(), refreshedOutcome.gameoverReason());
+        }
+
+        if (alreadyOver) {
+            throw new IllegalStateException("This game is already finished!");
         }
 
         notifyGameOver(result, reason);
@@ -3353,7 +3367,8 @@ public class ChessGame {
     public MoveNodeDTO getRootNode() {
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
+            Chessboard tempBoard = new Chessboard(this.startPositionFEN,
+                    this.chessboard.isChess960, this.chessboard.gameVariant);
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT,
                     new int[1]);
@@ -3372,7 +3387,8 @@ public class ChessGame {
     public MoveNodeDTO getRootNode(int maxNodesCount) {
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
+            Chessboard tempBoard = new Chessboard(this.startPositionFEN,
+                    this.chessboard.isChess960, this.chessboard.gameVariant);
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount,
                     new int[1]);
@@ -3533,7 +3549,8 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
+            Chessboard tempBoard = new Chessboard(this.startPositionFEN,
+                    this.chessboard.isChess960, this.chessboard.gameVariant);
 
             MoveNode lastNode = moveHistoryRoot;
 
