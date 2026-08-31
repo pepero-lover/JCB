@@ -104,6 +104,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listener notification until after `writeLock` is released, matching the
   pattern already used by `deleteVariation`, `promoteVariationLocal`, and
   `jumpToNode`.
+- **`ChessGame.getCurrentMoveInfo()`**: fixed a `NullPointerException` thrown when
+  called at the start position (`currentNode == moveHistoryRoot`, whose
+  `moveData` is `null`). Now throws `MoveNotFoundException` with a clear
+  message instead, consistent with how other current-node-dependent methods
+  (`setCurrentMoveClock`, `setTimeStamp`, etc.) guard against the root node.
+- **`ChessGame.getRootNode()` / `getRootNode(int)`**: the temporary
+  `Chessboard` built from `startPositionFEN` was missing `isChess960`
+  (only `gameVariant` was being copied over). For Chess960 games this caused
+  `PGNExporter.buildPGNTreeWithSan(...)` to build the SAN tree against a
+  non-960 board, producing incorrect castling notation (and potentially
+  incorrect move legality) in the generated `MoveNodeDTO` tree. Now sets both
+  `tempBoard.gameVariant` and `tempBoard.isChess960` from the live game before
+  building the tree.
+- **`ChessGame.getMainlineData()`**: the temporary `Chessboard` built from
+  `startPositionFEN` didn't have `gameVariant` or `isChess960` set at all
+  (unlike `getRootNode()`), so it silently defaulted to a standard,
+  non-Chess960 board. For non-standard variant games (Crazyhouse, Atomic,
+  Three-check, Chess960, etc.) this meant `MoveGenerator.makeMove(...)` ran
+  under the wrong rules while walking the mainline, producing incorrect FEN
+  strings embedded in each `MoveDataDTO`. Now sets `tempBoard.gameVariant`
+  and `tempBoard.isChess960` from the live game before walking the mainline,
+  matching `getRootNode()`.
 
 ### Performance
 

@@ -2837,10 +2837,13 @@ public class ChessGame {
 
     /**
      * Get current move info
+     *
+     * @throws MoveNotFoundException if current move is root move
      */
     public MoveInfo getCurrentMoveInfo() {
         readLock.lock();
         try {
+            if (currentNode == moveHistoryRoot) throw new MoveNotFoundException("Current position is the start position!");
             return new MoveInfo(currentNode.moveData.originEncodedData());
         } finally {
             readLock.unlock();
@@ -3350,8 +3353,7 @@ public class ChessGame {
     public MoveNodeDTO getRootNode() {
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(this.startPositionFEN);
-            tempBoard.gameVariant = this.getGameVariant();
+            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, MAX_PGN_NODE_COUNT,
                     new int[1]);
@@ -3370,8 +3372,7 @@ public class ChessGame {
     public MoveNodeDTO getRootNode(int maxNodesCount) {
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(this.startPositionFEN);
-            tempBoard.gameVariant = this.getGameVariant();
+            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
 
             return PGNExporter.buildPGNTreeWithSan(moveHistoryRoot, tempBoard, maxNodesCount,
                     new int[1]);
@@ -3532,7 +3533,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            Chessboard tempBoard = new Chessboard(startPositionFEN);
+            Chessboard tempBoard = new Chessboard(startPositionFEN, chessboard.isChess960, chessboard.gameVariant);
 
             MoveNode lastNode = moveHistoryRoot;
 
