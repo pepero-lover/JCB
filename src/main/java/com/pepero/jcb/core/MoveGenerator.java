@@ -263,18 +263,14 @@ public class MoveGenerator {
                             }
                         }
                     } else {
-                        long pieceMoves = 0L;
-
                         // get piece moves
-                        if (piece == N) {
-                            pieceMoves = Attacks.knight_attacks[sourceSq];
-                        } else if (piece == B) {
-                            pieceMoves = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
-                        } else if (piece == R) {
-                            pieceMoves = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
-                        } else if (piece == Q) {
-                            pieceMoves = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
-                        }
+                        long pieceMoves = switch (piece) {
+                            case N -> Attacks.knight_attacks[sourceSq];
+                            case B -> Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
+                            case R -> Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
+                            case Q -> Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
+                            default -> Attacks.king_attacks[sourceSq];
+                        };
 
                         // remove my side's pieces
                         pieceMoves &= ~chessboard.occupancies[white];
@@ -328,21 +324,18 @@ public class MoveGenerator {
 
                 long pieceAttacks;
 
-                if (piece == N || piece == n) {
-                    pieceAttacks = Attacks.knight_attacks[sourceSq];
-                } else if (piece == B || piece == b) {
-                    pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
-                } else if (piece == R || piece == r) {
-                    pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
-                } else if (piece == Q || piece == q) {
-                    pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
-                } else if (piece == P || piece == p) {
-                    pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
-                    if (chessboard.enpassant != no_sq) {
-                        pieceAttacks |= (1L << chessboard.enpassant);
-                    }
-                } else {
-                    pieceAttacks = Attacks.king_attacks[sourceSq];
+                switch (piece) {
+                    case N: case n: pieceAttacks = Attacks.knight_attacks[sourceSq]; break;
+                    case B: case b: pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]); break;
+                    case R: case r: pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]); break;
+                    case Q: case q: pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]); break;
+                    case P: case p:
+                        pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
+                        if (chessboard.enpassant != no_sq) {
+                            pieceAttacks |= (1L << chessboard.enpassant);
+                        }
+                        break;
+                    default: pieceAttacks = Attacks.king_attacks[sourceSq];
                 }
 
                 boolean hasCapture = (pieceAttacks & chessboard.occupancies[oppSide]) != 0L;
@@ -710,23 +703,14 @@ public class MoveGenerator {
      * @return piece attacks
      */
     private static long getPieceAttacks(Chessboard chessboard, int piece, int side, int sourceSq) {
-        long pieceAttacks;
-
-        if (piece == N || piece == n) {
-            pieceAttacks = Attacks.knight_attacks[sourceSq];
-        } else if (piece == B || piece == b) {
-            pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
-        } else if (piece == R || piece == r) {
-            pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
-        } else if (piece == Q || piece == q) {
-            pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
-        } else if (piece == P || piece == p){
-            pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
-        } else {
-            pieceAttacks = Attacks.king_attacks[sourceSq];
-        }
-
-        return pieceAttacks;
+        return switch (piece) {
+            case N, n -> Attacks.knight_attacks[sourceSq];
+            case B, b -> Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
+            case R, r -> Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
+            case Q, q -> Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
+            case P, p -> Attacks.pawn_attacks[side][sourceSq];
+            default -> Attacks.king_attacks[sourceSq];
+        };
     }
 
     /**
@@ -749,40 +733,38 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
-        if(chessboard.gameVariant == GameVariant.GIVEAWAY || chessboard.gameVariant == GameVariant.SUICIDE) {
-            return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
-        }
-
-        if(chessboard.gameVariant == GameVariant.ATOMIC) {
-            return generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
-        }
-
-        if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
-            if(ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
-                return 0;
-            }
-        }
-
-        // when horde and it's white's turn
-        if(chessboard.gameVariant == GameVariant.HORDE && chessboard.side == white) {
-            return generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
-        }
-
-        // when 3 check
-        if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
-            if(chessboard.check_count[white] >= 3) return 0;
-            if(chessboard.check_count[black] >= 3) return 0;
-        }
-
-        // when king of the hill
-        if (chessboard.gameVariant == GameVariant.KING_OF_THE_HILL) {
-            if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return 0;
-            if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return 0;
+        switch (chessboard.gameVariant) {
+            case GIVEAWAY:
+            case SUICIDE:
+                return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
+            case ATOMIC:
+                return generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
+            case RACING_KINGS:
+                if (ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
+                    return 0;
+                }
+                break;
+            case HORDE:
+                if (chessboard.side == white) {
+                    return generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
+                }
+                break;
+            case THREE_CHECK:
+                if (chessboard.check_count[white] >= 3) return 0;
+                if (chessboard.check_count[black] >= 3) return 0;
+                break;
+            case KING_OF_THE_HILL:
+                if ((chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0) return 0;
+                if ((chessboard.bitboards[k] & BoardSquares.CENTER_SQUARES) != 0) return 0;
+                break;
+            default:
+                break;
         }
 
         int moveCount = 0;
         int side = chessboard.side;
         int oppSide = side ^ 1;
+        boolean isRacingKings = chessboard.gameVariant == GameVariant.RACING_KINGS;
 
         int kingSq = BitBoardUtils.getLS1BIndex(
                 side == white ? chessboard.bitboards[K] : chessboard.bitboards[k]);
@@ -818,8 +800,7 @@ public class MoveGenerator {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
 
             // if racing kings, check move is not possible
-            if (chessboard.gameVariant == GameVariant.RACING_KINGS
-                    && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, targetSq,
+            if (isRacingKings && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, targetSq,
                     -1, oppKingSq, 0)) {
                 kingAttacks = BitBoardUtils.popBit(kingAttacks, targetSq);
                 continue;
@@ -894,8 +875,7 @@ public class MoveGenerator {
                         int targetSq = BitBoardUtils.getLS1BIndex(pieceMoves);
 
                         // if racing kings, check move is not possible
-                        if (chessboard.gameVariant == GameVariant.RACING_KINGS
-                                && wouldGiveCheck(chessboard, side, piece, sourceSq, targetSq,
+                        if (isRacingKings && wouldGiveCheck(chessboard, side, piece, sourceSq, targetSq,
                                 -1, oppKingSq, 0)) {
                             pieceMoves = BitBoardUtils.popBit(pieceMoves, targetSq);
                             continue;
@@ -919,7 +899,7 @@ public class MoveGenerator {
                         if (BitBoardUtils.getBit(pinRay, pushSq) /*make sure target square is on pin ray (pin mask)*/ &&
                                 BitBoardUtils.getBit(checkMask, pushSq) /*make sure this move is avoiding check*/) {
                             // if racing kings, check move is not possible
-                            if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
+                            if (isRacingKings) {
                                 moveCount = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,moveArray, moveCount,
                                         sourceSq, pushSq, piece, false, -1);
                             } else {
@@ -937,7 +917,7 @@ public class MoveGenerator {
                                 !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
                             if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
                                 // if racing kings, check move is not possible
-                                if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
+                                if (isRacingKings) {
                                     if (!wouldGiveCheck(chessboard, side, piece, sourceSq, doublePushSq,
                                             -1, oppKingSq, 0)) {
                                         moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
@@ -968,7 +948,7 @@ public class MoveGenerator {
                     while (pawnAttacks != 0) {
                         int targetSq = BitBoardUtils.getLS1BIndex(pawnAttacks);
 
-                        if (chessboard.gameVariant == GameVariant.RACING_KINGS) {
+                        if (isRacingKings) {
                             moveCount = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,
                                     moveArray, moveCount, sourceSq, targetSq, piece, true, -1);
                         } else {
@@ -995,7 +975,7 @@ public class MoveGenerator {
                                 if (BitBoardUtils.getBit(pinRay, targetSq) &&
                                         isEnPassantSafe(chessboard, kingSq, sourceSq, targetSq, side)) {
                                     // if racing kings, check move is not possible
-                                    if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
+                                    if(isRacingKings) {
                                         if (!wouldGiveCheck(chessboard, side, piece, sourceSq, targetSq, capturedPawnSq,
                                                 oppKingSq, 0)) {
                                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
@@ -1068,25 +1048,45 @@ public class MoveGenerator {
         long pawns   = ((attackerSide == white) ? chessboard.bitboards[P] : chessboard.bitboards[p]) & ~removalMask;
 
         if (side == attackerSide) {
-            if (piece == B || piece == b || piece == Q || piece == q)
-                bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
-            if (piece == R || piece == r || piece == Q || piece == q)
-                rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
-            if (piece == N || piece == n)
-                knights = BitBoardUtils.popBit(knights, sourceSq);
-            if (piece == P || piece == p)
-                pawns = BitBoardUtils.popBit(pawns, sourceSq);
+            switch (piece) {
+                case Q: case q:
+                    bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
+                    rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
+                    break;
+                case B: case b:
+                    bishopsQueens = BitBoardUtils.popBit(bishopsQueens, sourceSq);
+                    break;
+                case R: case r:
+                    rooksQueens = BitBoardUtils.popBit(rooksQueens, sourceSq);
+                    break;
+                case N: case n:
+                    knights = BitBoardUtils.popBit(knights, sourceSq);
+                    break;
+                case P: case p:
+                    pawns = BitBoardUtils.popBit(pawns, sourceSq);
+                    break;
+            }
         }
 
         if (!BitBoardUtils.getBit(removalMask, targetSq) && side == attackerSide) {
-            if (targetPiece == B || targetPiece == b || targetPiece == Q || targetPiece == q)
-                bishopsQueens = BitBoardUtils.setBit(bishopsQueens, targetSq);
-            if (targetPiece == R || targetPiece == r || targetPiece == Q || targetPiece == q)
-                rooksQueens = BitBoardUtils.setBit(rooksQueens, targetSq);
-            if (targetPiece == N || targetPiece == n)
-                knights = BitBoardUtils.setBit(knights, targetSq);
-            if (targetPiece == P || targetPiece == p)
-                pawns = BitBoardUtils.setBit(pawns, targetSq);
+            switch (targetPiece) {
+                case Q: case q:
+                    bishopsQueens = BitBoardUtils.setBit(bishopsQueens, targetSq);
+                    rooksQueens = BitBoardUtils.setBit(rooksQueens, targetSq);
+                    break;
+                case B: case b:
+                    bishopsQueens = BitBoardUtils.setBit(bishopsQueens, targetSq);
+                    break;
+                case R: case r:
+                    rooksQueens = BitBoardUtils.setBit(rooksQueens, targetSq);
+                    break;
+                case N: case n:
+                    knights = BitBoardUtils.setBit(knights, targetSq);
+                    break;
+                case P: case p:
+                    pawns = BitBoardUtils.setBit(pawns, targetSq);
+                    break;
+            }
         }
 
         if ((Attacks.getBishopAttacks(targetKingSq, tempOcc) & bishopsQueens) != 0) return true;
