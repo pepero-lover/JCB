@@ -66,7 +66,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle 에 추가하세요.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.8.0'
+    implementation 'com.github.pepero-lover:JCB:v1.9.0'
 }
 ```
 
@@ -86,7 +86,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle.kts 에 추가하세요.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.8.0")
+    implementation("com.github.pepero-lover:JCB:v1.9.0")
 }
 ```
 
@@ -105,7 +105,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.8.0</version>
+    <version>v1.9.0</version>
 </dependency>
 ```
 

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [1.9.0]
+
+### Added
 - `ChessGame.setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable>)` to
   customize how exceptions thrown by listener callbacks are handled. Defaults to logging
   via `java.util.logging.Logger`.
@@ -184,6 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/pepero-lover/JCB/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/pepero-lover/JCB/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/pepero-lover/JCB/compare/v1.7.1...v1.7.2
