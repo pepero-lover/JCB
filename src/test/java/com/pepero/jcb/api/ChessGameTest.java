@@ -646,7 +646,7 @@ public class ChessGameTest {
         chessGame.goForward();
         chessGame.makeMoveSan("Qf3");
         assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
-        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameoverReason());
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReason());
     }
 
     @Test

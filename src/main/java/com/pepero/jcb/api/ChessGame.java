@@ -137,7 +137,7 @@ public class ChessGame {
      * This game over reason variable doesn't update when the result of this game is already finished. <br>
      * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
      * {@link #isCheckmate()} changes. <br>
-     * You can get this value on {@link #getGameoverReason()}
+     * You can get this value on {@link #getGameOverReason()}
      */
     private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
 
@@ -511,66 +511,88 @@ public class ChessGame {
     }
 
     /**
+     * Result of applying a validated move to the board, before any listener notification
+     * has happened. Kept separate from notification so callers can release {@code writeLock}
+     * before dispatching to listeners (see {@link #dispatchMoveNotifications(MoveOutcome)}).
+     *
+     * @param moveData applied move
+     * @param historyChanged whether a brand-new history node was created (vs. following an
+     *                       existing variation)
+     * @param gameResult game result right after this move (UNKNOWN if the game continues)
+     */
+    private record MoveOutcome(MoveInfo moveData, boolean historyChanged, GameResult gameResult) {}
+
+    /**
+     * Notify listeners about the effects of a move, using the outcome captured by
+     * {@link #internalMakeMove} / {@link #internalMakeMoveValidated}. <p>
+     *
+     * Callers must invoke this <b>after</b> releasing {@code writeLock}, so that listener
+     * callbacks never run while the lock is held.
+     *
+     * @param outcome move outcome to notify listeners about
+     */
+    private void dispatchMoveNotifications(MoveOutcome outcome) {
+        notifyMoveMade(outcome.moveData());
+        if (outcome.gameResult() != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+        if (outcome.historyChanged()) {
+            notifyHistoryChanged();
+        }
+    }
+
+    /**
      * Make move for internal make move methods <p>
      *
-     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove} <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller is responsible for calling
+     * {@link #dispatchMoveNotifications(MoveOutcome)} with the returned outcome, after
+     * releasing {@code writeLock}.
      *
      * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      *
      * @param originalMoveString original move string for error message (null allowed)
+     *
+     * @return outcome of this move, to be passed to {@link #dispatchMoveNotifications(MoveOutcome)}
      */
-    private void internalMakeMove(int encodedMove, String originalMoveString) {
-        MoveInfo moveData;
-        GameResult gameResult;
-        boolean historyChanged;
-
+    private MoveOutcome internalMakeMove(int encodedMove, String originalMoveString) {
         if (!ChessboardUtils.isLegalMove(this.chessboard, encodedMove)) {
             String errorStr = (originalMoveString != null) ? originalMoveString : new MoveInfo(encodedMove).toLanString();
             throw new IllegalMoveException(errorStr, this.getFEN());
         }
 
         MoveGenerator.makeMove(this.chessboard, encodedMove);
-        moveData = new MoveInfo(encodedMove);
-        historyChanged = addMoveHistory(moveData);
+        MoveInfo moveData = new MoveInfo(encodedMove);
+        boolean historyChanged = addMoveHistory(moveData);
 
-        gameResult = evaluateGameState(currentNode);
+        GameResult gameResult = evaluateGameState(currentNode);
 
-        notifyMoveMade(moveData);
-        if (gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if (historyChanged) {
-            notifyHistoryChanged();
-        }
+        return new MoveOutcome(moveData, historyChanged, gameResult);
     }
 
     /**
      * Make move for internal make move methods <br>
      * this method doesn't check whether this is a legal move or not <p>
      *
-     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove} <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller is responsible for calling
+     * {@link #dispatchMoveNotifications(MoveOutcome)} with the returned outcome, after
+     * releasing {@code writeLock}.
      *
      * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
      *
+     * @return outcome of this move, to be passed to {@link #dispatchMoveNotifications(MoveOutcome)}
      */
-    private void internalMakeMoveValidated(int encodedMove) {
-        MoveInfo moveData;
-        GameResult gameResult;
-        boolean historyChanged;
-
+    private MoveOutcome internalMakeMoveValidated(int encodedMove) {
         MoveGenerator.makeMove(this.chessboard, encodedMove);
-        moveData = new MoveInfo(encodedMove);
-        historyChanged = addMoveHistory(moveData);
+        MoveInfo moveData = new MoveInfo(encodedMove);
+        boolean historyChanged = addMoveHistory(moveData);
 
-        gameResult = evaluateGameState(currentNode);
+        GameResult gameResult = evaluateGameState(currentNode);
 
-        notifyMoveMade(moveData);
-        if (gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-        if (historyChanged) {
-            notifyHistoryChanged();
-        }
+        return new MoveOutcome(moveData, historyChanged, gameResult);
     }
 
     /**
@@ -584,13 +606,15 @@ public class ChessGame {
     public void makeMoveLan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
+        MoveOutcome outcome;
         writeLock.lock();
         try {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
-            internalMakeMove(encodedMove, lan);
+            outcome = internalMakeMove(encodedMove, lan);
         } finally {
             writeLock.unlock();
         }
+        dispatchMoveNotifications(outcome);
     }
 
     /**
@@ -605,15 +629,18 @@ public class ChessGame {
     public String makeMoveLanReturningSan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
+        MoveOutcome outcome;
+        String san;
         writeLock.lock();
         try {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(chessboard, lan);
-            String san = ConvertStringMoveUtils.toSanString(chessboard, encodedMove);
-            internalMakeMoveValidated(encodedMove);
-            return san;
+            san = ConvertStringMoveUtils.toSanString(chessboard, encodedMove);
+            outcome = internalMakeMoveValidated(encodedMove);
         } finally {
             writeLock.unlock();
         }
+        dispatchMoveNotifications(outcome);
+        return san;
     }
 
     /**
@@ -641,12 +668,14 @@ public class ChessGame {
      * @throws ConvertMoveException if move data is not correct
      */
     public void makeMove(int encodedMove) {
+        MoveOutcome outcome;
         writeLock.lock();
         try {
-            internalMakeMove(encodedMove, null);
+            outcome = internalMakeMove(encodedMove, null);
         } finally {
             writeLock.unlock();
         }
+        dispatchMoveNotifications(outcome);
     }
 
     /**
@@ -662,6 +691,7 @@ public class ChessGame {
     public void makeMoveSanAll(String sanString) {
         if(sanString == null) throw new NullPointerException("San string can not be null!");
 
+        List<MoveOutcome> outcomes;
         writeLock.lock();
         try {
             sanString = sanString.trim();
@@ -679,11 +709,16 @@ public class ChessGame {
                 encodedMoves[i] = encodedMove;
             }
 
+            outcomes = new ArrayList<>(encodedMoves.length);
             for (int encodedMove : encodedMoves) {
-                internalMakeMoveValidated(encodedMove);
+                outcomes.add(internalMakeMoveValidated(encodedMove));
             }
         } finally {
             writeLock.unlock();
+        }
+
+        for (MoveOutcome outcome : outcomes) {
+            dispatchMoveNotifications(outcome);
         }
     }
 
@@ -700,6 +735,7 @@ public class ChessGame {
     public void makeMoveLanAll(String lanString) {
         if(lanString == null) throw new NullPointerException("Lan string can not be null!");
 
+        List<MoveOutcome> outcomes;
         writeLock.lock();
         try {
             lanString = lanString.trim();
@@ -718,11 +754,16 @@ public class ChessGame {
                 encodedMoves[i] = encodedMove;
             }
 
+            outcomes = new ArrayList<>(encodedMoves.length);
             for (int encodedMove : encodedMoves) {
-                internalMakeMoveValidated(encodedMove);
+                outcomes.add(internalMakeMoveValidated(encodedMove));
             }
         } finally {
             writeLock.unlock();
+        }
+
+        for (MoveOutcome outcome : outcomes) {
+            dispatchMoveNotifications(outcome);
         }
     }
 
@@ -882,16 +923,18 @@ public class ChessGame {
             throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
         }
 
+        MoveOutcome outcome;
         writeLock.lock();
         try {
             int encodedMove;
             encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
-            internalMakeMoveValidated(encodedMove);
+            outcome = internalMakeMoveValidated(encodedMove);
         } finally {
             writeLock.unlock();
         }
+        dispatchMoveNotifications(outcome);
     }
 
     /**
@@ -915,12 +958,14 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
+        MoveOutcome outcome;
         writeLock.lock();
         try {
-            internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
+            outcome = internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
         } finally {
             writeLock.unlock();
         }
+        dispatchMoveNotifications(outcome);
     }
 
     /**
@@ -2416,6 +2461,29 @@ public class ChessGame {
 
 
     /**
+     * Evaluate the game-over state of the given node, only notifying
+     * {@link ChessGameListener#onGameOver} the first time a terminal result is discovered
+     * for that node &mdash; not on every call. <p>
+     *
+     * This exists because {@link #evaluateGameState(MoveNode)} caches its result on the node
+     * ({@code node.isStateEvaluated}), so calling it repeatedly (e.g. from a "getter" like
+     * {@link #getGameResult()}) would otherwise re-fire {@code onGameOver} every single time.
+     *
+     * @param node node to evaluate
+     * @return game result for this node (UNKNOWN if the game is not over)
+     */
+    private GameResult evaluateAndNotifyIfNewlyOver(MoveNode node) {
+        boolean alreadyKnown = node.isStateEvaluated || node.terminalReason != null;
+        GameResult result = evaluateGameState(node);
+
+        if (!alreadyKnown && result != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+
+        return result;
+    }
+
+    /**
      * Get game result <p>
      *
      * This game result doesn't update when the result of this game is already finished. <br>
@@ -2425,9 +2493,7 @@ public class ChessGame {
     public GameResult getGameResult() {
         writeLock.lock();
         try {
-            if(evaluateGameState(getLastMainlineNode(this.moveHistoryRoot)) != GameResult.UNKNOWN) {
-                notifyGameOver(this.gameResult, this.gameoverReason);
-            }
+            evaluateAndNotifyIfNewlyOver(getLastMainlineNode(this.moveHistoryRoot));
             return this.gameResult;
         } finally {
             writeLock.unlock();
@@ -2441,12 +2507,10 @@ public class ChessGame {
      * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
      * {@link #isCheckmate()} changes. <br>
      */
-    public GameOverReason getGameoverReason() {
+    public GameOverReason getGameOverReason() {
         writeLock.lock();
         try {
-            if(evaluateGameState(getLastMainlineNode(this.moveHistoryRoot)) != GameResult.UNKNOWN) {
-                notifyGameOver(this.gameResult, this.gameoverReason);
-            }
+            evaluateAndNotifyIfNewlyOver(getLastMainlineNode(this.moveHistoryRoot));
             return this.gameoverReason;
         } finally {
             writeLock.unlock();
@@ -3417,19 +3481,33 @@ public class ChessGame {
     }
 
     /**
-     * Get current listeners
-     */
-    public List<ChessGameListener> getListeners() {
-        return List.copyOf(listeners);
-    }
-
-    /**
      * Get this position's polyglot hash
      */
     public long getPolyglotHash() {
         readLock.lock();
         try {
             return PolyglotHashUtils.getPolyglotHash(this.chessboard);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get this position's internal Zobrist hash (JCB's own hashing scheme). <p>
+     *
+     * Unlike {@link #getPolyglotHash()}, which follows the Polyglot book format and does
+     * <b>not</b> encode variant-specific state (e.g. Crazyhouse pocket contents, Atomic
+     * captured-piece state), this hash reflects JCB's internal {@code Chessboard} state
+     * and is unique per variant-aware position. Use this when you need exact position
+     * equality across variants, e.g. for repetition detection or transposition dedup;
+     * use {@link #getPolyglotHash()} when interoperating with Polyglot opening books.
+     *
+     * @return internal Zobrist hash of the current position
+     */
+    public long getZobristHash() {
+        readLock.lock();
+        try {
+            return this.chessboard.hash_key;
         } finally {
             readLock.unlock();
         }
@@ -3587,49 +3665,22 @@ public class ChessGame {
     }
 
     /**
-     * Get this position's internal Zobrist hash (JCB's own hashing scheme). <p>
-     *
-     * Unlike {@link #getPolyglotHash()}, which follows the Polyglot book format and does
-     * <b>not</b> encode variant-specific state (e.g. Crazyhouse pocket contents, Atomic
-     * captured-piece state), this hash reflects JCB's internal {@code Chessboard} state
-     * and is unique per variant-aware position. Use this when you need exact position
-     * equality across variants, e.g. for repetition detection or transposition dedup;
-     * use {@link #getPolyglotHash()} when interoperating with Polyglot opening books.
-     *
-     * @return internal Zobrist hash of the current position
-     */
-    public long getZobristHash() {
-        readLock.lock();
-        try {
-            return this.chessboard.hash_key;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
      * Get whether this ChessGame and other have the same board position. <p>
      *
      * Note: this compares position only (piece placement, side to move, castling rights,
-     * en passant square) &mdash; not move history. Two games that reached the same position
-     * via different move orders (transposition) are considered the same position.
+     * en passant square, and variant-specific state such as Crazyhouse pockets or Atomic
+     * captured-piece state) &mdash; not move history. Two games that reached the same
+     * position via different move orders (transposition) are considered the same position.
      *
      * @param other other chess game to compare against
-     * @return true if both games are at the same position
+     * @return true if both games are at the same position, false if other is null
      */
     public boolean samePosition(ChessGame other) {
         if (other == null) return false;
-        readLock.lock();
-        try {
-            other.readLock.lock();
-            try {
-                return this.chessboard.hash_key == other.chessboard.hash_key;
-            } finally {
-                other.readLock.unlock();
-            }
-        } finally {
-            readLock.unlock();
-        }
+        if (this == other) return true;
+
+        long otherHash = other.getZobristHash();
+        return this.getZobristHash() == otherHash;
     }
 
     /**

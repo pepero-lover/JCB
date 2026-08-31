@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mutable violated the general hash-collection contract (mutating the position after adding
   a `ChessGame` to a `HashSet`/`HashMap` made it unreachable). Use the new `samePosition()`
   method to compare positions explicitly.
+- Refactored `ChessGame.getGameoverReason()` to `ChessGame.getGameOverReason()`
 
 ### Fixed
 - Added read lock on `getPieceCount` methods on `ChessGame` class
@@ -33,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   misbehaving listener could both prevent subsequent listeners from being notified and
   cause the caller to receive an exception even though the move/state change had already
   been applied successfully.
+- Listener notifications for moves (`makeMove*`) now always fire after `writeLock` is
+    released, matching the existing behavior of `unmakeMove`/`remakeMove`/`jumpToNode`/etc.
+    Previously the two families were inconsistent, and the same call (e.g. `unmakeMove()`)
+    could notify with or without the lock held depending on whether it was invoked directly
+    or via `goBackward()`.
+- `getGameResult()`/`getGameoverReason()` no longer re-fire `onGameOver` on every call once
+  the game has ended; the event now only fires the first time a terminal state is discovered.
 
 ### Performance
 
