@@ -281,7 +281,7 @@ public class EngineExample {
                 public void onGameFailed(int roundNumber, Throwable cause) {
                     ArenaRunner.RunnerListener.super.onGameFailed(roundNumber, cause);
 
-                    // if the game failed, print log
+                    // When the game failed, print log.
                     cause.printStackTrace();
                 }
             });
