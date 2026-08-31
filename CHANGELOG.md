@@ -64,6 +64,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   iterative implementations to avoid potential `StackOverflowError` on very
   deep, mostly-linear move histories (e.g. long imported PGNs with few
   variations).
+- Fixed `deleteVariation()` invoking `onPositionJumped` / `onGameOver` while the write
+    lock was still held, when deleting the current node caused an internal jump to its
+    parent. `jumpToNode()`'s logic was split into an internal step (runs under the lock)
+    and a notification step (runs after the lock is released), and `deleteVariation()`
+    now uses the internal step directly and defers notification until it releases its
+    own lock, alongside its own notifications.
+- Fixed `deleteVariation()` and `promoteVariationLocal()` not firing `onGameOver` when
+  the operation caused the game to become newly over (e.g. promoting a variation that
+  ends in checkmate to the mainline). Both now use the same evaluate-then-notify-after-
+  unlock pattern as the rest of the class.
+- Fixed `getGameResult()` and `getGameOverReason()` invoking `onGameOver` while the
+  write lock was still held; notification is now deferred until after the lock is
+  released.
 
 ### Performance
 

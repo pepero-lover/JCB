@@ -2546,26 +2546,40 @@ public class ChessGame {
 
 
     /**
-     * Evaluate the game-over state of the given node, only notifying
-     * {@link ChessGameListener#onGameOver} the first time a terminal result is discovered
-     * for that node &mdash; not on every call. <p>
+     * Result of {@link #evaluateGameStateForNotification(MoveNode)}, before any listener
+     * notification has happened. Kept separate from notification for the same reason as
+     * {@link MoveOutcome} / {@link UndoRedoOutcome}: callers must release {@code writeLock}
+     * before dispatching to listeners.
+     *
+     * @param newlyOver whether this evaluation discovered a terminal result for the first
+     *                  time (i.e. {@code onGameOver} should fire)
+     * @param gameResult game result for the evaluated node (UNKNOWN if the game is not over)
+     * @param gameoverReason game over reason for the evaluated node
+     */
+    private record GameOverCheckOutcome(boolean newlyOver, GameResult gameResult, GameOverReason gameoverReason) {}
+
+    /**
+     * Evaluate the game-over state of the given node, tracking whether a terminal result was
+     * discovered for the first time for that node &mdash; not on every call. <p>
      *
      * This exists because {@link #evaluateGameState(MoveNode)} caches its result on the node
      * ({@code node.isStateEvaluated}), so calling it repeatedly (e.g. from a "getter" like
-     * {@link #getGameResult()}) would otherwise re-fire {@code onGameOver} every single time.
+     * {@link #getGameResult()}) would otherwise re-fire {@code onGameOver} every single time. <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller must already hold
+     * {@code writeLock}, and is responsible for notifying {@code onGameOver} with the
+     * returned outcome's result/reason (when {@link GameOverCheckOutcome#newlyOver()} is
+     * true), after releasing {@code writeLock}.
      *
      * @param node node to evaluate
-     * @return game result for this node (UNKNOWN if the game is not over)
+     * @return outcome of this evaluation, to be checked/notified after releasing {@code writeLock}
      */
-    private GameResult evaluateAndNotifyIfNewlyOver(MoveNode node) {
+    private GameOverCheckOutcome evaluateGameStateForNotification(MoveNode node) {
         boolean alreadyKnown = node.isStateEvaluated || node.terminalReason != null;
         GameResult result = evaluateGameState(node);
+        boolean newlyOver = !alreadyKnown && result != GameResult.UNKNOWN;
 
-        if (!alreadyKnown && result != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
-
-        return result;
+        return new GameOverCheckOutcome(newlyOver, this.gameResult, this.gameoverReason);
     }
 
     /**
@@ -2576,13 +2590,20 @@ public class ChessGame {
      * {@link #isCheckmate()} changes. <br>
      */
     public GameResult getGameResult() {
+        GameOverCheckOutcome outcome;
+
         writeLock.lock();
         try {
-            evaluateAndNotifyIfNewlyOver(getLastMainlineNode(this.moveHistoryRoot));
-            return this.gameResult;
+            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
+
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
+
+        return outcome.gameResult();
     }
 
     /**
@@ -2593,13 +2614,20 @@ public class ChessGame {
      * {@link #isCheckmate()} changes. <br>
      */
     public GameOverReason getGameOverReason() {
+        GameOverCheckOutcome outcome;
+
         writeLock.lock();
         try {
-            evaluateAndNotifyIfNewlyOver(getLastMainlineNode(this.moveHistoryRoot));
-            return this.gameoverReason;
+            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
+
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
+
+        return outcome.gameoverReason();
     }
 
     /**
@@ -2707,6 +2735,9 @@ public class ChessGame {
      * @throws HistoryTreeException when node to remove is root node
      */
     public void deleteVariation(long nodeId) {
+        JumpOutcome jumpOutcome = null;
+        GameOverCheckOutcome outcome;
+
         writeLock.lock();
         try {
             MoveNode targetNode = nodeCache.get(nodeId);
@@ -2726,19 +2757,26 @@ public class ChessGame {
             }
 
             if (isCurrentNodeDeleting) {
-                jumpToNode(parent.id);
+                jumpOutcome = internalJumpToNode(parent.id);
             }
 
             parent.children.remove(targetNode);
 
             removeNodeFromCache(targetNode);
 
-            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
 
+        if (jumpOutcome != null) {
+            dispatchJumpNotifications(jumpOutcome);
+        }
+
         notifyHistoryChanged();
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
     }
 
     /**
@@ -2753,6 +2791,7 @@ public class ChessGame {
      */
     public void promoteVariationLocal(long nodeId) {
         boolean shouldNotifyHistory = false;
+        GameOverCheckOutcome outcome = null;
 
         writeLock.lock();
         try {
@@ -2767,15 +2806,18 @@ public class ChessGame {
                 parent.children.remove(currentIndex);
                 parent.children.addFirst(targetNode);
 
+                outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+
                 shouldNotifyHistory = true;
             }
-
-            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
 
-        if(shouldNotifyHistory) notifyHistoryChanged();
+        if (shouldNotifyHistory) notifyHistoryChanged();
+        if (outcome != null && outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
     }
 
     /**
@@ -2803,49 +2845,89 @@ public class ChessGame {
     }
 
     /**
+     * Result of {@link #internalJumpToNode(long)}, before any listener notification has
+     * happened. Kept separate from notification for the same reason as {@link MoveOutcome}:
+     * callers must release {@code writeLock} before dispatching to listeners, even when the
+     * jump is itself invoked from another locked method (e.g. {@link #deleteVariation(long)}).
+     *
+     * @param targetFen FEN of the position jumped to
+     * @param gameOverOutcome game-over evaluation for the node jumped to
+     */
+    private record JumpOutcome(String targetFen, GameOverCheckOutcome gameOverOutcome) {}
+
+    /**
+     * Move position to node (nodeId) logic only. <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller must already hold
+     * {@code writeLock}, and is responsible for calling {@link #dispatchJumpNotifications(JumpOutcome)}
+     * with the returned outcome, after releasing {@code writeLock}.
+     *
+     * @param nodeId node id
+     * @return outcome of this jump, to be passed to {@link #dispatchJumpNotifications(JumpOutcome)}
+     */
+    private JumpOutcome internalJumpToNode(long nodeId) {
+        // get node
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) {
+            throw new MoveNotFoundException("Could not find the node!");
+        }
+
+        // get node path
+        List<MoveNode> historyPath = new ArrayList<>();
+        MoveNode temp = targetNode;
+        while (temp != moveHistoryRoot) {
+            historyPath.add(temp);
+            temp = temp.parent;
+        }
+
+        Collections.reverse(historyPath);
+
+        // reset pos
+        ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
+
+        for (MoveNode node : historyPath) {
+            MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
+        }
+
+        this.currentNode = targetNode;
+
+        GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
+
+        return new JumpOutcome(ChessboardUtils.getFen(this.chessboard), gameOverOutcome);
+    }
+
+    /**
+     * Notify listeners about the effects of a jump, using the outcome captured by
+     * {@link #internalJumpToNode(long)}. <p>
+     *
+     * Callers must invoke this <b>after</b> releasing {@code writeLock}, so that listener
+     * callbacks never run while the lock is held.
+     *
+     * @param outcome jump outcome to notify listeners about
+     */
+    private void dispatchJumpNotifications(JumpOutcome outcome) {
+        notifyPositionJumped(outcome.targetFen());
+        if (outcome.gameOverOutcome().newlyOver()) {
+            notifyGameOver(outcome.gameOverOutcome().gameResult(), outcome.gameOverOutcome().gameoverReason());
+        }
+    }
+
+    /**
      * Move position to node (nodeId)
      *
      * @param nodeId node id
      */
     public void jumpToNode(long nodeId) {
+        JumpOutcome outcome;
+
         writeLock.lock();
-
-        GameResult gameResult;
-
         try {
-            // get node
-            MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) {
-                throw new MoveNotFoundException("Could not find the node!");
-            }
-
-            // get node path
-            List<MoveNode> historyPath = new ArrayList<>();
-            MoveNode temp = targetNode;
-            while (temp != moveHistoryRoot) {
-                historyPath.add(temp);
-                temp = temp.parent;
-            }
-
-            Collections.reverse(historyPath);
-
-            // reset pos
-            ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
-
-            for (MoveNode node : historyPath) {
-                MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
-            }
-
-            this.currentNode = targetNode;
-            gameResult = evaluateGameState(currentNode);
+            outcome = internalJumpToNode(nodeId);
         } finally {
             writeLock.unlock();
         }
 
-        notifyPositionJumped(getFEN());
-        if(gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
+        dispatchJumpNotifications(outcome);
     }
 
     /**
@@ -3309,8 +3391,9 @@ public class ChessGame {
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
-
+            // Note: no need to call evaluateGameState() here separately -
+            // getGameResult() below already evaluates (and caches) the game state for
+            // the last mainline node, including populating the "Result" header.
             return PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), getGameResult(), moveHistoryRoot, maxNodes), false);
@@ -3346,8 +3429,9 @@ public class ChessGame {
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            evaluateGameState(getLastMainlineNode(this.moveHistoryRoot));
-
+            // Note: no need to call evaluateGameState() here separately -
+            // getGameResult() below already evaluates (and caches) the game state for
+            // the last mainline node, including populating the "Result" header.
             return PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
