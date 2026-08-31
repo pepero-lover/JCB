@@ -276,6 +276,14 @@ public class EngineExample {
                     System.out.println(result.pgn());
                     System.out.println();
                 }
+
+                @Override
+                public void onGameFailed(int roundNumber, Throwable cause) {
+                    ArenaRunner.RunnerListener.super.onGameFailed(roundNumber, cause);
+
+                    // if the game failed, print log
+                    cause.printStackTrace();
+                }
             });
 
             System.out.println("Engine 1 WDL");
