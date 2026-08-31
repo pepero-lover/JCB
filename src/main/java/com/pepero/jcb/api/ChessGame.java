@@ -24,6 +24,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.pepero.jcb.core.MoveGenerator.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
@@ -142,6 +145,55 @@ public class ChessGame {
      * Chess game listeners
      */
     private final CopyOnWriteArrayList<ChessGameListener> listeners = new CopyOnWriteArrayList<>();
+
+    /**
+     * Logger used by the default listener exception handler.
+     */
+    private static final Logger LOGGER = Logger.getLogger(ChessGame.class.getName());
+
+    /**
+     * Handler invoked when a {@link ChessGameListener} throws during a notify callback. <p>
+     *
+     * A listener throwing must never corrupt this ChessGame's guarantees (board/history are
+     * already mutated by the time listeners are notified), nor stop the remaining listeners
+     * from being notified. The default handler just logs the exception. <p>
+     *
+     * Replace via {@link #setListenerExceptionHandler(BiConsumer)} if you want different
+     * behavior (e.g. rethrow, metrics, etc).
+     */
+    private static volatile BiConsumer<ChessGameListener, Throwable> listenerExceptionHandler =
+            (listener, e) -> LOGGER.log(Level.SEVERE,
+                    "ChessGameListener [" + listener.getClass().getName() + "] threw an exception", e);
+
+    /**
+     * Set a custom handler for exceptions thrown by {@link ChessGameListener} callbacks. <br>
+     * By default, exceptions are logged via {@link Logger} and otherwise ignored so that a
+     * misbehaving listener can't corrupt game state or block other listeners from running.
+     *
+     * @param handler handler receiving the listener that threw and the exception it threw
+     */
+    public static void setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable> handler) {
+        listenerExceptionHandler = Objects.requireNonNull(handler, "Handler can not be null!");
+    }
+
+    /**
+     * Safely invoke a single listener callback, routing any exception to
+     * {@link #listenerExceptionHandler} instead of letting it propagate. <p>
+     *
+     * Only {@link RuntimeException} is caught here on purpose &mdash; {@link Error}s
+     * (e.g. {@link OutOfMemoryError}) are not something a listener-exception policy
+     * should swallow.
+     *
+     * @param listener listener being invoked (used for the handler's context/logging)
+     * @param callback the actual listener call, e.g. {@code () -> listener.onMoveMade(moveInfo)}
+     */
+    private static void safeNotify(ChessGameListener listener, Runnable callback) {
+        try {
+            callback.run();
+        } catch (RuntimeException e) {
+            listenerExceptionHandler.accept(listener, e);
+        }
+    }
 
     /**
      * Initialize position with PGN string
@@ -1390,21 +1442,36 @@ public class ChessGame {
      * Get white pieces count
      */
     public int getWhitePieceCount() {
-        return BitBoardUtils.countBits(chessboard.occupancies[white]);
+        readLock.lock();
+        try {
+            return BitBoardUtils.countBits(chessboard.occupancies[white]);
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
      * Get black pieces count
      */
     public int getBlackPieceCount() {
-        return BitBoardUtils.countBits(chessboard.occupancies[black]);
+        readLock.lock();
+        try {
+            return BitBoardUtils.countBits(chessboard.occupancies[black]);
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
      * Get pieces count
      */
     public int getPieceCount() {
-        return BitBoardUtils.countBits(chessboard.occupancies[both]);
+        readLock.lock();
+        try {
+            return BitBoardUtils.countBits(chessboard.occupancies[both]);
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -3122,7 +3189,7 @@ public class ChessGame {
 
             return PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
-                    isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
+                            isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
         } finally {
             writeLock.unlock();
         }
@@ -3285,7 +3352,7 @@ public class ChessGame {
      */
     private void notifyMoveMade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            listener.onMoveMade(moveInfo);
+            safeNotify(listener, () -> listener.onMoveMade(moveInfo));
         }
     }
 
@@ -3296,7 +3363,7 @@ public class ChessGame {
      */
     private void notifyMoveUnmade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            listener.onMoveUnmade(moveInfo);
+            safeNotify(listener, () -> listener.onMoveUnmade(moveInfo));
         }
     }
 
@@ -3307,7 +3374,7 @@ public class ChessGame {
      */
     private void notifyMoveRemade(MoveInfo moveInfo) {
         for(ChessGameListener listener : listeners) {
-            listener.onMoveRemade(moveInfo);
+            safeNotify(listener, () -> listener.onMoveRemade(moveInfo));
         }
     }
 
@@ -3318,7 +3385,7 @@ public class ChessGame {
      */
     private void notifyPositionJumped(String targetFen) {
         for (ChessGameListener listener : listeners) {
-            listener.onPositionJumped(targetFen);
+            safeNotify(listener, () -> listener.onPositionJumped(targetFen));
         }
     }
 
@@ -3330,7 +3397,7 @@ public class ChessGame {
      */
     private void notifyGameOver(GameResult result, GameOverReason reason) {
         for (ChessGameListener listener : listeners) {
-            listener.onGameOver(result, reason);
+            safeNotify(listener, () -> listener.onGameOver(result, reason));
         }
     }
 
@@ -3339,10 +3406,13 @@ public class ChessGame {
      */
     private void notifyHistoryChanged() {
         for (ChessGameListener listener : listeners) {
-            listener.onHistoryChanged();
+            safeNotify(listener, listener::onHistoryChanged);
         }
     }
 
+    /**
+     * Get this position's polyglot hash
+     */
     public long getPolyglotHash() {
         readLock.lock();
         try {

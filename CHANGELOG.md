@@ -8,10 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `ChessGame.setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable>)` to
+  customize how exceptions thrown by listener callbacks are handled. Defaults to logging
+  via `java.util.logging.Logger`.
 
 ### Changed
 
 ### Fixed
+- Added read lock on `getPieceCount` methods on `ChessGame` class
+- `ChessGame` no longer lets an exception thrown by a `ChessGameListener` callback
+  (`onMoveMade`, `onMoveUnmade`, `onMoveRemade`, `onPositionJumped`, `onGameOver`,
+  `onHistoryChanged`) propagate out of `makeMove()`/`unmakeMove()`/etc. Previously, a
+  misbehaving listener could both prevent subsequent listeners from being notified and
+  cause the caller to receive an exception even though the move/state change had already
+  been applied successfully.
 
 ### Performance
 
