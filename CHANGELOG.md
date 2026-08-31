@@ -77,6 +77,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `getGameResult()` and `getGameOverReason()` invoking `onGameOver` while the
   write lock was still held; notification is now deferred until after the lock is
   released.
+- **`ChessGame.getChecker()`**: fixed an infinite loop that occurred whenever the
+  side to move was in check. The bit-clearing step incorrectly isolated the
+  already-processed checker bit (`checkersMask &= 1L << square`) instead of
+  clearing it, so the loop condition (`checkersMask != 0L`) could never become
+  false. Now clears the bit correctly (`checkersMask &= ~(1L << square)`).
+
+- **`ChessGame.getHeaders()`**: no longer returns a direct reference to the
+  internal `headers` map. Callers mutating the returned map outside of the
+  class's read/write lock could corrupt game state read or written
+  concurrently by another thread, breaking the thread-safety guarantee
+  documented on the class. Now returns a defensive copy
+  (`new LinkedHashMap<>(headers)`), consistent with `getMoveHistory()`.
+
+- **`ChessGame.getPGN(int)` / `getPurePGN(int)`**: fixed a lock-reentrancy bug
+  where these methods called the public `getGameResult()` while already
+  holding `writeLock`. Since `getGameResult()` notifies listeners
+  (`onGameOver`) internally and assumes it is not nested inside another
+  `writeLock`-holding frame, its `writeLock.unlock()` only decremented the
+  reentrant hold count rather than truly releasing the lock — so
+  `notifyGameOver()` could fire while `writeLock` was still effectively held,
+  violating the class's documented invariant that listener callbacks never run
+  while the lock is held, and risking deadlock for listeners that call back
+  into other locked resources. Both methods now evaluate game state directly
+  via `evaluateGameStateForNotification(...)` inside the lock and defer
+  listener notification until after `writeLock` is released, matching the
+  pattern already used by `deleteVariation`, `promoteVariationLocal`, and
+  `jumpToNode`.
 
 ### Performance
 

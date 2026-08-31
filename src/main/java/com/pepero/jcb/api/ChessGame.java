@@ -1893,7 +1893,7 @@ public class ChessGame {
             while (checkersMask != 0L) {
                 int square = BitBoardUtils.getLS1BIndex(checkersMask);
                 checker.add(Square.fromIndex(square));
-                checkersMask &= 1L << square;
+                checkersMask &= ~(1L << square);
             }
 
             return checker;
@@ -3023,7 +3023,7 @@ public class ChessGame {
     public LinkedHashMap<String, String> getHeaders() {
         readLock.lock();
         try {
-            return headers;
+            return new LinkedHashMap<>(headers);
         } finally {
             readLock.unlock();
         }
@@ -3390,19 +3390,27 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPGN(int maxNodes) {
+        GameOverCheckOutcome outcome;
+        String pgn;
+
         writeLock.lock();
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            // Note: no need to call evaluateGameState() here separately -
-            // getGameResult() below already evaluates (and caches) the game state for
-            // the last mainline node, including populating the "Result" header.
-            return PGNExporter.export(this,
+            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+
+            pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
-                            isChess960(), getGameResult(), moveHistoryRoot, maxNodes), false);
+                            isChess960(), outcome.gameResult(), moveHistoryRoot, maxNodes), false);
         } finally {
             writeLock.unlock();
         }
+
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
+
+        return pgn;
     }
 
     /**
@@ -3428,19 +3436,27 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPurePGN(int maxNodes) {
+        GameOverCheckOutcome outcome;
+        String pgn;
+
         writeLock.lock();
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            // Note: no need to call evaluateGameState() here separately -
-            // getGameResult() below already evaluates (and caches) the game state for
-            // the last mainline node, including populating the "Result" header.
-            return PGNExporter.export(this,
+            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+
+            pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
-                            isChess960(), getGameResult(), moveHistoryRoot, maxNodes), true);
+                            isChess960(), outcome.gameResult(), moveHistoryRoot, maxNodes), true);
         } finally {
             writeLock.unlock();
         }
+
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
+
+        return pgn;
     }
 
     /**
