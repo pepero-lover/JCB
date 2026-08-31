@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   misbehaving listener could both prevent subsequent listeners from being notified and
   cause the caller to receive an exception even though the move/state change had already
   been applied successfully.
-- Listener notifications for moves (`makeMove*`) now always fire after `writeLock` is
+- Listener notifications for moves (`makeMove*`, `makeDropMove`) now always fire after `writeLock` is
     released, matching the existing behavior of `unmakeMove`/`remakeMove`/`jumpToNode`/etc.
     Previously the two families were inconsistent, and the same call (e.g. `unmakeMove()`)
     could notify with or without the lock held depending on whether it was invoked directly

@@ -1439,6 +1439,7 @@ public class ChessGame {
         Objects.requireNonNull(pieceType, "Piece type cannot be null!");
         Objects.requireNonNull(targetSquare, "Target square cannot be null!");
 
+        MoveOutcome outcome;
         writeLock.lock();
         try {
             int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
@@ -1449,10 +1450,12 @@ public class ChessGame {
                         ChessboardUtils.getFen(this.chessboard) + ")");
             }
 
-            makeMove(new MoveInfo(encodedMove));
+            outcome = internalMakeMove(encodedMove, new MoveInfo(encodedMove).toLanString());
         } finally {
             writeLock.unlock();
         }
+
+        dispatchMoveNotifications(outcome);
     }
 
     /**
