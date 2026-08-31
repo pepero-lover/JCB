@@ -1111,6 +1111,101 @@ public class ChessGame {
     }
 
     /**
+     * Result of applying an undo/redo step, before any listener notification has happened.
+     * Kept separate from notification for the same reason as {@link MoveOutcome}: callers
+     * must be able to release {@code writeLock} before dispatching to listeners, even when
+     * the undo/redo is itself invoked from another locked method (e.g. {@link #goForward()},
+     * {@link #goBackward()}).
+     *
+     * @param moveInfo undone/redone move
+     * @param gameResult game result right after this step (UNKNOWN if the game continues)
+     */
+    private record UndoRedoOutcome(MoveInfo moveInfo, GameResult gameResult) {}
+
+    /**
+     * Undo logic for internal undo/redo methods. <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller must already hold
+     * {@code writeLock}, and is responsible for calling {@link #dispatchUndoNotifications(UndoRedoOutcome)}
+     * with the returned outcome, after releasing {@code writeLock}.
+     *
+     * @return outcome of this undo, to be passed to {@link #dispatchUndoNotifications(UndoRedoOutcome)}
+     *
+     * @throws EmptyMoveUndoException if move history is empty and unmake move
+     */
+    private UndoRedoOutcome internalUnmakeMove() {
+        if (!canUndo()) throw new EmptyMoveUndoException();
+
+        MoveInfo moveInfo = currentNode.moveData;
+        currentNode = currentNode.parent;
+
+        MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
+
+        GameResult gameResult = evaluateGameState(currentNode);
+
+        return new UndoRedoOutcome(moveInfo, gameResult);
+    }
+
+    /**
+     * Redo logic for internal undo/redo methods. <p>
+     *
+     * <b>Warning : This does not notify listeners.</b> The caller must already hold
+     * {@code writeLock}, and is responsible for calling {@link #dispatchRedoNotifications(UndoRedoOutcome)}
+     * with the returned outcome, after releasing {@code writeLock}.
+     *
+     * @param variationIndex variation index (if 0, goes main line)
+     *
+     * @return outcome of this redo, to be passed to {@link #dispatchRedoNotifications(UndoRedoOutcome)}
+     *
+     * @throws EmptyMoveRedoException if redo history is empty and remake move
+     */
+    private UndoRedoOutcome internalRemakeMove(int variationIndex) {
+        if (!canRedo()) throw new EmptyMoveRedoException();
+        if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
+
+        currentNode = currentNode.children.get(variationIndex);
+        MoveInfo moveInfo = currentNode.moveData;
+
+        MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
+
+        GameResult gameResult = evaluateGameState(currentNode);
+
+        return new UndoRedoOutcome(moveInfo, gameResult);
+    }
+
+    /**
+     * Notify listeners about the effects of an undo step, using the outcome captured by
+     * {@link #internalUnmakeMove()}. <p>
+     *
+     * Callers must invoke this <b>after</b> releasing {@code writeLock}, so that listener
+     * callbacks never run while the lock is held.
+     *
+     * @param outcome undo outcome to notify listeners about
+     */
+    private void dispatchUndoNotifications(UndoRedoOutcome outcome) {
+        notifyMoveUnmade(outcome.moveInfo());
+        if (outcome.gameResult() != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+    }
+
+    /**
+     * Notify listeners about the effects of a redo step, using the outcome captured by
+     * {@link #internalRemakeMove(int)}. <p>
+     *
+     * Callers must invoke this <b>after</b> releasing {@code writeLock}, so that listener
+     * callbacks never run while the lock is held.
+     *
+     * @param outcome redo outcome to notify listeners about
+     */
+    private void dispatchRedoNotifications(UndoRedoOutcome outcome) {
+        notifyMoveRemade(outcome.moveInfo());
+        if (outcome.gameResult() != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameoverReason);
+        }
+    }
+
+    /**
      * Unmake previous move on this ChessGame
      *
      * @return unmade move info
@@ -1118,29 +1213,18 @@ public class ChessGame {
      * @throws EmptyMoveUndoException if move history is empty and unmake move
      */
     public MoveInfo unmakeMove() {
-        MoveInfo moveInfo;
-        GameResult gameResult;
+        UndoRedoOutcome outcome;
 
         writeLock.lock();
         try {
-            if (!canUndo()) throw new EmptyMoveUndoException();
-
-            moveInfo = currentNode.moveData;
-            currentNode = currentNode.parent;
-
-            MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
-
-            gameResult = evaluateGameState(currentNode);
+            outcome = internalUnmakeMove();
         } finally {
             writeLock.unlock();
         }
 
-        notifyMoveUnmade(moveInfo);
-        if (gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
+        dispatchUndoNotifications(outcome);
 
-        return moveInfo;
+        return outcome.moveInfo();
     }
 
     /**
@@ -1171,30 +1255,18 @@ public class ChessGame {
      * @throws EmptyMoveRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove(int variationIndex) {
-        MoveInfo moveInfo;
-        GameResult gameResult;
+        UndoRedoOutcome outcome;
 
         writeLock.lock();
         try {
-            if (!canRedo()) throw new EmptyMoveRedoException();
-            if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
-
-            currentNode = currentNode.children.get(variationIndex);
-            moveInfo = currentNode.moveData;
-
-            MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
-
-            gameResult = evaluateGameState(currentNode);
+            outcome = internalRemakeMove(variationIndex);
         } finally {
             writeLock.unlock();
         }
 
-        notifyMoveRemade(moveInfo);
-        if (gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
-        }
+        dispatchRedoNotifications(outcome);
 
-        return moveInfo;
+        return outcome.moveInfo();
     }
 
     /**
@@ -1254,13 +1326,19 @@ public class ChessGame {
      * @throws EmptyMoveRedoException if move to go forward not found
      */
     public MoveInfo goForward() {
+        UndoRedoOutcome outcome;
+
         writeLock.lock();
         try {
             if (!canRedo()) return null;
-            return remakeMove();
+            outcome = internalRemakeMove(0);
         } finally {
             writeLock.unlock();
         }
+
+        dispatchRedoNotifications(outcome);
+
+        return outcome.moveInfo();
     }
 
     /**
@@ -1271,13 +1349,19 @@ public class ChessGame {
      * @throws EmptyMoveUndoException if move to go backward not found
      */
     public MoveInfo goBackward() {
+        UndoRedoOutcome outcome;
+
         writeLock.lock();
         try {
             if (!canUndo()) return null;
-            return unmakeMove();
+            outcome = internalUnmakeMove();
         } finally {
             writeLock.unlock();
         }
+
+        dispatchUndoNotifications(outcome);
+
+        return outcome.moveInfo();
     }
 
     /**
@@ -2600,10 +2684,16 @@ public class ChessGame {
     private void removeNodeFromCache(MoveNode node) {
         if (node == null) return;
 
-        nodeCache.remove(node.id);
+        Deque<MoveNode> pending = new ArrayDeque<>();
+        pending.push(node);
 
-        for (MoveNode child : node.children) {
-            removeNodeFromCache(child);
+        while (!pending.isEmpty()) {
+            MoveNode current = pending.pop();
+            nodeCache.remove(current.id);
+
+            for (MoveNode child : current.children) {
+                pending.push(child);
+            }
         }
     }
 
@@ -3563,25 +3653,23 @@ public class ChessGame {
      * @param depth start depth
      */
     private void printHistory(MoveNodeDTO rootNode, int depth) {
-        if(rootNode == null) return;
+        while (rootNode != null) {
+            boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
+            String pointer = isCurrent ? " <-" : "";
 
-        boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
-        String pointer = isCurrent ? " <-" : "";
+            if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
+                System.out.println(pointer.trim());
+            } else {
+                String prefix = (depth > 0) ? "└ " : "";
+                System.out.println(" ".repeat(depth) + prefix + rootNode.san() + pointer);
+            }
 
-        if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
-            System.out.println(pointer.trim());
-        } else {
-            String prefix = (depth > 0) ? "└ " : "";
-            System.out.println(" ".repeat(depth) + prefix + rootNode.san() + pointer);
-        }
+            for(int i = 1; i < rootNode.children().size(); i++) {
+                MoveNodeDTO child = rootNode.children().get(i);
+                printHistory(child, depth + 1);
+            }
 
-        for(int i = 1; i < rootNode.children().size(); i++) {
-            MoveNodeDTO child = rootNode.children().get(i);
-            printHistory(child, depth + 1);
-        }
-
-        if (!rootNode.children().isEmpty()) {
-            printHistory(rootNode.children().getFirst(), depth);
+            rootNode = rootNode.children().isEmpty() ? null : rootNode.children().getFirst();
         }
     }
 

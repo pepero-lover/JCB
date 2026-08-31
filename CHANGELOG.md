@@ -48,6 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     or via `goBackward()`.
 - `getGameResult()`/`getGameoverReason()` no longer re-fire `onGameOver` on every call once
   the game has ended; the event now only fires the first time a terminal state is discovered.
+- Fixed a bug where `goForward()` and `goBackward()` invoked listener callbacks
+  (`onMoveMade`, `onMoveUnmade`, `onGameOver`) while `ChessGame`'s internal write
+  lock was still held, due to reentrant locking around `remakeMove()` /
+  `unmakeMove()`. This could block concurrent readers for the duration of
+  listener execution, contrary to the class's documented concurrency contract.
+- Converted `printHistory` and `removeNodeFromCache` internal recursion to
+  iterative implementations to avoid potential `StackOverflowError` on very
+  deep, mostly-linear move histories (e.g. long imported PGNs with few
+  variations).
 
 ### Performance
 
