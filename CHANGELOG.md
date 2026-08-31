@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and Atomic captured-piece state.
 - `ChessGame.samePosition(ChessGame other)` — explicit position-equality check based on
   `getZobristHash()`, replacing the old `equals()`-based position comparison.
+- Added `printBoard(PrintStream out)` and `printHistory(PrintStream out)` /
+  `printHistory(int maxNodeSize, PrintStream out)` overloads, allowing callers to
+  redirect board/history output (e.g. to a log file or an in-memory stream for
+  testing) instead of always writing to `System.out`.
 
 ### Changed
 - `ChessGame.equals()`/`hashCode()` now use identity comparison (default `Object` behavior)
@@ -32,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from when a single listener instance was shared across multiple `ChessGame`s (e.g. logging
   or PGN-recording listeners reused across `ArenaRunner` matches). **This is a breaking
   change** for any existing `ChessGameListener` implementations.
+- `printBoard()` and `printHistory()` (and its `maxNodeSize` overload) now delegate
+  to their new `PrintStream` overloads with `System.out` as the default, removing
+  the hardcoded `System.out.println` calls from the internal implementation.
 
 ### Fixed
 - Added read lock on `getPieceCount` methods on `ChessGame` class
