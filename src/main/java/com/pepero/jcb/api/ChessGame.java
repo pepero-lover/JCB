@@ -85,7 +85,7 @@ public class ChessGame {
      * Move tree root <p>
      * ---> [root] - e4 - e5 - Nf3 ( - Nc3 - Nf6 ) - Nc6
      */
-    private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), 0);
+    private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), 0);
 
     /**
      * Current move node on {@link ChessGame#moveHistoryRoot}
@@ -418,7 +418,7 @@ public class ChessGame {
             this.chessboard = new Chessboard(other.chessboard);
             this.startPositionFEN = other.startPositionFEN;
 
-            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), other.moveHistoryRoot.fullMovePly);
+            this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -446,7 +446,7 @@ public class ChessGame {
             this.chessboard = new Chessboard(chessboard);
             this.startPositionFEN = ChessboardUtils.getFen(chessboard);
 
-            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), this.chessboard.full_move);
+            this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), this.chessboard.full_move);
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -2712,7 +2712,7 @@ public class ChessGame {
             }
         }
 
-        MoveNode result = new MoveNode(moveData, currentNode, nodeCounter.incrementAndGet(),
+        MoveNode result = new MoveNode(moveData, currentNode, nodeCounter.getAndIncrement(),
                 chessboard.ply, chessboard.full_move);
 
         currentNode.children.add(result);
@@ -3344,7 +3344,7 @@ public class ChessGame {
     public void loadPGN(String pgnString) {
         writeLock.lock();
         try {
-            PGNParsedData parsedData = PGNParser.parse(pgnString, MAX_PGN_NODE_COUNT);
+            PGNParsedData parsedData = PGNParser.parse(pgnString, MAX_PGN_NODE_COUNT, this.nodeCounter);
 
             String fenToLoad = parsedData.startFEN();
             this.chessboard.gameVariant = parsedData.variant();
@@ -3378,7 +3378,7 @@ public class ChessGame {
     public void loadPGN(String pgnString, int maxNodesCount) {
         writeLock.lock();
         try {
-            PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount);
+            PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount, this.nodeCounter);
 
             String fenToLoad = parsedData.startFEN();
             this.chessboard.gameVariant = parsedData.variant();
@@ -3850,7 +3850,7 @@ public class ChessGame {
             String idTag = showNodeId ? " [#" + rootNode.id() + "]" : "";
 
             if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
-                out.println((idTag + pointer).trim());
+                out.println("ROOT " + (idTag + pointer).trim());
             } else {
                 String prefix = (depth > 0) ? "- " : "";
                 out.println(" ".repeat(depth) + prefix + rootNode.san() + idTag + pointer);

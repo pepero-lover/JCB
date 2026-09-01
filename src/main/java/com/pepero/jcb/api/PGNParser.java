@@ -15,6 +15,7 @@ import com.pepero.jcb.core.MoveGenerator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,9 +63,7 @@ class PGNParser {
      * @param maxNodesCount max nodes calculating count
      * @return {@link PGNParsedData} DTO (for initializing ChessGame)
      */
-    public static PGNParsedData parse(String pgnString, int maxNodesCount) {
-        long nodeCounter = 0;
-
+    public static PGNParsedData parse(String pgnString, int maxNodesCount, AtomicLong nodeCounter) {
         if (pgnString == null || pgnString.isEmpty()) {
             throw new IllegalArgumentException("PGN string is empty");
         }
@@ -123,7 +122,7 @@ class PGNParser {
 
         pgnChessboard = new Chessboard(parsedFen, isChess960, parsedVariant);
 
-        MoveNode rootNode = new MoveNode(nodeCounter++, pgnChessboard.full_move);
+        MoveNode rootNode = new MoveNode(nodeCounter.getAndIncrement(), pgnChessboard.full_move);
         MoveNode currentParsedNode = rootNode;
         LongObjectOpenHashMap<MoveNode> tempNodeCache = new LongObjectOpenHashMap<>();
         tempNodeCache.put(rootNode.id, rootNode);
@@ -218,7 +217,7 @@ class PGNParser {
                     MoveGenerator.makeMove(pgnChessboard, moveData);
 
                     MoveInfo moveInfo = new MoveInfo(moveData);
-                    MoveNode newNode = new MoveNode(moveInfo, currentParsedNode, nodeCounter++,
+                    MoveNode newNode = new MoveNode(moveInfo, currentParsedNode, nodeCounter.getAndIncrement(),
                             pgnChessboard.ply, pgnChessboard.full_move);
 
                     if (!annotation.isEmpty()) {

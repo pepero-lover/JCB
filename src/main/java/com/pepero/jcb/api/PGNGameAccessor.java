@@ -2,6 +2,7 @@ package com.pepero.jcb.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Internal bridge exposing package-private PGN parsing internals
@@ -17,7 +18,7 @@ public final class PGNGameAccessor {
     ) {}
 
     public static ParsedMainline extractMainline(String gamePgn, int maxNodesCount, int maxPly) {
-        PGNParsedData parsed = PGNParser.parse(gamePgn, maxNodesCount);
+        PGNParsedData parsed = PGNParser.parse(gamePgn, maxNodesCount, new AtomicLong(0L));
 
         List<Integer> moves = new ArrayList<>();
         MoveNode node = parsed.rootNode();
