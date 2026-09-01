@@ -3598,18 +3598,18 @@ public class ChessGame {
 
             while (!lastNode.children.isEmpty()) {
                 lastNode = lastNode.children.getFirst();
+                int encodedMove = lastNode.moveData.originEncodedData();
 
-                // make move
-                MoveGenerator.makeMove(tempBoard, lastNode.moveData.originEncodedData());
+                String san = ConvertStringMoveUtils.toSanString(tempBoard, encodedMove);
+                MoveGenerator.makeMove(tempBoard, encodedMove);
 
-                result.add(
-                        new MoveDataDTO(
-                                lastNode.id,
-                                ChessboardUtils.getFen(tempBoard),
-                                lastNode.moveData,
-                                lastNode.annotation
-                        )
-                );
+                result.add(new MoveDataDTO(
+                        lastNode.id,
+                        san,
+                        ChessboardUtils.getFen(tempBoard),
+                        lastNode.moveData,
+                        lastNode.annotation
+                ));
             }
 
             return result;
@@ -3617,13 +3617,6 @@ public class ChessGame {
             readLock.unlock();
         }
     }
-
-
-
-
-
-
-
 
     /**
      * Get game start position fen <br>

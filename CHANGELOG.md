@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `printHistory` at `ChessGame`, removed uci-code text on variation printing '└'
 - and also on `printHistory`, now prints node id right next to the move string. (e.g. "e4 [#2]")
   If you want to use node id printing, use `printHistory*(boolean showNodeId)` methods.
+- On `MoveNode` class (package-private, not exposed), removed not using `san` parameter.
+- On `MoveDataDTO` class, added `san` move string.
 
 ### Fixed
 

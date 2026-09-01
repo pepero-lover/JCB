@@ -220,7 +220,6 @@ class PGNParser {
                     MoveInfo moveInfo = new MoveInfo(moveData);
                     MoveNode newNode = new MoveNode(moveInfo, currentParsedNode, nodeCounter++,
                             pgnChessboard.ply, pgnChessboard.full_move);
-                    newNode.san = pureSan;
 
                     if (!annotation.isEmpty()) {
                         String parsedNag = switch (annotation) {

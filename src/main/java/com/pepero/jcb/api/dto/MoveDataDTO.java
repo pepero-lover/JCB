@@ -12,6 +12,7 @@ import com.pepero.jcb.api.MoveAnnotation;
  */
 public record MoveDataDTO(
         long id,
+        String san,
         String fen,
         MoveInfo moveData,
         MoveAnnotation annotation

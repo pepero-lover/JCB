@@ -1,8 +1,6 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.dto.MoveAnnotationDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 
@@ -17,7 +15,6 @@ class MoveNode {
     final MoveNode parent;
     final List<MoveNode> children = new ArrayList<>();
     final MoveInfo moveData;
-    String san;
 
     final int ply;
     final int fullMovePly;
@@ -77,36 +74,6 @@ class MoveNode {
     public String toString() {
         String dataStr = (moveData == null) ? "ROOT" : moveData.toString();
         return dataStr + " -> " + children;
-    }
-
-    /**
-     * Convert MoveNode to MoveNodeDTO
-     *
-     * @return converted MoveNodeDTO
-     */
-    public MoveNodeDTO convertToDTO() {
-        List<MoveNodeDTO> childDTOs = this.children.stream()
-                .map(MoveNode::convertToDTO)
-                .toList();
-
-        MoveAnnotationDTO annotationDTO = null;
-        if (this.getAnnotation() != null) {
-            MoveAnnotation anno = this.getAnnotation();
-            annotationDTO = new MoveAnnotationDTO(
-                    anno.comment, anno.nag, anno.clk, anno.timeStamp,
-                    anno.eval, anno.csl, anno.cal
-            );
-        }
-
-        return new MoveNodeDTO(
-                this.id,
-                this.ply,
-                this.fullMovePly,
-                this.moveData,
-                childDTOs,
-                this.san,
-                annotationDTO
-        );
     }
 
     /**
