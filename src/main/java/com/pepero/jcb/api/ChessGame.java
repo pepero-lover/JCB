@@ -2851,7 +2851,7 @@ public class ChessGame {
     }
 
     /**
-     * Get current move info
+     * Get current move info.
      *
      * @throws MoveNotFoundException if current move is root move
      */
@@ -2863,6 +2863,37 @@ public class ChessGame {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Get LCA (Lowest Common Ancestor) node.
+     */
+    private MoveNode getLCANode(MoveNode a, MoveNode b) {
+        // equalize depth of a and b
+
+        // if a's depth is deeper, let a goes to b's depth
+        // if b's depth is deeper, let b goes to a's depth
+
+        // when a's depth is deeper
+        while (a.depthOf() > b.depthOf()) {
+            // go to a's parent repetitively until 'a' reached b's depth
+            a = a.parent;
+        }
+
+        // when b's depth is deeper
+        while (b.depthOf() > a.depthOf()) {
+            // go to b's parent repetitively until 'b' reached a's depth
+            b = b.parent;
+        }
+
+        // and go upside repetitively until the 'a' and 'b' has met
+        while (a != b) {
+            a = a.parent;
+            b = b.parent;
+        }
+
+        // and the equalized position is LCA
+        return a;
     }
 
     /**
@@ -2893,24 +2924,39 @@ public class ChessGame {
             throw new MoveNotFoundException("Could not find the node!");
         }
 
-        // get node path
-        List<MoveNode> historyPath = new ArrayList<>();
-        MoveNode temp = targetNode;
-        while (temp != moveHistoryRoot) {
-            historyPath.add(temp);
-            temp = temp.parent;
+        // if target node is current node, early exit
+        if(targetNode == currentNode) {
+            return new JumpOutcome(ChessboardUtils.getFen(this.chessboard),
+                    evaluateGameStateForNotification(currentNode));
         }
 
-        Collections.reverse(historyPath);
+        // get lca node
+        MoveNode lcaNode = getLCANode(currentNode, targetNode);
 
-        // reset pos
-        ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
-
-        for (MoveNode node : historyPath) {
-            MoveGenerator.makeMove(this.chessboard, node.moveData.originEncodedData());
+        // unmake until current node reached at lca
+        while (currentNode != lcaNode) {
+            MoveGenerator.unmakeMove(this.chessboard, currentNode.moveData.originEncodedData());
+            currentNode = currentNode.parent;
         }
 
-        this.currentNode = targetNode;
+        MoveNode tempNode = targetNode;
+        List<Integer> moveData = new ArrayList<>();
+
+        while (tempNode != lcaNode) {
+            // add move data
+            moveData.add(tempNode.moveData.originEncodedData());
+            tempNode = tempNode.parent;
+        }
+
+        // reverse move data list
+        Collections.reverse(moveData);
+
+        // and move to target node
+        for (int move : moveData) {
+            MoveGenerator.makeMove(this.chessboard, move);
+        }
+
+        currentNode = targetNode;
 
         GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
 
@@ -2971,31 +3017,24 @@ public class ChessGame {
             if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
             if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
 
-            int currentPly = 0;
-            MoveNode temp = this.currentNode;
-            List<MoveNode> history = new ArrayList<>();
+            int currentPly = currentNode.ply;
 
-            while (temp != moveHistoryRoot && temp != null) {
-                history.add(temp);
-                currentPly++;
-                temp = temp.parent;
-            }
-
+            // if current ply is equal to target ply, early exit.
             if (currentPly == targetPly) return;
 
             if (targetPly < currentPly) {
-                Collections.reverse(history);
+                // if target ply is less than current ply,
 
-                ChessboardUtils.parseFen(this.chessboard, this.startPositionFEN);
-                MoveNode newCurrentNode = moveHistoryRoot;
-
-                for (int i = 0; i < targetPly; i++) {
-                    MoveNode nextNode = history.get(i);
-                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    newCurrentNode = nextNode;
+                // unmake until reaching targetPly
+                while (currentPly > targetPly) {
+                    MoveGenerator.unmakeMove(this.chessboard, currentNode.moveData.originEncodedData());
+                    currentNode = currentNode.parent;
+                    currentPly--;
                 }
-                this.currentNode = newCurrentNode;
             } else {
+                // if target ply is bigger than current ply
+
+                // make until reaching target ply
                 while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
                     MoveNode nextNode = this.currentNode.children.getFirst();
 
@@ -3004,7 +3043,9 @@ public class ChessGame {
                     currentPly++;
                 }
 
+                // if current node child is empty and not reached target ply
                 if (currentPly < targetPly) {
+                    // throw exception
                     throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
                 }
             }
@@ -3576,6 +3617,13 @@ public class ChessGame {
             readLock.unlock();
         }
     }
+
+
+
+
+
+
+
 
     /**
      * Get game start position fen <br>

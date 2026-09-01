@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
 - On `MoveGenerator`, added `isRacingKings` to store this variant is racing king variant.
+- On `internalJumpToNode` at `ChessGame`, instead of resetting `Chessboard` to start position
+  and going target node, replaced with getting and going to LCA node and going target node
+  (O(root node distance) to O(distance current node between target node))
+- On `jumpToMainlinePly` at `ChessGame`, replaced calculating `currentPly` constant with
+  `MoveNode.ply` and removed list to storing history
 
 ## [1.9.0]
 

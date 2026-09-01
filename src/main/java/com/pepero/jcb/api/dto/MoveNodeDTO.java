@@ -7,8 +7,8 @@ import java.util.List;
  *
  * @param id uuid of this move data
  * @param moveData played move data
- * @param ply half-move ply from root
- * @param fullMovePly full move number
+ * @param ply the distance between this node and the root node
+ * @param fullMovePly full move number but increases 1 per a move (on FEN, increases only black has moved)
  * @param children children data (index 0 is mainline, other are variation)
  * @param san san move string
  * @param annotation annotation for pgn

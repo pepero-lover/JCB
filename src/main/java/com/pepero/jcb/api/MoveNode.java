@@ -142,4 +142,11 @@ class MoveNode {
 
         return lastNode;
     }
+
+    /**
+     * Get the distance between this node and root node.
+     */
+    public int depthOf() {
+        return ply;
+    }
 }
