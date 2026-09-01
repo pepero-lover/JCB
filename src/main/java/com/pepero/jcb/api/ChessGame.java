@@ -3019,34 +3019,33 @@ public class ChessGame {
 
             int currentPly = currentNode.ply;
 
-            // if current ply is equal to target ply, early exit.
-            if (currentPly == targetPly) return;
+            if (currentPly != targetPly) {
+                if (targetPly < currentPly) {
+                    // if target ply is less than current ply,
 
-            if (targetPly < currentPly) {
-                // if target ply is less than current ply,
+                    // unmake until reaching targetPly
+                    while (currentPly > targetPly) {
+                        MoveGenerator.unmakeMove(this.chessboard, currentNode.moveData.originEncodedData());
+                        currentNode = currentNode.parent;
+                        currentPly--;
+                    }
+                } else {
+                    // if target ply is bigger than current ply
 
-                // unmake until reaching targetPly
-                while (currentPly > targetPly) {
-                    MoveGenerator.unmakeMove(this.chessboard, currentNode.moveData.originEncodedData());
-                    currentNode = currentNode.parent;
-                    currentPly--;
-                }
-            } else {
-                // if target ply is bigger than current ply
+                    // make until reaching target ply
+                    while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
+                        MoveNode nextNode = this.currentNode.children.getFirst();
 
-                // make until reaching target ply
-                while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
-                    MoveNode nextNode = this.currentNode.children.getFirst();
+                        MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
+                        this.currentNode = nextNode;
+                        currentPly++;
+                    }
 
-                    MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                    this.currentNode = nextNode;
-                    currentPly++;
-                }
-
-                // if current node child is empty and not reached target ply
-                if (currentPly < targetPly) {
-                    // throw exception
-                    throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
+                    // if current node child is empty and not reached target ply
+                    if (currentPly < targetPly) {
+                        // throw exception
+                        throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
+                    }
                 }
             }
 
