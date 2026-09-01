@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ply` is starting 0 at root node and `ply` also refers to depth.
   `fullMovePly` is used to show full move counter data, but increases 1 per move.
   (on FEN full move data, increments only black has moved)
+- On `printHistory` at `ChessGame`, removed uci-code text on variation printing '└'
+- and also on `printHistory`, now prints node id right next to the move string. (e.g. "e4 [#2]")
+  If you want to use node id printing, use `printHistory*(boolean showNodeId)` methods.
 
 ### Fixed
 

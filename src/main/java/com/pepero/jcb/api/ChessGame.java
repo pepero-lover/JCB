@@ -3850,21 +3850,22 @@ public class ChessGame {
      * @param depth start depth
      * @param out print stream to print to
      */
-    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out) {
+    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId) {
         while (rootNode != null) {
             boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
             String pointer = isCurrent ? " <-" : "";
+            String idTag = showNodeId ? " [#" + rootNode.id() + "]" : "";
 
             if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
-                out.println(pointer.trim());
+                out.println((idTag + pointer).trim());
             } else {
-                String prefix = (depth > 0) ? "└ " : "";
-                out.println(" ".repeat(depth) + prefix + rootNode.san() + pointer);
+                String prefix = (depth > 0) ? "- " : "";
+                out.println(" ".repeat(depth) + prefix + rootNode.san() + idTag + pointer);
             }
 
-            for(int i = 1; i < rootNode.children().size(); i++) {
+            for (int i = 1; i < rootNode.children().size(); i++) {
                 MoveNodeDTO child = rootNode.children().get(i);
-                printHistory(child, depth + 1, out);
+                printHistory(child, depth + 1, out, showNodeId);
             }
 
             rootNode = rootNode.children().isEmpty() ? null : rootNode.children().getFirst();
@@ -3877,7 +3878,18 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is too large
      */
     public void printHistory() {
-        printHistory(System.out);
+        printHistory(System.out, false);
+    }
+
+    /**
+     * Print history, optionally including each node's id.
+     *
+     * @param showNodeId whether to print each node's id alongside its san
+     *
+     * @throws NodesOverflowException if move count is too large
+     */
+    public void printHistory(boolean showNodeId) {
+        printHistory(System.out, showNodeId);
     }
 
     /**
@@ -3891,11 +3903,26 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is too large
      */
     public void printHistory(PrintStream out) {
+        printHistory(out, false);
+    }
+
+    /**
+     * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
+     *
+     * Useful when the caller wants to redirect output (e.g. to a log file or a
+     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     *
+     * @param out print stream to print to
+     * @param showNodeId whether to print each node's id alongside its san
+     *
+     * @throws NodesOverflowException if move count is too large
+     */
+    public void printHistory(PrintStream out, boolean showNodeId) {
         Objects.requireNonNull(out, "PrintStream can not be null!");
 
         readLock.lock();
         try {
-            printHistory(getRootNode(), 0, out);
+            printHistory(getRootNode(), 0, out, showNodeId);
         } finally {
             readLock.unlock();
         }
@@ -3907,7 +3934,19 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than maxNodeSize
      */
     public void printHistory(int maxNodeSize) {
-        printHistory(maxNodeSize, System.out);
+        printHistory(maxNodeSize, System.out, false);
+    }
+
+    /**
+     * Print history, optionally including each node's id.
+     *
+     * @param maxNodeSize max node size
+     * @param showNodeId whether to print each node's id alongside its san
+     *
+     * @throws NodesOverflowException if move count is more than maxNodeSize
+     */
+    public void printHistory(int maxNodeSize, boolean showNodeId) {
+        printHistory(maxNodeSize, System.out, showNodeId);
     }
 
     /**
@@ -3922,11 +3961,27 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than maxNodeSize
      */
     public void printHistory(int maxNodeSize, PrintStream out) {
+        printHistory(maxNodeSize, out, false);
+    }
+
+    /**
+     * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
+     *
+     * Useful when the caller wants to redirect output (e.g. to a log file or a
+     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     *
+     * @param maxNodeSize max node size
+     * @param out print stream to print to
+     * @param showNodeId whether to print each node's id alongside its san
+     *
+     * @throws NodesOverflowException if move count is more than maxNodeSize
+     */
+    public void printHistory(int maxNodeSize, PrintStream out, boolean showNodeId) {
         Objects.requireNonNull(out, "PrintStream can not be null!");
 
         readLock.lock();
         try {
-            printHistory(getRootNode(maxNodeSize), 0, out);
+            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId);
         } finally {
             readLock.unlock();
         }
