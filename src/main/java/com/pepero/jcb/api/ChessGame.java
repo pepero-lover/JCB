@@ -1658,7 +1658,7 @@ public class ChessGame {
     public List<MoveInfo> getLegalMovesForSource(Square source) {
         Objects.requireNonNull(source, "Source Square is null!");
 
-        writeLock.lock();
+        readLock.lock();
         try {
             int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
@@ -1671,7 +1671,7 @@ public class ChessGame {
             }
             return result;
         } finally {
-            writeLock.unlock();
+            readLock.unlock();
         }
     }
 
@@ -1685,7 +1685,7 @@ public class ChessGame {
     public List<MoveInfo> getLegalMovesForTarget(Square target) {
         Objects.requireNonNull(target, "Target Square is null!");
 
-        writeLock.lock();
+        readLock.lock();
         try {
             int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
             int move_count = generateMoves(chessboard, move_list);
@@ -1698,7 +1698,7 @@ public class ChessGame {
             }
             return result;
         } finally {
-            writeLock.unlock();
+            readLock.unlock();
         }
     }
 

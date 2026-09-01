@@ -356,6 +356,127 @@ public class ChessGameTest {
     }
 
     @Test
+    @DisplayName("jumpToNode: 같은 노드로 점프하면 board 상태가 변하지 않아야 한다 (early exit)")
+    void jumpToNode_sameNode_noOp() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLanAll("e2e4 e7e5");
+
+        long currentId = chessGame.getCurrentNodeId();
+        String fenBefore = chessGame.getFEN();
+
+        chessGame.jumpToNode(currentId);
+
+        assertEquals(fenBefore, chessGame.getFEN());
+        assertEquals(currentId, chessGame.getCurrentNodeId());
+    }
+
+    @Test
+    @DisplayName("jumpToNode: 바로 위 부모 / 바로 아래 자식으로 한 칸 이동이 정확해야 한다")
+    void jumpToNode_singleStepParentAndChild() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        long parentId = chessGame.getCurrentNodeId();
+        String parentFen = chessGame.getFEN();
+
+        chessGame.makeMoveLan("e7e5");
+        long childId = chessGame.getCurrentNodeId();
+        String childFen = chessGame.getFEN();
+
+        chessGame.jumpToNode(parentId);
+        assertEquals(parentFen, chessGame.getFEN(), "자식 -> 부모 1칸 이동");
+
+        chessGame.jumpToNode(childId);
+        assertEquals(childFen, chessGame.getFEN(), "부모 -> 자식 1칸 이동");
+    }
+
+    @Test
+    @DisplayName("jumpToNode: 형제 variation 사이 이동 시 LCA가 root가 아닌 공통 조상이어야 한다 (e4 e5 Nf3 Nc6 (Bb5 | Bc4))")
+    void jumpToNode_acrossSiblingVariations_shallowLCA() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLanAll("e2e4 e7e5 g1f3 b8c6");
+
+        chessGame.makeMoveLan("f1b5"); // mainline: Bb5
+        long bb5Id = chessGame.getCurrentNodeId();
+        String bb5Fen = chessGame.getFEN();
+
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("f1c4"); // variation: Bc4
+        long bc4Id = chessGame.getCurrentNodeId();
+        String bc4Fen = chessGame.getFEN();
+
+        chessGame.jumpToNode(bb5Id);
+        assertEquals(bb5Fen, chessGame.getFEN());
+
+        chessGame.jumpToNode(bc4Id);
+        assertEquals(bc4Fen, chessGame.getFEN());
+    }
+
+    @Test
+    @DisplayName("jumpToNode: 서로 다른 1수 variation 라인 사이 이동 시 LCA가 root여야 한다 (e4 라인 <-> d4 라인)")
+    void jumpToNode_acrossDeepVariations_rootLCA() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        chessGame.makeMoveLanAll("e2e4 e7e5 g1f3 b8c6 f1b5 a7a6");
+        long eLineId = chessGame.getCurrentNodeId();
+        String eLineFen = chessGame.getFEN();
+
+        for (int i = 0; i < 6; i++) {
+            chessGame.unmakeMove();
+        }
+        chessGame.makeMoveLanAll("d2d4 d7d5 c2c4 e7e6");
+        long dLineId = chessGame.getCurrentNodeId();
+        String dLineFen = chessGame.getFEN();
+
+        chessGame.jumpToNode(eLineId);
+        assertEquals(eLineFen, chessGame.getFEN());
+
+        chessGame.jumpToNode(dLineId);
+        assertEquals(dLineFen, chessGame.getFEN());
+    }
+
+    @Test
+    @DisplayName("jumpToMainlinePly: ply 0으로 이동하면 시작 포지션(root)으로 돌아가야 한다")
+    void jumpToMainlinePly_toRoot() {
+        ChessGame chessGame = ChessGame.startPosition();
+        String startFen = chessGame.getFEN();
+        long rootId = chessGame.getRootNode().id();
+
+        chessGame.makeMoveLanAll("e2e4 e7e5 g1f3");
+        chessGame.jumpToMainlinePly(0);
+
+        assertEquals(startFen, chessGame.getFEN());
+        assertEquals(rootId, chessGame.getCurrentNodeId());
+    }
+
+    @Test
+    @DisplayName("jumpToMainlinePly: 여러 번 앞뒤로 이동해도 매번 정확한 ply에 도달해야 한다")
+    void jumpToMainlinePly_repeatedBackAndForth() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        String fenPly1 = chessGame.getFEN();
+        chessGame.makeMoveLan("e7e5");
+        String fenPly2 = chessGame.getFEN();
+        chessGame.makeMoveLan("g1f3");
+        String fenPly3 = chessGame.getFEN();
+        chessGame.makeMoveLan("b8c6");
+        String fenPly4 = chessGame.getFEN();
+
+        chessGame.jumpToMainlinePly(1);
+        assertEquals(fenPly1, chessGame.getFEN());
+
+        chessGame.jumpToMainlinePly(3);
+        assertEquals(fenPly3, chessGame.getFEN());
+
+        chessGame.jumpToMainlinePly(0);
+
+        chessGame.jumpToMainlinePly(4);
+        assertEquals(fenPly4, chessGame.getFEN());
+
+        chessGame.jumpToMainlinePly(2);
+        assertEquals(fenPly2, chessGame.getFEN());
+    }
+
+    @Test
     @DisplayName("중첩 변이 및 평가 기호 통합 파싱/NAG 분리가 되어야 한다")
     void testMultiversePGNTreeStructure() {
         String multiversePgn = """

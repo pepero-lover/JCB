@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
-- On `ChessGame`, the write lock on `getLegalMoves` method replaced to read lock.
+- On `ChessGame`, the write lock on `getLegalMoves*` methods replaced to read lock.
 - On `MoveNode` and `MoveNodeDTO`, added `ply`, `fullMovePly` parameter.
   `ply` is starting 0 at root node and `ply` also refers to depth.
   `fullMovePly` is used to show full move counter data, but increases 1 per move.
