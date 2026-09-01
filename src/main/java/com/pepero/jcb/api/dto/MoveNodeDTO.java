@@ -7,12 +7,16 @@ import java.util.List;
  *
  * @param id uuid of this move data
  * @param moveData played move data
+ * @param ply half-move ply from root
+ * @param fullMovePly full move number
  * @param children children data (index 0 is mainline, other are variation)
  * @param san san move string
  * @param annotation annotation for pgn
  */
 public record MoveNodeDTO(
         long id,
+        int ply,
+        int fullMovePly,
         MoveInfo moveData,
         List<MoveNodeDTO> children,
         String san,

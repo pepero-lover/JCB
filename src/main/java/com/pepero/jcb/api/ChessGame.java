@@ -85,7 +85,7 @@ public class ChessGame {
      * Move tree root <p>
      * ---> [root] - e4 - e5 - Nf3 ( - Nc3 - Nf6 ) - Nc6
      */
-    private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
+    private MoveNode moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), 0);
 
     /**
      * Current move node on {@link ChessGame#moveHistoryRoot}
@@ -418,7 +418,7 @@ public class ChessGame {
             this.chessboard = new Chessboard(other.chessboard);
             this.startPositionFEN = other.startPositionFEN;
 
-            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
+            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), other.moveHistoryRoot.fullMovePly);
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -446,7 +446,7 @@ public class ChessGame {
             this.chessboard = new Chessboard(chessboard);
             this.startPositionFEN = ChessboardUtils.getFen(chessboard);
 
-            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet());
+            this.moveHistoryRoot = new MoveNode(nodeCounter.incrementAndGet(), this.chessboard.full_move);
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -2712,7 +2712,8 @@ public class ChessGame {
             }
         }
 
-        MoveNode result = new MoveNode(moveData, currentNode, nodeCounter.incrementAndGet());
+        MoveNode result = new MoveNode(moveData, currentNode, nodeCounter.incrementAndGet(),
+                chessboard.ply, chessboard.full_move);
 
         currentNode.children.add(result);
         currentNode = result;

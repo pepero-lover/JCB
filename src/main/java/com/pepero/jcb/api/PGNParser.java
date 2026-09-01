@@ -101,11 +101,6 @@ class PGNParser {
             movePGNString = moveBuilder.toString();
         }
 
-        MoveNode rootNode = new MoveNode(nodeCounter++);
-        MoveNode currentParsedNode = rootNode;
-        LongObjectOpenHashMap<MoveNode> tempNodeCache = new LongObjectOpenHashMap<>();
-        tempNodeCache.put(rootNode.id, rootNode);
-
         record VariationState(MoveNode node, Chessboard snapshotBoard) {}
         Stack<VariationState> variationStack = new Stack<>();
 
@@ -127,6 +122,11 @@ class PGNParser {
         }
 
         pgnChessboard = new Chessboard(parsedFen, isChess960, parsedVariant);
+
+        MoveNode rootNode = new MoveNode(nodeCounter++, pgnChessboard.full_move);
+        MoveNode currentParsedNode = rootNode;
+        LongObjectOpenHashMap<MoveNode> tempNodeCache = new LongObjectOpenHashMap<>();
+        tempNodeCache.put(rootNode.id, rootNode);
 
         GameResult parsedGameResult = GameResult.UNKNOWN;
 
@@ -218,7 +218,8 @@ class PGNParser {
                     MoveGenerator.makeMove(pgnChessboard, moveData);
 
                     MoveInfo moveInfo = new MoveInfo(moveData);
-                    MoveNode newNode = new MoveNode(moveInfo, currentParsedNode, nodeCounter++);
+                    MoveNode newNode = new MoveNode(moveInfo, currentParsedNode, nodeCounter++,
+                            pgnChessboard.ply, pgnChessboard.full_move);
                     newNode.san = pureSan;
 
                     if (!annotation.isEmpty()) {

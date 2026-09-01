@@ -19,6 +19,9 @@ class MoveNode {
     final MoveInfo moveData;
     String san;
 
+    final int ply;
+    final int fullMovePly;
+
     MoveAnnotation annotation = null;
 
     // for external
@@ -30,16 +33,37 @@ class MoveNode {
     GameResult calculatedResult = GameResult.UNKNOWN;
     GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
 
-    public MoveNode(long id) {
+    /**
+     * Constructor for root node <br>
+     * the default start 'ply' is 0
+     *
+     * @param id id
+     * @param fullMovePly full move ply data
+     */
+    public MoveNode(long id, int fullMovePly) {
         this.id = id;
         this.moveData = null;
         this.parent = null;
+        this.ply = 0;
+        this.fullMovePly = fullMovePly;
     }
 
-    public MoveNode(MoveInfo moveData, MoveNode parent, long id) {
+    /**
+     * Constructor for any node except root node
+     *
+     * @param moveData move data
+     * @param parent parent data
+     * @param id id
+     * @param ply ply data
+     * @param fullMovePly full move ply data
+     */
+    public MoveNode(MoveInfo moveData, MoveNode parent, long id, int ply, int fullMovePly) {
         this.id = id;
         this.moveData = moveData;
         this.parent = parent;
+
+        this.ply = ply;
+        this.fullMovePly = fullMovePly;
     }
 
     public MoveAnnotation getAnnotation() {
@@ -76,6 +100,8 @@ class MoveNode {
 
         return new MoveNodeDTO(
                 this.id,
+                this.ply,
+                this.fullMovePly,
                 this.moveData,
                 childDTOs,
                 this.san,

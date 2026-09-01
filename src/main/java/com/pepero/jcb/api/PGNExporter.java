@@ -107,7 +107,14 @@ class PGNExporter {
                 nodeAnnotation.nag, nodeAnnotation.clk, nodeAnnotation.timeStamp,
                 nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);
 
-        return new MoveNodeDTO(node.id, node.moveData, childrenDTOs, calculatedSan, annotationDTO);
+        return new MoveNodeDTO(
+                node.id,
+                node.ply,
+                node.fullMovePly,
+                node.moveData,
+                childrenDTOs,
+                calculatedSan,
+                annotationDTO);
     }
 
 

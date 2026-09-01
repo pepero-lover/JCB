@@ -1104,4 +1104,10 @@ public class ChessGameTest {
         assertEquals(snapshotFenBefore, snapshotFenAfter,
                 "getBoardSnapshot()이 내부 chessboard 참조를 그대로 반환한다면 이 assert가 깨집니다 (얕은 복사 의심).");
     }
+
+    @Test
+    @DisplayName("MoveNode 에서 ply 데이터를 저장해야 한다")
+    void moveNodePly() {
+        ChessGame chessGame = ChessGame.startPosition();
+    }
 }
