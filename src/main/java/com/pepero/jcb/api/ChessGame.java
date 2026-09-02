@@ -3699,7 +3699,7 @@ public class ChessGame {
             MoveNode lastNode = moveHistoryRoot;
 
             while (!lastNode.children.isEmpty()) {
-                if(maxNodes < tempBoard.ply) throw new NodesOverflowException(
+                if(maxNodes <= tempBoard.ply) throw new NodesOverflowException(
                         "This mainline's node (move) count is more than max nodes count! (Max node count : " + maxNodes + ")"
                 );
 
