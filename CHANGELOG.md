@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `ChessGame`, added `getMainLinePGN()` method to get only main line move data pgn string.
+- On `MoveDataDTO`, added `ply`, `fullMovePly`, `san` parameter
+- Added overload on `getMainlineData(int maxNodes)`, throwing `NodeOverflowException` when mainline data is bigger than
+  `maxNodes`. and on `getMainlineData()`, the default is `MAX_PGN_NODE_COUNT`.
 
 ### Changed
 - On `ChessGame`, the write lock on `getLegalMoves*` methods replaced to read lock.
@@ -19,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - and also on `printHistory`, now prints node id right next to the move string. (e.g. "e4 [#2]")
   If you want to use node id printing, use `printHistory*(boolean showNodeId)` methods.
 - On `MoveNode` class (package-private, not exposed), removed not using `san` parameter.
-- On `MoveDataDTO` class, added `san` move string.
 - On every `nodeCounter` variables, changed `incrementAndGet` to `getAndIncrement`.
 
 ### Fixed

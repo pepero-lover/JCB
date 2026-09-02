@@ -3503,6 +3503,67 @@ public class ChessGame {
         return getPGN(MAX_PGN_NODE_COUNT);
     }
 
+    /**
+     * Get PGN string of the mainline only (variations excluded).
+     *
+     * @throws NodesOverflowException if move count is too large
+     */
+    public String getMainlinePGN() {
+        return getMainlinePGN(MAX_PGN_NODE_COUNT);
+    }
+
+    /**
+     * Get PGN string of the mainline only (variations excluded).
+     *
+     * @param maxNodes max nodes count
+     *
+     * @throws NodesOverflowException if move count is more than maxNodes
+     */
+    public String getMainlinePGN(int maxNodes) {
+        GameOverCheckOutcome outcome;
+        String pgn;
+
+        writeLock.lock();
+        try {
+            if (this.headers.isEmpty()) setDefaultHeaders();
+
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                sb.append("[").append(entry.getKey()).append(" \"").append(entry.getValue()).append("\"]\n");
+            }
+            sb.append("\n");
+
+            List<MoveDataDTO> mainline = getMainlineData(maxNodes);
+
+            boolean firstMove = true;
+            for (MoveDataDTO move : mainline) {
+                int ply = move.ply();
+                boolean isWhiteMove = (ply % 2 == 1);
+
+                if (isWhiteMove) {
+                    sb.append(move.fullMovePly() / 2 + 1).append(". ");
+                } else if (firstMove) {
+                    sb.append(move.fullMovePly() / 2 + 1).append("... ");
+                }
+
+                sb.append(move.san()).append(" ");
+                firstMove = false;
+            }
+
+            sb.append(PGNExporter.getGameResultString(outcome.gameResult()));
+            pgn = sb.toString().trim();
+        } finally {
+            writeLock.unlock();
+        }
+
+        if (outcome.newlyOver()) {
+            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+        }
+
+        return pgn;
+    }
 
     /**
      * Get pgn string with no extra commentary, clk, nag, etc. <p>
@@ -3605,8 +3666,26 @@ public class ChessGame {
      * history -> <b>e4 e5 Nf3 (Nc3) Nc6</b> <br>
      * and the result is <br>
      * <b>e4 e5 Nf3 Nc6</b>
+     *
+     * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getMainlineData(int)})
      */
     public List<MoveDataDTO> getMainlineData() {
+        return getMainlineData(MAX_PGN_NODE_COUNT);
+    }
+
+    /**
+     * Get mainline move data
+     * <p>
+     * Example : <br>
+     * history -> <b>e4 e5 Nf3 (Nc3) Nc6</b> <br>
+     * and the result is <br>
+     * <b>e4 e5 Nf3 Nc6</b>
+     *
+     * @param maxNodes max main line data size (if size is bigger than this max nodes, throw exception.)
+     *
+     * @throws NodesOverflowException if size is bigger than this max nodes
+     */
+    public List<MoveDataDTO> getMainlineData(int maxNodes) {
         List<MoveDataDTO> result = new ArrayList<>();
 
         readLock.lock();
@@ -3617,6 +3696,10 @@ public class ChessGame {
             MoveNode lastNode = moveHistoryRoot;
 
             while (!lastNode.children.isEmpty()) {
+                if(maxNodes < tempBoard.ply) throw new NodesOverflowException(
+                        "This mainline's node (move) count is more than max nodes count! (Max node count : " + maxNodes + ")"
+                );
+
                 lastNode = lastNode.children.getFirst();
                 int encodedMove = lastNode.moveData.originEncodedData();
 
@@ -3625,6 +3708,8 @@ public class ChessGame {
 
                 result.add(new MoveDataDTO(
                         lastNode.id,
+                        tempBoard.ply,
+                        tempBoard.full_move,
                         san,
                         ChessboardUtils.getFen(tempBoard),
                         lastNode.moveData,
