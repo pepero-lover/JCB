@@ -59,6 +59,9 @@ public class PGNEditorExample {
                 if(firstToken.equals("move")) {
                     chessGame.makeMoveSan(arg[1]);
                 }
+                if(firstToken.equals("pgn")) {
+                    System.out.println(chessGame.getPGN());
+                }
             } catch (ArrayIndexOutOfBoundsException e) {
                 System.out.println("id를 입력해주세요. 예: jump 12345");
             } catch (NumberFormatException e) {
