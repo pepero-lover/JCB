@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveNode` class (package-private, not exposed), removed not using `san` parameter.
 - On every `nodeCounter` variables, changed `incrementAndGet` to `getAndIncrement`.
 - On every `gameoverReason` variables, refactored `gameOverReason`. (private variable)
+- On `loadPGN` at `ChessGame`, added notifying listeners (`notifyHistoryChanged`,
+  `notifyPositionJumped`, `notifyStateChecked`, `notifyGameOver`)
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.

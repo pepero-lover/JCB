@@ -3406,6 +3406,13 @@ public class ChessGame {
         } finally {
             writeLock.unlock();
         }
+
+        notifyHistoryChanged();
+        notifyPositionJumped(getFEN());
+        notifyStateChecked(this.gameResult, this.gameOverReason);
+        if (this.gameResult != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameOverReason);
+        }
     }
 
     /**
@@ -3440,6 +3447,13 @@ public class ChessGame {
             this.gameOverReason = parsedData.gameOverReason();
         } finally {
             writeLock.unlock();
+        }
+
+        notifyHistoryChanged();
+        notifyPositionJumped(getFEN());
+        notifyStateChecked(this.gameResult, this.gameOverReason);
+        if (this.gameResult != GameResult.UNKNOWN) {
+            notifyGameOver(this.gameResult, this.gameOverReason);
         }
     }
 
