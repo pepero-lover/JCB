@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   If you want to use node id printing, use `printHistory*(boolean showNodeId)` methods.
 - On `MoveNode` class (package-private, not exposed), removed not using `san` parameter.
 - On every `nodeCounter` variables, changed `incrementAndGet` to `getAndIncrement`.
+- On every `gameoverReason` variables, refactored `gameOverReason`. (private variable)
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.

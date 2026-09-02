@@ -140,7 +140,7 @@ public class ChessGame {
      * {@link #isCheckmate()} changes. <br>
      * You can get this value on {@link #getGameOverReason()}
      */
-    private GameOverReason gameoverReason = GameOverReason.NOTGAMEOVER;
+    private GameOverReason gameOverReason = GameOverReason.NOTGAMEOVER;
 
     /**
      * Start position FEN <br>
@@ -423,7 +423,7 @@ public class ChessGame {
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
             this.gameResult = other.gameResult;
-            this.gameoverReason = other.gameoverReason;
+            this.gameOverReason = other.gameOverReason;
 
             this.headers.clear();
             this.headers.putAll(other.headers);
@@ -535,7 +535,7 @@ public class ChessGame {
     private void dispatchMoveNotifications(MoveOutcome outcome) {
         notifyMoveMade(outcome.moveData());
         if (outcome.gameResult() != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
+            notifyGameOver(this.gameResult, this.gameOverReason);
         }
         if (outcome.historyChanged()) {
             notifyHistoryChanged();
@@ -1186,7 +1186,7 @@ public class ChessGame {
     private void dispatchUndoNotifications(UndoRedoOutcome outcome) {
         notifyMoveUnmade(outcome.moveInfo());
         if (outcome.gameResult() != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
+            notifyGameOver(this.gameResult, this.gameOverReason);
         }
     }
 
@@ -1202,7 +1202,7 @@ public class ChessGame {
     private void dispatchRedoNotifications(UndoRedoOutcome outcome) {
         notifyMoveRemade(outcome.moveInfo());
         if (outcome.gameResult() != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
+            notifyGameOver(this.gameResult, this.gameOverReason);
         }
     }
 
@@ -2536,11 +2536,11 @@ public class ChessGame {
             MoveNode tipNode = getLastMainlineNode(this.moveHistoryRoot);
 
             refreshedOutcome = evaluateGameStateForNotificationAt(tipNode);
-            alreadyOver = this.gameoverReason != GameOverReason.NOTGAMEOVER;
+            alreadyOver = refreshedOutcome.gameOverReason() != GameOverReason.NOTGAMEOVER;
 
             if (!alreadyOver) {
                 this.gameResult = result;
-                this.gameoverReason = reason;
+                this.gameOverReason = reason;
                 this.headers.put("Result", PGNExporter.getGameResultString(this.gameResult));
 
                 tipNode.terminalResult = result;
@@ -2551,7 +2551,7 @@ public class ChessGame {
         }
 
         if (refreshedOutcome.newlyOver()) {
-            notifyGameOver(refreshedOutcome.gameResult(), refreshedOutcome.gameoverReason());
+            notifyGameOver(refreshedOutcome.gameResult(), refreshedOutcome.gameOverReason());
         }
 
         if (alreadyOver) {
@@ -2571,9 +2571,9 @@ public class ChessGame {
      * @param newlyOver whether this evaluation discovered a terminal result for the first
      *                  time (i.e. {@code onGameOver} should fire)
      * @param gameResult game result for the evaluated node (UNKNOWN if the game is not over)
-     * @param gameoverReason game over reason for the evaluated node
+     * @param gameOverReason game over reason for the evaluated node
      */
-    private record GameOverCheckOutcome(boolean newlyOver, GameResult gameResult, GameOverReason gameoverReason) {}
+    private record GameOverCheckOutcome(boolean newlyOver, GameResult gameResult, GameOverReason gameOverReason) {}
 
     /**
      * Evaluate the game-over state of the given node, tracking whether a terminal result was
@@ -2596,7 +2596,7 @@ public class ChessGame {
         GameResult result = evaluateGameState(node);
         boolean newlyOver = !alreadyKnown && result != GameResult.UNKNOWN;
 
-        return new GameOverCheckOutcome(newlyOver, this.gameResult, this.gameoverReason);
+        return new GameOverCheckOutcome(newlyOver, this.gameResult, this.gameOverReason);
     }
 
     /**
@@ -2638,7 +2638,7 @@ public class ChessGame {
         }
 
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
         return outcome.gameResult();
@@ -2662,10 +2662,10 @@ public class ChessGame {
         }
 
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
-        return outcome.gameoverReason();
+        return outcome.gameOverReason();
     }
 
     /**
@@ -2814,7 +2814,7 @@ public class ChessGame {
 
         notifyHistoryChanged();
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
     }
 
@@ -2855,7 +2855,7 @@ public class ChessGame {
 
         if (shouldNotifyHistory) notifyHistoryChanged();
         if (outcome != null && outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
     }
 
@@ -2996,7 +2996,7 @@ public class ChessGame {
     private void dispatchJumpNotifications(JumpOutcome outcome) {
         notifyPositionJumped(outcome.targetFen());
         if (outcome.gameOverOutcome().newlyOver()) {
-            notifyGameOver(outcome.gameOverOutcome().gameResult(), outcome.gameOverOutcome().gameoverReason());
+            notifyGameOver(outcome.gameOverOutcome().gameResult(), outcome.gameOverOutcome().gameOverReason());
         }
     }
 
@@ -3077,7 +3077,7 @@ public class ChessGame {
 
         notifyPositionJumped(getFEN());
         if(gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameoverReason);
+            notifyGameOver(this.gameResult, this.gameOverReason);
         }
     }
 
@@ -3133,14 +3133,14 @@ public class ChessGame {
         // when resign / agreement draw
         if (node.terminalReason != null) {
             this.gameResult = node.terminalResult;
-            this.gameoverReason = node.terminalReason;
+            this.gameOverReason = node.terminalReason;
             return node.terminalResult;
         }
 
         // when value is already cached
         if (node.isStateEvaluated) {
             this.gameResult = node.calculatedResult;
-            this.gameoverReason = node.calculatedReason;
+            this.gameOverReason = node.calculatedReason;
             return node.calculatedResult;
         }
 
@@ -3186,7 +3186,7 @@ public class ChessGame {
         node.calculatedResult = result;
         node.isStateEvaluated = true;
 
-        this.gameoverReason = reason;
+        this.gameOverReason = reason;
         this.gameResult = result;
 
         if (result != GameResult.UNKNOWN) {
@@ -3382,7 +3382,7 @@ public class ChessGame {
             this.headers.putAll(parsedData.header());
 
             this.gameResult = parsedData.gameResult();
-            this.gameoverReason = parsedData.gameOverReason();
+            this.gameOverReason = parsedData.gameOverReason();
         } finally {
             writeLock.unlock();
         }
@@ -3417,7 +3417,7 @@ public class ChessGame {
             this.headers.putAll(parsedData.header());
 
             this.gameResult = parsedData.gameResult();
-            this.gameoverReason = parsedData.gameOverReason();
+            this.gameOverReason = parsedData.gameOverReason();
         } finally {
             writeLock.unlock();
         }
@@ -3488,7 +3488,7 @@ public class ChessGame {
         }
 
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
         return pgn;
@@ -3561,7 +3561,7 @@ public class ChessGame {
         }
 
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
         return pgn;
@@ -3595,7 +3595,7 @@ public class ChessGame {
         }
 
         if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameoverReason());
+            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
         return pgn;
