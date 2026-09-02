@@ -3408,7 +3408,7 @@ public class ChessGame {
         }
 
         notifyHistoryChanged();
-        notifyPositionJumped(getFEN());
+        notifyPositionJumped(ChessboardUtils.getFen(this.chessboard));
         notifyStateChecked(this.gameResult, this.gameOverReason);
         if (this.gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameOverReason);
@@ -3450,7 +3450,7 @@ public class ChessGame {
         }
 
         notifyHistoryChanged();
-        notifyPositionJumped(getFEN());
+        notifyPositionJumped(ChessboardUtils.getFen(this.chessboard));
         notifyStateChecked(this.gameResult, this.gameOverReason);
         if (this.gameResult != GameResult.UNKNOWN) {
             notifyGameOver(this.gameResult, this.gameOverReason);
