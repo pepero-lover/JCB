@@ -8,7 +8,7 @@ public class PerftBitboardMultiThread {
         Chessboard chessboard = new Chessboard(Chessboard.start_position);
         PerftDriver.perftBitboardTest(chessboard,
                 7,
-                1,
+                4,
                 false,
                 false
         );
