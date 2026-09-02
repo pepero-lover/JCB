@@ -3504,7 +3504,7 @@ public class ChessGame {
     }
 
     /**
-     * Get PGN string of the mainline only (variations excluded).
+     * Get PGN string of the mainline only (variations, comments, clk, etc. excluded).
      *
      * @throws NodesOverflowException if move count is too large
      */
@@ -3513,7 +3513,7 @@ public class ChessGame {
     }
 
     /**
-     * Get PGN string of the mainline only (variations excluded).
+     * Get PGN string of the mainline only (variations, comments, clk, etc. excluded).
      *
      * @param maxNodes max nodes count
      *

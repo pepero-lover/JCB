@@ -584,6 +584,84 @@ public class ChessGameTest {
     }
 
     @Test
+    @DisplayName("getMainlinePGN 은 variation 없이 mainline 수만 포함해야 한다")
+    void getMainlinePGN_excludesVariations() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Nf3 Nc6");
+
+        chessGame.makeMoveLan("f1b5");
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("f1c4");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.contains("Bb5"), "mainline 수는 포함되어야 한다");
+        assertFalse(pgn.contains("Bc4"), "variation 수는 포함되면 안 된다");
+        assertFalse(pgn.contains("("), "variation 괄호가 없어야 한다");
+        assertFalse(pgn.contains(")"), "variation 괄호가 없어야 한다");
+    }
+
+    @Test
+    @DisplayName("getMainlinePGN 은 move number 를 정확하게 붙여야 한다")
+    void getMainlinePGN_moveNumbering() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Nf3 Nc6");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.contains("1. e4 e5 2. Nf3 Nc6"));
+    }
+
+    @Test
+    @DisplayName("getMainlinePGN 은 주석/시계 데이터를 포함하지 않아야 한다")
+    void getMainlinePGN_excludesAnnotations() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        chessGame.setCurrentMoveClock(0, 4, 55);
+        chessGame.setCurrentMoveComment("Good opening move");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.contains("e4"));
+        assertFalse(pgn.contains("%clk"));
+        assertFalse(pgn.contains("Good opening move"));
+    }
+
+    @Test
+    @DisplayName("getMainlinePGN 은 체크메이트로 끝난 게임에 결과 문자열을 붙여야 한다")
+    void getMainlinePGN_appendsGameResult() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.trim().endsWith("1-0"), "백 승리 체크메이트니까 1-0 로 끝나야 한다");
+    }
+
+    @Test
+    @DisplayName("getMainlinePGN 은 진행 중인 게임에는 * 를 붙여야 한다")
+    void getMainlinePGN_ongoingGameResult() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.trim().endsWith("*"));
+    }
+
+    @Test
+    @DisplayName("getMainlinePGN 은 헤더를 포함해야 한다")
+    void getMainlinePGN_includesHeaders() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+
+        String pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.contains("[Event \"?\"]"));
+        assertTrue(pgn.contains("[White \"?\"]"));
+    }
+
+    @Test
     @DisplayName("크레이지하우스: API 메서드(makeDropMove)로 포켓의 기물을 드랍할 수 있어야 한다")
     void testMakeDropMoveAPI() {
         // 백 포켓에 Q, 흑 포켓에 p 가 있는 상태
