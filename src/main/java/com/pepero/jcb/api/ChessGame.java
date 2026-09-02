@@ -2600,6 +2600,27 @@ public class ChessGame {
     }
 
     /**
+     * Evaluate game state at an arbitrary node (not necessarily currentNode),
+     * without leaving currentNode changed afterward.
+     */
+    private GameOverCheckOutcome evaluateGameStateForNotificationAt(MoveNode targetNode) {
+        if (targetNode == currentNode) {
+            return evaluateGameStateForNotification(targetNode);
+        }
+
+        MoveNode originalNode = currentNode;
+
+        try {
+            JumpOutcome jumpOutcome = internalJumpToNode(targetNode.id);
+            return jumpOutcome.gameOverOutcome();
+        } finally {
+            if (currentNode != originalNode) {
+                internalJumpToNode(originalNode.id);
+            }
+        }
+    }
+
+    /**
      * Get game result <p>
      *
      * This game result doesn't update when the result of this game is already finished. <br>
@@ -2611,7 +2632,7 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
@@ -2635,7 +2656,7 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
@@ -2782,7 +2803,7 @@ public class ChessGame {
 
             removeNodeFromCache(targetNode);
 
-            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
         } finally {
             writeLock.unlock();
         }
@@ -2824,7 +2845,7 @@ public class ChessGame {
                 parent.children.remove(currentIndex);
                 parent.children.addFirst(targetNode);
 
-                outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+                outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
                 shouldNotifyHistory = true;
             }
@@ -3455,7 +3476,7 @@ public class ChessGame {
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
             pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
@@ -3501,7 +3522,7 @@ public class ChessGame {
         try {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            outcome = evaluateGameStateForNotification(getLastMainlineNode(this.moveHistoryRoot));
+            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
             pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),

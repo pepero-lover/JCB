@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.
+- On `ChessGame`, fixed the bug not checking the last node position but checking 
+  current position at `getGameResult()`, `getGameOverReason()`, `getPGN()`, `getPurePGN()`, `deleteVariation()`, `promoteVariationLocal()`
+  methods.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
