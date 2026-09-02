@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `forceEndGame()`
   methods.
 - On `ChessGame`, fixed bug not initializing `gameOverReason` on `loadPGN` method.
+- On `ChessGame`, fixed `jumpToMainlinePly` always notifying the game over listener.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.

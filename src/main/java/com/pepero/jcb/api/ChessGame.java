@@ -3032,7 +3032,7 @@ public class ChessGame {
     public void jumpToMainlinePly(int targetPly) {
         writeLock.lock();
 
-        GameResult gameResult;
+        GameOverCheckOutcome outcome;
 
         try {
             if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
@@ -3070,13 +3070,13 @@ public class ChessGame {
                 }
             }
 
-            gameResult = evaluateGameState(currentNode);
+            outcome = evaluateGameStateForNotification(currentNode);
         } finally {
             writeLock.unlock();
         }
 
         notifyPositionJumped(getFEN());
-        if(gameResult != GameResult.UNKNOWN) {
+        if (outcome.newlyOver()) {
             notifyGameOver(this.gameResult, this.gameOverReason);
         }
     }
