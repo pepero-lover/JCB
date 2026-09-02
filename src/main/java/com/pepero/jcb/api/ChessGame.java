@@ -519,10 +519,12 @@ public class ChessGame {
      * @param moveData applied move
      * @param historyChanged whether a brand-new history node was created (vs. following an
      *                       existing variation)
+     * @param newlyOver whether this move discovered a terminal result for the first time
+     *                  for the resulting node (i.e. {@code onGameOver} should fire)
      * @param gameResult game result right after this move
      * @param gameOverReason game over reason after this move
      */
-    private record MoveOutcome(MoveInfo moveData, boolean historyChanged,
+    private record MoveOutcome(MoveInfo moveData, boolean historyChanged, boolean newlyOver,
                                GameResult gameResult, GameOverReason gameOverReason) {}
 
     /**
@@ -536,7 +538,7 @@ public class ChessGame {
      */
     private void dispatchMoveNotifications(MoveOutcome outcome) {
         notifyMoveMade(outcome.moveData());
-        if (outcome.gameResult() != GameResult.UNKNOWN) {
+        if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
         if (outcome.historyChanged()) {
@@ -569,8 +571,9 @@ public class ChessGame {
         MoveInfo moveData = new MoveInfo(encodedMove);
         boolean historyChanged = addMoveHistory(moveData);
 
-        GameResult gameResult = evaluateGameState(currentNode);
-        return new MoveOutcome(moveData, historyChanged, gameResult, this.gameOverReason);
+        GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
+        return new MoveOutcome(moveData, historyChanged, gameOverOutcome.newlyOver(),
+                gameOverOutcome.gameResult(), gameOverOutcome.gameOverReason());
     }
 
     /**
@@ -592,8 +595,9 @@ public class ChessGame {
         MoveInfo moveData = new MoveInfo(encodedMove);
         boolean historyChanged = addMoveHistory(moveData);
 
-        GameResult gameResult = evaluateGameState(currentNode);
-        return new MoveOutcome(moveData, historyChanged, gameResult, this.gameOverReason);
+        GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
+        return new MoveOutcome(moveData, historyChanged, gameOverOutcome.newlyOver(),
+                gameOverOutcome.gameResult(), gameOverOutcome.gameOverReason());
     }
 
     /**
@@ -1119,10 +1123,13 @@ public class ChessGame {
      * {@link #goBackward()}).
      *
      * @param moveInfo undone/redone move
+     * @param newlyOver whether this step discovered a terminal result for the first time
+     *                  for the resulting node (i.e. {@code onGameOver} should fire)
      * @param gameResult game result right after this step (UNKNOWN if the game continues)
      * @param gameOverReason game over reason right after this step
      */
-    private record UndoRedoOutcome(MoveInfo moveInfo, GameResult gameResult, GameOverReason gameOverReason) {}
+    private record UndoRedoOutcome(MoveInfo moveInfo, boolean newlyOver,
+                                   GameResult gameResult, GameOverReason gameOverReason) {}
 
     /**
      * Undo logic for internal undo/redo methods. <p>
@@ -1143,9 +1150,10 @@ public class ChessGame {
 
         MoveGenerator.unmakeMove(this.chessboard, moveInfo.originEncodedData());
 
-        GameResult gameResult = evaluateGameState(currentNode);
+        GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
 
-        return new UndoRedoOutcome(moveInfo, gameResult, this.gameOverReason);
+        return new UndoRedoOutcome(moveInfo, gameOverOutcome.newlyOver(),
+                gameOverOutcome.gameResult(), gameOverOutcome.gameOverReason());
     }
 
     /**
@@ -1170,9 +1178,10 @@ public class ChessGame {
 
         MoveGenerator.makeMove(this.chessboard, moveInfo.originEncodedData());
 
-        GameResult gameResult = evaluateGameState(currentNode);
+        GameOverCheckOutcome gameOverOutcome = evaluateGameStateForNotification(currentNode);
 
-        return new UndoRedoOutcome(moveInfo, gameResult, this.gameOverReason);
+        return new UndoRedoOutcome(moveInfo, gameOverOutcome.newlyOver(),
+                gameOverOutcome.gameResult(), gameOverOutcome.gameOverReason());
     }
 
     /**
@@ -1186,7 +1195,7 @@ public class ChessGame {
      */
     private void dispatchUndoNotifications(UndoRedoOutcome outcome) {
         notifyMoveUnmade(outcome.moveInfo());
-        if (outcome.gameResult() != GameResult.UNKNOWN) {
+        if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
     }
@@ -1202,7 +1211,7 @@ public class ChessGame {
      */
     private void dispatchRedoNotifications(UndoRedoOutcome outcome) {
         notifyMoveRemade(outcome.moveInfo());
-        if (outcome.gameResult() != GameResult.UNKNOWN) {
+        if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
     }
