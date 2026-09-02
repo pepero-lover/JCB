@@ -733,7 +733,7 @@ public class ChessGameTest {
         for(int i=0;i<move_count;i++) {
             int move = move_list[i];
             if(EncodeMove.getMoveSource(move) == BoardSquares.e1
-                && EncodeMove.getMoveTarget(move) == BoardSquares.g1) fail();
+                    && EncodeMove.getMoveTarget(move) == BoardSquares.g1) fail();
         }
     }
 
@@ -745,12 +745,12 @@ public class ChessGameTest {
         chessGame.makeMoveSanAll("e4 e5 Nf3 Nc6 Bc4 Bc5");
 
         assertEquals(List.of(
-                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-                "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
-                "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
-                "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
-                "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3",
-                "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"),
+                        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+                        "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+                        "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+                        "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+                        "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3",
+                        "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"),
                 chessGame.getMainlineData().stream()
                         .map(MoveDataDTO::fen)
                         .collect(Collectors.toList()));
@@ -1129,6 +1129,7 @@ public class ChessGameTest {
         @Override public void onMoveRemade(ChessGame source, MoveInfo moveInfo) {}
         @Override public void onPositionJumped(ChessGame source, String fen) {}
         @Override public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {}
+        @Override public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {}
         @Override public void onHistoryChanged(ChessGame source) {}
     }
 
@@ -1253,6 +1254,143 @@ public class ChessGameTest {
     }
 
     @Test
+    @DisplayName("게임이 끝나지 않는 일반적인 수에서는 onGameStateChecked가 UNKNOWN과 함께 호출되고, onGameOver는 호출되지 않아야 한다")
+    void listener_onGameStateChecked_calledOnNormalMove_withUnknownResult() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        List<GameResult> stateCheckedResults = new ArrayList<>();
+        List<GameResult> gameOverResults = new ArrayList<>();
+
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {
+                stateCheckedResults.add(result);
+            }
+
+            @Override
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
+                gameOverResults.add(result);
+            }
+        });
+
+        chessGame.makeMoveLan("e2e4");
+
+        assertEquals(1, stateCheckedResults.size(), "수를 둘 때마다 onGameStateChecked가 호출되어야 합니다.");
+        assertEquals(GameResult.UNKNOWN, stateCheckedResults.getFirst());
+        assertTrue(gameOverResults.isEmpty(), "게임이 끝나지 않았으므로 onGameOver는 호출되지 않아야 합니다.");
+    }
+
+    @Test
+    @DisplayName("이미 평가되어 캐싱된 체크메이트 노드를 재방문하면, onGameStateChecked는 매번 호출되지만 onGameOver는 최초 1회만 호출되어야 한다")
+    void listener_onGameStateChecked_firesEveryVisit_onGameOver_firesOnlyOnce() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6");
+
+        List<GameResult> gameOverResults = new ArrayList<>();
+        List<GameResult> stateCheckedResults = new ArrayList<>();
+
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
+                gameOverResults.add(result);
+            }
+
+            @Override
+            public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {
+                stateCheckedResults.add(result);
+            }
+        });
+
+        chessGame.makeMoveSan("Qxf7#"); // 체크메이트 최초 도달 -> 노드에 결과가 캐싱됨
+
+        assertEquals(1, gameOverResults.size(), "최초 메이트 시점엔 onGameOver가 한 번 호출되어야 합니다.");
+        assertEquals(GameResult.WHITE_WON, gameOverResults.getFirst());
+        assertEquals(1, stateCheckedResults.size());
+        assertEquals(GameResult.WHITE_WON, stateCheckedResults.getFirst());
+
+        // 캐싱된 메이트 노드를 여러 번 왕복 (goBackward/goForward에 해당)
+        for (int i = 0; i < 3; i++) {
+            chessGame.unmakeMove(); // Nf6로 복귀 (게임오버 아님)
+            chessGame.remakeMove(); // Qxf7#로 재진입 (캐시된 결과 재사용)
+        }
+
+        assertEquals(1, gameOverResults.size(),
+                "이미 알려진 메이트 노드를 여러 번 재방문해도 onGameOver는 재발생하면 안 됩니다 (원래 버그였던 부분).");
+
+        long mateReentryCount = stateCheckedResults.stream()
+                .filter(result -> result == GameResult.WHITE_WON)
+                .count();
+        assertEquals(4, mateReentryCount,
+                "최초 1회 + 재진입 3회 = 총 4번, 메이트 노드에 들어갈 때마다 onGameStateChecked가 WHITE_WON으로 호출되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("jumpToNode / jumpToMainlinePly 호출 시에도 onGameStateChecked가 호출되어야 한다")
+    void listener_onGameStateChecked_calledOnJump() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        long e4Id = chessGame.getCurrentNodeId();
+        chessGame.makeMoveLan("e7e5");
+
+        List<GameResult> stateCheckedResults = new ArrayList<>();
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {
+                stateCheckedResults.add(result);
+            }
+        });
+
+        chessGame.jumpToNode(e4Id);
+        assertEquals(1, stateCheckedResults.size(), "jumpToNode 호출 시 onGameStateChecked가 호출되어야 합니다.");
+
+        chessGame.jumpToMainlinePly(0);
+        assertEquals(2, stateCheckedResults.size(), "jumpToMainlinePly 호출 시에도 onGameStateChecked가 호출되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("deleteVariation / promoteVariationLocal 호출 시에도 onGameStateChecked가 호출되어야 한다")
+    void listener_onGameStateChecked_calledOnTreeEdit() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveLan("e2e4");
+        chessGame.makeMoveLan("e7e5");
+        chessGame.unmakeMove();
+        chessGame.makeMoveLan("d7d5");
+        long variationId = chessGame.getCurrentNodeId();
+
+        int[] deleteCheckedCount = {0};
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {
+                deleteCheckedCount[0]++;
+            }
+        });
+
+        chessGame.deleteVariation(variationId);
+        assertTrue(deleteCheckedCount[0] >= 1,
+                "deleteVariation 호출 시 onGameStateChecked가 최소 한 번은 호출되어야 합니다.");
+
+        ChessGame promoteGame = ChessGame.startPosition();
+        promoteGame.makeMoveLan("e2e4");
+        promoteGame.makeMoveLan("e7e5");
+        promoteGame.makeMoveLan("g1f3");
+        promoteGame.unmakeMove();
+        promoteGame.makeMoveLan("b1c3");
+        long nc3Id = promoteGame.getCurrentNodeId();
+
+        int[] promoteCheckedCount = {0};
+        promoteGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {
+                promoteCheckedCount[0]++;
+            }
+        });
+
+        promoteGame.promoteVariationLocal(nc3Id);
+        assertTrue(promoteCheckedCount[0] >= 1,
+                "promoteVariationLocal 호출 시 onGameStateChecked가 최소 한 번은 호출되어야 합니다.");
+    }
+
+    @Test
     @DisplayName("lightWeightCopy: 복사 시점의 포지션은 같아야 하지만, 리스너/히스토리는 복사되지 않아야 한다")
     void lightWeightCopy_copiesPositionButNotHistoryOrListeners() {
         ChessGame original = ChessGame.startPosition();
@@ -1302,11 +1440,5 @@ public class ChessGameTest {
         String snapshotFenAfter = ChessboardUtils.getFen(snapshot);
         assertEquals(snapshotFenBefore, snapshotFenAfter,
                 "getBoardSnapshot()이 내부 chessboard 참조를 그대로 반환한다면 이 assert가 깨집니다 (얕은 복사 의심).");
-    }
-
-    @Test
-    @DisplayName("MoveNode 에서 ply 데이터를 저장해야 한다")
-    void moveNodePly() {
-        ChessGame chessGame = ChessGame.startPosition();
     }
 }

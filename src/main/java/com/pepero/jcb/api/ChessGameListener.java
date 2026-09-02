@@ -37,10 +37,19 @@ public interface ChessGameListener {
 
     /**
      * When the game ended
+     *
      * @param result win/lose/draw result
      * @param reason game over reason (like checkmate, stalemate, agreement draw, etc.)
      */
     default void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {}
+
+    /**
+     * When game state checked (always called when moved, jumped, forced to end the game, etc.)
+     *
+     * @param result win/lose/draw result
+     * @param reason game over reason (like checkmate, stalemate, agreement draw, etc.)
+     */
+    default void onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason) {}
 
     /**
      * When game history changed

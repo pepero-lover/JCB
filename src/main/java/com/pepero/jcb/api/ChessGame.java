@@ -538,6 +538,7 @@ public class ChessGame {
      */
     private void dispatchMoveNotifications(MoveOutcome outcome) {
         notifyMoveMade(outcome.moveData());
+        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
@@ -1195,6 +1196,7 @@ public class ChessGame {
      */
     private void dispatchUndoNotifications(UndoRedoOutcome outcome) {
         notifyMoveUnmade(outcome.moveInfo());
+        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
@@ -1211,6 +1213,7 @@ public class ChessGame {
      */
     private void dispatchRedoNotifications(UndoRedoOutcome outcome) {
         notifyMoveRemade(outcome.moveInfo());
+        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
@@ -2823,6 +2826,7 @@ public class ChessGame {
         }
 
         notifyHistoryChanged();
+        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
@@ -2864,8 +2868,11 @@ public class ChessGame {
         }
 
         if (shouldNotifyHistory) notifyHistoryChanged();
-        if (outcome != null && outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
+        if(outcome != null) {
+            notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
+            if(outcome.newlyOver()) {
+                notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
+            }
         }
     }
 
@@ -3005,6 +3012,7 @@ public class ChessGame {
      */
     private void dispatchJumpNotifications(JumpOutcome outcome) {
         notifyPositionJumped(outcome.targetFen());
+        notifyStateChecked(outcome.gameOverOutcome().gameResult(), outcome.gameOverOutcome().gameOverReason());
         if (outcome.gameOverOutcome().newlyOver()) {
             notifyGameOver(outcome.gameOverOutcome().gameResult(), outcome.gameOverOutcome().gameOverReason());
         }
@@ -3086,6 +3094,7 @@ public class ChessGame {
         }
 
         notifyPositionJumped(getFEN());
+        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
@@ -3846,6 +3855,15 @@ public class ChessGame {
     private void notifyGameOver(GameResult result, GameOverReason reason) {
         for (ChessGameListener listener : listeners) {
             safeNotify(listener, () -> listener.onGameOver(this, result, reason));
+        }
+    }
+
+    /**
+     * Notify listeners when state checked
+     */
+    private void notifyStateChecked(GameResult result, GameOverReason reason) {
+        for (ChessGameListener listener : listeners) {
+            safeNotify(listener, () -> listener.onGameStateChecked(this, result, reason));
         }
     }
 

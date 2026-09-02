@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveDataDTO`, added `ply`, `fullMovePly`, `san` parameter
 - Added overload on `getMainlineData(int maxNodes)`, throwing `NodeOverflowException` when mainline data is bigger than
   `maxNodes`. and on `getMainlineData()`, the default is `MAX_PGN_NODE_COUNT`.
+- Added `onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason)` on `ChessGameListener` which is called at making a move or
+  unmaking, remaking, deleting/promoting variation, jumping to node.
 
 ### Changed
 - On `ChessGame`, the write lock on `getLegalMoves*` methods replaced to read lock.
