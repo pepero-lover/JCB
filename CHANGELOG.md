@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   methods.
 - On `ChessGame`, fixed bug not initializing `gameOverReason` on `loadPGN` method.
 - On `ChessGame`, fixed `jumpToMainlinePly` always notifying the game over listener.
+- On `ChessGame`, fixed bug `dispatchMoveNotifications`, `dispatchUndoNotifications`, `dispatchRedoNotifications`
+  aren't thread-safe because of using current board game result instead of using `MoveOutcome outcome`.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
