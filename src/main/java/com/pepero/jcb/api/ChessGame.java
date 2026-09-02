@@ -2563,6 +2563,7 @@ public class ChessGame {
             writeLock.unlock();
         }
 
+        notifyStateChecked(refreshedOutcome.gameResult(), refreshedOutcome.gameOverReason());
         if (refreshedOutcome.newlyOver()) {
             notifyGameOver(refreshedOutcome.gameResult(), refreshedOutcome.gameOverReason());
         }
