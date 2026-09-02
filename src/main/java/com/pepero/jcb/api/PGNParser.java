@@ -245,23 +245,27 @@ class PGNParser {
             }
         }
 
+        GameOverReason parsedGameOverReason = GameOverReason.NOTGAMEOVER;
+
         if (parsedGameResult != GameResult.UNKNOWN) {
             MoveNode lastNode = rootNode.getLastMainlineNode();
             lastNode.terminalResult = parsedGameResult;
 
             if (ChessboardUtils.isCheckmate(pgnChessboard)) {
-                lastNode.terminalReason = GameOverReason.CHECKMATE;
+                parsedGameOverReason = GameOverReason.CHECKMATE;
             } else if (ChessboardUtils.isStaleMate(pgnChessboard)) {
-                lastNode.terminalReason = GameOverReason.STALEMATE;
+                parsedGameOverReason = GameOverReason.STALEMATE;
             } else {
-                lastNode.terminalReason = (parsedGameResult == GameResult.DRAW) ?
+                parsedGameOverReason = (parsedGameResult == GameResult.DRAW) ?
                         GameOverReason.AGREEMENT_DRAW : GameOverReason.RESIGNATION;
             }
+
+            lastNode.terminalReason = parsedGameOverReason;
         }
 
         return new PGNParsedData(
                 parsedFen, parsedVariant, isChess960,
-                rootNode, tempNodeCache, parsedHeaders, parsedGameResult
+                rootNode, tempNodeCache, parsedHeaders, parsedGameResult,parsedGameOverReason
         );
     }
 }

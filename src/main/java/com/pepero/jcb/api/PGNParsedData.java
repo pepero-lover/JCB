@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.GameVariant;
@@ -17,6 +18,7 @@ import java.util.Map;
  * @param cache cache data for going position on history tree
  * @param header header data on PGN
  * @param gameResult game result data
+ * @param gameOverReason game over reason data
  */
 record PGNParsedData(
         String startFEN,
@@ -25,6 +27,7 @@ record PGNParsedData(
         MoveNode rootNode,
         LongObjectOpenHashMap<MoveNode> cache,
         Map<String, String> header,
-        GameResult gameResult
+        GameResult gameResult,
+        GameOverReason gameOverReason
 ) {
 }

@@ -2535,7 +2535,7 @@ public class ChessGame {
         try {
             MoveNode tipNode = getLastMainlineNode(this.moveHistoryRoot);
 
-            refreshedOutcome = evaluateGameStateForNotification(tipNode);
+            refreshedOutcome = evaluateGameStateForNotificationAt(tipNode);
             alreadyOver = this.gameoverReason != GameOverReason.NOTGAMEOVER;
 
             if (!alreadyOver) {
@@ -3382,6 +3382,7 @@ public class ChessGame {
             this.headers.putAll(parsedData.header());
 
             this.gameResult = parsedData.gameResult();
+            this.gameoverReason = parsedData.gameOverReason();
         } finally {
             writeLock.unlock();
         }
@@ -3416,6 +3417,7 @@ public class ChessGame {
             this.headers.putAll(parsedData.header());
 
             this.gameResult = parsedData.gameResult();
+            this.gameoverReason = parsedData.gameOverReason();
         } finally {
             writeLock.unlock();
         }
