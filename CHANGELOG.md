@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.setCurrentMoveClockMilliSeconds`, added zero-padding
 - On `ConvertStringMoveUtils.lanToMoveData`, fixed verifying square data too late
 - On `ChessGame.loadPGN`, fixed checking `gameResult`, `gameOverReason`, `fen` outside of `writeLock`.
+- On `ChessGame.makeMoveRawLan`, fixed not locking `writeLock` on calling `lanToMoveData`
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.

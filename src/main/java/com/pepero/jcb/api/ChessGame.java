@@ -866,8 +866,13 @@ public class ChessGame {
     public void makeMoveRawLan(String lan) {
         if(lan == null) throw new NullPointerException("Lan string can not be null!");
 
-        int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
-        internalMakeMoveRaw(encodedMove);
+        writeLock.lock();
+        try {
+            int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
+            MoveGenerator.makeMove(this.chessboard, encodedMove);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
