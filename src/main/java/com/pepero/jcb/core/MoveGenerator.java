@@ -4,6 +4,7 @@ import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.constant.CastlingRights;
+import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.encode.EncodeMove;
 import com.pepero.jcb.core.hash.Zobrist;
@@ -1605,7 +1606,7 @@ public class MoveGenerator {
                             BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
                     chessboard.hash_key ^= Zobrist.promoted_keys[target_square];
                 } else {
-                    int pieceToPocket = chessboard.side == white ? captured_bb_piece - 6 : captured_bb_piece + 6;
+                    int pieceToPocket = EncodedPieces.normalizePieceColor(captured_bb_piece, chessboard.side);
 
                     chessboard.hash_key ^=
                             Zobrist.pocket_keys[pieceToPocket][chessboard.pocket[pieceToPocket]];
@@ -2023,7 +2024,7 @@ public class MoveGenerator {
                     chessboard.pocket[(chessboard.side == white) ? P : p]--;
                     chessboard.promoted_pieces = BitBoardUtils.setBit(chessboard.promoted_pieces, target_square);
                 } else {
-                    chessboard.pocket[(chessboard.side == white) ? (captured_piece - 6) : (captured_piece + 6)]--;
+                    chessboard.pocket[normalizePieceColor(captured_piece, chessboard.side)]--;
                 }
             }
         }

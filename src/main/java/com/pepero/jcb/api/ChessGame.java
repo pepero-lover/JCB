@@ -1516,17 +1516,17 @@ public class ChessGame {
             Map<PieceType, Integer> captured = new EnumMap<>(PieceType.class);
             if(getGameVariant() == GameVariant.CRAZY_HOUSE) {
                 if (isWhite) {
-                    captured.put(PieceType.PAWN, chessboard.pocket[p]);
-                    captured.put(PieceType.KNIGHT, chessboard.pocket[n]);
-                    captured.put(PieceType.BISHOP, chessboard.pocket[b]);
-                    captured.put(PieceType.ROOK, chessboard.pocket[r]);
-                    captured.put(PieceType.QUEEN, chessboard.pocket[q]);
-                } else {
                     captured.put(PieceType.PAWN, chessboard.pocket[P]);
                     captured.put(PieceType.KNIGHT, chessboard.pocket[N]);
                     captured.put(PieceType.BISHOP, chessboard.pocket[B]);
                     captured.put(PieceType.ROOK, chessboard.pocket[R]);
                     captured.put(PieceType.QUEEN, chessboard.pocket[Q]);
+                } else {
+                    captured.put(PieceType.PAWN, chessboard.pocket[p]);
+                    captured.put(PieceType.KNIGHT, chessboard.pocket[n]);
+                    captured.put(PieceType.BISHOP, chessboard.pocket[b]);
+                    captured.put(PieceType.ROOK, chessboard.pocket[r]);
+                    captured.put(PieceType.QUEEN, chessboard.pocket[q]);
                 }
             } else {
                 if (isWhite) {
