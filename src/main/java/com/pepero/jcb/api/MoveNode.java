@@ -31,8 +31,8 @@ class MoveNode {
     GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
 
     // cache san, fen
-    String cachedSan;
-    String cachedFen;
+    volatile String cachedSan;
+    volatile String cachedFen;
 
     /**
      * Constructor for root node <br>

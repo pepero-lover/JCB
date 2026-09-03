@@ -658,9 +658,18 @@ public class ChessGame {
      * @throws ConvertMoveException if move string is incorrect
      */
     public void makeMoveSan(String sanString) {
-        if(sanString == null) throw new NullPointerException("San data can not be null!");
+        if (sanString == null) throw new NullPointerException("San data can not be null!");
 
-        makeMoveLan(toLanString(sanString));
+        MoveOutcome outcome;
+        writeLock.lock();
+        try {
+            String lan = ConvertStringMoveUtils.toLanString(this.chessboard, sanString);
+            int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
+            outcome = internalMakeMove(encodedMove, lan);
+        } finally {
+            writeLock.unlock();
+        }
+        dispatchMoveNotifications(outcome);
     }
 
     /**

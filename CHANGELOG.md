@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `tryMakeMoveLanAll`, `tryMakeMoveSan` methods at `ChessGame`, fixed not catching `ConvertMoveException`.
 - On `ChessGame.forceEndGame`, fixed notifying previous state value, and additionally notifying twice.
 - On `ChessGame.jumpToMainlinePly`, fixed changing board state when the exception occurred
+- On `ChessGame.makeMoveSan`, fixed concurrency bug not write locked when the `toLanString` method just finished.
+- On `ChessGame.getMainlineData`, this method locks `readLock`, but changing `MoveNode.cachedSan`, `MoveNode.cachedFen`. So, added 
+  `volatile` at `MoveNode.cachedSan`, `MoveNode.cachedFen`.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
