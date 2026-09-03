@@ -3061,6 +3061,8 @@ public class ChessGame {
 
         GameOverCheckOutcome outcome;
 
+        String targetFen;
+
         try {
             if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
             if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
@@ -3098,11 +3100,12 @@ public class ChessGame {
             }
 
             outcome = evaluateGameStateForNotification(currentNode);
+            targetFen = ChessboardUtils.getFen(this.chessboard);
         } finally {
             writeLock.unlock();
         }
 
-        notifyPositionJumped(getFEN());
+        notifyPositionJumped(targetFen);
         notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
         if (outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
