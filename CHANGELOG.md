@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On every `gameoverReason` variables, refactored `gameOverReason`. (private variable)
 - On `loadPGN` at `ChessGame`, added notifying listeners (`notifyHistoryChanged`,
   `notifyPositionJumped`, `notifyStateChecked`, `notifyGameOver`)
+- On `evaluateGameState` at `ChessGame`, changed `isGameOver()` with claimable draws to 
+  `isGameOver(false)` excluding claimable draws.
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.

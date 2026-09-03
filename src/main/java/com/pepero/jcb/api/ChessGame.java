@@ -3166,7 +3166,7 @@ public class ChessGame {
 
         // if value is not cached
 
-        GameOverReason reason = isGameOver();
+        GameOverReason reason = isGameOver(false);
         GameResult result = GameResult.UNKNOWN;
 
         if (reason != GameOverReason.NOTGAMEOVER) {
