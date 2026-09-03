@@ -1010,7 +1010,7 @@ public class ChessGame {
         try {
             makeMoveSan(sanString);
             return true;
-        } catch (IllegalMoveException e) {
+        } catch (IllegalMoveException | ConvertMoveException e) {
             return false;
         }
     }
@@ -1070,7 +1070,7 @@ public class ChessGame {
         try {
             makeMoveLanAll(lanString);
             return true;
-        } catch (IllegalMoveException e) {
+        } catch (IllegalMoveException | ConvertMoveException e) {
             return false;
         }
     }
