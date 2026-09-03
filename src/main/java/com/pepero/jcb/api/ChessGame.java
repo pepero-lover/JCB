@@ -3288,8 +3288,9 @@ public class ChessGame {
             if (resultSeconds < 10) sb.append('0');
             sb.append(resultSeconds);
 
+            sb.append(".");
             if (decimalPoint < 10) sb.append('0'); // zero-padding
-            sb.append(".").append(decimalPoint);
+            sb.append(decimalPoint);
 
             this.currentNode.getAnnotation().clk = sb.toString();
         } finally {
