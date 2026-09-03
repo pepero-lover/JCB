@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MoveNode.ply` and removed list to storing history
 - On `MoveNode`, added caching `san`, `fen` string (used on `ChessGame.getMainLineData`,
   `PGNExporter.buildPGNTreeWithSan`)
+- On `ChessGame.printHistory`, fixed overhead calling `getCurrentNodeId` and locking read lock again.
 
 ## [1.9.0]
 

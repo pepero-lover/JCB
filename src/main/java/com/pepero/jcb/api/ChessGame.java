@@ -3994,21 +3994,15 @@ public class ChessGame {
     }
 
     /**
-     * Print history with san <p>
-     *
-     * The mainline walk (following {@code children().getFirst()} at the same depth) is
-     * written as a loop rather than a tail call, since a long, mostly-linear history could
-     * otherwise recurse as deep as the number of moves and risk a {@link StackOverflowError}.
-     * Only actual variation branches still recurse, so recursion depth is bounded by
-     * variation nesting depth instead of total move count.
+     * Print history with san
      *
      * @param rootNode root node
      * @param depth start depth
      * @param out print stream to print to
      */
-    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId) {
+    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId, long currentId) {
         while (rootNode != null) {
-            boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
+            boolean isCurrent = rootNode.id() == currentId;
             String pointer = isCurrent ? " <-" : "";
             String idTag = showNodeId ? " [#" + rootNode.id() + "]" : "";
 
@@ -4021,7 +4015,7 @@ public class ChessGame {
 
             for (int i = 1; i < rootNode.children().size(); i++) {
                 MoveNodeDTO child = rootNode.children().get(i);
-                printHistory(child, depth + 1, out, showNodeId);
+                printHistory(child, depth + 1, out, showNodeId, currentId);
             }
 
             rootNode = rootNode.children().isEmpty() ? null : rootNode.children().getFirst();
@@ -4049,10 +4043,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream} <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}
      *
      * @param out print stream to print to
      *
@@ -4063,10 +4054,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}, optionally including each node's id.
      *
      * @param out print stream to print to
      * @param showNodeId whether to print each node's id alongside its san
@@ -4078,7 +4066,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            printHistory(getRootNode(), 0, out, showNodeId);
+            printHistory(getRootNode(), 0, out, showNodeId, this.currentNode.id);
         } finally {
             readLock.unlock();
         }
@@ -4106,10 +4094,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream} <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}
      *
      * @param maxNodeSize max node size
      * @param out print stream to print to
@@ -4123,9 +4108,6 @@ public class ChessGame {
     /**
      * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
      *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
-     *
      * @param maxNodeSize max node size
      * @param out print stream to print to
      * @param showNodeId whether to print each node's id alongside its san
@@ -4137,7 +4119,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId);
+            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId, this.currentNode.id);
         } finally {
             readLock.unlock();
         }
