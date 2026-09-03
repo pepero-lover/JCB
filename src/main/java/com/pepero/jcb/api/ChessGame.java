@@ -3585,10 +3585,12 @@ public class ChessGame {
             for (MoveDataDTO move : mainline) {
                 boolean isWhiteMove = move.moveData().pieceType().isWhite();
 
+                int moveNumber = (move.fullMovePly() - 1) / 2 + 1;
+
                 if (isWhiteMove) {
-                    sb.append(move.fullMovePly() / 2 + 1).append(". ");
+                    sb.append(moveNumber).append(". ");
                 } else if (firstMove) {
-                    sb.append(move.fullMovePly() / 2 + 1).append("... ");
+                    sb.append(moveNumber).append("... ");
                 }
 
                 sb.append(move.san()).append(" ");

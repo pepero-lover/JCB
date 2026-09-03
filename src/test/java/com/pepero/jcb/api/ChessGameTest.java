@@ -610,6 +610,13 @@ public class ChessGameTest {
         String pgn = chessGame.getMainlinePGN();
 
         assertTrue(pgn.contains("1. e4 e5 2. Nf3 Nc6"));
+
+        chessGame = ChessGame.fromFEN("rnbqr1k1/pppp1ppp/5n2/8/1b2P3/2NN4/PPPP1PPP/R1BQKB1R b KQ - 2 6");
+        chessGame.makeMoveSan("Nxe4");
+
+        pgn = chessGame.getMainlinePGN();
+
+        assertTrue(pgn.contains("6... Nxe4"));
     }
 
     @Test
