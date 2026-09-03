@@ -3057,59 +3057,29 @@ public class ChessGame {
      * @throws MoveNotFoundException if move is not found or targetPly is out of bounds
      */
     public void jumpToMainlinePly(int targetPly) {
+        if (targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
+
+        JumpOutcome outcome;
+
         writeLock.lock();
-
-        GameOverCheckOutcome outcome;
-
-        String targetFen;
-
         try {
-            if(targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
-            if(currentNode == null) throw new MoveNotFoundException("Current node is null!");
+            if (currentNode == null) throw new MoveNotFoundException("Current node is null!");
 
-            int currentPly = currentNode.ply;
-
-            if (currentPly != targetPly) {
-                if (targetPly < currentPly) {
-                    // if target ply is less than current ply,
-
-                    // unmake until reaching targetPly
-                    while (currentPly > targetPly) {
-                        MoveGenerator.unmakeMove(this.chessboard, currentNode.moveData.originEncodedData());
-                        currentNode = currentNode.parent;
-                        currentPly--;
-                    }
-                } else {
-                    // if target ply is bigger than current ply
-
-                    // make until reaching target ply
-                    while (currentPly < targetPly && !this.currentNode.children.isEmpty()) {
-                        MoveNode nextNode = this.currentNode.children.getFirst();
-
-                        MoveGenerator.makeMove(this.chessboard, nextNode.moveData.originEncodedData());
-                        this.currentNode = nextNode;
-                        currentPly++;
-                    }
-
-                    // if current node child is empty and not reached target ply
-                    if (currentPly < targetPly) {
-                        // throw exception
-                        throw new MoveNotFoundException("Variation history out of bounds! Reached maximum ply: " + currentPly);
-                    }
+            MoveNode targetNode = moveHistoryRoot;
+            for (int ply = 0; ply < targetPly; ply++) {
+                if (targetNode.children.isEmpty()) {
+                    throw new MoveNotFoundException(
+                            "Variation history out of bounds! Reached maximum ply: " + ply);
                 }
+                targetNode = targetNode.children.getFirst();
             }
 
-            outcome = evaluateGameStateForNotification(currentNode);
-            targetFen = ChessboardUtils.getFen(this.chessboard);
+            outcome = internalJumpToNode(targetNode.id);
         } finally {
             writeLock.unlock();
         }
 
-        notifyPositionJumped(targetFen);
-        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+        dispatchJumpNotifications(outcome);
     }
 
     /**

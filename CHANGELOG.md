@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.getCapturedPieces`, fixed checking opposite side at crazy house pocket count checking.
 - On `tryMakeMoveLanAll`, `tryMakeMoveSan` methods at `ChessGame`, fixed not catching `ConvertMoveException`.
 - On `ChessGame.forceEndGame`, fixed notifying previous state value, and additionally notifying twice.
+- On `ChessGame.jumpToMainlinePly`, fixed changing board state when the exception occurred
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
