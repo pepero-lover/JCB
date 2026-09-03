@@ -36,7 +36,8 @@ public class SyzygyBestMove {
                     System.out.println(reason);
                     break;
                 } else {
-                    if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
+                    if(reason != GameOverReason.FIFTYMOVES_CLAIM
+                            && reason != GameOverReason.SEVENTYFIVE_MOVES) {
                         System.out.println(reason);
                         break;
                     }
