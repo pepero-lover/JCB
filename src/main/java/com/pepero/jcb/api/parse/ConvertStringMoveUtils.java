@@ -566,6 +566,12 @@ public class ConvertStringMoveUtils {
         int source_square = BoardSquares.coordinates_to_square(lan.substring(0,2));
         int target_square = BoardSquares.coordinates_to_square(lan.substring(2,4));
 
+        // lan is not correct
+        if(source_square == -1 || target_square == -1) {
+            throw new ConvertMoveException("Square string is not correct!", lan,
+                    ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
+        }
+
         int promotion_type = 0;
         if(lan.length() == 5){
             promotion_type = char_to_encoded_piece.get(lan.charAt(4));
@@ -591,12 +597,6 @@ public class ConvertStringMoveUtils {
                     source_square == e8 && target_square == a8) {
                 target_square = c8;
             }
-        }
-
-        // lan is not correct
-        if(source_square == -1 || target_square == -1) {
-            throw new ConvertMoveException("Square string is not correct!", lan,
-                    ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
         }
 
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);

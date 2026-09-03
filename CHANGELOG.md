@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `internalMakeMove`, `internalMakeMoveValidated`, `internalUnmakeMove`, `internalRemakeMove` methods
 - On `ChessGame.jumpToMainlinePly`, fixed not getting fen for `notifyPositionJumped` inside of `writeLock`, but outside of `writeLock`.
 - On `ChessGame.setCurrentMoveClockMilliSeconds`, added zero-padding
+- On `ConvertStringMoveUtils.lanToMoveData`, fixed verifying square data too late
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
