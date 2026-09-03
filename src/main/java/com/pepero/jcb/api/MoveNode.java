@@ -30,6 +30,10 @@ class MoveNode {
     GameResult calculatedResult = GameResult.UNKNOWN;
     GameOverReason calculatedReason = GameOverReason.NOTGAMEOVER;
 
+    // cache san, fen
+    String cachedSan;
+    String cachedFen;
+
     /**
      * Constructor for root node <br>
      * the default start 'ply' is 0

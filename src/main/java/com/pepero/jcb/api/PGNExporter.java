@@ -89,7 +89,11 @@ class PGNExporter {
         boolean moved = node.moveData != null;
 
         if (moved) {
-            calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, node.moveData);
+            calculatedSan = node.cachedSan;
+            if (calculatedSan == null) {
+                calculatedSan = ConvertStringMoveUtils.toSanString(tempBoard, node.moveData);
+                node.cachedSan = calculatedSan;
+            }
             MoveGenerator.makeMove(tempBoard, node.moveData.originEncodedData());
         }
 

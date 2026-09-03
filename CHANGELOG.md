@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (O(root node distance) to O(distance current node between target node))
 - On `jumpToMainlinePly` at `ChessGame`, replaced calculating `currentPly` constant with
   `MoveNode.ply` and removed list to storing history
+- On `MoveNode`, added caching `san`, `fen` string (used on `ChessGame.getMainLineData`,
+  `PGNExporter.buildPGNTreeWithSan`)
 
 ## [1.9.0]
 

@@ -3747,17 +3747,22 @@ public class ChessGame {
                 lastNode = lastNode.children.getFirst();
                 int encodedMove = lastNode.moveData.originEncodedData();
 
-                String san = ConvertStringMoveUtils.toSanString(tempBoard, encodedMove);
+                String san = lastNode.cachedSan;
+                if (san == null) {
+                    san = ConvertStringMoveUtils.toSanString(tempBoard, encodedMove);
+                    lastNode.cachedSan = san;
+                }
                 MoveGenerator.makeMove(tempBoard, encodedMove);
 
+                String fen = lastNode.cachedFen;
+                if (fen == null) {
+                    fen = ChessboardUtils.getFen(tempBoard);
+                    lastNode.cachedFen = fen;
+                }
+
                 result.add(new MoveDataDTO(
-                        lastNode.id,
-                        tempBoard.ply,
-                        tempBoard.full_move,
-                        san,
-                        ChessboardUtils.getFen(tempBoard),
-                        lastNode.moveData,
-                        lastNode.annotation
+                        lastNode.id, tempBoard.ply, tempBoard.full_move,
+                        san, fen, lastNode.moveData, lastNode.annotation
                 ));
             }
 
