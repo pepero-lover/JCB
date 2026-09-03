@@ -2547,15 +2547,14 @@ public class ChessGame {
      * @param reason game over reason
      */
     private void forceEndGame(GameResult result, GameOverReason reason) {
-        GameOverCheckOutcome refreshedOutcome;
         boolean alreadyOver;
 
         writeLock.lock();
         try {
             MoveNode tipNode = getLastMainlineNode(this.moveHistoryRoot);
 
-            refreshedOutcome = evaluateGameStateForNotificationAt(tipNode);
-            alreadyOver = refreshedOutcome.gameOverReason() != GameOverReason.NOTGAMEOVER;
+            alreadyOver = evaluateGameStateForNotificationAt(tipNode).gameOverReason()
+                    != GameOverReason.NOTGAMEOVER;
 
             if (!alreadyOver) {
                 this.gameResult = result;
@@ -2569,15 +2568,11 @@ public class ChessGame {
             writeLock.unlock();
         }
 
-        notifyStateChecked(refreshedOutcome.gameResult(), refreshedOutcome.gameOverReason());
-        if (refreshedOutcome.newlyOver()) {
-            notifyGameOver(refreshedOutcome.gameResult(), refreshedOutcome.gameOverReason());
-        }
-
         if (alreadyOver) {
             throw new IllegalStateException("This game is already finished!");
         }
 
+        notifyStateChecked(result, reason);
         notifyGameOver(result, reason);
     }
 
@@ -2850,7 +2845,7 @@ public class ChessGame {
      * Promote this node to mainline on nodeId's parent
      * <p>
      * Example : <br>
-     * e4 e5 Nf3 (Nc3 Nf6 <-) <br>
+     * e4 e5 Nf3 (Nc3 <- (promoting this node) Nf6) <br>
      * and the result is <br>
      * e4 e5 Nc3 (Nf3) Nf6
      *

@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.makeMoveRawLan`, fixed not locking `writeLock` on calling `lanToMoveData`
 - On `ChessGame.getCapturedPieces`, fixed checking opposite side at crazy house pocket count checking.
 - On `tryMakeMoveLanAll`, `tryMakeMoveSan` methods at `ChessGame`, fixed not catching `ConvertMoveException`.
+- On `ChessGame.forceEndGame`, fixed notifying previous state value, and additionally notifying twice.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
