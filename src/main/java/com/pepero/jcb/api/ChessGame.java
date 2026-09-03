@@ -2251,10 +2251,8 @@ public class ChessGame {
 
             int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
 
-            if (includeClaimableDraws) {
-                if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
-                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
-            }
+            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
+            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
 
             if(chessboard.gameVariant != GameVariant.GIVEAWAY && chessboard.gameVariant != GameVariant.SUICIDE) {
                 boolean inCheck = isCheck();
@@ -2266,9 +2264,12 @@ public class ChessGame {
                 }
             }
 
-            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
-            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
             if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENT_MATERIAL;
+
+            if (includeClaimableDraws) {
+                if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
+                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+            }
 
             return GameOverReason.NOTGAMEOVER;
         } finally {

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `notifyPositionJumped`, `notifyStateChecked`, `notifyGameOver`)
 - On `evaluateGameState` at `ChessGame`, changed `isGameOver()` with claimable draws to 
   `isGameOver(false)` excluding claimable draws.
+- On `isGameOver()`, changed the sequence of checking game over of claim draws (moved to the very end)
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.
