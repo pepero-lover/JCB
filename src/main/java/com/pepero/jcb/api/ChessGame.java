@@ -2251,10 +2251,8 @@ public class ChessGame {
 
             int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
 
-            if (includeClaimableDraws) {
-                if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
-                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
-            }
+            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
+            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
 
             if(chessboard.gameVariant != GameVariant.GIVEAWAY && chessboard.gameVariant != GameVariant.SUICIDE) {
                 boolean inCheck = isCheck();
@@ -2266,9 +2264,12 @@ public class ChessGame {
                 }
             }
 
-            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
-            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
             if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENT_MATERIAL;
+
+            if (includeClaimableDraws) {
+                if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
+                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+            }
 
             return GameOverReason.NOTGAMEOVER;
         } finally {
@@ -2620,6 +2621,13 @@ public class ChessGame {
     private GameOverCheckOutcome evaluateGameStateForNotificationAt(MoveNode targetNode) {
         if (targetNode == currentNode) {
             return evaluateGameStateForNotification(targetNode);
+        }
+
+        if (targetNode.terminalReason != null) {
+            return new GameOverCheckOutcome(false, targetNode.terminalResult, targetNode.terminalReason);
+        }
+        if (targetNode.isStateEvaluated) {
+            return new GameOverCheckOutcome(false, targetNode.calculatedResult, targetNode.calculatedReason);
         }
 
         MoveNode originalNode = currentNode;
@@ -3166,7 +3174,7 @@ public class ChessGame {
 
         // if value is not cached
 
-        GameOverReason reason = isGameOver();
+        GameOverReason reason = isGameOver(false);
         GameResult result = GameResult.UNKNOWN;
 
         if (reason != GameOverReason.NOTGAMEOVER) {
@@ -3738,17 +3746,22 @@ public class ChessGame {
                 lastNode = lastNode.children.getFirst();
                 int encodedMove = lastNode.moveData.originEncodedData();
 
-                String san = ConvertStringMoveUtils.toSanString(tempBoard, encodedMove);
+                String san = lastNode.cachedSan;
+                if (san == null) {
+                    san = ConvertStringMoveUtils.toSanString(tempBoard, encodedMove);
+                    lastNode.cachedSan = san;
+                }
                 MoveGenerator.makeMove(tempBoard, encodedMove);
 
+                String fen = lastNode.cachedFen;
+                if (fen == null) {
+                    fen = ChessboardUtils.getFen(tempBoard);
+                    lastNode.cachedFen = fen;
+                }
+
                 result.add(new MoveDataDTO(
-                        lastNode.id,
-                        tempBoard.ply,
-                        tempBoard.full_move,
-                        san,
-                        ChessboardUtils.getFen(tempBoard),
-                        lastNode.moveData,
-                        lastNode.annotation
+                        lastNode.id, tempBoard.ply, tempBoard.full_move,
+                        san, fen, lastNode.moveData, lastNode.annotation
                 ));
             }
 
@@ -3980,21 +3993,15 @@ public class ChessGame {
     }
 
     /**
-     * Print history with san <p>
-     *
-     * The mainline walk (following {@code children().getFirst()} at the same depth) is
-     * written as a loop rather than a tail call, since a long, mostly-linear history could
-     * otherwise recurse as deep as the number of moves and risk a {@link StackOverflowError}.
-     * Only actual variation branches still recurse, so recursion depth is bounded by
-     * variation nesting depth instead of total move count.
+     * Print history with san
      *
      * @param rootNode root node
      * @param depth start depth
      * @param out print stream to print to
      */
-    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId) {
+    private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId, long currentId) {
         while (rootNode != null) {
-            boolean isCurrent = Objects.equals(this.getCurrentNodeId(), rootNode.id());
+            boolean isCurrent = rootNode.id() == currentId;
             String pointer = isCurrent ? " <-" : "";
             String idTag = showNodeId ? " [#" + rootNode.id() + "]" : "";
 
@@ -4007,7 +4014,7 @@ public class ChessGame {
 
             for (int i = 1; i < rootNode.children().size(); i++) {
                 MoveNodeDTO child = rootNode.children().get(i);
-                printHistory(child, depth + 1, out, showNodeId);
+                printHistory(child, depth + 1, out, showNodeId, currentId);
             }
 
             rootNode = rootNode.children().isEmpty() ? null : rootNode.children().getFirst();
@@ -4035,10 +4042,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream} <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}
      *
      * @param out print stream to print to
      *
@@ -4049,10 +4053,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}, optionally including each node's id.
      *
      * @param out print stream to print to
      * @param showNodeId whether to print each node's id alongside its san
@@ -4064,7 +4065,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            printHistory(getRootNode(), 0, out, showNodeId);
+            printHistory(getRootNode(), 0, out, showNodeId, this.currentNode.id);
         } finally {
             readLock.unlock();
         }
@@ -4092,10 +4093,7 @@ public class ChessGame {
     }
 
     /**
-     * Print history to the given {@link PrintStream} <p>
-     *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
+     * Print history to the given {@link PrintStream}
      *
      * @param maxNodeSize max node size
      * @param out print stream to print to
@@ -4109,9 +4107,6 @@ public class ChessGame {
     /**
      * Print history to the given {@link PrintStream}, optionally including each node's id. <p>
      *
-     * Useful when the caller wants to redirect output (e.g. to a log file or a
-     * {@link java.io.ByteArrayOutputStream} for testing) instead of stdout.
-     *
      * @param maxNodeSize max node size
      * @param out print stream to print to
      * @param showNodeId whether to print each node's id alongside its san
@@ -4123,7 +4118,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId);
+            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId, this.currentNode.id);
         } finally {
             readLock.unlock();
         }

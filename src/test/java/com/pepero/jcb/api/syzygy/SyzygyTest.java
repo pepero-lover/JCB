@@ -46,7 +46,8 @@ public class SyzygyTest {
             GameOverReason reason = game.isGameOver();
 
             if(reason != GameOverReason.NOTGAMEOVER) {
-                if(reason != GameOverReason.FIFTYMOVES_CLAIM) {
+                if(reason != GameOverReason.FIFTYMOVES_CLAIM
+                        && reason != GameOverReason.SEVENTYFIVE_MOVES) {
                     break;
                 }
             }

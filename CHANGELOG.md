@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On every `gameoverReason` variables, refactored `gameOverReason`. (private variable)
 - On `loadPGN` at `ChessGame`, added notifying listeners (`notifyHistoryChanged`,
   `notifyPositionJumped`, `notifyStateChecked`, `notifyGameOver`)
+- On `evaluateGameState` at `ChessGame`, changed `isGameOver()` with claimable draws to 
+  `isGameOver(false)` excluding claimable draws.
+- On `isGameOver()`, changed the sequence of checking game over of claim draws (moved to the very end)
 
 ### Fixed
 - On `loadPGN` at `ChessGame`, fixed the `loadPGN` method didn't update node id counter.
@@ -51,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (O(root node distance) to O(distance current node between target node))
 - On `jumpToMainlinePly` at `ChessGame`, replaced calculating `currentPly` constant with
   `MoveNode.ply` and removed list to storing history
+- On `MoveNode`, added caching `san`, `fen` string (used on `ChessGame.getMainLineData`,
+  `PGNExporter.buildPGNTreeWithSan`)
+- On `ChessGame.printHistory`, fixed overhead calling `getCurrentNodeId` and locking read lock again.
 
 ## [1.9.0]
 
