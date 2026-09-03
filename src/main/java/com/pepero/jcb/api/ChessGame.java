@@ -3396,37 +3396,7 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #loadPGN(String, int maxNodes)})
      */
     public void loadPGN(String pgnString) {
-        writeLock.lock();
-        try {
-            PGNParsedData parsedData = PGNParser.parse(pgnString, MAX_PGN_NODE_COUNT, this.nodeCounter);
-
-            String fenToLoad = parsedData.startFEN();
-            this.chessboard.gameVariant = parsedData.variant();
-            this.chessboard.isChess960 = parsedData.isChess960();
-            ChessboardUtils.parseFen(this.chessboard, fenToLoad);
-            this.startPositionFEN = fenToLoad;
-
-            this.moveHistoryRoot = parsedData.rootNode();
-            this.currentNode = parsedData.rootNode();
-
-            this.nodeCache = parsedData.cache();
-
-            this.headers.clear();
-            setDefaultHeaders();
-            this.headers.putAll(parsedData.header());
-
-            this.gameResult = parsedData.gameResult();
-            this.gameOverReason = parsedData.gameOverReason();
-        } finally {
-            writeLock.unlock();
-        }
-
-        notifyHistoryChanged();
-        notifyPositionJumped(ChessboardUtils.getFen(this.chessboard));
-        notifyStateChecked(this.gameResult, this.gameOverReason);
-        if (this.gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameOverReason);
-        }
+        loadPGN(pgnString, MAX_PGN_NODE_COUNT);
     }
 
     /**
@@ -3438,6 +3408,10 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
     public void loadPGN(String pgnString, int maxNodesCount) {
+        GameResult resultToNotify;
+        GameOverReason reasonToNotify;
+        String fenToNotify;
+
         writeLock.lock();
         try {
             PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount, this.nodeCounter);
@@ -3459,15 +3433,19 @@ public class ChessGame {
 
             this.gameResult = parsedData.gameResult();
             this.gameOverReason = parsedData.gameOverReason();
+
+            resultToNotify = this.gameResult;
+            reasonToNotify = this.gameOverReason;
+            fenToNotify = ChessboardUtils.getFen(this.chessboard);
         } finally {
             writeLock.unlock();
         }
 
         notifyHistoryChanged();
-        notifyPositionJumped(ChessboardUtils.getFen(this.chessboard));
-        notifyStateChecked(this.gameResult, this.gameOverReason);
-        if (this.gameResult != GameResult.UNKNOWN) {
-            notifyGameOver(this.gameResult, this.gameOverReason);
+        notifyPositionJumped(fenToNotify);
+        notifyStateChecked(resultToNotify, reasonToNotify);
+        if (resultToNotify != GameResult.UNKNOWN) {
+            notifyGameOver(resultToNotify, reasonToNotify);
         }
     }
 
