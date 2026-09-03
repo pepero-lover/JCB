@@ -2623,6 +2623,13 @@ public class ChessGame {
             return evaluateGameStateForNotification(targetNode);
         }
 
+        if (targetNode.terminalReason != null) {
+            return new GameOverCheckOutcome(false, targetNode.terminalResult, targetNode.terminalReason);
+        }
+        if (targetNode.isStateEvaluated) {
+            return new GameOverCheckOutcome(false, targetNode.calculatedResult, targetNode.calculatedReason);
+        }
+
         MoveNode originalNode = currentNode;
 
         try {
