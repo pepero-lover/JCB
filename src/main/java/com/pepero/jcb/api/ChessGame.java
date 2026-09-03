@@ -3575,8 +3575,7 @@ public class ChessGame {
 
             boolean firstMove = true;
             for (MoveDataDTO move : mainline) {
-                int ply = move.ply();
-                boolean isWhiteMove = (ply % 2 == 1);
+                boolean isWhiteMove = move.moveData().pieceType().isWhite();
 
                 if (isWhiteMove) {
                     sb.append(move.fullMovePly() / 2 + 1).append(". ");
