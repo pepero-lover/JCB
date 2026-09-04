@@ -168,7 +168,7 @@ public class ChessGame {
      * Replace via {@link #setListenerExceptionHandler(BiConsumer)} if you want different
      * behavior (e.g. rethrow, metrics, etc).
      */
-    private static volatile BiConsumer<ChessGameListener, Throwable> listenerExceptionHandler =
+    private volatile BiConsumer<ChessGameListener, Throwable> listenerExceptionHandler =
             (listener, e) -> LOGGER.log(Level.SEVERE,
                     "ChessGameListener [" + listener.getClass().getName() + "] threw an exception", e);
 
@@ -179,7 +179,7 @@ public class ChessGame {
      *
      * @param handler handler receiving the listener that threw and the exception it threw
      */
-    public static void setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable> handler) {
+    public void setListenerExceptionHandler(BiConsumer<ChessGameListener, Throwable> handler) {
         listenerExceptionHandler = Objects.requireNonNull(handler, "Handler can not be null!");
     }
 
@@ -194,7 +194,7 @@ public class ChessGame {
      * @param listener listener being invoked (used for the handler's context/logging)
      * @param callback the actual listener call, e.g. {@code () -> listener.onMoveMade(moveInfo)}
      */
-    private static void safeNotify(ChessGameListener listener, Runnable callback) {
+    private void safeNotify(ChessGameListener listener, Runnable callback) {
         try {
             callback.run();
         } catch (RuntimeException e) {
