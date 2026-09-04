@@ -717,7 +717,7 @@ public class ChessGame {
 
             for (int i = 0; i < sanStrings.length; i++) {
                 int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, sanStrings[i]);
-                if (!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
+                if (!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
                     throw new IllegalMoveException(sanStrings[i], ChessboardUtils.getFen(tempChessboard));
                 }
                 MoveGenerator.makeMove(tempChessboard, encodedMove);
@@ -761,7 +761,7 @@ public class ChessGame {
 
             for (int i = 0; i < lanStrings.length; i++) {
                 int encodedMove = ConvertStringMoveUtils.lanToMoveData(tempChessboard, lanStrings[i]);
-                if(!MoveGenerator.isLegalMove(tempChessboard, encodedMove)) {
+                if(!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
                     throw new IllegalMoveException(lanStrings[i],
                             ChessboardUtils.getFen(tempChessboard));
                 }

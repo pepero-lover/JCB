@@ -2190,47 +2190,6 @@ public class MoveGenerator {
     }
 
     /**
-     * Check whether this move is legal or not
-     *
-     * @param move encoded move data
-     * @return whether this move is legal or not
-     */
-    public static boolean isLegalMove(Chessboard chessboard, int move) {
-        int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
-        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-        int piece = EncodeMove.getMovePiece(move);
-        int source_square = EncodeMove.getMoveSource(move);
-        int target_square = EncodeMove.getMoveTarget(move);
-        int promoted = EncodeMove.getMovePromoted(move);
-        boolean drop = EncodeMove.getMoveDrop(move);
-
-        if(!chessboard.isChess960) {
-            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(piece == K && targetType == R) {
-                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
-            }
-            if(piece == k && targetType == r) {
-                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
-            }
-        }
-
-        for (int count = 0; count < move_count; count++) {
-            int possible_move = move_list[count];
-            if (
-                    EncodeMove.getMovePiece(possible_move) == piece
-                    && EncodeMove.getMoveSource(possible_move) == source_square
-                    && EncodeMove.getMoveTarget(possible_move) == target_square
-                    && EncodeMove.getMovePromoted(possible_move) == promoted
-                    && EncodeMove.getMoveDrop(possible_move) == drop) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Check whether this move is legal or not <br>
      * This doesn't check the drop move. if you want to check drop move, go to {@link #isLegalDrop(Chessboard, int, int)}.
      *

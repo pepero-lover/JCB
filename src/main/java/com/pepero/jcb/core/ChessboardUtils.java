@@ -4,6 +4,7 @@ import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.constant.CastlingRights;
+import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.encode.EncodeMove;
 import com.pepero.jcb.core.hash.Zobrist;
 
@@ -460,20 +461,39 @@ public class ChessboardUtils {
     }
 
     /**
-     * Return whether this move is a legal move or not
+     * Check whether this move is legal or not
      *
-     * @param chessboard chessboard
-     * @param encoded_move encoded move
-     * @return whether this move is a legal move or not
+     * @param move encoded move data
+     * @return whether this move is legal or not
      */
-    public static boolean isLegalMove(Chessboard chessboard, int encoded_move) {
-        int[] move_list = CHESSBOARD_UTIL_CACHE.get();
+    public static boolean isLegalMove(Chessboard chessboard, int move) {
+        int[] move_list = MoveCache.MOVE_GENERATOR_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
-        for (int i = 0; i < move_count; i++) {
-            if(EncodeMove.getMoveSource(move_list[i]) == EncodeMove.getMoveSource(encoded_move) &&
-                    EncodeMove.getMoveTarget(move_list[i]) == EncodeMove.getMoveTarget(encoded_move) &&
-                    EncodeMove.getMovePromoted(move_list[i]) == EncodeMove.getMovePromoted(encoded_move)) {
+        int piece = EncodeMove.getMovePiece(move);
+        int source_square = EncodeMove.getMoveSource(move);
+        int target_square = EncodeMove.getMoveTarget(move);
+        int promoted = EncodeMove.getMovePromoted(move);
+        boolean drop = EncodeMove.getMoveDrop(move);
+
+        if(!chessboard.isChess960) {
+            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
+            if(piece == K && targetType == R) {
+                target_square = source_square < target_square ? BoardSquares.g1 : BoardSquares.c1;
+            }
+            if(piece == k && targetType == r) {
+                target_square = source_square < target_square ? BoardSquares.g8 : BoardSquares.c8;
+            }
+        }
+
+        for (int count = 0; count < move_count; count++) {
+            int possible_move = move_list[count];
+            if (
+                    EncodeMove.getMovePiece(possible_move) == piece
+                            && EncodeMove.getMoveSource(possible_move) == source_square
+                            && EncodeMove.getMoveTarget(possible_move) == target_square
+                            && EncodeMove.getMovePromoted(possible_move) == promoted
+                            && EncodeMove.getMoveDrop(possible_move) == drop) {
                 return true;
             }
         }
