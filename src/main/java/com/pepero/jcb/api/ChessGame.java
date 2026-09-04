@@ -4141,12 +4141,8 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this ChessGame and other have the same board position. <p>
-     *
-     * Note: this compares position only (piece placement, side to move, castling rights,
-     * en passant square, and variant-specific state such as Crazyhouse pockets or Atomic
-     * captured-piece state) &mdash; not move history. Two games that reached the same
-     * position via different move orders (transposition) are considered the same position.
+     * Get whether this ChessGame and other are the same board position, determined by
+     * comparing their {@link #getZobristHash() Zobrist hash} hashes.
      *
      * @param other other chess game to compare against
      * @return true if both games are at the same position, false if other is null
