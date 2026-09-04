@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unmaking, remaking, deleting/promoting variation, jumping to node.
 
 ### Changed
-- **Breaking change**, Removed `MoveGenerator.isLegalMove` and this method merged to `ChessboardUtils` class.
+- **Breaking change**, Removed `MoveGenerator.isLegalMove` and this method merged to `ChessboardUtils.isLegalMove` method.
 - On `ChessGame`, the write lock on `getLegalMoves*` methods replaced to read lock.
 - On `MoveNode` and `MoveNodeDTO`, added `ply`, `fullMovePly` parameter.
   `ply` is starting 0 at root node and `ply` also refers to depth.
