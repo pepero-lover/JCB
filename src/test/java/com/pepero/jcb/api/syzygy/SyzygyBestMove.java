@@ -55,5 +55,7 @@ public class SyzygyBestMove {
 
             ply++;
         }
+
+        System.out.println(game.getPGN());
     }
 }

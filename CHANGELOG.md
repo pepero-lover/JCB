@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `maxNodes`. and on `getMainlineData()`, the default is `MAX_PGN_NODE_COUNT`.
 - Added `onGameStateChecked(ChessGame source, GameResult result, GameOverReason reason)` on `ChessGameListener` which is called at making a move or
   unmaking, remaking, deleting/promoting variation, jumping to node.
+- Probed and generated the longest mate sequence on `KRBNvKQN` piece set. (DTZ 1030)
 
 ### Changed
 - **Breaking change**, Removed `MoveGenerator.isLegalMove` and this method merged to `ChessboardUtils.isLegalMove` method.
@@ -59,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.makeMoveSan`, fixed concurrency bug not write locked when the `toLanString` method just finished.
 - On `ChessGame.getMainlineData`, this method locks `readLock`, but changing `MoveNode.cachedSan`, `MoveNode.cachedFen`. So, added 
   `volatile` at `MoveNode.cachedSan`, `MoveNode.cachedFen`.
+- On `Syzygy`, fixed crashing when the file is bigger than 2GB.
 
 ### Performance
 - On `MoveGenerator`, replaced `if` cases on piece attack finding to `switch-case`.
