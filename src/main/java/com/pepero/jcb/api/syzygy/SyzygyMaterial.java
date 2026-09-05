@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
+
 
 import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
@@ -29,7 +29,7 @@ class SyzygyMaterial {
     }
 
     private SyzygyMaterial(int[] whiteCounts, int[] blackCounts, int totalPieceCount,
-                          boolean hasPawns, int[] pawnCount, boolean pawnGroup0IsWhite, boolean connectedKings) {
+                           boolean hasPawns, int[] pawnCount, boolean pawnGroup0IsWhite, boolean connectedKings) {
         this.whiteCounts = whiteCounts;
         this.blackCounts = blackCounts;
         this.totalPieceCount = totalPieceCount;
@@ -143,7 +143,7 @@ class SyzygyMaterial {
      * @param header mapped file buffer (must be long enough)
      * @return one SyzygySubTable per sub-table, in file order
      */
-    public SyzygySubTable[] parseSubTables(ByteBuffer header) {
+    public SyzygySubTable[] parseSubTables(SyzygyMappedFile header) {
         int subTableCount = getSubTableCount();
 
         // calculate bytes per table
@@ -197,7 +197,7 @@ class SyzygyMaterial {
      * @param syzygyType  syzygy type
      * @return Syzygy Pairs Header
      */
-    public SyzygyPairsHeadersResult parsePairsHeaders(ByteBuffer header, int startOffset, boolean split,
+    public SyzygyPairsHeadersResult parsePairsHeaders(SyzygyMappedFile header, int startOffset, boolean split,
                                                       SyzygyType syzygyType, boolean capturesCompulsory) {
         int subTableCount = getSubTableCount();
         int sides = split ? 2 : 1;
@@ -223,7 +223,7 @@ class SyzygyMaterial {
      * @param startOffset start offset
      * @return one pairs header
      */
-    public SyzygyPairsHeader readOnePairsHeader(ByteBuffer header, int startOffset, SyzygyType syzygyType,
+    public SyzygyPairsHeader readOnePairsHeader(SyzygyMappedFile header, int startOffset, SyzygyType syzygyType,
                                                 boolean capturesCompulsory) {
         if ((readU8(header, startOffset) & 0x80) == 0x80) {
             int constValue;

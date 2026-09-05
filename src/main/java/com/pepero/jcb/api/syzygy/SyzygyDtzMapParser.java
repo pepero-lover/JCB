@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
+
 
 import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
@@ -27,7 +27,7 @@ class SyzygyDtzMapParser {
      *                    so this is pairsHeaders[t][0] for t = 0..numTables-1)
      * @return per-table remap entries (null for tables that don't need remapping) + next offset
      */
-    public static Result parse(ByteBuffer header, int startOffset, SyzygyPairsHeader[] dtzHeaders) {
+    public static Result parse(SyzygyMappedFile header, int startOffset, SyzygyPairsHeader[] dtzHeaders) {
         int numTables = dtzHeaders.length;
         SyzygyDtzMapEntry[] result = new SyzygyDtzMapEntry[numTables];
 

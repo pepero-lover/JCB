@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
-
 /**
  * The DTZ remap table for ONE sub-table. Fathom stores 4 separate remap arrays
  * per sub-table (indexed by "m" = WdlToMap[wdlResult+2], i.e. which WDL bucket
@@ -15,12 +13,12 @@ record SyzygyDtzMapEntry(boolean wide, int[] absOffsets) {
     /**
      * Look up remapped value #v within bucket m.
      *
-     * @param header full file bytes
+     * @param header the mapped tablebase file
      * @param m      which of the 4 buckets (0~3), from WdlToMap[wdlResult + 2]
      * @param v      the raw index (decompress_pairs' leaf value) to remap
      * @return the remapped value
      */
-    public int valueAt(ByteBuffer header, int m, int v) {
+    public int valueAt(SyzygyMappedFile header, int m, int v) {
         int base = absOffsets[m];
         return wide
                 ? SyzygyByteReader.readU16(header, base + 2 * v)

@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
-
 import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
@@ -18,6 +16,9 @@ import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
  * <p>
  * Each "entry" here corresponds to one (sub-table, side) pair — i.e. one
  * SyzygyPairsHeader (skip constant-flag ones entirely, they have no index/size/data).
+ * <p>
+ * All offsets are {@code long}: for 7-piece tablebases the block-data region alone
+ * can sit tens of GB into the file, well past {@link Integer#MAX_VALUE}.
  */
 class SyzygyBlockLayout {
 
@@ -30,16 +31,16 @@ class SyzygyBlockLayout {
             long indexTableSize,   // size[0]
             long sizeTableSize,    // size[1]
             long blockDataSize,    // size[2]
-            int indexTableOffset,
-            int sizeTableOffset,
-            int blockDataOffset
+            long indexTableOffset,
+            long sizeTableOffset,
+            long blockDataOffset
     ) {}
 
     private final Entry[] entries;
     private final int[][] entryIndexOf; // [t][s] -> index into entries[], or -1 if that (t,s) was constant
-    private final int nextOffset; // file offset right after everything (start of next material's data, if any)
+    private final long nextOffset; // file offset right after everything (start of next material's data, if any)
 
-    private SyzygyBlockLayout(Entry[] entries, int[][] entryIndexOf, int nextOffset) {
+    private SyzygyBlockLayout(Entry[] entries, int[][] entryIndexOf, long nextOffset) {
         this.entries = entries;
         this.entryIndexOf = entryIndexOf;
         this.nextOffset = nextOffset;
@@ -61,7 +62,7 @@ class SyzygyBlockLayout {
         return entryIndexOf[t][s];
     }
 
-    public int getNextOffset() {
+    public long getNextOffset() {
         return nextOffset;
     }
 
@@ -74,7 +75,7 @@ class SyzygyBlockLayout {
      *                      isConstant()==true are skipped (contribute no index/size/data)
      * @return computed layout
      */
-    public static SyzygyBlockLayout compute(int startOffset, long[][] tbSizes, SyzygyPairsHeader[][] pairsHeaders) {
+    public static SyzygyBlockLayout compute(long startOffset, long[][] tbSizes, SyzygyPairsHeader[][] pairsHeaders) {
         int subTableCount = pairsHeaders.length;
         int sides = pairsHeaders[0].length;
 
@@ -99,7 +100,7 @@ class SyzygyBlockLayout {
                 indexPositions.add(new int[]{t, s});
                 entryList.add(new Entry(tbSize, h.idxBits(), numBlocks, h.blockSize(),
                         indexTableSize, sizeTableSize, blockDataSize,
-                        -1, -1, -1));
+                        -1L, -1L, -1L));
             }
         }
 
@@ -111,11 +112,11 @@ class SyzygyBlockLayout {
         }
 
         int n = entryList.size();
-        int[] indexOffsets = new int[n];
-        int[] sizeOffsets = new int[n];
-        int[] dataOffsets = new int[n];
+        long[] indexOffsets = new long[n];
+        long[] sizeOffsets = new long[n];
+        long[] dataOffsets = new long[n];
 
-        int offset = startOffset;
+        long offset = startOffset;
 
         // pass 1: all indexTables
         for (int i = 0; i < n; i++) {
@@ -147,16 +148,16 @@ class SyzygyBlockLayout {
         return new SyzygyBlockLayout(finalEntries, entryIndexOf, offset);
     }
 
-    private static int alignUp64(int offset) {
+    private static long alignUp64(long offset) {
         // round up to next multiple of 64 (matches C's (x + 0x3f) & ~0x3f)
-        return (offset + 0x3f) & ~0x3f;
+        return (offset + 0x3f) & ~0x3fL;
     }
 
     /**
      * Read one indexTable entry (6 bytes: little-endian 48-bit value) for the given Entry.
      */
-    public long readIndexEntry(ByteBuffer header, Entry entry, int entryIdx) {
-        int off = entry.indexTableOffset() + entryIdx * 6;
+    public long readIndexEntry(SyzygyMappedFile header, Entry entry, long entryIdx) {
+        long off = entry.indexTableOffset() + entryIdx * 6;
         long lo = readU32(header, off);
         long hi = readU16(header, off + 4);
         return lo | (hi << 32);
@@ -165,8 +166,8 @@ class SyzygyBlockLayout {
     /**
      * Read one sizeTable entry (2 bytes, little-endian) for the given Entry.
      */
-    public int readSizeEntry(ByteBuffer header, Entry entry, int blockIdx) {
-        int off = entry.sizeTableOffset() + blockIdx * 2;
+    public int readSizeEntry(SyzygyMappedFile header, Entry entry, long blockIdx) {
+        long off = entry.sizeTableOffset() + blockIdx * 2;
         return readU16(header, off);
     }
 }

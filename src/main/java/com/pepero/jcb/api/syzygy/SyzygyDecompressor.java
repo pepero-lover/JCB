@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
-
 import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
 
 /**
@@ -17,19 +15,22 @@ import static com.pepero.jcb.api.syzygy.SyzygyByteReader.*;
  *   works fine with plain '-' (two's-complement bit pattern is identical either way),
  *   but COMPARISONS must use Long.compareUnsigned, and right-shifts must use '>>>'
  *   (which Java already does correctly for both int and long).
+ * <p>
+ * All offsets into {@code data} are {@code long}: for 7-piece tablebases the
+ * compressed block data can sit tens of GB into the file, past {@link Integer#MAX_VALUE}.
  */
 class SyzygyDecompressor {
 
     /**
      * Decode the leaf value at the given within-table index.
      *
-     * @param data     full file bytes
+     * @param data     the mapped tablebase file
      * @param entry    the index/size/block-data layout for this (sub-table, side)
      * @param huffman  the Huffman table (base/offset/symLen/symPat) for this same (sub-table, side)
      * @param idx      the position index within this sub-table (0-based, < tbSize)
      * @return the raw leaf byte (for WDL tables, this IS the WDL result code 0~4)
      */
-    public static int decompressPairs(ByteBuffer data, SyzygyBlockLayout.Entry entry,
+    public static int decompressPairs(SyzygyMappedFile data, SyzygyBlockLayout.Entry entry,
                                       SyzygyHuffmanTable huffman, long idx) {
         return decompressPairsRaw(data, entry, huffman, idx)[0];
     }
@@ -41,30 +42,30 @@ class SyzygyDecompressor {
      *
      * @return int[]{w0, w1}
      */
-    public static int[] decompressPairsRaw(ByteBuffer data, SyzygyBlockLayout.Entry entry,
+    public static int[] decompressPairsRaw(SyzygyMappedFile data, SyzygyBlockLayout.Entry entry,
                                            SyzygyHuffmanTable huffman, long idx) {
         int idxBits = entry.idxBits();
 
         long mainIdx = idx >>> idxBits;
         long litIdx = (idx & ((1L << idxBits) - 1)) - (1L << (idxBits - 1));
 
-        int indexEntryOffset = entry.indexTableOffset() + (int) (mainIdx * 6);
+        long indexEntryOffset = entry.indexTableOffset() + mainIdx * 6;
         long block = readU32(data, indexEntryOffset);
         int idxOffset = readU16(data, indexEntryOffset + 4);
 
         litIdx += idxOffset;
 
 
-        int sizeTableOffset = entry.sizeTableOffset();
+        long sizeTableOffset = entry.sizeTableOffset();
         if (litIdx < 0) {
             while (litIdx < 0) {
                 block--;
-                int sz = readU16(data, sizeTableOffset + (int) block * 2);
+                int sz = readU16(data, sizeTableOffset + block * 2);
                 litIdx += sz + 1;
             }
         } else {
             while (true) {
-                int sz = readU16(data, sizeTableOffset + (int) block * 2);
+                int sz = readU16(data, sizeTableOffset + block * 2);
                 if (litIdx <= sz) break;
                 litIdx -= sz + 1;
                 block++;
@@ -77,10 +78,10 @@ class SyzygyDecompressor {
         int[] symLen = huffman.getSymLen();
         byte[] symPat = huffman.getSymPat();
 
-        int blockDataOffset = entry.blockDataOffset() + (int) (block << entry.blockSize());
+        long blockDataOffset = entry.blockDataOffset() + (block << entry.blockSize());
 
         long code = readBEU64(data, blockDataOffset);
-        int ptr = blockDataOffset + 8;
+        long ptr = blockDataOffset + 8;
 
         int bitCnt = 0;
         int sym;

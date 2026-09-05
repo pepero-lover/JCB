@@ -1,7 +1,5 @@
 package com.pepero.jcb.api.syzygy;
 
-import java.nio.ByteBuffer;
-
 /**
  * Ported from the DTZ branch of probe_table() (tbprobe.c, ~line 1885~1892).
  * Takes the raw decompress_pairs() output and turns it into the actual DTZ distance.
@@ -15,7 +13,7 @@ class SyzygyDtzPostProcess {
     private static final int[] PA_FLAGS = {8, 0, 0, 0, 4};
 
     /**
-     * @param header    full file bytes (needed to actually read the dtzMap entries)
+     * @param header    the mapped tablebase file (needed to actually read the dtzMap entries)
      * @param w0        first leaf byte from SyzygyDecompressor.decompressPairsRaw
      * @param w1        second leaf byte from SyzygyDecompressor.decompressPairsRaw
      * @param wdlResult the WDL result for this SAME position, on our 0~4 scale
@@ -24,7 +22,7 @@ class SyzygyDtzPostProcess {
      * @param mapEntry  this sub-table's dtzMap entry, or null if flags bit 2 is unset
      * @return the actual DTZ distance
      */
-    public static int postProcess(ByteBuffer header, int w0, int w1, int wdlResult,
+    public static int postProcess(SyzygyMappedFile header, int w0, int w1, int wdlResult,
                                   int flags, SyzygyDtzMapEntry mapEntry) {
         int s = wdlResult - 2;
         int v = w0 + ((w1 & 0x0f) << 8);

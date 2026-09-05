@@ -12,7 +12,6 @@ import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.encode.EncodeMove;
 
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -88,7 +87,7 @@ public class SyzygyTablebase {
 
     private record WdlTable(
             SyzygyMaterial material,
-            MappedByteBuffer header,
+            SyzygyMappedFile header,
             SyzygySubTable[] subTables,
             SyzygyPairsHeader[][] pairsHeaders,
             SyzygyBlockLayout layout,
@@ -100,7 +99,7 @@ public class SyzygyTablebase {
 
     private record DtzTable(
             SyzygyMaterial material,
-            MappedByteBuffer header,
+            SyzygyMappedFile header,
             SyzygySubTable[] subTables,
             SyzygyPairsHeader[][] pairsHeaders,
             SyzygyBlockLayout layout,
@@ -518,7 +517,7 @@ public class SyzygyTablebase {
 
             SyzygyFile file = SyzygyFile.open(path);
             SyzygyMaterial material = SyzygyMaterial.parse(materialName, connectedKingsEnc);
-            MappedByteBuffer header = SyzygyFile.mapFile(path);
+            SyzygyMappedFile header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
 
@@ -580,7 +579,7 @@ public class SyzygyTablebase {
 
             SyzygyFile file = SyzygyFile.open(path); // split is always false for DTZ
             SyzygyMaterial material = SyzygyMaterial.parse(materialName, connectedKingsEnc);
-            MappedByteBuffer header = SyzygyFile.mapFile(path);
+            SyzygyMappedFile header = SyzygyFile.mapFile(path);
 
             SyzygySubTable[] subTables = material.parseSubTables(header);
 

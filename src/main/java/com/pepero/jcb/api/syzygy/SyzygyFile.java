@@ -2,19 +2,18 @@ package com.pepero.jcb.api.syzygy;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.MappedByteBuffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
 /**
  * Reads a Syzygy tablebase file (.rtbw / .rtbz) and identifies its type
  * by checking the magic number in the first 4 bytes.
  * <p>
- * The file's contents are exposed as a MappedByteBuffer (via mmap), not a
- * loaded-into-heap byte[] — this is what lets us handle multi-GB/TB
- * tablebase files without ever needing that much Java heap. The OS pages
+ * The file's contents are exposed as a {@link SyzygyMappedFile} (backed by mmap
+ * windows), not a loaded-into-heap byte[] — this is what lets us handle multi-GB/TB
+ * tablebase files without ever needing that much Java heap, and without hitting
+ * the ~2GB single-mapping cap of {@link java.nio.MappedByteBuffer}. The OS pages
  * in only the parts we actually touch, on demand.
  */
 class SyzygyFile {
@@ -75,16 +74,17 @@ class SyzygyFile {
     /**
      * Map the entire file into memory (via mmap) for random-access reads.
      * This does NOT load the file content into Java heap — only touched
-     * pages get paged in by the OS as they're actually read.
+     * pages get paged in by the OS as they're actually read. Unlike a single
+     * {@link java.nio.MappedByteBuffer}, this has no ~2GB size limit: files
+     * larger than that (e.g. 7-piece tablebases) are mapped as several
+     * internal windows, stitched together behind {@link SyzygyMappedFile}'s
+     * long-offset accessors.
      *
      * @param path path to the file to map
-     * @return a MappedByteBuffer covering the whole file
+     * @return a SyzygyMappedFile covering the whole file
      */
-    public static MappedByteBuffer mapFile(Path path) throws IOException {
-        try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "r");
-             FileChannel channel = raf.getChannel()) {
-            return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-        }
+    public static SyzygyMappedFile mapFile(Path path) throws IOException {
+        return SyzygyMappedFile.map(path);
     }
 
     /**
