@@ -196,6 +196,10 @@ public class EngineArena {
                                     clock.getBlackTimeMs()
                             ));
                         }
+
+                        // claim draw is always enabled.
+                        chessGame.claimDraw();
+
                         continue;
                     }
                 }
@@ -345,6 +349,9 @@ public class EngineArena {
                                 clock.getBlackTimeMs()
                         ));
                     }
+
+                    // claim draw is always enabled.
+                    chessGame.claimDraw();
                 } else {
                     throw new EngineArenaException("Best move not found!");
                 }

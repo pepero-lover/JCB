@@ -2214,6 +2214,25 @@ public class ChessGame {
     }
 
     /**
+     * Claim draw if this position can be claimed a draw
+     *
+     * @return if successfully claimed draw and end this game, true. otherwise, false
+     */
+    public boolean claimDraw() {
+        writeLock.lock();
+        try {
+            GameOverReason reason = getClaimableDrawReason();
+            if (reason == GameOverReason.NOTGAMEOVER) {
+                return false;
+            }
+            forceEndGame(GameResult.DRAW, reason);
+            return true;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Get claimable draw reason <br>
      * like 50 moves draw claim, threefold draw claim
      */

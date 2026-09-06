@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - On `SyzygyMoveDTO`, added `zeroing` parameter.
+- On `ChessGame`, added `claimDraw` method. `claimDraw` method ends game if the claimable draw exists.
 
 ### Changed
 
