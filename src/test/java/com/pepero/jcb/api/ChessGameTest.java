@@ -1448,4 +1448,179 @@ public class ChessGameTest {
         assertEquals(snapshotFenBefore, snapshotFenAfter,
                 "getBoardSnapshot()이 내부 chessboard 참조를 그대로 반환한다면 이 assert가 깨집니다 (얕은 복사 의심).");
     }
+
+
+    @Test
+    @DisplayName("getGameResult(false)는 클레임 가능한 무승부를 결과에 포함하지 않아야 한다")
+    void getGameResult_excludesClaimableDrawByDefault() {
+        ChessGame chessGame = ChessGame.fromFEN("1n2k3/8/8/8/8/8/8/R3K3 w - - 100 60");
+
+        assertTrue(chessGame.canClaimFiftyMoves());
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResult());
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResult(false));
+        assertEquals(GameOverReason.NOTGAMEOVER, chessGame.getGameOverReason());
+    }
+
+    @Test
+    @DisplayName("getGameResult(true)는 50수 클레임이 가능하면 DRAW/FIFTYMOVES_CLAIM을 반환해야 한다")
+    void getGameResult_includesFiftyMovesClaim_whenRequested() {
+        ChessGame chessGame = ChessGame.fromFEN("1n2k3/8/8/8/8/8/8/R3K3 w - - 100 60");
+
+        assertEquals(GameResult.DRAW, chessGame.getGameResult(true));
+        assertEquals(GameOverReason.FIFTYMOVES_CLAIM, chessGame.getGameOverReason(true));
+
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResult());
+        assertEquals(GameOverReason.NOTGAMEOVER, chessGame.getGameOverReason());
+    }
+
+    @Test
+    @DisplayName("3회 반복 클레임이 가능한 상황에서 getGameResult(true)는 DRAW/THREEFOLD_CLAIM을 반환해야 한다")
+    void getGameResult_includesThreefoldClaim_whenRequested() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        for (int i = 0; i < 2; i++) {
+            chessGame.makeMoveLan("g1f3");
+            chessGame.makeMoveLan("g8f6");
+            chessGame.makeMoveLan("f3g1");
+            chessGame.makeMoveLan("f6g8");
+        }
+        chessGame.makeMoveLan("g1f3");
+        chessGame.makeMoveLan("g8f6");
+
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResult());
+        assertEquals(GameResult.DRAW, chessGame.getGameResult(true));
+        assertEquals(GameOverReason.THREEFOLD_CLAIM, chessGame.getGameOverReason(true));
+    }
+
+    @Test
+    @DisplayName("이미 체크메이트로 끝난 게임은 includeClaimableDraws 값과 무관하게 같은 결과를 반환해야 한다")
+    void getGameResult_trueParam_doesNotChangeAlreadyFinishedGame() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
+
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResult(true));
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReason(true));
+    }
+
+    @Test
+    @DisplayName("getGameResult(true)로 클레임 가능한 무승부를 확인해도 onGameOver는 호출되면 안 된다 (실제로 끝난 게 아니므로)")
+    void getGameResult_includingClaimableDraw_doesNotFireOnGameOver() {
+        ChessGame chessGame = ChessGame.fromFEN("1n2k3/8/8/8/8/8/8/R3K3 w - - 100 60");
+
+        List<GameResult> gameOverResults = new ArrayList<>();
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
+                gameOverResults.add(result);
+            }
+        });
+
+        assertEquals(GameResult.DRAW, chessGame.getGameResult(true));
+        assertTrue(gameOverResults.isEmpty(),
+                "클레임 가능일 뿐 실제로 게임이 끝난 게 아니므로 onGameOver가 호출되면 안 됩니다.");
+    }
+
+    @Test
+    @DisplayName("getGameResultAt: 지정한 노드의 결과를 mainline/currentNode와 무관하게 조회할 수 있어야 한다")
+    void getGameResultAt_evaluatesSpecificNodeIndependently() {
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
+        long mateNodeId = chessGame.getCurrentNodeId();
+
+        chessGame.goBackward();
+        chessGame.goBackward();
+        chessGame.goForward();
+        chessGame.makeMoveSan("Qf3");
+        long qf3NodeId = chessGame.getCurrentNodeId();
+
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReason());
+
+        // 하지만 지금 서 있는 Qf3 노드 자체는 게임오버가 아니다
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResultAt(qf3NodeId));
+        assertEquals(GameOverReason.NOTGAMEOVER, chessGame.getGameOverReasonAt(qf3NodeId));
+
+        // 메이트 노드를 직접 조회해도 같은 결과가 나오고, currentNode는 바뀌지 않아야 한다
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResultAt(mateNodeId));
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReasonAt(mateNodeId));
+        assertEquals(qf3NodeId, chessGame.getCurrentNodeId(),
+                "getGameResultAt 호출 후에도 currentNode가 바뀌면 안 됩니다.");
+    }
+
+    @Test
+    @DisplayName("getGameResultAt/getGameOverReasonAt: 존재하지 않는 nodeId면 MoveNotFoundException")
+    void getGameResultAt_unknownNode_throws() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        assertThrows(MoveNotFoundException.class, () -> chessGame.getGameResultAt(999_999L));
+        assertThrows(MoveNotFoundException.class, () -> chessGame.getGameOverReasonAt(999_999L));
+    }
+
+    @Test
+    @DisplayName("getGameResultAt: 아직 한 번도 평가되지 않은 노드를 조회해도 onGameOver는 호출되면 안 된다")
+    void getGameResultAt_doesNotFireOnGameOver_evenOnFirstEvaluation() {
+        String pgn = "1.e4 e5 2.Qh5 Nc6 3.Bc4 g6 (3...Nf6 4.Qxf7#) *";
+
+        ChessGame chessGame = ChessGame.startPosition();
+        chessGame.loadPGN(pgn);
+
+        MoveNodeDTO root = chessGame.getRootNode();
+        MoveNodeDTO e4 = root.children().getFirst();
+        MoveNodeDTO e5 = e4.children().getFirst();
+        MoveNodeDTO qh5 = e5.children().getFirst();
+        MoveNodeDTO nc6 = qh5.children().getFirst();
+        MoveNodeDTO bc4 = nc6.children().getFirst();
+        MoveNodeDTO nf6Variation = bc4.children().get(1);
+        assertEquals("Nf6", nf6Variation.san());
+
+        MoveNodeDTO mateNode = nf6Variation.children().getFirst();
+        assertEquals("Qxf7#", mateNode.san());
+        long mateNodeId = mateNode.id();
+
+        long currentNodeIdBefore = chessGame.getCurrentNodeId();
+
+        List<GameResult> gameOverResults = new ArrayList<>();
+        chessGame.addChessGameListener(new NoopListener() {
+            @Override
+            public void onGameOver(ChessGame source, GameResult result, GameOverReason reason) {
+                gameOverResults.add(result);
+            }
+        });
+
+        assertEquals(GameResult.WHITE_WON, chessGame.getGameResultAt(mateNodeId));
+        assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReasonAt(mateNodeId));
+
+        assertTrue(gameOverResults.isEmpty(),
+                "다른 variation의 노드를 조회한 것뿐이므로, 처음 평가되는 노드라도 onGameOver가 호출되면 안 됩니다.");
+        assertEquals(currentNodeIdBefore, chessGame.getCurrentNodeId());
+    }
+
+    @Test
+    @DisplayName("getGameResultAt(nodeId, true): 지정한 노드 위치를 기준으로 클레임 가능한 무승부를 조회할 수 있어야 한다")
+    void getGameResultAt_includesClaimableDrawAtGivenNode() {
+        ChessGame chessGame = ChessGame.startPosition();
+
+        for (int i = 0; i < 2; i++) {
+            chessGame.makeMoveLan("g1f3");
+            chessGame.makeMoveLan("g8f6");
+            chessGame.makeMoveLan("f3g1");
+            chessGame.makeMoveLan("f6g8");
+        }
+        chessGame.makeMoveLan("g1f3");
+        chessGame.makeMoveLan("g8f6");
+        long repetitionNodeId = chessGame.getCurrentNodeId();
+
+        chessGame.goBackward();
+        chessGame.makeMoveLan("b8c6");
+        long branchedNodeId = chessGame.getCurrentNodeId();
+
+        assertEquals(GameResult.UNKNOWN, chessGame.getGameResultAt(repetitionNodeId));
+        assertEquals(GameOverReason.NOTGAMEOVER, chessGame.getGameOverReasonAt(repetitionNodeId));
+
+        assertEquals(GameResult.DRAW, chessGame.getGameResultAt(repetitionNodeId, true));
+        assertEquals(GameOverReason.THREEFOLD_CLAIM, chessGame.getGameOverReasonAt(repetitionNodeId, true));
+
+        assertEquals(branchedNodeId, chessGame.getCurrentNodeId(),
+                "getGameResultAt 조회 후에도 currentNode는 변하지 않아야 합니다.");
+    }
 }

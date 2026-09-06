@@ -2670,53 +2670,150 @@ public class ChessGame {
         }
     }
 
+    private record ResultAndReason(GameResult result, GameOverReason reason) {}
+
     /**
-     * Get game result <p>
-     *
-     * This game result doesn't update when the result of this game is already finished. <br>
-     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change. but the
-     * {@link #isCheckmate()} changes. <br>
+     * Get game result and reason at this node
      */
-    public GameResult getGameResult() {
+    private ResultAndReason getGameResultAndReasonAt(Long nodeId, boolean includeClaimableDraws, boolean notifyIfNewlyOver) {
         GameOverCheckOutcome outcome;
+        MoveNode targetNode;
 
         writeLock.lock();
         try {
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+            targetNode = (nodeId != null) ? nodeCache.get(nodeId) : getLastMainlineNode(this.moveHistoryRoot);
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to evaluate!");
+
+            outcome = evaluateGameStateForNotificationAt(targetNode);
         } finally {
             writeLock.unlock();
         }
 
-        if (outcome.newlyOver()) {
+        if (notifyIfNewlyOver && outcome.newlyOver()) {
             notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
         }
 
-        return outcome.gameResult();
+        if (!includeClaimableDraws || outcome.gameResult() != GameResult.UNKNOWN) {
+            return new ResultAndReason(outcome.gameResult(), outcome.gameOverReason());
+        }
+
+        writeLock.lock();
+        try {
+            MoveNode originalNode = currentNode;
+
+            try {
+                if (currentNode != targetNode) {
+                    internalJumpToNode(targetNode.id);
+                }
+
+                GameOverReason claimReason = isGameOver(true);
+                if (claimReason == GameOverReason.THREEFOLD_CLAIM || claimReason == GameOverReason.FIFTYMOVES_CLAIM) {
+                    return new ResultAndReason(resultForReason(claimReason), claimReason);
+                }
+
+                return new ResultAndReason(outcome.gameResult(), outcome.gameOverReason());
+            } finally {
+                if (currentNode != originalNode) {
+                    internalJumpToNode(originalNode.id);
+                }
+            }
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
+
+    /**
+     * Get game result
+     * (not including claimable draws. if you want to include claimable draws like threefold repetition,
+     * go to {@link #getGameResult(boolean)})<p>
+     *
+     * This game result doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change.
+     * but the {@link #isCheckmate()} changes. <br>
+     */
+    public GameResult getGameResult() {
+        return getGameResult(false);
+    }
+
+    /**
+     * Get game result <p>
+     *
+     * This game result doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change.
+     * but the {@link #isCheckmate()} changes. <br>
+     *
+     * @param includeClaimableDraws if true, also treat a currently claimable draw (threefold repetition,
+     *                              fifty-moves) as the result.
+     */
+    public GameResult getGameResult(boolean includeClaimableDraws) {
+        return getGameResultAndReasonAt(null, includeClaimableDraws, true).result();
+    }
+
+    /**
+     * Game over reason variable for checking why this game finished.
+     * (not including claimable draws. if you want to include claimable draws like threefold repetition,
+     * go to {@link #getGameOverReason(boolean)}) <p>
+     *
+     * This game over reason variable doesn't update when the result of this game is already finished. <br>
+     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
+     * {@link #isCheckmate()} changes.
+     */
+    public GameOverReason getGameOverReason() {
+        return getGameOverReason(false);
     }
 
     /**
      * Game over reason variable for checking why this game finished <p>
      *
-     * This game over reason variable doesn't update when the result of this game is already finished. <br>
-     * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
-     * {@link #isCheckmate()} changes. <br>
+     * @param includeClaimableDraws if true, also treat a currently claimable draw (threefold repetition,
+     *                              fifty-moves) as the reasons.
      */
-    public GameOverReason getGameOverReason() {
-        GameOverCheckOutcome outcome;
-
-        writeLock.lock();
-        try {
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
-        } finally {
-            writeLock.unlock();
-        }
-
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
-
-        return outcome.gameOverReason();
+    public GameOverReason getGameOverReason(boolean includeClaimableDraws) {
+        return getGameResultAndReasonAt(null, includeClaimableDraws, true).reason();
     }
+
+
+
+    /**
+     * Get game result at another node
+     * (not including claimable draws. if you want to include claimable draws like threefold repetition,
+     * go to {@link #getGameResultAt(long, boolean)}) <p>
+     */
+    public GameResult getGameResultAt(long nodeId) {
+        return getGameResultAt(nodeId, false);
+    }
+
+    /**
+     * Get game result at another node
+     *
+     * @param includeClaimableDraws if true, also treat a currently claimable draw (threefold repetition,
+     *                              fifty-moves) as the result.
+     */
+    public GameResult getGameResultAt(long nodeId, boolean includeClaimableDraws) {
+        return getGameResultAndReasonAt(nodeId, includeClaimableDraws, false).result();
+    }
+
+    /**
+     * Get game over reason variable for checking why this game finished at another node
+     * (not including claimable draws. if you want to include claimable draws like threefold repetition,
+     * go to {@link #getGameOverReasonAt(long, boolean)}) <p>
+     */
+    public GameOverReason getGameOverReasonAt(long nodeId) {
+        return getGameOverReasonAt(nodeId, false);
+    }
+
+    /**
+     * Get game over reason variable for checking why this game finished at another node
+     *
+     * @param includeClaimableDraws if true, also treat a currently claimable draw (threefold repetition,
+     *                              fifty-moves) as the reasons.
+     */
+    public GameOverReason getGameOverReasonAt(long nodeId, boolean includeClaimableDraws) {
+        return getGameResultAndReasonAt(nodeId, includeClaimableDraws, false).reason();
+    }
+
 
     /**
      * When one of player has resigned
@@ -3153,6 +3250,48 @@ public class ChessGame {
     }
 
     /**
+     * Compute the {@link GameResult} that corresponds to a given {@link GameOverReason}. <p>
+     *
+     * @param reason reason to translate
+     */
+    private GameResult resultForReason(GameOverReason reason) {
+        if (reason == GameOverReason.NOTGAMEOVER) {
+            return GameResult.UNKNOWN;
+        }
+
+        return switch (reason) {
+            case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+            case THREE_CHECK -> getWhiteCheckedCount() >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+            case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
+                    ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+            case HORDE -> GameResult.BLACK_WON;
+            case KING_RACE -> {
+                int racingResult = ChessboardUtils.getGameResultForRacingKings(chessboard);
+                if(racingResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
+                else if(racingResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
+                else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
+                else yield GameResult.UNKNOWN;
+            }
+            case GIVEAWAY -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+            case SUICIDE -> {
+                int suicideResult = ChessboardUtils.getGameResultForSuicide(chessboard);
+                if(suicideResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
+                else if(suicideResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
+                else if(suicideResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
+                else yield GameResult.UNKNOWN;
+            }
+            case ATOMIC -> {
+                if(chessboard.bitboards[k] == 0L) yield GameResult.WHITE_WON;
+                if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;
+                yield GameResult.UNKNOWN;
+            }
+            case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENT_MATERIAL,
+                 SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
+            default -> GameResult.UNKNOWN;
+        };
+    }
+
+    /**
      * Update this node's game over state and return result.
      * if this node's game over state is already there, just return cached value.
      *
@@ -3176,40 +3315,7 @@ public class ChessGame {
         // if value is not cached
 
         GameOverReason reason = isGameOver(false);
-        GameResult result = GameResult.UNKNOWN;
-
-        if (reason != GameOverReason.NOTGAMEOVER) {
-            result = switch (reason) {
-                case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-                case THREE_CHECK -> getWhiteCheckedCount() >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-                case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
-                        ? GameResult.WHITE_WON : GameResult.BLACK_WON;
-                case HORDE -> GameResult.BLACK_WON;
-                case KING_RACE -> {
-                    int racingResult = ChessboardUtils.getGameResultForRacingKings(chessboard);
-                    if(racingResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
-                    else if(racingResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
-                    else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
-                    else yield GameResult.UNKNOWN;
-                }
-                case GIVEAWAY -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
-                case SUICIDE -> {
-                    int suicideResult = ChessboardUtils.getGameResultForSuicide(chessboard);
-                    if(suicideResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
-                    else if(suicideResult == ChessboardUtils.BLACK_WON_VALUE) yield GameResult.BLACK_WON;
-                    else if(suicideResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
-                    else yield GameResult.UNKNOWN;
-                }
-                case ATOMIC -> {
-                    if(chessboard.bitboards[k] == 0L) yield GameResult.WHITE_WON;
-                    if(chessboard.bitboards[K] == 0L) yield GameResult.BLACK_WON;
-                    yield GameResult.UNKNOWN;
-                }
-                case STALEMATE, FIVEFOLD, FIFTYMOVES_CLAIM, INSUFFICIENT_MATERIAL,
-                     SEVENTYFIVE_MOVES, THREEFOLD_CLAIM -> GameResult.DRAW;
-                default -> GameResult.UNKNOWN;
-            };
-        }
+        GameResult result = resultForReason(reason);
 
         node.calculatedReason = reason;
         node.calculatedResult = result;

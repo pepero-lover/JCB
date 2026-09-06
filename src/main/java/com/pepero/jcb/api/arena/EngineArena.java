@@ -155,15 +155,9 @@ public class EngineArena {
             GameResult syzygyWinningSide = GameResult.UNKNOWN;
             int syzygyAdjCount = 0;
 
-            while (chessGame.getGameOverReason() == GameOverReason.NOTGAMEOVER) {
+            while (chessGame.getGameOverReason(true) == GameOverReason.NOTGAMEOVER) {
                 if (token != null && token.isCancelled()) {
                     chessGame.adjudication(GameResult.ABORTED);
-                    break;
-                }
-
-                // claim draw
-                if(chessGame.claimDraw()) {
-                    // if can claim draw, draw.
                     break;
                 }
 
@@ -360,8 +354,8 @@ public class EngineArena {
             throw new RuntimeException(e);
         }
 
-        GameResult result = chessGame.getGameResult();
-        GameOverReason reason = chessGame.getGameOverReason();
+        GameResult result = chessGame.getGameResult(true);
+        GameOverReason reason = chessGame.getGameOverReason(true);
         EngineWinner winner = EngineWinner.UNKNOWN;
         String pgn = chessGame.getPGN();
         if(result == GameResult.WHITE_WON) {
