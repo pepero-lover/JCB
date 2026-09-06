@@ -23,7 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - On `EngineArena` and `BookMoveSelector`, fixed selecting always equal opening.
-- On `canDropPiece`, fixed not checking drop, but normal piece move and changed parameter to `PieceType pieceType`, `Square target`,
+- On `ChessGame.canDropPiece`, fixed not checking drop, but normal piece move and changed parameter to `PieceType pieceType`, `Square target`,
+- On `ConvertStringMoveUtils`, fixed not catching exception when finding piece type with `char_to_encoded_piece`.
+- And also on `ConvertStringMoveUtils`, added length checking when move is drop move on `parseSan`.
 
 ### Performance
 

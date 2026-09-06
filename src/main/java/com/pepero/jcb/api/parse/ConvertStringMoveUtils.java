@@ -74,8 +74,8 @@ public class ConvertStringMoveUtils {
     private static void appendCheckOrMateSymbol(StringBuilder sb, Chessboard chessboard) {
         boolean isAntichessLike =
                 chessboard.gameVariant == GameVariant.GIVEAWAY
-                || chessboard.gameVariant == GameVariant.SUICIDE
-                || chessboard.gameVariant == GameVariant.RACING_KINGS;
+                        || chessboard.gameVariant == GameVariant.SUICIDE
+                        || chessboard.gameVariant == GameVariant.RACING_KINGS;
 
         boolean inCheck = !isAntichessLike && ChessboardUtils.isCheck(chessboard);
 
@@ -153,7 +153,7 @@ public class ConvertStringMoveUtils {
             throw new ConvertMoveException("Piece not found!", lan, chessboard,
                     ConvertType.LAN,
                     ConvertErrorType.PIECE_NOT_FOUND
-                    );
+            );
         }
 
         StringBuilder sb = new StringBuilder();
@@ -163,8 +163,12 @@ public class ConvertStringMoveUtils {
 
         int promotion_type = 0;
         if (lan.length() == 5) {
-            promotion_type = char_to_encoded_piece.get(lan.charAt(4));
-            promotion_type = normalizePieceColor(promotion_type, chessboard.side);
+            Integer promotionPiece = char_to_encoded_piece.get(lan.charAt(4));
+            if (promotionPiece == null) {
+                throw new ConvertMoveException("Promotion piece char Not Found!", lan, chessboard,
+                        ConvertType.LAN, ConvertErrorType.PROMOTION_CHARACTER);
+            }
+            promotion_type = normalizePieceColor(promotionPiece, chessboard.side);
         }
 
         int encoded_move = -1;
@@ -363,7 +367,7 @@ public class ConvertStringMoveUtils {
 
             if (EncodeMove.getMovePromoted(encoded_move) != 0) {
                 promotionStr = "=" + ascii_pieces[
-                                EncodeMove.getMovePromoted(encoded_move) % 6
+                        EncodeMove.getMovePromoted(encoded_move) % 6
                         ];
             }
         } else {
@@ -546,9 +550,12 @@ public class ConvertStringMoveUtils {
             if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
 
-            int piece_type = char_to_encoded_piece.get(pieceChar);
-
-            piece_type = normalizePieceColor(piece_type, chessboard.side);
+            Integer pieceTypeBoxed = char_to_encoded_piece.get(pieceChar);
+            if (pieceTypeBoxed == null) {
+                throw new ConvertMoveException("Invalid drop piece char!", lan,
+                        ConvertType.LAN, ConvertErrorType.DROP_MOVE);
+            }
+            int piece_type = normalizePieceColor(pieceTypeBoxed, chessboard.side);
 
             int isLegal = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
             if (isLegal != ILLEGAL_MOVE) return isLegal;
@@ -574,8 +581,12 @@ public class ConvertStringMoveUtils {
 
         int promotion_type = 0;
         if(lan.length() == 5){
-            promotion_type = char_to_encoded_piece.get(lan.charAt(4));
-            promotion_type = normalizePieceColor(promotion_type, chessboard.side);
+            Integer promotionPiece = char_to_encoded_piece.get(lan.charAt(4));
+            if (promotionPiece == null) {
+                throw new ConvertMoveException("Promotion piece char Not Found!", lan,
+                        ConvertType.LAN, ConvertErrorType.PROMOTION_CHARACTER);
+            }
+            promotion_type = normalizePieceColor(promotionPiece, chessboard.side);
         }
 
         if(!chessboard.isChess960) {
@@ -635,11 +646,18 @@ public class ConvertStringMoveUtils {
         // when crazy house
         if (san.contains("@")) {
             String[] parts = san.split("@");
+            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", san,
+                    ConvertType.SAN, ConvertErrorType.DROP_MOVE);
+
             char pieceChar = parts[0].charAt(0);
             target_square = BoardSquares.coordinates_to_square(parts[1]);
 
-            int piece_type = char_to_encoded_piece.get(pieceChar);
-            piece_type = normalizePieceColor(piece_type, chessboard.side);
+            Integer pieceTypeBoxed = char_to_encoded_piece.get(pieceChar);
+            if (pieceTypeBoxed == null) {
+                throw new ConvertMoveException("Invalid drop piece char!", san,
+                        ConvertType.SAN, ConvertErrorType.DROP_MOVE);
+            }
+            int piece_type = normalizePieceColor(pieceTypeBoxed, chessboard.side);
 
             int move_result = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
 
@@ -818,8 +836,8 @@ public class ConvertStringMoveUtils {
         String[] sans = sanSequence.trim().split("\\s+");
         StringBuilder lanSequence = new StringBuilder();
 
-        for (String lan : sans) {
-            TranslateResult result = parseSan(chessboard, lan);
+        for (String san : sans) {
+            TranslateResult result = parseSan(chessboard, san);
 
             lanSequence.append(result.moveString).append(" ");
 
@@ -876,7 +894,7 @@ public class ConvertStringMoveUtils {
         }
 
         throw new IllegalMoveException(BoardSquares.square_to_coordinates[source_square]
-        +BoardSquares.square_to_coordinates[target_square]
-        +(promotion_type!=0? promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
+                +BoardSquares.square_to_coordinates[target_square]
+                +(promotion_type!=0? promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
     }
 }
