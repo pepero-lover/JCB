@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame`, added `getGameResultAt(long)`, `getGameOverReasonAt(long)`,
   `getGameResultAt(long, boolean)`, `getGameOverReasonAt(long, boolean)`, to get specific node's game result.
 - On `ChessGame`, added `canMakeMove`, `canMakeMoveLan`, `canMakeMoveSan` methods.
+- On `ChessGame.forceEndGame`, added validating logic (`validateForcedResult`) `gameResult` and `gameOverReason`.
 
 ### Changed
 

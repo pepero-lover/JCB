@@ -2633,12 +2633,71 @@ public class ChessGame {
     }
 
     /**
+     * Draw only reasons for validating {@link #forceEndGame(GameResult, GameOverReason)}'s parameter
+     */
+    private static final Set<GameOverReason> DRAW_ONLY_REASONS = EnumSet.of(
+            GameOverReason.STALEMATE,
+            GameOverReason.FIVEFOLD,
+            GameOverReason.FIFTYMOVES_CLAIM,
+            GameOverReason.INSUFFICIENT_MATERIAL,
+            GameOverReason.SEVENTYFIVE_MOVES,
+            GameOverReason.THREEFOLD_CLAIM,
+            GameOverReason.AGREEMENT_DRAW
+    );
+
+    /**
+     * Winning only reasons for validating {@link #forceEndGame(GameResult, GameOverReason)}'s parameter
+     */
+    private static final Set<GameOverReason> DECISIVE_ONLY_REASONS = EnumSet.of(
+            GameOverReason.CHECKMATE,
+            GameOverReason.THREE_CHECK,
+            GameOverReason.KING_OF_THE_HILL,
+            GameOverReason.GIVEAWAY,
+            GameOverReason.ATOMIC
+    );
+
+    /**
+     * Validate result and reason for {@link #forceEndGame(GameResult, GameOverReason)}'s parameter
+     *
+     * @param result game result to validate
+     * @param reason game over reason to validate
+     * @throws IllegalArgumentException if the pair is contradictory
+     */
+    private void validateForcedResult(GameResult result, GameOverReason reason) {
+        Objects.requireNonNull(result, "Game result can not be null!");
+        Objects.requireNonNull(reason, "Game over reason can not be null!");
+
+        if (reason == GameOverReason.NOTGAMEOVER) {
+            throw new IllegalArgumentException("Game over reason can not be NOTGAMEOVER when forcing a game end!");
+        }
+        if (result == GameResult.UNKNOWN) {
+            throw new IllegalArgumentException("Game result can not be UNKNOWN when forcing a game end!");
+        }
+        if (DRAW_ONLY_REASONS.contains(reason) && result != GameResult.DRAW) {
+            throw new IllegalArgumentException(
+                    "Game over reason " + reason + " can only be paired with GameResult.DRAW, but got " + result + "!");
+        }
+        if (DECISIVE_ONLY_REASONS.contains(reason) && result == GameResult.DRAW) {
+            throw new IllegalArgumentException(
+                    "Game over reason " + reason + " can not be paired with GameResult.DRAW!");
+        }
+        if (reason == GameOverReason.HORDE && result != GameResult.BLACK_WON) {
+            throw new IllegalArgumentException(
+                    "Game over reason HORDE can only be paired with GameResult.BLACK_WON, but got " + result + "!");
+        }
+    }
+
+    /**
      * Force to make the game end
      *
      * @param result game result
      * @param reason game over reason
+     *
+     * @throws IllegalArgumentException if result and reason contradict each other (see {@link #validateForcedResult})
      */
     private void forceEndGame(GameResult result, GameOverReason reason) {
+        validateForcedResult(result, reason);
+
         boolean alreadyOver;
 
         writeLock.lock();
