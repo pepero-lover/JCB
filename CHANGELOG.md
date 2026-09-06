@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.10.1]
+
+### Added
 - On `SyzygyMoveDTO`, added `zeroing` parameter.
 - On `ChessGame`, added `claimDraw` method. `claimDraw` method ends game if the claimable draw exists.
 - On `ChessGame`, added `getGameResult(boolean)`, `getGameOverReason(boolean)`. the parameter is whether including claimable draws like
@@ -277,7 +287,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/pepero-lover/JCB/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/pepero-lover/JCB/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/pepero-lover/JCB/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/pepero-lover/JCB/compare/v1.7.2...v1.8.0
