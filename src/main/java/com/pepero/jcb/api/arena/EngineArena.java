@@ -62,6 +62,19 @@ public class EngineArena {
         }
     }
 
+    /**
+     * Mix the given seed and the round number
+     *
+     * @return mixed seed
+     */
+    private static int mixSeed(long seed, long round) {
+        long h = seed * 0x9E3779B97F4A7C15L + round * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= (h >>> 31);
+        return (int) h;
+    }
+
     public void setArenaListener(ArenaListener listener) {
         this.listener = listener;
     }
@@ -75,7 +88,7 @@ public class EngineArena {
 
         if (matchConfig.hasEpdOpeningBook()) {
             int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
-            int openingSeed = Objects.hash(matchConfig.getSeed(), effectiveRound);
+            int openingSeed = mixSeed(matchConfig.getSeed(), effectiveRound);
             return matchConfig.getEpdOpeningBook().pickSequentialPosition(openingSeed);
         }
 
@@ -154,9 +167,9 @@ public class EngineArena {
                     String move;
 
                     int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
-                    int openingSeed = Objects.hash(matchConfig.getSeed(), effectiveRound);
+                    int openingSeed = mixSeed(matchConfig.getSeed(), effectiveRound);
 
-                    move = BookMoveSelector.pickWeightedBySeed(
+                    move = BookMoveSelector.pickSequentialMove(
                             bookReader.findMoves(polyglotHash), openingSeed);
 
                     if(move != null) {

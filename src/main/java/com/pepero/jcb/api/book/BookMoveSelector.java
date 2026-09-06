@@ -1,6 +1,8 @@
 package com.pepero.jcb.api.book;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -18,6 +20,24 @@ public class BookMoveSelector {
     public static String pickUniformRandom(List<BookEntry> entries) {
         if (entries.isEmpty()) return null;
         return entries.get(new SecureRandom().nextInt(entries.size())).lanMove();
+    }
+
+    /**
+     * Pick sequential move <p>
+     *
+     * This move selecting is similar to {@link #pickWeightedBySeed(List, int)}, but excluding the weight logic.
+     *
+     * @return picked move (null if entries is empty)
+     */
+    public static String pickSequentialMove(List<BookEntry> entries, int index) {
+        if (entries.isEmpty()) return null;
+
+        List<BookEntry> sorted = new ArrayList<>(entries);
+        sorted.sort(Comparator.comparingInt(BookEntry::weight).reversed()
+            .thenComparing(BookEntry::lanMove));
+
+        int idx = Math.floorMod(index, sorted.size());
+        return sorted.get(idx).lanMove();
     }
 
     /**
