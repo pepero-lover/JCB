@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   threefold draw, fifty-moves draw.
 - On `ChessGame`, added `getGameResultAt(long)`, `getGameOverReasonAt(long)`,
   `getGameResultAt(long, boolean)`, `getGameOverReasonAt(long, boolean)`, to get specific node's game result.
+- On `ChessGame`, added `canMakeMove`, `canMakeMoveLan`, `canMakeMoveSan` methods.
 
 ### Changed
 
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - On `EngineArena` and `BookMoveSelector`, fixed selecting always equal opening.
+- On `canDropPiece`, fixed not checking drop, but normal piece move and changed parameter to `PieceType pieceType`, `Square target`,
 
 ### Performance
 

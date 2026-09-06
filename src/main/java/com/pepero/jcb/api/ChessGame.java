@@ -588,9 +588,30 @@ public class ChessGame {
     }
 
     /**
-     * Make move on this ChessGame
+     * Get whether a LAN (or UCI) move string would be a legal move on this ChessGame,
+     * without actually making it.
      *
-     * @param lan move like e2e4, e7e5 (LAN (or UCI) move string)
+     * @param lan move like "e2e4", "e7e5" (LAN (or UCI) move string)
+     */
+    public boolean canMakeMoveLan(String lan) {
+        if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
+
+        readLock.lock();
+        try {
+            ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
+            // lanToMoveData is already included the verification logic
+            return true;
+        } catch (ConvertMoveException | IllegalMoveException e) {
+            return false;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Make a move on this ChessGame (LAN (or UCI) move string)
+     *
+     * @param lan move like "e2e4", "e7e5" (LAN (or UCI) move string)
      *
      * @throws IllegalMoveException if move is illegal move
      * @throws ConvertMoveException if move string is incorrect
@@ -633,6 +654,27 @@ public class ChessGame {
         }
         dispatchMoveNotifications(outcome);
         return san;
+    }
+
+    /**
+     * Get whether a SAN move string would be a legal move on this ChessGame,
+     * without actually making it.
+     *
+     * @param sanString san string like "e4", "Nf3"
+     */
+    public boolean canMakeMoveSan(String sanString) {
+        if (sanString == null) throw new NullPointerException("San data can not be null!");
+
+        readLock.lock();
+        try {
+            ConvertStringMoveUtils.sanToMoveData(this.chessboard, sanString);
+            // sanToMoveData is already included the verification logic
+            return true;
+        } catch (ConvertMoveException | IllegalMoveException e) {
+            return false;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**
@@ -907,6 +949,52 @@ public class ChessGame {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    /**
+     * Get whether a move from sourceSquare to targetSquare (with the given promotion type)
+     * would be a legal move, without actually making it. <p>
+     *
+     * This performs the same validation that {@link #makeMove(Square, Square, PieceType)}
+     * relies on ({@link ConvertStringMoveUtils#parseMoveDataToEncodedMove}), just without
+     * mutating the board or move history.
+     *
+     * @param sourceSquare Source square
+     * @param targetSquare Target square
+     * @param promotionType Promotion type like queen, rook, bishop and knight ({@link PieceType#QUEEN}, {@link PieceType#ROOK} ... )
+     */
+    public boolean canMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType) {
+        Objects.requireNonNull(sourceSquare, "The source square can not be null!");
+        Objects.requireNonNull(targetSquare, "The target square can not be null!");
+        Objects.requireNonNull(promotionType, "The promotion type can not be null!");
+
+        if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
+                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT) {
+            return false;
+        }
+
+        readLock.lock();
+        try {
+            ConvertStringMoveUtils.parseMoveDataToEncodedMove(
+                    this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
+            );
+            return true;
+        } catch (ConvertMoveException | IllegalMoveException e) {
+            return false;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get whether a move from sourceSquare to targetSquare would be a legal move,
+     * without actually making it.
+     *
+     * @param sourceSquare Source square
+     * @param targetSquare Target square
+     */
+    public boolean canMakeMove(Square sourceSquare, Square targetSquare) {
+        return canMakeMove(sourceSquare, targetSquare, PieceType.NONE);
     }
 
     /**
@@ -1414,29 +1502,19 @@ public class ChessGame {
     }
 
     /**
-     * Get whether this move legal move (not crazy house. for moving piece)
+     * Get whether this drop move (crazy house) is a legal move
      *
-     * @param source source square
+     * @param pieceType dropping piece type
      * @param target target square
      */
-    public boolean canDropPiece(Square source, Square target) {
+    public boolean canDropPiece(PieceType pieceType, Square target) {
+        Objects.requireNonNull(pieceType, "Piece type cannot be null!");
+        Objects.requireNonNull(target, "Target square cannot be null!");
+
         readLock.lock();
         try {
-            int sourceIndex = source.getIndex();
-            int targetIndex = target.getIndex();
-
-            int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
-            int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-            for(int i = 0; i < move_count; i++) {
-                int move = move_list[i];
-                if(EncodeMove.getMoveSource(move) == sourceIndex
-                        && EncodeMove.getMoveTarget(move) == targetIndex) {
-                    return true;
-                }
-            }
-
-            return false;
+            int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, target.getIndex(), pieceType.getPieceType());
+            return encodedMove != ILLEGAL_MOVE;
         } finally {
             readLock.unlock();
         }
