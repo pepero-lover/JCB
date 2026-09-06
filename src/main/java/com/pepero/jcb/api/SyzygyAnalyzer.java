@@ -174,7 +174,7 @@ public class SyzygyAnalyzer {
                 else if (ourWdl == -2) ourWdl = -1;
             }
 
-            ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance));
+            ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance, zeroing));
 
             MoveGenerator.unmakeMove(board, move);
         }
