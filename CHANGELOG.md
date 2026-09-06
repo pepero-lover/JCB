@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking change**. Removed `ChessGame.isWhiteTurn()`. please use the `ChessGame.getTurn()`.
+
 ### Fixed
 - On `EngineArena` and `BookMoveSelector`, fixed selecting always equal opening.
 

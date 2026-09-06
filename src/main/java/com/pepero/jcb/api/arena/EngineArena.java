@@ -161,7 +161,7 @@ public class EngineArena {
                     break;
                 }
 
-                boolean whiteTurn = chessGame.isWhiteTurn();
+                boolean whiteTurn = chessGame.getTurn();
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
                     String move;
@@ -190,7 +190,7 @@ public class EngineArena {
                                     move,
                                     san,
                                     roundNumber,
-                                    chessGame.isWhiteTurn(),
+                                    chessGame.getTurn(),
                                     0,
                                     clock.getWhiteTimeMs(),
                                     clock.getBlackTimeMs()
@@ -340,7 +340,7 @@ public class EngineArena {
                                 bestMove,
                                 san,
                                 roundNumber,
-                                chessGame.isWhiteTurn(),
+                                chessGame.getTurn(),
                                 spentTime,
                                 clock.getWhiteTimeMs(),
                                 clock.getBlackTimeMs()

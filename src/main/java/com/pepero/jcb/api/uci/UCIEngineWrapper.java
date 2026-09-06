@@ -160,7 +160,7 @@ public class UCIEngineWrapper implements AutoCloseable {
      */
     public void startAnalysis(ChessGame chessGame, int depth, int multiPv) {
         latestAnalysisMap.clear();
-        isWhiteToMove = chessGame.isWhiteTurn();
+        isWhiteToMove = chessGame.getTurn();
         isAnalyzing = true;
         stopLatch = new CountDownLatch(1);
 
@@ -537,7 +537,7 @@ public class UCIEngineWrapper implements AutoCloseable {
                                     long wtimeMs, long btimeMs,
                                     long wincMs, long bincMs,
                                     int multiPv, long timeoutSeconds) {
-        isWhiteToMove = chessGame.isWhiteTurn();
+        isWhiteToMove = chessGame.getTurn();
         CompletableFuture<String> future = new CompletableFuture<>();
         currentMoveFuture.set(future);
         latestAnalysisMap.clear();
