@@ -161,6 +161,12 @@ public class EngineArena {
                     break;
                 }
 
+                // claim draw
+                if(chessGame.claimDraw()) {
+                    // if can claim draw, draw.
+                    break;
+                }
+
                 boolean whiteTurn = chessGame.isWhiteTurn();
                 if(matchConfig.hasOpeningBook()) {
                     long polyglotHash = chessGame.getPolyglotHash();
@@ -196,9 +202,6 @@ public class EngineArena {
                                     clock.getBlackTimeMs()
                             ));
                         }
-
-                        // claim draw is always enabled.
-                        chessGame.claimDraw();
 
                         continue;
                     }
@@ -349,9 +352,6 @@ public class EngineArena {
                                 clock.getBlackTimeMs()
                         ));
                     }
-
-                    // claim draw is always enabled.
-                    chessGame.claimDraw();
                 } else {
                     throw new EngineArenaException("Best move not found!");
                 }
