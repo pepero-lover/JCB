@@ -3,6 +3,7 @@ package com.pepero.jcb.api.dto;
 import com.pepero.jcb.api.enums.Piece;
 import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.enums.Square;
+import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.encode.EncodeMove;
 
 /**
@@ -52,6 +53,10 @@ public record MoveInfo(int originEncodedData) {
 
     public boolean isPromotion() {
         return EncodeMove.getMovePromoted(originEncodedData) != 0;
+    }
+
+    public boolean isWhiteMoving() {
+        return pieceType().isWhite();
     }
 
     @Override
