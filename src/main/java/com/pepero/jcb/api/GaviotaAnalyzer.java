@@ -159,9 +159,8 @@ public class GaviotaAnalyzer {
 
             MoveGenerator.makeMove(board, move);
 
-            boolean triggersRepetition = ChessboardUtils.getRepetitionCount(board, 3) >= 3;
             int childWdl = tablebase.probeWdl(board);
-            int ourWdl = triggersRepetition ? 0 : -childWdl;
+            int ourWdl = -childWdl;
             int distance = (ourWdl == 0) ? 0 : Math.abs(tablebase.probeDtm(board));
 
             ranked.add(new GaviotaMoveDTO(new MoveInfo(move), ourWdl, distance));
