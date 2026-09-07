@@ -374,7 +374,11 @@ public class ChessGame {
         try {
             ChessboardUtils.parseFen(this.chessboard, fen);
         } catch (Exception e) {
-            throw new FENConvertException("Could not parse the fen.", FENErrorType.UNKNOWN);
+            FENConvertException convertException = new FENConvertException(
+                    "Could not parse the fen: \"" + fen + "\" (" + e.getMessage() + ")",
+                    FENErrorType.UNKNOWN);
+            convertException.initCause(e);
+            throw convertException;
         }
 
         FENValidator.validateLogicalState(chessboard, gameVariant);

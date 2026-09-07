@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ignored and removed.
 - On `ChessGame.makeMoveAll*` methods, changed `string.split(" ")` to `string.isEmpty() ? new String[0] : string.split("\\s+")`.
 - On `ChessGame.internalRemakeMove`, added checking variation index is negative.
+- On `ChessboardUtils.isCheck`, fixed not early returning false when suicide variant.
+- On `ChessGame` constructor with fen, added printing fen when the unknown cause happened.
 
 ### Performance
 

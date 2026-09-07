@@ -362,7 +362,7 @@ public class ChessboardUtils {
      * @return whether king is under attack
      */
     public static boolean isCheck(Chessboard chessboard) {
-        if(chessboard.gameVariant == GameVariant.GIVEAWAY) return false;
+        if(chessboard.gameVariant == GameVariant.GIVEAWAY || chessboard.gameVariant == GameVariant.SUICIDE) return false;
         if(chessboard.gameVariant == GameVariant.HORDE && chessboard.side == white) return false;
         if(chessboard.gameVariant == GameVariant.ATOMIC) {
             if((chessboard.side == white ?
