@@ -97,23 +97,14 @@ public class ChessGame {
 
     /**
      * Initial piece count <br>
-     * The piece type index on {@link EncodedPieces}
+     * The piece type index on {@link EncodedPieces} <br>
+     * This is NOT hardcoded to the standard 8/2/2/2/1/1 setup anymore — it's snapshotted
+     * from whatever the actual starting position is (standard start, a custom FEN, a copied
+     * position, or a loaded PGN's start FEN) via {@link #captureInitialPieceCounts()}.
+     * Otherwise {@link #getCapturedPieces(boolean)} would report wrong numbers whenever the
+     * game didn't start from the normal position.
      */
-    private static final int[] initialPieceCounts = new int[]{
-            8, // White pawn
-            2, // White knight
-            2, // White bishop
-            2, // White rook
-            1, // White queen
-            1, // White king
-
-            8, // Black pawn
-            2, // Black knight
-            2, // Black bishop
-            2, // Black rook
-            1, // Black queen
-            1, // Black king
-    };
+    private int[] initialPieceCounts;
 
     /**
      * PGN headers
@@ -383,6 +374,7 @@ public class ChessGame {
 
         FENValidator.validateLogicalState(chessboard, gameVariant);
 
+        captureInitialPieceCounts();
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
     }
 
@@ -406,6 +398,7 @@ public class ChessGame {
 
         startPositionFEN = startFen;
 
+        captureInitialPieceCounts();
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
     }
 
@@ -421,6 +414,7 @@ public class ChessGame {
         try {
             this.chessboard = new Chessboard(other.chessboard);
             this.startPositionFEN = other.startPositionFEN;
+            captureInitialPieceCounts();
 
             this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
             this.currentNode = this.moveHistoryRoot;
@@ -449,6 +443,7 @@ public class ChessGame {
         try {
             this.chessboard = new Chessboard(chessboard);
             this.startPositionFEN = ChessboardUtils.getFen(chessboard);
+            captureInitialPieceCounts();
 
             this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), this.chessboard.full_move);
             this.currentNode = this.moveHistoryRoot;
@@ -1680,6 +1675,17 @@ public class ChessGame {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Initialize piece count array
+     */
+    private void captureInitialPieceCounts() {
+        int[] counts = new int[12];
+        for (int piece = P; piece <= k; piece++) {
+            counts[piece] = BitBoardUtils.countBits(chessboard.bitboards[piece]);
+        }
+        this.initialPieceCounts = counts;
     }
 
     /**
@@ -3953,6 +3959,7 @@ public class ChessGame {
             }
             FENValidator.validateLogicalState(this.chessboard, variantToLoad);
             this.startPositionFEN = fenToLoad;
+            captureInitialPieceCounts();
 
             this.moveHistoryRoot = parsedData.rootNode();
             this.currentNode = parsedData.rootNode();
