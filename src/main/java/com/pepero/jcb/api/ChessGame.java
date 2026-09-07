@@ -744,12 +744,18 @@ public class ChessGame {
             int[] encodedMoves = new int[sanStrings.length];
 
             for (int i = 0; i < sanStrings.length; i++) {
-                int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, sanStrings[i]);
-                if (!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
-                    throw new IllegalMoveException(sanStrings[i], ChessboardUtils.getFen(tempChessboard));
+                try {
+                    int encodedMove = ConvertStringMoveUtils.sanToMoveData(tempChessboard, sanStrings[i]);
+                    if (!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
+                        throw new IllegalMoveException(sanStrings[i], ChessboardUtils.getFen(tempChessboard));
+                    }
+                    MoveGenerator.makeMove(tempChessboard, encodedMove);
+                    encodedMoves[i] = encodedMove;
+                } catch (IllegalMoveException e) {
+                    throw e.withSequenceContext(i, sanString);
+                } catch (ConvertMoveException e) {
+                    throw e.withSequenceContext(i, sanString);
                 }
-                MoveGenerator.makeMove(tempChessboard, encodedMove);
-                encodedMoves[i] = encodedMove;
             }
 
             outcomes = new ArrayList<>(encodedMoves.length);
@@ -788,13 +794,19 @@ public class ChessGame {
             int[] encodedMoves = new int[lanStrings.length];
 
             for (int i = 0; i < lanStrings.length; i++) {
-                int encodedMove = ConvertStringMoveUtils.lanToMoveData(tempChessboard, lanStrings[i]);
-                if(!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
-                    throw new IllegalMoveException(lanStrings[i],
-                            ChessboardUtils.getFen(tempChessboard));
+                try {
+                    int encodedMove = ConvertStringMoveUtils.lanToMoveData(tempChessboard, lanStrings[i]);
+                    if(!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
+                        throw new IllegalMoveException(lanStrings[i],
+                                ChessboardUtils.getFen(tempChessboard));
+                    }
+                    MoveGenerator.makeMove(tempChessboard, encodedMove);
+                    encodedMoves[i] = encodedMove;
+                } catch (IllegalMoveException e) {
+                    throw e.withSequenceContext(i, lanString);
+                } catch (ConvertMoveException e) {
+                    throw e.withSequenceContext(i, lanString);
                 }
-                MoveGenerator.makeMove(tempChessboard, encodedMove);
-                encodedMoves[i] = encodedMove;
             }
 
             outcomes = new ArrayList<>(encodedMoves.length);
