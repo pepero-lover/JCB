@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessboardUtils.isCheck`, fixed not early returning false when suicide variant.
 - On `ChessGame` constructor with fen, added printing fen when the unknown cause happened.
 - On `ChessGame.loadPGN`, added validating start fen.
+- On editing pgn data methods at `ChessGame`, fixed exception message when the current node is history root.
+- On `ChessGame.canRedo`, fixed not returning correctly when the `variationIndex` is negative.
 
 ### Performance
 

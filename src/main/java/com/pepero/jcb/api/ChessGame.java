@@ -1439,7 +1439,7 @@ public class ChessGame {
         readLock.lock();
         try {
             if (currentNode == null) throw new MoveNotFoundException();
-            return currentNode.children.size() > variationIndex;
+            return variationIndex >= 0 && currentNode.children.size() > variationIndex;
         } finally {
             readLock.unlock();
         }
@@ -3541,7 +3541,7 @@ public class ChessGame {
     public void setCurrentMoveClock(int hours, int minutes, int seconds) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) throw new ClockException("...");
+            if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
             this.currentNode.getAnnotation().clk = formatClock(hours, minutes, seconds);
         } finally {
             writeLock.unlock();
@@ -3605,7 +3605,7 @@ public class ChessGame {
     public void setCurrentMoveClockMilliSeconds(long milliseconds) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) throw new ClockException("...");
+            if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
             this.currentNode.getAnnotation().clk = formatClockMilliSeconds(milliseconds);
         } finally {
             writeLock.unlock();
