@@ -738,7 +738,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             sanString = sanString.trim();
-            String[] sanStrings = sanString.split(" ");
+            String[] sanStrings = sanString.isEmpty() ? new String[0] : sanString.split("\\s+");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
             int[] encodedMoves = new int[sanStrings.length];
@@ -788,7 +788,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             lanString = lanString.trim();
-            String[] lanStrings = lanString.split(" ");
+            String[] lanStrings = lanString.isEmpty() ? new String[0] : lanString.split("\\s+");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
             int[] encodedMoves = new int[lanStrings.length];
@@ -1281,7 +1281,7 @@ public class ChessGame {
      */
     private UndoRedoOutcome internalRemakeMove(int variationIndex) {
         if (!canRedo()) throw new EmptyMoveRedoException();
-        if(currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
+        if(variationIndex < 0 || currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
 
         currentNode = currentNode.children.get(variationIndex);
         MoveInfo moveInfo = currentNode.moveData;
@@ -1623,6 +1623,12 @@ public class ChessGame {
                     captured.put(PieceType.QUEEN, chessboard.pocket[q]);
                 }
             } else {
+                // Raw (initialCount - currentCount) breaks once a promotion has happened:
+                // a promoted-away pawn is not a capture, and a surviving promoted piece
+                // inflates that piece type's on-board count past its initial value
+                // (which the removeIf below then silently swallows as a negative).
+                // Tally promotions from the actual move history reaching this position
+                // and fold them into the diff so both sides come out correct.
                 int[] promotionCounts = new int[initialPieceCounts.length];
                 tallyPromotions(promotionCounts);
 
