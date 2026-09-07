@@ -3726,8 +3726,7 @@ public class ChessGame {
     public void setMoveEvalAt(long nodeId, String eval) {
         writeLock.lock();
         try {
-            MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            MoveNode targetNode = findAnnotationNode(nodeId);
             if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().eval = eval;
         } finally {
@@ -3762,8 +3761,7 @@ public class ChessGame {
     public void setMoveCslAt(long nodeId, String csl) {
         writeLock.lock();
         try {
-            MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            MoveNode targetNode = findAnnotationNode(nodeId);
             if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().csl = csl;
         } finally {
@@ -3798,8 +3796,7 @@ public class ChessGame {
     public void setMoveCalAt(long nodeId, String cal) {
         writeLock.lock();
         try {
-            MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            MoveNode targetNode = findAnnotationNode(nodeId);
             if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().cal = cal;
         } finally {
@@ -3834,8 +3831,7 @@ public class ChessGame {
     public void setMoveCommentAt(long nodeId, String comment) {
         writeLock.lock();
         try {
-            MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            MoveNode targetNode = findAnnotationNode(nodeId);
             if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().comment = comment;
         } finally {
@@ -3881,9 +3877,21 @@ public class ChessGame {
     }
 
     /**
-     * Look up a node by id for clock/timestamp annotation and guard against the root node. <p>
-     * Used by the clock/timestamp "At" overloads, which (unlike eval/csl/cal/comment) throw
-     * on the root node rather than silently doing nothing.
+     * Look up a node by id for annotation, without any root-node policy applied.
+     *
+     * @param nodeId node id to look up
+     * @return the resolved node
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     */
+    private MoveNode findAnnotationNode(long nodeId) {
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+        return targetNode;
+    }
+
+    /**
+     * Look up a node by id for clock/timestamp annotation and guard against the root node.
      *
      * @param nodeId node id to look up
      * @return the resolved node
@@ -3892,8 +3900,7 @@ public class ChessGame {
      * @throws ClockException when the given node is the root node
      */
     private MoveNode requireAnnotationNode(long nodeId) {
-        MoveNode targetNode = nodeCache.get(nodeId);
-        if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+        MoveNode targetNode = findAnnotationNode(nodeId);
         if (targetNode == moveHistoryRoot) throw new ClockException("Given node can not be the root position!");
         return targetNode;
     }
