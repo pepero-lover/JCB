@@ -2053,7 +2053,7 @@ public class ChessGame {
      */
     public boolean isThreeChecked() {
         if(chessboard.gameVariant != GameVariant.THREE_CHECK) throw new VariantNotMatchException(
-                "The variant should be three check!"
+                "The variant should be three check! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2074,7 +2074,7 @@ public class ChessGame {
      */
     public boolean isKingGoneToHill() {
         if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) throw new VariantNotMatchException(
-                "The variant should be king of the hill!"
+                "The variant should be king of the hill! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2092,7 +2092,7 @@ public class ChessGame {
      */
     public boolean isHordePiecesGone() {
         if(chessboard.gameVariant != GameVariant.HORDE) throw new VariantNotMatchException(
-                "The variant should be horde!"
+                "The variant should be horde! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2110,7 +2110,7 @@ public class ChessGame {
      */
     public boolean isGiveawayOver() {
         if(chessboard.gameVariant != GameVariant.GIVEAWAY) throw new VariantNotMatchException(
-                "The variant should be Giveaway!"
+                "The variant should be Giveaway! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2128,7 +2128,7 @@ public class ChessGame {
      */
     public boolean isSuicideOver() {
         if(chessboard.gameVariant != GameVariant.SUICIDE) throw new VariantNotMatchException(
-                "The variant should be Suicide!"
+                "The variant should be Suicide! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2146,7 +2146,7 @@ public class ChessGame {
      */
     public boolean isAtomicOver() {
         if(chessboard.gameVariant != GameVariant.ATOMIC) throw new VariantNotMatchException(
-                "The variant should be atomic!"
+                "The variant should be atomic! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2164,7 +2164,7 @@ public class ChessGame {
      */
     public boolean isKingRaceOver() {
         if(chessboard.gameVariant != GameVariant.RACING_KINGS) throw new VariantNotMatchException(
-                "The variant should be racing kings!"
+                "The variant should be racing kings! (Current variant : " + chessboard.gameVariant + ")"
         );
 
         readLock.lock();
@@ -2579,7 +2579,7 @@ public class ChessGame {
         readLock.lock();
         try {
             if (chessboard.gameVariant != GameVariant.THREE_CHECK)
-                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame! (Current variant : " + chessboard.gameVariant + ")");
             return new int[]{chessboard.check_count[white], chessboard.check_count[black]};
         } finally {
             readLock.unlock();
@@ -2596,7 +2596,7 @@ public class ChessGame {
         readLock.lock();
         try {
             if (chessboard.gameVariant != GameVariant.THREE_CHECK)
-                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame! (Current variant : " + chessboard.gameVariant + ")");
             return chessboard.check_count[white];
         } finally {
             readLock.unlock();
@@ -2613,7 +2613,7 @@ public class ChessGame {
         readLock.lock();
         try {
             if (chessboard.gameVariant != GameVariant.THREE_CHECK)
-                throw new VariantNotMatchException("This method should be called on three check variant ChessGame!");
+                throw new VariantNotMatchException("This method should be called on three check variant ChessGame! (Current variant : " + chessboard.gameVariant + ")");
             return chessboard.check_count[black];
         } finally {
             readLock.unlock();
