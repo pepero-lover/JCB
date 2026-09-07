@@ -387,6 +387,8 @@ public class ChessGame {
 
         captureInitialPieceCounts();
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
+
+        setDefaultHeaders();
     }
 
     /**
@@ -411,6 +413,8 @@ public class ChessGame {
 
         captureInitialPieceCounts();
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
+
+        setDefaultHeaders();
     }
 
     /**

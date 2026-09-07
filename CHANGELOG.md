@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - On `ConvertStringUtils`, fixed not showing original san/lan string but changed like Ne4+ -> e4 on throwing exception.
+- On `ChessGame` constructor using fen, and `ChessGame.startPosition*`, added `setDefaultHeaders`.
 
 ### Fixed
 - On `ConvertStringUtils` and `ChessGame`, fixed not allowing king promotion even the variant is suicide or giveaway.
