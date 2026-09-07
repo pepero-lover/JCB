@@ -413,7 +413,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             this.chessboard = new Chessboard(other.chessboard);
-            this.startPositionFEN = other.startPositionFEN;
+            this.startPositionFEN = ChessboardUtils.getFen(this.chessboard);
             captureInitialPieceCounts();
 
             this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
@@ -1678,7 +1678,12 @@ public class ChessGame {
     }
 
     /**
-     * Initialize piece count array
+     * Snapshot the piece counts currently on {@link #chessboard} into {@link #initialPieceCounts}. <br>
+     * Must be called right after {@link #chessboard} is set to whatever this game's actual
+     * starting position is — standard start, a custom FEN, a copied position, or a freshly
+     * loaded PGN's start FEN — and before any moves are applied on top of it. <br>
+     * This replaces the old hardcoded standard-chess assumption (8 pawns, 2 knights, ...),
+     * which made {@link #getCapturedPieces(boolean)} wrong for any non-standard start.
      */
     private void captureInitialPieceCounts() {
         int[] counts = new int[12];
