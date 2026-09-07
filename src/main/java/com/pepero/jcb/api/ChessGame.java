@@ -3709,6 +3709,7 @@ public class ChessGame {
      * @param maxNodesCount max nodes count
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
+     * @throws FENConvertException if start position fen is wrong
      */
     public void loadPGN(String pgnString, int maxNodesCount) {
         GameResult resultToNotify;
@@ -3720,6 +3721,24 @@ public class ChessGame {
             PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount, this.nodeCounter);
 
             String fenToLoad = parsedData.startFEN();
+            GameVariant variantToLoad = parsedData.variant();
+            boolean chess960ToLoad = parsedData.isChess960();
+
+            FENValidator.validateString(fenToLoad, chess960ToLoad, variantToLoad);
+
+            this.chessboard.gameVariant = variantToLoad;
+            this.chessboard.isChess960 = chess960ToLoad;
+            try {
+                ChessboardUtils.parseFen(this.chessboard, fenToLoad);
+            } catch (Exception e) {
+                FENConvertException convertException = new FENConvertException(
+                        "Could not parse the fen: \"" + fenToLoad + "\" (" + e.getMessage() + ")",
+                        FENErrorType.UNKNOWN);
+                convertException.initCause(e);
+                throw convertException;
+            }
+            FENValidator.validateLogicalState(this.chessboard, variantToLoad);
+            this.startPositionFEN = fenToLoad;
             this.chessboard.gameVariant = parsedData.variant();
             this.chessboard.isChess960 = parsedData.isChess960();
             ChessboardUtils.parseFen(this.chessboard, fenToLoad);
