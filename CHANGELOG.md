@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.canRedo`, fixed not returning correctly when the `variationIndex` is negative.
 - On `ChessGame`, added `captureInitialPieceCounts` to initialize `initialPieceCounts` array.
 - On `ChessGame.ChessGame(ChessGame other)` constructor, fixed initializing `startPositionFEN` with `other.startPositionFEN`.
+- On `ChessGame`, fixed checking variant outside of `readLock`.
 
 ### Performance
 

@@ -979,17 +979,17 @@ public class ChessGame {
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
-        boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
-                || this.chessboard.gameVariant == GameVariant.SUICIDE;
-
-        if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
-                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
-                !(isAntichessLike && promotionType == PieceType.KING)) {
-            return false;
-        }
-
         readLock.lock();
         try {
+            boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
+                    || this.chessboard.gameVariant == GameVariant.SUICIDE;
+
+            if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
+                    promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
+                    !(isAntichessLike && promotionType == PieceType.KING)) {
+                return false;
+            }
+
             ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
@@ -1027,19 +1027,19 @@ public class ChessGame {
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
-        boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
-                || this.chessboard.gameVariant == GameVariant.SUICIDE;
-
-        if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
-                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
-                !(isAntichessLike && promotionType == PieceType.KING)) {
-            throw new IllegalMoveException("Promotion Piece type is unknown! (Given : " + promotionType +
-                    ") please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
-        }
-
         MoveOutcome outcome;
         writeLock.lock();
         try {
+            boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
+                    || this.chessboard.gameVariant == GameVariant.SUICIDE;
+
+            if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
+                    promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
+                    !(isAntichessLike && promotionType == PieceType.KING)) {
+                throw new IllegalMoveException("Promotion Piece type is unknown! (Given : " + promotionType +
+                        ") please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
+            }
+
             int encodedMove;
             encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
@@ -2126,12 +2126,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Three check variant
      */
     public boolean isThreeChecked() {
-        if(chessboard.gameVariant != GameVariant.THREE_CHECK) throw new VariantNotMatchException(
-                "The variant should be three check! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.THREE_CHECK) throw new VariantNotMatchException(
+                    "The variant should be three check! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             int white_checked = chessboard.check_count[white];
             int black_checked = chessboard.check_count[black];
 
@@ -2147,12 +2147,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't King of the hill variant
      */
     public boolean isKingGoneToHill() {
-        if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) throw new VariantNotMatchException(
-                "The variant should be king of the hill! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.KING_OF_THE_HILL) throw new VariantNotMatchException(
+                    "The variant should be king of the hill! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.isKingGoneToHill(chessboard);
         } finally {
             readLock.unlock();
@@ -2165,12 +2165,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Horde variant
      */
     public boolean isHordePiecesGone() {
-        if(chessboard.gameVariant != GameVariant.HORDE) throw new VariantNotMatchException(
-                "The variant should be horde! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.HORDE) throw new VariantNotMatchException(
+                    "The variant should be horde! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.isHordePiecesGone(chessboard);
         } finally {
             readLock.unlock();
@@ -2183,12 +2183,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't Giveaway variant
      */
     public boolean isGiveawayOver() {
-        if(chessboard.gameVariant != GameVariant.GIVEAWAY) throw new VariantNotMatchException(
-                "The variant should be Giveaway! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.GIVEAWAY) throw new VariantNotMatchException(
+                    "The variant should be Giveaway! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.isGiveawayOver(chessboard);
         } finally {
             readLock.unlock();
@@ -2201,12 +2201,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't a Suicide variant
      */
     public boolean isSuicideOver() {
-        if(chessboard.gameVariant != GameVariant.SUICIDE) throw new VariantNotMatchException(
-                "The variant should be Suicide! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.SUICIDE) throw new VariantNotMatchException(
+                    "The variant should be Suicide! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.isSuicideOver(chessboard);
         } finally {
             readLock.unlock();
@@ -2219,12 +2219,12 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't an Atomic variant
      */
     public boolean isAtomicOver() {
-        if(chessboard.gameVariant != GameVariant.ATOMIC) throw new VariantNotMatchException(
-                "The variant should be atomic! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.ATOMIC) throw new VariantNotMatchException(
+                    "The variant should be atomic! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.isAtomicOver(chessboard);
         } finally {
             readLock.unlock();
@@ -2237,17 +2237,19 @@ public class ChessGame {
      * @throws VariantNotMatchException if this ChessGame isn't racing kings variant
      */
     public boolean isKingRaceOver() {
-        if(chessboard.gameVariant != GameVariant.RACING_KINGS) throw new VariantNotMatchException(
-                "The variant should be racing kings! (Current variant : " + chessboard.gameVariant + ")"
-        );
-
         readLock.lock();
         try {
+            if(chessboard.gameVariant != GameVariant.RACING_KINGS) throw new VariantNotMatchException(
+                    "The variant should be racing kings! (Current variant : " + chessboard.gameVariant + ")"
+            );
+
             return ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE;
         } finally {
             readLock.unlock();
         }
     }
+
+
 
     /**
      * Get whether this position allows claiming a draw by threefold repetition
