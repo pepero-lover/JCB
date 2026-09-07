@@ -164,7 +164,7 @@ public class SyzygyAnalyzer {
 
             MoveGenerator.makeMove(board, move);
 
-            boolean triggersRepetition = ChessboardUtils.getRepetitionCount(board, 2) >= 2;
+            boolean triggersRepetition = ChessboardUtils.getRepetitionCount(board, 3) >= 3;
             int childWdl = tablebase.getWdlData(board);
             int ourWdl = triggersRepetition ? 0 : -childWdl;
             int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(board)));

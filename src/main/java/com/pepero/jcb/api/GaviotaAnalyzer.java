@@ -4,6 +4,7 @@ import com.pepero.jcb.api.dto.GaviotaMoveDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.VariantNotMatchException;
 import com.pepero.jcb.api.gaviota.GaviotaTablebase;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
@@ -158,8 +159,9 @@ public class GaviotaAnalyzer {
 
             MoveGenerator.makeMove(board, move);
 
+            boolean triggersRepetition = ChessboardUtils.getRepetitionCount(board, 3) >= 3;
             int childWdl = tablebase.probeWdl(board);
-            int ourWdl = -childWdl;
+            int ourWdl = triggersRepetition ? 0 : -childWdl;
             int distance = (ourWdl == 0) ? 0 : Math.abs(tablebase.probeDtm(board));
 
             ranked.add(new GaviotaMoveDTO(new MoveInfo(move), ourWdl, distance));
