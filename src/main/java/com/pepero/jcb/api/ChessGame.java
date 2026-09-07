@@ -1623,28 +1623,45 @@ public class ChessGame {
                     captured.put(PieceType.QUEEN, chessboard.pocket[q]);
                 }
             } else {
+                int[] promotionCounts = new int[initialPieceCounts.length];
+                tallyPromotions(promotionCounts);
+
                 if (isWhite) {
+                    int blackPromotedTotal = promotionCounts[n] + promotionCounts[b]
+                            + promotionCounts[r] + promotionCounts[q];
                     captured.put(PieceType.PAWN,
-                            initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.bitboards[p]));
+                            initialPieceCounts[p] - BitBoardUtils.countBits(chessboard.bitboards[p])
+                                    - blackPromotedTotal);
                     captured.put(PieceType.KNIGHT,
-                            initialPieceCounts[n] - BitBoardUtils.countBits(chessboard.bitboards[n]));
+                            initialPieceCounts[n] + promotionCounts[n]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[n]));
                     captured.put(PieceType.BISHOP,
-                            initialPieceCounts[b] - BitBoardUtils.countBits(chessboard.bitboards[b]));
+                            initialPieceCounts[b] + promotionCounts[b]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[b]));
                     captured.put(PieceType.ROOK,
-                            initialPieceCounts[r] - BitBoardUtils.countBits(chessboard.bitboards[r]));
+                            initialPieceCounts[r] + promotionCounts[r]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[r]));
                     captured.put(PieceType.QUEEN,
-                            initialPieceCounts[q] - BitBoardUtils.countBits(chessboard.bitboards[q]));
+                            initialPieceCounts[q] + promotionCounts[q]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[q]));
                 } else {
+                    int whitePromotedTotal = promotionCounts[N] + promotionCounts[B]
+                            + promotionCounts[R] + promotionCounts[Q];
                     captured.put(PieceType.PAWN,
-                            initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.bitboards[P]));
+                            initialPieceCounts[P] - BitBoardUtils.countBits(chessboard.bitboards[P])
+                                    - whitePromotedTotal);
                     captured.put(PieceType.KNIGHT,
-                            initialPieceCounts[N] - BitBoardUtils.countBits(chessboard.bitboards[N]));
+                            initialPieceCounts[N] + promotionCounts[N]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[N]));
                     captured.put(PieceType.BISHOP,
-                            initialPieceCounts[B] - BitBoardUtils.countBits(chessboard.bitboards[B]));
+                            initialPieceCounts[B] + promotionCounts[B]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[B]));
                     captured.put(PieceType.ROOK,
-                            initialPieceCounts[R] - BitBoardUtils.countBits(chessboard.bitboards[R]));
+                            initialPieceCounts[R] + promotionCounts[R]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[R]));
                     captured.put(PieceType.QUEEN,
-                            initialPieceCounts[Q] - BitBoardUtils.countBits(chessboard.bitboards[Q]));
+                            initialPieceCounts[Q] + promotionCounts[Q]
+                                    - BitBoardUtils.countBits(chessboard.bitboards[Q]));
                 }
             }
             captured.values().removeIf(count -> count <= 0);
@@ -1652,6 +1669,33 @@ public class ChessGame {
             return captured;
         } finally {
             readLock.unlock();
+        }
+    }
+
+    /**
+     * Walk the move history leading to the current position and count, per piece-type
+     * index (same indexing as {@link #initialPieceCounts}), how many pawn promotions
+     * happened for each side. Used by {@link #getCapturedPieces(boolean)} to correct
+     * for the fact that a promotion changes a piece's type without being a capture.
+     */
+    private void tallyPromotions(int[] promotionCounts) {
+        MoveNode current = currentNode;
+        while (current != null && current.moveData != null) {
+            MoveInfo moveData = current.moveData;
+            if (moveData.isPromotion()) {
+                boolean white = moveData.isWhiteMoving();
+                int idx = switch (moveData.promotionPiece()) {
+                    case QUEEN -> white ? Q : q;
+                    case ROOK -> white ? R : r;
+                    case BISHOP -> white ? B : b;
+                    case KNIGHT -> white ? N : n;
+                    default -> -1;
+                };
+                if (idx != -1) {
+                    promotionCounts[idx]++;
+                }
+            }
+            current = current.parent;
         }
     }
 

@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - On `ConvertStringUtils` and `ChessGame`, fixed not allowing king promotion even the variant is suicide or giveaway.
+- On `ChessGame.getCapturedPieces`, fixed the captured piece going negative when piece is promoted, but negative number
+  ignored and removed.
 
 ### Performance
 
