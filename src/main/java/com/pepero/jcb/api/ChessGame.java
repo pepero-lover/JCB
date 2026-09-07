@@ -2817,7 +2817,8 @@ public class ChessGame {
         writeLock.lock();
         try {
             targetNode = (nodeId != null) ? nodeCache.get(nodeId) : getLastMainlineNode(this.moveHistoryRoot);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to evaluate!");
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to evaluate! (Node ID : " +
+                    (nodeId != null ? nodeId : "last mainline node") + ")");
 
             outcome = evaluateGameStateForNotificationAt(targetNode);
         } finally {
@@ -3062,7 +3063,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to delete!");
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to delete! (Node ID : " + nodeId + ")");
             if (targetNode == moveHistoryRoot) throw new HistoryTreeException("Cannot delete the root node!");
 
             MoveNode parent = targetNode.parent;
@@ -3118,7 +3119,7 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = nodeCache.get(nodeId);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to promote!");
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to promote! (Node ID : " + nodeId + ")");
             if (targetNode == moveHistoryRoot || targetNode.parent == null) return;
 
             MoveNode parent = targetNode.parent;
@@ -3228,7 +3229,7 @@ public class ChessGame {
         // get node
         MoveNode targetNode = nodeCache.get(nodeId);
         if (targetNode == null) {
-            throw new MoveNotFoundException("Could not find the node!");
+            throw new MoveNotFoundException("Could not find the node! (Node ID : " + nodeId + ")");
         }
 
         // if target node is current node, early exit

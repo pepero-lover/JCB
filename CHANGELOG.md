@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - On `ChessGame.makeAllMove*` methods, added showing where the error move occurred. (e.g.
   `Illegal move detected! Move : Nc9, FEN : rnbqkbnr/... (Failed at move #4 in sequence "e4 e5 Nf3 Nc9")`)
+- On `ChessGame` methods throwing `MoveNotFoundException`, added node id on exception message.
 
 ### Changed
 - On `ConvertStringUtils`, fixed not showing original san/lan string but changed like Ne4+ -> e4 on throwing exception.
