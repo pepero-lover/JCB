@@ -3542,15 +3542,28 @@ public class ChessGame {
         writeLock.lock();
         try {
             if (this.currentNode == moveHistoryRoot) throw new ClockException("...");
+            this.currentNode.getAnnotation().clk = formatClock(hours, minutes, seconds);
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
-            StringBuilder sb = new StringBuilder(8);
-            sb.append(hours).append(':');
-            if (minutes < 10) sb.append('0');
-            sb.append(minutes).append(':');
-            if (seconds < 10) sb.append('0');
-            sb.append(seconds);
-
-            this.currentNode.getAnnotation().clk = sb.toString();
+    /**
+     * Save clock data on a given move node (by node id)
+     *
+     * @param nodeId node to annotate (id)
+     * @param hours hours data
+     * @param minutes minutes data
+     * @param seconds seconds data
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    public void setMoveClockAt(long nodeId, int hours, int minutes, int seconds) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = requireAnnotationNode(nodeId);
+            targetNode.getAnnotation().clk = formatClock(hours, minutes, seconds);
         } finally {
             writeLock.unlock();
         }
@@ -3569,6 +3582,22 @@ public class ChessGame {
     }
 
     /**
+     * Save clock data on a given move node (by node id)
+     *
+     * @param nodeId node to annotate (id)
+     * @param seconds seconds data
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    public void setMoveClockAt(long nodeId, int seconds) {
+        int resultHours = seconds / 3600;
+        int resultMinutes = (seconds % 3600) / 60;
+        int resultSeconds = seconds % 60;
+        setMoveClockAt(nodeId, resultHours, resultMinutes, resultSeconds);
+    }
+
+    /**
      * Save clock data on last move on MoveNode(DTO)
      *
      * @param milliseconds milliseconds data
@@ -3577,25 +3606,26 @@ public class ChessGame {
         writeLock.lock();
         try {
             if (this.currentNode == moveHistoryRoot) throw new ClockException("...");
+            this.currentNode.getAnnotation().clk = formatClockMilliSeconds(milliseconds);
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
-            long seconds = milliseconds / 1000;
-            long resultHours = seconds / 3600;
-            long resultMinutes = (seconds % 3600) / 60;
-            long resultSeconds = seconds % 60;
-            long decimalPoint = milliseconds % 1000 / 10;
-
-            StringBuilder sb = new StringBuilder(8);
-            sb.append(resultHours).append(':');
-            if (resultMinutes < 10) sb.append('0');
-            sb.append(resultMinutes).append(':');
-            if (resultSeconds < 10) sb.append('0');
-            sb.append(resultSeconds);
-
-            sb.append(".");
-            if (decimalPoint < 10) sb.append('0'); // zero-padding
-            sb.append(decimalPoint);
-
-            this.currentNode.getAnnotation().clk = sb.toString();
+    /**
+     * Save clock data on a given move node (by node id)
+     *
+     * @param nodeId node to annotate (id)
+     * @param milliseconds milliseconds data
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    public void setMoveClockMilliSecondsAt(long nodeId, long milliseconds) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = requireAnnotationNode(nodeId);
+            targetNode.getAnnotation().clk = formatClockMilliSeconds(milliseconds);
         } finally {
             writeLock.unlock();
         }
@@ -3617,6 +3647,25 @@ public class ChessGame {
     }
 
     /**
+     * Save clock data on a given move node (by node id)
+     *
+     * @param nodeId node to annotate (id)
+     * @param clkTime string format like "0:05:00"
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    public void setMoveClockAt(long nodeId, String clkTime) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = requireAnnotationNode(nodeId);
+            targetNode.getAnnotation().clk = clkTime;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Save time stamp data on last move on MoveNode(DTO)
      *
      * @param timeStamp time elapsed string
@@ -3626,6 +3675,25 @@ public class ChessGame {
         try {
             if (this.currentNode == moveHistoryRoot) throw new ClockException("Current position can not be start position!");
             this.currentNode.getAnnotation().timeStamp = timeStamp;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Save time stamp data on a given move node (by node id)
+     *
+     * @param nodeId node to annotate (id)
+     * @param timeStamp time elapsed string
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    public void setTimeStampAt(long nodeId, String timeStamp) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = requireAnnotationNode(nodeId);
+            targetNode.getAnnotation().timeStamp = timeStamp;
         } finally {
             writeLock.unlock();
         }
@@ -3647,6 +3715,27 @@ public class ChessGame {
     }
 
     /**
+     * Add engine eval data on a given move node (by node id) <p>
+     * Does nothing if the given node is the root node.
+     *
+     * @param nodeId node to annotate (id)
+     * @param eval eval data like "1.25", "#-3"...
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     */
+    public void setMoveEvalAt(long nodeId, String eval) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = nodeCache.get(nodeId);
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            if (targetNode == moveHistoryRoot) return;
+            targetNode.getAnnotation().eval = eval;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Add highlighting square data on this current move
      *
      * @param csl square data like "Ge4" (Green square on e4), "Yd5" (Yellow square on d5)
@@ -3656,6 +3745,27 @@ public class ChessGame {
         try {
             if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().csl = csl;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Add highlighting square data on a given move node (by node id) <p>
+     * Does nothing if the given node is the root node.
+     *
+     * @param nodeId node to annotate (id)
+     * @param csl square data like "Ge4" (Green square on e4), "Yd5" (Yellow square on d5)
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     */
+    public void setMoveCslAt(long nodeId, String csl) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = nodeCache.get(nodeId);
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            if (targetNode == moveHistoryRoot) return;
+            targetNode.getAnnotation().csl = csl;
         } finally {
             writeLock.unlock();
         }
@@ -3677,6 +3787,27 @@ public class ChessGame {
     }
 
     /**
+     * Add highlighting arrow data on a given move node (by node id) <p>
+     * Does nothing if the given node is the root node.
+     *
+     * @param nodeId node to annotate (id)
+     * @param cal arrow data like "Gg1f3" (Green arrow g1 to f3), "Ye2e4" (Yellow arrow e2 to e4)
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     */
+    public void setMoveCalAt(long nodeId, String cal) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = nodeCache.get(nodeId);
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            if (targetNode == moveHistoryRoot) return;
+            targetNode.getAnnotation().cal = cal;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Add comment data on this current move
      *
      * @param comment comment string
@@ -3689,6 +3820,82 @@ public class ChessGame {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    /**
+     * Add comment data on a given move node (by node id) <p>
+     * Does nothing if the given node is the root node.
+     *
+     * @param nodeId node to annotate (id)
+     * @param comment comment string
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     */
+    public void setMoveCommentAt(long nodeId, String comment) {
+        writeLock.lock();
+        try {
+            MoveNode targetNode = nodeCache.get(nodeId);
+            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+            if (targetNode == moveHistoryRoot) return;
+            targetNode.getAnnotation().comment = comment;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Format hours/minutes/seconds into the clock annotation string format ("H:MM:SS")
+     */
+    private static String formatClock(int hours, int minutes, int seconds) {
+        StringBuilder sb = new StringBuilder(8);
+        sb.append(hours).append(':');
+        if (minutes < 10) sb.append('0');
+        sb.append(minutes).append(':');
+        if (seconds < 10) sb.append('0');
+        sb.append(seconds);
+        return sb.toString();
+    }
+
+    /**
+     * Format milliseconds into the clock annotation string format ("H:MM:SS.CC")
+     */
+    private static String formatClockMilliSeconds(long milliseconds) {
+        long seconds = milliseconds / 1000;
+        long resultHours = seconds / 3600;
+        long resultMinutes = (seconds % 3600) / 60;
+        long resultSeconds = seconds % 60;
+        long decimalPoint = milliseconds % 1000 / 10;
+
+        StringBuilder sb = new StringBuilder(8);
+        sb.append(resultHours).append(':');
+        if (resultMinutes < 10) sb.append('0');
+        sb.append(resultMinutes).append(':');
+        if (resultSeconds < 10) sb.append('0');
+        sb.append(resultSeconds);
+
+        sb.append(".");
+        if (decimalPoint < 10) sb.append('0'); // zero-padding
+        sb.append(decimalPoint);
+
+        return sb.toString();
+    }
+
+    /**
+     * Look up a node by id for clock/timestamp annotation and guard against the root node. <p>
+     * Used by the clock/timestamp "At" overloads, which (unlike eval/csl/cal/comment) throw
+     * on the root node rather than silently doing nothing.
+     *
+     * @param nodeId node id to look up
+     * @return the resolved node
+     *
+     * @throws MoveNotFoundException when the given node id is not found
+     * @throws ClockException when the given node is the root node
+     */
+    private MoveNode requireAnnotationNode(long nodeId) {
+        MoveNode targetNode = nodeCache.get(nodeId);
+        if (targetNode == null) throw new MoveNotFoundException("Could not find the node to annotate! (Node ID : " + nodeId + ")");
+        if (targetNode == moveHistoryRoot) throw new ClockException("Given node can not be the root position!");
+        return targetNode;
     }
 
     /**
@@ -3709,7 +3916,7 @@ public class ChessGame {
      * @param maxNodesCount max nodes count
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
-     * @throws FENConvertException if start position fen is wrong
+     * @throws FENConvertException if the PGN's start FEN is invalid or fails to parse
      */
     public void loadPGN(String pgnString, int maxNodesCount) {
         GameResult resultToNotify;
@@ -3738,10 +3945,6 @@ public class ChessGame {
                 throw convertException;
             }
             FENValidator.validateLogicalState(this.chessboard, variantToLoad);
-            this.startPositionFEN = fenToLoad;
-            this.chessboard.gameVariant = parsedData.variant();
-            this.chessboard.isChess960 = parsedData.isChess960();
-            ChessboardUtils.parseFen(this.chessboard, fenToLoad);
             this.startPositionFEN = fenToLoad;
 
             this.moveHistoryRoot = parsedData.rootNode();

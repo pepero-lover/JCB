@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.jumpToMainlinePly`, added `targetPly` string on exception message when throwing `MoveNotFoundException`.
 - On `MoveInfo`, added `isPromotion` to check whether this move is promotion move.
 - On `MoveInfo`, added `isWhiteMoving` to check who played this move.
+- On `ChessGame`, added editing pgn data methods with node id (`setMoveClockAt`, `setMoveEvalAt`, ...)
 
 ### Changed
 - On `ConvertStringUtils`, fixed not showing original san/lan string but changed like Ne4+ -> e4 on throwing exception.
