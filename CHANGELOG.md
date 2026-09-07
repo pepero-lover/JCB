@@ -12,11 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Illegal move detected! Move : Nc9, FEN : rnbqkbnr/... (Failed at move #4 in sequence "e4 e5 Nf3 Nc9")`)
 - On `ChessGame` methods throwing `MoveNotFoundException`, added node id on exception message.
 - On `ChessGame` methods throwing `VariantNotMatchException`, added current variant name on exception message.
+- On `ChessGame.makeMove(Square, Square, PieceType)`, added promotion type string on exception message when the promotion type is wrong
+- On `ChessGame.jumpToMainlinePly`, added `targetPly` string on exception message when throwing `MoveNotFoundException`.
 
 ### Changed
 - On `ConvertStringUtils`, fixed not showing original san/lan string but changed like Ne4+ -> e4 on throwing exception.
 
 ### Fixed
+- On `ConvertStringUtils` and `ChessGame`, fixed not allowing king promotion even the variant is suicide or giveaway.
 
 ### Performance
 

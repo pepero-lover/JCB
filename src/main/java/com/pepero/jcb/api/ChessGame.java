@@ -980,8 +980,12 @@ public class ChessGame {
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
+        boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
+                || this.chessboard.gameVariant == GameVariant.SUICIDE;
+
         if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
-                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT) {
+                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
+                !(isAntichessLike && promotionType == PieceType.KING)) {
             return false;
         }
 
@@ -1024,9 +1028,14 @@ public class ChessGame {
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
+        boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
+                || this.chessboard.gameVariant == GameVariant.SUICIDE;
+
         if(promotionType != PieceType.NONE && promotionType != PieceType.QUEEN && promotionType != PieceType.ROOK &&
-                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT) {
-            throw new IllegalMoveException("Promotion Piece type is unknown! please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
+                promotionType != PieceType.BISHOP && promotionType != PieceType.KNIGHT &&
+                !(isAntichessLike && promotionType == PieceType.KING)) {
+            throw new IllegalMoveException("Promotion Piece type is unknown! (Given : " + promotionType +
+                    ") please use like PieceType.QUEEN, PieceType.ROOK", this.getFEN());
         }
 
         MoveOutcome outcome;
@@ -3318,7 +3327,7 @@ public class ChessGame {
      * @throws MoveNotFoundException if move is not found or targetPly is out of bounds
      */
     public void jumpToMainlinePly(int targetPly) {
-        if (targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0!");
+        if (targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0! (Given : " + targetPly + ")");
 
         JumpOutcome outcome;
 

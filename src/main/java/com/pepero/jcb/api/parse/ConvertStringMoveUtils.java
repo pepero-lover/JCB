@@ -750,6 +750,7 @@ public class ConvertStringMoveUtils {
                 case 'R', 'r' -> R;
                 case 'B', 'b' -> B;
                 case 'N', 'n' -> N;
+                case 'K', 'k' -> K; // GIVEAWAY/SUICIDE variants allow promoting to a king
                 default -> throw new ConvertMoveException("Promotion piece char Not Found! ( FEN : " +
                         ChessboardUtils.getFen(chessboard) + " )",
                         ConvertType.SAN,
