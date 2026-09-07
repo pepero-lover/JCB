@@ -639,6 +639,10 @@ public class ConvertStringMoveUtils {
 
         boolean whiteTurn = chessboard.side == white;
 
+        // keep the original user-facing san string for exception messages
+        // (san below gets mutated/stripped for parsing purposes)
+        final String originalSan = san;
+
         boolean isCapture = san.contains("x");
         if(isCapture) san = san.replace("x", "");
         san = san.replace("+", "").replace("#", "");
@@ -646,7 +650,7 @@ public class ConvertStringMoveUtils {
         // when crazy house
         if (san.contains("@")) {
             String[] parts = san.split("@");
-            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", san,
+            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", originalSan,
                     ConvertType.SAN, ConvertErrorType.DROP_MOVE);
 
             char pieceChar = parts[0].charAt(0);
@@ -654,7 +658,7 @@ public class ConvertStringMoveUtils {
 
             Integer pieceTypeBoxed = char_to_encoded_piece.get(pieceChar);
             if (pieceTypeBoxed == null) {
-                throw new ConvertMoveException("Invalid drop piece char!", san,
+                throw new ConvertMoveException("Invalid drop piece char!", originalSan,
                         ConvertType.SAN, ConvertErrorType.DROP_MOVE);
             }
             int piece_type = normalizePieceColor(pieceTypeBoxed, chessboard.side);
@@ -662,7 +666,7 @@ public class ConvertStringMoveUtils {
             int move_result = MoveGenerator.isLegalDrop(chessboard, target_square, piece_type);
 
             if (move_result == ILLEGAL_MOVE) {
-                throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
+                throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));
             }
 
             return new TranslateResult(parts[0] + "@" + parts[1], move_result);
@@ -690,7 +694,7 @@ public class ConvertStringMoveUtils {
                         , move);
             }
 
-            throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
+            throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));
         }
 
         int piece_type = switch (san.charAt(0)) {
@@ -784,7 +788,7 @@ public class ConvertStringMoveUtils {
             }
         }
 
-        if(move_result == -1) throw new IllegalMoveException(san, ChessboardUtils.getFen(chessboard));
+        if(move_result == -1) throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));
 
         return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
                 + BoardSquares.square_to_coordinates[target_square]
