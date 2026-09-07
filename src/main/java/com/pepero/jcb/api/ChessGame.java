@@ -342,6 +342,17 @@ public class ChessGame {
     }
 
     /**
+     * Heavyweight copy constructor <br>
+     * Deep copy all history, position, etc. on other ChessGame. <br>
+     * <b>Warning : This still doesn't copy event listeners.</b>
+     *
+     * @param other ChessGame class to copy
+     */
+    public static ChessGame heavyWeightCopy(ChessGame other) {
+        return new ChessGame(other, true);
+    }
+
+    /**
      * Initialize position with FEN string
      *
      * @param fen fen string
@@ -416,7 +427,7 @@ public class ChessGame {
             this.startPositionFEN = ChessboardUtils.getFen(this.chessboard);
             captureInitialPieceCounts();
 
-            this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
+            this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.chessboard.full_move);
             this.currentNode = this.moveHistoryRoot;
             this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
 
@@ -428,6 +439,105 @@ public class ChessGame {
         } finally {
             other.readLock.unlock();
             writeLock.unlock();
+        }
+    }
+
+    /**
+     * Heavyweight copy constructor <br>
+     * Deep copy all history, position, etc. on other ChessGame. <br>
+     * <b>Warning : This still doesn't copy event listeners.</b>
+     *
+     * @param other ChessGame class to copy
+     * @param deepCopyHistoryTree always true, because of duplication (lightWeightCopy)
+     */
+    private ChessGame(ChessGame other, boolean deepCopyHistoryTree) {
+        other.readLock.lock();
+        writeLock.lock();
+        try {
+            this.chessboard = new Chessboard(other.chessboard);
+            this.startPositionFEN = other.startPositionFEN;
+            captureInitialPieceCounts();
+
+            Chessboard replayBoard = new Chessboard(other.startPositionFEN,
+                    other.chessboard.isChess960, other.chessboard.gameVariant);
+
+            this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
+            copyNodeState(other.moveHistoryRoot, this.moveHistoryRoot);
+            this.nodeCache.put(this.moveHistoryRoot.id, this.moveHistoryRoot);
+
+            MoveNode[] currentHolder = new MoveNode[1];
+            if (other.currentNode == other.moveHistoryRoot) {
+                currentHolder[0] = this.moveHistoryRoot;
+            }
+            deepCopyChildren(other.moveHistoryRoot, this.moveHistoryRoot, other.currentNode,
+                    replayBoard, currentHolder);
+
+            this.currentNode = currentHolder[0];
+            if (this.currentNode == null) {
+                throw new IllegalStateException("Could not locate other's current node while deep-copying history!");
+            }
+
+            this.gameResult = other.gameResult;
+            this.gameOverReason = other.gameOverReason;
+
+            this.headers.clear();
+            this.headers.putAll(other.headers);
+        } finally {
+            other.readLock.unlock();
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Copy source MoveNode and paste to newNode with children data.
+     *
+     * @param targetOldNode target current node (on sourceNode)
+     * @param currentHolder current node (new node)
+     */
+    private void deepCopyChildren(MoveNode sourceNode, MoveNode newNode, MoveNode targetOldNode,
+                                  Chessboard tempBoard, MoveNode[] currentHolder) {
+        for (MoveNode sourceChild : sourceNode.children) {
+            int encodedMove = sourceChild.moveData.originEncodedData();
+            MoveGenerator.makeMove(tempBoard, encodedMove);
+
+            MoveNode newChild = new MoveNode(sourceChild.moveData, newNode, nodeCounter.getAndIncrement(),
+                    tempBoard.ply, tempBoard.full_move);
+            copyNodeState(sourceChild, newChild);
+
+            newNode.children.add(newChild);
+            this.nodeCache.put(newChild.id, newChild);
+
+            if (sourceChild == targetOldNode) {
+                currentHolder[0] = newChild;
+            }
+
+            deepCopyChildren(sourceChild, newChild, targetOldNode, tempBoard, currentHolder);
+
+            MoveGenerator.unmakeMove(tempBoard, encodedMove);
+        }
+    }
+
+    /**
+     * Copy from source MoveNode data and paste to target MoveNode
+     */
+    private void copyNodeState(MoveNode source, MoveNode target) {
+        target.isStateEvaluated = source.isStateEvaluated;
+        target.calculatedResult = source.calculatedResult;
+        target.calculatedReason = source.calculatedReason;
+        target.terminalResult = source.terminalResult;
+        target.terminalReason = source.terminalReason;
+        target.cachedSan = source.cachedSan;
+        target.cachedFen = source.cachedFen;
+
+        if (source.annotation != null) {
+            var sourceAnnotation = source.annotation;
+            var targetAnnotation = target.getAnnotation();
+            targetAnnotation.clk = sourceAnnotation.clk;
+            targetAnnotation.timeStamp = sourceAnnotation.timeStamp;
+            targetAnnotation.eval = sourceAnnotation.eval;
+            targetAnnotation.csl = sourceAnnotation.csl;
+            targetAnnotation.cal = sourceAnnotation.cal;
+            targetAnnotation.comment = sourceAnnotation.comment;
         }
     }
 
@@ -2248,7 +2358,6 @@ public class ChessGame {
             readLock.unlock();
         }
     }
-
 
 
     /**
