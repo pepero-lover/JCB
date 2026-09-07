@@ -50,6 +50,10 @@ public record MoveInfo(int originEncodedData) {
         return EncodeMove.getMoveDrop(originEncodedData);
     }
 
+    public boolean isPromotion() {
+        return EncodeMove.getMovePromoted(originEncodedData) != 0;
+    }
+
     @Override
     public String toString() {
         return toLanString();
