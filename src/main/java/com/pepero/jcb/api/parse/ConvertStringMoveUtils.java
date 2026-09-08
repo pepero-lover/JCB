@@ -12,6 +12,8 @@ import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.encode.EncodeMove;
 
+import java.util.Map;
+
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 
 import static com.pepero.jcb.core.constant.SideToMove.*;
@@ -32,6 +34,10 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  *
  */
 public class ConvertStringMoveUtils {
+    private static final Map<Character, String> UNICODE_PIECES = Map.of(
+            'K', "♔", 'Q', "♕", 'R', "♖", 'B', "♗", 'N', "♘"
+    );
+
     private record TranslateResult(
             String moveString,
             int moveData
@@ -972,5 +978,27 @@ public class ConvertStringMoveUtils {
      */
     public static String[] parseLanSquares(String lan) {
         return new String[] { lan.substring(0, 2), lan.substring(2, 4) };
+    }
+
+    /**
+     * Replace ASCII piece letters in a SAN string with Unicode chess symbols.
+     * <p>
+     * examples. <p>
+     * "Nf3"    -> "♘f3" <br>
+     * "exd8=Q" -> "exd8=♕"
+     *
+     * @param san san move (or numbered san sequence — digits/dots are untouched)
+     * @return san string with piece letters replaced by Unicode symbols
+     */
+    public static String toUnicodePieces(String san) {
+        StringBuilder sb = new StringBuilder(san);
+        for (int i = 0; i < sb.length(); i++) {
+            String replacement = UNICODE_PIECES.get(sb.charAt(i));
+            if (replacement != null) {
+                sb.replace(i, i + 1, replacement);
+                i += replacement.length() - 1;
+            }
+        }
+        return sb.toString();
     }
 }

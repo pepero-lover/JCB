@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (also added on `ChessGame.removeNumberFromSan`)
 - On `ConvertStringMoveUtils`, added `parseLanSquares` converting lan string to two squares string.
 - On `EngineLine`, added `bestMoveSquares` for showing pv line move square string.
+- On `ConvertStringMoveUtils`, added `toUnicodePieces` to change piece type char like `B`, `K`, `Q` to
+  `♗`, `♔`, `♕`.
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.
