@@ -939,4 +939,24 @@ public class ConvertStringMoveUtils {
 
         return sb.toString().trim();
     }
+
+    /**
+     * Remove PGN-style move numbers from a numbered SAN sequence (reverse of
+     * {@link #addMoveNumberToSanSequence(Chessboard, String)}).
+     * <p>
+     * Examples : <p>
+     * "1. e4 e5 2. Nf3"  -> "e4 e5 Nf3"
+     * "1... e5 2. e3 Nc6" -> "e5 e3 Nc6"
+     *
+     * @param numberedSanSequence numbered san sequence
+     * @return plain san sequence with move numbers stripped
+     */
+    public static String removeMoveNumberFromSanSequence(String numberedSanSequence) {
+        if (numberedSanSequence == null || numberedSanSequence.isBlank()) return "";
+
+        return numberedSanSequence.trim()
+                .replaceAll("\\d+\\.+\\s*", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
 }

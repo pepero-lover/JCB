@@ -2773,6 +2773,25 @@ public class ChessGame {
     }
 
     /**
+     * Remove move numbers from a numbered SAN sequence (reverse of
+     * {@link #toNumberedSan(String)}).
+     * <p>
+     * Examples : <p>
+     * "1. e4 e5 2. Nf3"  -> "e4 e5 Nf3"
+     * "1... e5 2. e3 Nc6" -> "e5 e3 Nc6"
+     *
+     * @return plain san sequence with move numbers stripped
+     */
+    public String removeNumberFromSan(String numberedSanSequence) {
+        readLock.lock();
+        try {
+            return ConvertStringMoveUtils.removeMoveNumberFromSanSequence(numberedSanSequence);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get 3 check 'check count' <br>
      * the first index is white's checked count, <br>
      * the second index is black's checked count.
