@@ -460,10 +460,10 @@ public class ChessGame {
         try {
             this.chessboard = new Chessboard(other.chessboard);
             this.startPositionFEN = other.startPositionFEN;
-            captureInitialPieceCounts();
 
             Chessboard replayBoard = new Chessboard(other.startPositionFEN,
                     other.chessboard.isChess960, other.chessboard.gameVariant);
+            captureInitialPieceCounts(replayBoard);
 
             this.moveHistoryRoot = new MoveNode(nodeCounter.getAndIncrement(), other.moveHistoryRoot.fullMovePly);
             copyNodeState(other.moveHistoryRoot, this.moveHistoryRoot);
@@ -1792,26 +1792,30 @@ public class ChessGame {
     }
 
     /**
-     * Snapshot the piece counts currently on {@link #chessboard} into {@link #initialPieceCounts}. <br>
-     * Must be called right after {@link #chessboard} is set to whatever this game's actual
-     * starting position is — standard start, a custom FEN, a copied position, or a freshly
-     * loaded PGN's start FEN — and before any moves are applied on top of it. <br>
-     * This replaces the old hardcoded standard-chess assumption (8 pawns, 2 knights, ...),
-     * which made {@link #getCapturedPieces(boolean)} wrong for any non-standard start.
+     * Calculate initial piece counts for {@link #getCapturedPieces(boolean)}. <br>
+     * Called once on constructing {@link ChessGame}.
+     *
+     * @param board root position
      */
-    private void captureInitialPieceCounts() {
+    private void captureInitialPieceCounts(Chessboard board) {
         int[] counts = new int[12];
         for (int piece = P; piece <= k; piece++) {
-            counts[piece] = BitBoardUtils.countBits(chessboard.bitboards[piece]);
+            counts[piece] = BitBoardUtils.countBits(board.bitboards[piece]);
         }
         this.initialPieceCounts = counts;
     }
 
     /**
-     * Walk the move history leading to the current position and count, per piece-type
-     * index (same indexing as {@link #initialPieceCounts}), how many pawn promotions
-     * happened for each side. Used by {@link #getCapturedPieces(boolean)} to correct
-     * for the fact that a promotion changes a piece's type without being a capture.
+     * Calculate initial piece counts for {@link #getCapturedPieces(boolean)}. <br>
+     * Called once on constructing {@link ChessGame}.
+     */
+    private void captureInitialPieceCounts() {
+        captureInitialPieceCounts(this.chessboard);
+    }
+
+    /**
+     * Get promotion counts from this current node. <br>
+     * This method is used to calculate piece score. (at {@link #getCapturedPieces(boolean)}
      */
     private void tallyPromotions(int[] promotionCounts) {
         MoveNode current = currentNode;
@@ -2758,8 +2762,8 @@ public class ChessGame {
 
     /**
      * Get 3 check 'check count' <br>
-     * first index is white's checked count, <br>
-     * second index is black's checked count.
+     * the first index is white's checked count, <br>
+     * the second index is black's checked count.
      *
      * @return checked count for each white/black
      * @throws VariantNotMatchException if variant isn't three check
@@ -2930,33 +2934,13 @@ public class ChessGame {
 
 
     /**
-     * Result of {@link #evaluateGameStateForNotification(MoveNode)}, before any listener
-     * notification has happened. Kept separate from notification for the same reason as
-     * {@link MoveOutcome} / {@link UndoRedoOutcome}: callers must release {@code writeLock}
-     * before dispatching to listeners.
-     *
-     * @param newlyOver whether this evaluation discovered a terminal result for the first
-     *                  time (i.e. {@code onGameOver} should fire)
-     * @param gameResult game result for the evaluated node (UNKNOWN if the game is not over)
-     * @param gameOverReason game over reason for the evaluated node
+     * Game over outcome to notify listeners
      */
     private record GameOverCheckOutcome(boolean newlyOver, GameResult gameResult, GameOverReason gameOverReason) {}
 
     /**
-     * Evaluate the game-over state of the given node, tracking whether a terminal result was
-     * discovered for the first time for that node &mdash; not on every call. <p>
-     *
-     * This exists because {@link #evaluateGameState(MoveNode)} caches its result on the node
-     * ({@code node.isStateEvaluated}), so calling it repeatedly (e.g. from a "getter" like
-     * {@link #getGameResult()}) would otherwise re-fire {@code onGameOver} every single time. <p>
-     *
-     * <b>Warning : This does not notify listeners.</b> The caller must already hold
-     * {@code writeLock}, and is responsible for notifying {@code onGameOver} with the
-     * returned outcome's result/reason (when {@link GameOverCheckOutcome#newlyOver()} is
-     * true), after releasing {@code writeLock}.
-     *
-     * @param node node to evaluate
-     * @return outcome of this evaluation, to be checked/notified after releasing {@code writeLock}
+     * Evaluate this node's game state <br>
+     * <b>This doesn't update any listeners.</b>
      */
     private GameOverCheckOutcome evaluateGameStateForNotification(MoveNode node) {
         boolean alreadyKnown = node.isStateEvaluated || node.terminalReason != null;
@@ -2994,6 +2978,10 @@ public class ChessGame {
         }
     }
 
+
+    /**
+     * GameResult, GameOverReason outcome to notify listeners
+     */
     private record ResultAndReason(GameResult result, GameOverReason reason) {}
 
     /**
@@ -3046,7 +3034,6 @@ public class ChessGame {
             writeLock.unlock();
         }
     }
-
 
 
     /**
@@ -3394,10 +3381,7 @@ public class ChessGame {
     }
 
     /**
-     * Result of {@link #internalJumpToNode(long)}, before any listener notification has
-     * happened. Kept separate from notification for the same reason as {@link MoveOutcome}:
-     * callers must release {@code writeLock} before dispatching to listeners, even when the
-     * jump is itself invoked from another locked method (e.g. {@link #deleteVariation(long)}).
+     * Result of {@link #internalJumpToNode(long)} for notifying listeners
      *
      * @param targetFen FEN of the position jumped to
      * @param gameOverOutcome game-over evaluation for the node jumped to
