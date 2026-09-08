@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.10.2]
+
+### Added
 - On `ChessGame`, added heavyweight constructor.
 - On `ChessGame.makeAllMove*` methods, added showing where the error move occurred. (e.g.
   `Illegal move detected! Move : Nc9, FEN : rnbqkbnr/... (Failed at move #4 in sequence "e4 e5 Nf3 Nc9")`)
@@ -315,7 +325,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.10.1...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.10.2...HEAD
+[1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/pepero-lover/JCB/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/pepero-lover/JCB/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/pepero-lover/JCB/compare/v1.8.0...v1.9.0
