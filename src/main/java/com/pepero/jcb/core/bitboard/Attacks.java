@@ -2,6 +2,9 @@ package com.pepero.jcb.core.bitboard;
 
 import static com.pepero.jcb.core.constant.SideToMove.*;
 
+/**
+ * Attacks table for piece moving, pawn captures.
+ */
 public class Attacks {
     //  -------
     //  ATTACKS

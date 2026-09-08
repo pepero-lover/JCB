@@ -5,7 +5,7 @@ import java.util.Arrays;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 
 /**
- * define castling rights
+ * Define castling rights.
  */
 public class CastlingRights {
     /*

@@ -1,5 +1,11 @@
 package com.pepero.jcb.core.util;
 
+/**
+ * Seed-random number generator for generating {@link com.pepero.jcb.core.bitboard.MagicNumbers}
+ * and {@link com.pepero.jcb.core.hash.Zobrist} hash keys. <p>
+ *
+ * Fun fact : The starting state seed is 111111 (pepero-lover)
+ */
 public class Random {
     // i love pepero
 

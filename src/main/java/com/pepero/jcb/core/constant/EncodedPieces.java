@@ -6,7 +6,10 @@ import java.util.Map;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 
 /**
- * Encoded Pieces constant for bitboard
+ * Encoded Pieces constant for bitboard. <br>
+ * Starts at {@link #P} (white pawn) with 0, ends at {@link #k} (black king) with 11. <br>
+ * The order of this piece constants is <br>
+ * {@code P, N, B, R, Q, K, p, n, b, r, q, k}.
  */
 public class EncodedPieces {
     // white pieces

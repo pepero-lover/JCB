@@ -14,7 +14,39 @@ import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
- * Generate moves on given {@link Chessboard} position.
+ * Generate moves on given {@link Chessboard} position, make, unmake move, and distinguishing given move is legal move. <br>
+ * The move generating logic is {@code fully-legal}, not {@code pseudo-legal}. <br>
+ * So don't have to code like this,
+ * <pre>
+ * {@code
+ * int move_list = new int[MoveCache.MAX_MOVE_SIZE];
+ * int move_count = MoveGenerator.generateMoves(chessBoard, move_list);
+ * for (int i = 0; i < move_count; i++) {
+ *     int move = move_list[i];
+ *     if(!MoveGenerator.makeMove(chessBoard, move)) {
+ *         MoveGenerator.unmakeMove(chessBoard,move);
+ *         continue;
+ *     }
+ *     ...
+ *     MoveGenerator.unmakeMove(chessBoard,move);
+ * }
+ *
+ * }
+ * </pre>
+ * But this,
+ * <pre>
+ * {@code
+ * int move_list = new int[MoveCache.MAX_MOVE_SIZE];
+ * int move_count = MoveGenerator.generateMoves(chessBoard, move_list);
+ * for (int i = 0; i < move_count; i++) {
+ *     int move = move_list[i];
+ *     MoveGenerator.makeMove(chessBoard, move);
+ *     ...
+ *     MoveGenerator.unmakeMove(chessBoard,move);
+ * }
+ *
+ * }
+ * </pre>
  */
 public class MoveGenerator {
     private static final int NO_PIECE_CONSTANT = -1;

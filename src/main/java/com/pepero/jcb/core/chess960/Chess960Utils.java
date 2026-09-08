@@ -2,6 +2,9 @@ package com.pepero.jcb.core.chess960;
 
 import java.security.SecureRandom;
 
+/**
+ * Generates Chess960 (or Fischer Random) position.
+ */
 public class Chess960Utils {
     private static final int[][] KNIGHT_PLACEMENTS = {
             {0, 0}, {0, 1}, {0, 2}, {0, 3},

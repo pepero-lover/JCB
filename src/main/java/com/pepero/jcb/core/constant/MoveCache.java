@@ -1,7 +1,9 @@
 package com.pepero.jcb.core.constant;
 
-import com.pepero.jcb.core.Chessboard;
-
+/**
+ * Move caching for memory saving. (not necessary) <br>
+ * The max move size is 512 because of crazy house move.
+ */
 public class MoveCache {
     public static final int MAX_MOVE_SIZE = 512;
 

@@ -1,5 +1,11 @@
 package com.pepero.jcb.core.bitboard;
 
+/**
+ * Bitboard (or bit manipulation) utils. <p>
+ *
+ * The JCB core is based on bitboard logics like bit shifting, popping a bit, setting a bit, etc. <br>
+ *
+ */
 public class BitBoardUtils {
     // The bitboard type is just 'long'
 
@@ -31,14 +37,14 @@ public class BitBoardUtils {
     /**
      * Get a bit on Board
      * <p>
-     * THIS METHOD DON'T CHANGE THE BITBOARD ON LONG.
-     * IF YOU ARE USING IT, MAKE SURE YOU CODE LIKE THIS:
+     * This method can't change the bitboard unlike C/C++.
+     * If you are using it, make sure you code like this.
      * <p>
-     * bitboard = setBit(bitboard, square);
+     * <pre>{@code bitboard = setBit(bitboard, square);}</pre>
      * <p>
-     * NOT LIKE THIS
+     * not like this
      * <p>
-     * setBit(bitboard, square);
+     * <pre>{@code setBit(bitboard, square);}</pre>
      *
      * @param square square on bitboard
      * @return edited this bitboard
@@ -62,15 +68,15 @@ public class BitBoardUtils {
      * if a bit on Board is 0 it does noting,
      * else, a bit on Board equals 0
      * <p>
-     * THIS METHOD DON'T CHANGE THE BITBOARD ON LONG.
-     * IF YOU ARE USING IT, MAKE SURE YOU CODE LIKE THIS:
+     * This method can't change the bitboard unlike C/C++.
+     * If you are using it, make sure you code like this.
      * <p>
-     * bitboard = popBit(bitboard, square);
+     * <pre>{@code bitboard = popBit(bitboard, square);}</pre>
      * <p>
-     * NOT LIKE THIS
+     * not like this
      * <p>
-     * popBit(bitboard, square);
-     * <p>
+     * <pre>{@code popBit(bitboard, square);}</pre>
+     *
      * @param square square on bitboard
      * @return edited this bitboard
      */

@@ -1,5 +1,8 @@
 package com.pepero.jcb.core.util;
 
+/**
+ * Time measurement utils for perft driver.
+ */
 public class TimeUtils {
     // get time milliseconds
     public static long getTimeMs(){

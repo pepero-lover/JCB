@@ -6,9 +6,14 @@ import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.encode.EncodeMove;
 import com.pepero.jcb.core.hash.Zobrist;
 
+/**
+ * Initializing {@link Attacks} table, magic slider attacks, hash keys, etc. <br>
+ * Called just once when {@link Chessboard} is loaded on JVM.
+ */
 public class Initializer {
     /**
-     * Init all variables
+     * Initializing {@link Attacks} table, magic slider attacks, hash keys, etc. <br>
+     * Called just once when {@link Chessboard} is loaded on JVM.
      */
     public static void init(){
         Attacks.initLeapersAttacks();

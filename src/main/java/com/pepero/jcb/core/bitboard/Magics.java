@@ -4,6 +4,11 @@ import com.pepero.jcb.core.util.Random;
 
 import java.util.Arrays;
 
+/**
+ * Magic number calculating for fast generating bishop, rook attacks with occupancy. <br>
+ * If you want to understand what this number generator doing, <br>
+ * go to <a href="https://chessprogramming.org/Magic_Bitboards">Magic bitboards explanation on chess programming wiki</a>.
+ */
 public class Magics {
     /**
      * Find appropriate magic number

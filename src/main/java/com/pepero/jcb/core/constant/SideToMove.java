@@ -1,7 +1,8 @@
 package com.pepero.jcb.core.constant;
 
 /**
- * define side to move
+ * Define side to move. <br>
+ * There is {@link #white} constant and {@link #black} constant, and there is {@link #both} constant for occupancy.
  */
 public class SideToMove {
     // side to move (colors)
