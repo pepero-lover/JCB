@@ -9,6 +9,13 @@ import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 
+/**
+ * Hash a given {@link Chessboard} position. <br>
+ * This hashes variables like piece position, enpassant, castling, side, etc. <p>
+ *
+ * Used on {@link Chessboard#hash_key}. And each move, the hash key not updates whole, but incremental updates. <br>
+ * To see incremental updates, go to {@link com.pepero.jcb.core.MoveGenerator}
+ */
 public class Zobrist {
     // random piece keys [piece][square]
     public static final long[][] piece_keys = new long[12][64];

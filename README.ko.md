@@ -136,13 +136,13 @@ public class MainExample {
         // 무르기 및 다시두기 테스트
         if (chessGame.canUndo()) {
             System.out.println("무르기 전 포지션 : ");
-            chessGame.toAscii();
+            chessGame.printBoard();
             System.out.println();
 
             chessGame.unmakeMove(); // g1f3 무르기
 
             System.out.println("무른 후 포지션 : ");
-            chessGame.toAscii();
+            chessGame.printBoard();
         }
     }
 }

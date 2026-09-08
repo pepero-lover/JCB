@@ -13,6 +13,9 @@ import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
+/**
+ * Generate moves on given {@link Chessboard} position.
+ */
 public class MoveGenerator {
     private static final int NO_PIECE_CONSTANT = -1;
 

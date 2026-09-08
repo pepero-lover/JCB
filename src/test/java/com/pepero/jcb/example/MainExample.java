@@ -19,13 +19,13 @@ public class MainExample {
         // Test undo and redo
         if (chessGame.canUndo()) {
             System.out.println("Position before undo: ");
-            chessGame.toAscii();
+            chessGame.printBoard();
             System.out.println();
 
             chessGame.unmakeMove(); // undo g1f3
 
             System.out.println("Position after undo: ");
-            chessGame.toAscii();
+            chessGame.printBoard();
         }
     }
 }

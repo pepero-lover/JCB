@@ -8,6 +8,10 @@ import java.util.Arrays;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 
+/**
+ * Chess board class storing piece bitboards, side to move, occupancies, and more. <br>
+ * Using bitboard logic (bit shifting, popBit, setBit, ...) for efficiency.
+ */
 public class Chessboard {
     static {
         Initializer.init();

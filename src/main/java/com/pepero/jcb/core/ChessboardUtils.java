@@ -17,14 +17,24 @@ import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
+/**
+ * Utils for {@link Chessboard} class. <p>
+ *
+ * There are methods like printing Chessboard ({@link #printChessBoard(Chessboard)}), <br>
+ * parsing fen and applying to Chessboard ({@link #parseFen(Chessboard, String)}), <br>
+ * and getting FEN from given Chessboard ({@link #getFen(Chessboard)}), and more.
+ */
 public class ChessboardUtils {
     /**
-     * print this chessboard
+     * Print this chessboard
      */
     public static void printChessBoard(Chessboard chessboard) {
         System.out.println(toStringChessboard(chessboard));
     }
 
+    /**
+     * Parse given FEN and apply to chess board.
+     */
     public static void parseFen(Chessboard chessboard, String fen) {
         // reset chessboard
         chessboard.resetBoard(chessboard.gameVariant);
@@ -235,10 +245,29 @@ public class ChessboardUtils {
         chessboard.hash_key = Zobrist.generateHashKey(chessboard);
     }
 
+    /**
+     * Get FEN on given chess board. <br>
+     * The default dialect variable is Lichess. <br>
+     * If you want to know what's the difference between LICHESS and FAIRY_STOCKFISH,
+     * go to {@link #getFen(Chessboard, FENDialect)}
+     *
+     * @return position's fen
+     */
     public static String getFen(Chessboard chessboard) {
         return getFen(chessboard, FENDialect.LICHESS);
     }
 
+    /**
+     * Get FEN on given chess board position, with dialect parameter. <p>
+     *
+     * Dialect Example : <br>
+     * If dialect is {@link FENDialect#LICHESS} and the variant is 3 check, the fen is going to be <br>
+     * {@code "... - 3+3 0 1"} and the 3+3 is white's and black's remaining check count.
+     * If dialect is {@link FENDialect#FAIRY_STOCKFISH} and the variant is 3 check, the fen is going to be <br>
+     * {@code "... - 0 1 +0+0"} and the +0+0 is white's and black's checked count
+     *
+     * @return position's fen
+     */
     public static String getFen(Chessboard chessboard, FENDialect dialect){
         StringBuilder fen = new StringBuilder();
 
@@ -754,6 +783,31 @@ public class ChessboardUtils {
         };
     }
 
+    /**
+     * Get chess board ascii string <p>
+     *
+     * The ascii position example : <p>
+     *
+     * <pre>{@code
+     *   8   r n b q k b n r
+     *   7   p p p p . p p p
+     *   6   . . . . . . . .
+     *   5   . . . . p . . .
+     *   4   . . . . P . . .
+     *   3   . . . . . N . .
+     *   2   P P P P . P P P
+     *   1   R N B Q K B . R
+     *
+     *       a b c d e f g h
+     *
+     *       Side:     black
+     *       Enpassant:   no
+     *       Castling:  KQkq
+     *       FEN : rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
+     * }</pre>
+     *
+     * @return chess board ascii string
+     */
     public static String toStringChessboard(Chessboard chessboard) {
         StringBuilder sb = new StringBuilder(256);
         char[] board = new char[64];
@@ -808,8 +862,6 @@ public class ChessboardUtils {
                 .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
                 .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
                 .append("\n");
-        sb.append("      FEN : ")
-                .append(getFen(chessboard));
 
         if(chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             sb
@@ -826,6 +878,9 @@ public class ChessboardUtils {
                     .repeat("p", Math.max(0, chessboard.pocket[p]))
                     .append("]\n");
         }
+
+        sb.append("      FEN : ")
+                .append(getFen(chessboard));
 
         return sb.toString();
     }

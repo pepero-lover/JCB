@@ -12,12 +12,12 @@ import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.constant.CastlingRights;
-import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.core.encode.EncodeMove;
 import com.pepero.jcb.api.perft.PerftDriver;
 import com.pepero.jcb.api.perft.PerftResult;
+import com.pepero.jcb.core.hash.Zobrist;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -96,13 +96,7 @@ public class ChessGame {
     // game variables
 
     /**
-     * Initial piece count <br>
-     * The piece type index on {@link EncodedPieces} <br>
-     * This is NOT hardcoded to the standard 8/2/2/2/1/1 setup anymore — it's snapshotted
-     * from whatever the actual starting position is (standard start, a custom FEN, a copied
-     * position, or a loaded PGN's start FEN) via {@link #captureInitialPieceCounts()}.
-     * Otherwise {@link #getCapturedPieces(boolean)} would report wrong numbers whenever the
-     * game didn't start from the normal position.
+     * Initial piece count for {@link #getCapturedPieces(boolean)}.
      */
     private int[] initialPieceCounts;
 
@@ -958,7 +952,7 @@ public class ChessGame {
 
 
     /**
-     * Try to make move on this ChessGame without throwing an exception
+     * Try to make a move on this ChessGame without throwing an exception
      *
      * @param moveInfo move info
      *
@@ -992,7 +986,7 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception
+     * Try to make a move on this ChessGame without throwing an exception
      *
      * @param lanMove move string like "e2e4", "e7e5"
      *
@@ -1197,7 +1191,7 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception (LAN MOVE)
+     * Try to make a move on this ChessGame without throwing an exception (LAN MOVE)
      *
      * @param lan move like e2e4, e7e5 (LAN move string)
      *
@@ -1293,11 +1287,11 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception (Source square, Target square, Promotion Type)
+     * Try to make a move on this ChessGame without throwing an exception (Source square, Target square, Promotion Type)
      *
      * @param sourceSquare Source square (you can make square on BoardSquares.java)
      * @param targetSquare Target square (you can make square on BoardSquares.java)
-     * @param promotionType Promotion type like queen, rook, bishop and knight (PieceType.QUEEN, PieceType.ROOK ... )
+     * @param promotionType Promotion type like queen, rook, bishop and knight ({@link PieceType#QUEEN}, {@link PieceType#ROOK} ... )
      *
      * @return true if the move was legal and applied, false otherwise
      */
@@ -1311,7 +1305,7 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception (Source square, Target square)
+     * Try to make a move on this ChessGame without throwing an exception (Source square, Target square)
      *
      * @param sourceSquare Source square (you can make square on BoardSquares.java)
      * @param targetSquare Target square (you can make square on BoardSquares.java)
@@ -1323,7 +1317,7 @@ public class ChessGame {
     }
 
     /**
-     * Try to make move on this ChessGame without throwing an exception (MoveInfo)
+     * Try to make a move on this ChessGame without throwing an exception (MoveInfo)
      *
      * @param moveInfo MoveInfo class
      *
@@ -2183,7 +2177,7 @@ public class ChessGame {
                     (oppSide == white ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) :
                             (chessboard.bitboards[r] | chessboard.bitboards[q]));
 
-            // queen is already contained
+            // queen attack mask is already contained
 
             while (checkersMask != 0L) {
                 int square = BitBoardUtils.getLS1BIndex(checkersMask);
@@ -3337,7 +3331,7 @@ public class ChessGame {
     /**
      * Get current move info.
      *
-     * @throws MoveNotFoundException if current move is root move
+     * @throws MoveNotFoundException if the current move is root move
      */
     public MoveInfo getCurrentMoveInfo() {
         readLock.lock();
@@ -3353,7 +3347,7 @@ public class ChessGame {
      * Get LCA (Lowest Common Ancestor) node.
      */
     private MoveNode getLCANode(MoveNode a, MoveNode b) {
-        // equalize depth of a and b
+        // equalize the depth of a and b
 
         // if a's depth is deeper, let a goes to b's depth
         // if b's depth is deeper, let b goes to a's depth
@@ -4533,14 +4527,7 @@ public class ChessGame {
     }
 
     /**
-     * Get this position's internal Zobrist hash (JCB's own hashing scheme). <p>
-     *
-     * Unlike {@link #getPolyglotHash()}, which follows the Polyglot book format and does
-     * <b>not</b> encode variant-specific state (e.g. Crazyhouse pocket contents, Atomic
-     * captured-piece state), this hash reflects JCB's internal {@code Chessboard} state
-     * and is unique per variant-aware position. Use this when you need exact position
-     * equality across variants, e.g. for repetition detection or transposition dedup;
-     * use {@link #getPolyglotHash()} when interoperating with Polyglot opening books.
+     * Get this position's internal {@link Zobrist} hash (JCB's own hashing scheme). <p>
      *
      * @return internal Zobrist hash of the current position
      */
