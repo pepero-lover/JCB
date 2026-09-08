@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ConvertStringMoveUtils`, added `removeMoveNumberFromSanSequence` removing move number on given san sequence like 
   `1. e4 e5 2. Nf3 Nc6` to `e4 e5 Nf3 Nc6`.
   (also added on `ChessGame.removeNumberFromSan`)
+- On `ConvertStringMoveUtils`, added `parseLanSquares` converting lan string to two squares string.
+- On `EngineLine`, added `bestMoveSquares` for showing pv line move square string.
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.

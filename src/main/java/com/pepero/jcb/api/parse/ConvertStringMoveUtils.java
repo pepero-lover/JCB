@@ -959,4 +959,18 @@ public class ConvertStringMoveUtils {
                 .trim()
                 .replaceAll("\\s+", " ");
     }
+
+    /**
+     * Extract the source and target square coordinates from a LAN move string.
+     * <p>
+     * examples. <p>
+     * "e2e4"  -> {"e2", "e4"} <br>
+     * "e7e8q" -> {"e7", "e8"} (promotion suffix ignored)
+     *
+     * @param lan LAN move string
+     * @return {source square, target square}
+     */
+    public static String[] parseLanSquares(String lan) {
+        return new String[] { lan.substring(0, 2), lan.substring(2, 4) };
+    }
 }
