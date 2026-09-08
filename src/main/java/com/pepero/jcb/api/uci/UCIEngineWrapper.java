@@ -434,7 +434,7 @@ public class UCIEngineWrapper implements AutoCloseable {
             ChessGame snapshot = analysisSnapshot;
             if (snapshot != null) {
                 try {
-                    sanPvStr = snapshot.toSan(pvStr);
+                    sanPvStr = snapshot.toNumberedSan(snapshot.toSan(pvStr));
                 } catch (Exception e) {
                     sanPvStr = pvStr;
                 }

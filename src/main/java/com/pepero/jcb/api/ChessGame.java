@@ -2755,6 +2755,24 @@ public class ChessGame {
     }
 
     /**
+     * Convert san sequence to number added san sequence. (for engine pv showing) <p>
+     *
+     * Examples :  <p>
+     * "e4 e5 Nf3" (white to move)  -> "1. e4 e5 2. Nf3" <br>
+     * "e5 Nf3 Nc6" (black to move) -> "1... e5 2. Nf3 Nc6"
+     *
+     * @return number added san sequence
+     */
+    public String toNumberedSan(String sanSequence) {
+        readLock.lock();
+        try {
+            return ConvertStringMoveUtils.addMoveNumberToSanSequence(this.chessboard, sanSequence);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get 3 check 'check count' <br>
      * the first index is white's checked count, <br>
      * the second index is black's checked count.

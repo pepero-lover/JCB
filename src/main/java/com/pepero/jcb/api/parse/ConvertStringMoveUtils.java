@@ -902,4 +902,41 @@ public class ConvertStringMoveUtils {
                 +BoardSquares.square_to_coordinates[target_square]
                 +(promotion_type!=0? promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
     }
+
+    /**
+     * Add PGN-style move numbers to a SAN sequence, for displaying PV lines.
+     * <p>
+     * Examples :  <p>
+     * "e4 e5 Nf3" (white to move)  -> "1. e4 e5 2. Nf3" <br>
+     * "e5 Nf3 Nc6" (black to move) -> "1... e5 2. Nf3 Nc6"
+     *
+     * @param chessboard chessboard at the position where the PV starts (not mutated)
+     * @param sanSequence san move sequence separated by whitespace (like "e4 e5 Nf3")
+     * @return numbered san sequence
+     */
+    public static String addMoveNumberToSanSequence(Chessboard chessboard, String sanSequence) {
+        if (sanSequence == null || sanSequence.trim().isEmpty()) return "";
+
+        String[] sans = sanSequence.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+
+        int ply = chessboard.full_move;
+
+        for (int i = 0; i < sans.length; i++) {
+            boolean white_to_move = ply % 2 == 0;
+            int full_move_number = ply / 2 + 1;
+
+            if (i == 0) {
+                sb.append(full_move_number).append(white_to_move ? ". " : "... ");
+            } else if (white_to_move) {
+                sb.append(full_move_number).append(". ");
+            }
+
+            sb.append(sans[i]).append(" ");
+
+            ply++;
+        }
+
+        return sb.toString().trim();
+    }
 }

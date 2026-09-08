@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `ConvertStringMoveUtils`, added `addMoveNumberToSanSequence` adding move number on given san sequence like `1. e4 e5 2.Nf3` for engine pv showing.
 
 ### Changed
+- On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.
 
 ### Fixed
 
