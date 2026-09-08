@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ConvertStringMoveUtils`, added `toUnicodePieces` to change piece type char like `B`, `K`, `Q` to
   `♗`, `♔`, `♕`.
 - On `FENValidator`, added `validate` method validating given fen syntactically correct and logically possible chess position.
+- On `ChessGame`, added getting start position fen by `GameVariant` method (`ChessGame.getStartingFen(GameVariant variant)`).
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.

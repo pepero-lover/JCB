@@ -188,6 +188,16 @@ public class ChessGame {
     }
 
     /**
+     * Get starting fen string by variant
+     *
+     * @param variant game variant
+     * @return starting position fen
+     */
+    public static String getStartingFen(GameVariant variant) {
+        return ChessboardUtils.getDefaultStartPosition(variant);
+    }
+
+    /**
      * Initialize position with PGN string
      *
      * @param pgn pgn string
