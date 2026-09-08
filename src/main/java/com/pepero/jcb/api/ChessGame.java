@@ -3817,7 +3817,6 @@ public class ChessGame {
     public void setCurrentMoveEval(String eval) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().eval = eval;
         } finally {
             writeLock.unlock();
@@ -3825,8 +3824,7 @@ public class ChessGame {
     }
 
     /**
-     * Add engine eval data on a given move node (by node id) <p>
-     * Does nothing if the given node is the root node.
+     * Add engine eval data on a given move node (by node id)
      *
      * @param nodeId node to annotate (id)
      * @param eval eval data like "1.25", "#-3"...
@@ -3837,7 +3835,6 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = findAnnotationNode(nodeId);
-            if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().eval = eval;
         } finally {
             writeLock.unlock();
@@ -3852,7 +3849,6 @@ public class ChessGame {
     public void setCurrentMoveCsl(String csl) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().csl = csl;
         } finally {
             writeLock.unlock();
@@ -3860,8 +3856,7 @@ public class ChessGame {
     }
 
     /**
-     * Add highlighting square data on a given move node (by node id) <p>
-     * Does nothing if the given node is the root node.
+     * Add highlighting square data on a given move node (by node id)
      *
      * @param nodeId node to annotate (id)
      * @param csl square data like "Ge4" (Green square on e4), "Yd5" (Yellow square on d5)
@@ -3872,7 +3867,6 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = findAnnotationNode(nodeId);
-            if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().csl = csl;
         } finally {
             writeLock.unlock();
@@ -3887,7 +3881,6 @@ public class ChessGame {
     public void setCurrentMoveCal(String cal) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().cal = cal;
         } finally {
             writeLock.unlock();
@@ -3895,8 +3888,7 @@ public class ChessGame {
     }
 
     /**
-     * Add highlighting arrow data on a given move node (by node id) <p>
-     * Does nothing if the given node is the root node.
+     * Add highlighting arrow data on a given move node (by node id)
      *
      * @param nodeId node to annotate (id)
      * @param cal arrow data like "Gg1f3" (Green arrow g1 to f3), "Ye2e4" (Yellow arrow e2 to e4)
@@ -3907,7 +3899,6 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = findAnnotationNode(nodeId);
-            if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().cal = cal;
         } finally {
             writeLock.unlock();
@@ -3922,7 +3913,6 @@ public class ChessGame {
     public void setCurrentMoveComment(String comment) {
         writeLock.lock();
         try {
-            if (this.currentNode == moveHistoryRoot) return;
             this.currentNode.getAnnotation().comment = comment;
         } finally {
             writeLock.unlock();
@@ -3930,8 +3920,7 @@ public class ChessGame {
     }
 
     /**
-     * Add comment data on a given move node (by node id) <p>
-     * Does nothing if the given node is the root node.
+     * Add comment data on a given move node (by node id)
      *
      * @param nodeId node to annotate (id)
      * @param comment comment string
@@ -3942,7 +3931,6 @@ public class ChessGame {
         writeLock.lock();
         try {
             MoveNode targetNode = findAnnotationNode(nodeId);
-            if (targetNode == moveHistoryRoot) return;
             targetNode.getAnnotation().comment = comment;
         } finally {
             writeLock.unlock();
