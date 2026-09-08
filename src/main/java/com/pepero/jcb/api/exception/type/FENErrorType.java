@@ -31,6 +31,7 @@ public enum FENErrorType {
     FULL_HALF_CLK_NOT_NUMBER, // when fen half or full move clock is not a number
 
     IMPOSSIBLE_GAME_STATE, // when this position fen's king is under attacked, and it's opponent's turn
+    // or racing kings and one of the kings under attacked
 
     INVALID_THREE_CHECK_FORMAT, // when fen 3 check data not found (shows 3 check token)
 

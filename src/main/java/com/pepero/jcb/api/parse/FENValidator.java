@@ -17,11 +17,27 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  */
 public class FENValidator {
     /**
+     * Validate this FEN syntactically correct and logically possible chess position.
+     *
+     * @param fen fen
+     * @param isChess960 whether to validate castling rights as Chess960 (Shredder-FEN)
+     * @param variant the game variant this FEN belongs to
+     *
+     * @throws FENConvertException if this fen string is illegal or represents
+     *                                an impossible game state
+     */
+    public static void validate(String fen, boolean isChess960, GameVariant variant) {
+        validateString(fen, isChess960, variant);
+        Chessboard chessboard = new Chessboard(fen, isChess960, variant);
+        validateLogicalState(chessboard, variant);
+    }
+
+    /**
      * Get fen string exception
      *
      * @param fen fen
      *
-     * @throws FENConvertException - if this fen string is illegal
+     * @throws FENConvertException if this fen string is illegal
      */
     public static void validateString(String fen, boolean isChess960, GameVariant variant) {
         if (fen == null || fen.trim().isEmpty())
