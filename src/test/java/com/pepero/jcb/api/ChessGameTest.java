@@ -2355,15 +2355,50 @@ public class ChessGameTest {
     }
 
     @Test
-    @DisplayName("setCurrentMoveCal / setCurrentMoveCsl / setCurrentMoveEval: 루트(시작) 위치에서는 아무 일도 하지 않아야 한다")
-    void currentMoveAnnotations_atRoot_isNoop() {
+    @DisplayName("setCurrentMoveCal / setCurrentMoveCsl / setCurrentMoveEval / setCurrentMoveComment: 루트(시작) 위치에도 주석 데이터를 설정할 수 있어야 한다")
+    void currentMoveAnnotations_atRoot_isApplied() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        assertDoesNotThrow(() -> {
-            chessGame.setCurrentMoveCal("Gg1f3");
-            chessGame.setCurrentMoveCsl("Ge4");
-            chessGame.setCurrentMoveEval("0.35");
-        });
+        chessGame.setCurrentMoveCal("Gg1f3");
+        chessGame.setCurrentMoveCsl("Ge4");
+        chessGame.setCurrentMoveEval("0.35");
+        chessGame.setCurrentMoveComment("Starting position");
+
+        MoveNodeDTO root = chessGame.getRootNode();
+        assertEquals("Gg1f3", root.annotation().cal());
+        assertEquals("Ge4", root.annotation().csl());
+        assertEquals("0.35", root.annotation().eval());
+        assertEquals("Starting position", root.annotation().comment());
+    }
+
+    @Test
+    @DisplayName("setMoveCalAt / setMoveCslAt / setMoveEvalAt / setMoveCommentAt: 루트 노드 id 를 대상으로도 주석 데이터를 설정할 수 있어야 한다")
+    void moveAnnotationsAtNode_atRoot_isApplied() {
+        ChessGame chessGame = ChessGame.startPosition();
+        long rootId = chessGame.getRootNode().id();
+
+        chessGame.setMoveCalAt(rootId, "Gg1f3");
+        chessGame.setMoveCslAt(rootId, "Ge4");
+        chessGame.setMoveEvalAt(rootId, "0.35");
+        chessGame.setMoveCommentAt(rootId, "Starting position");
+
+        MoveNodeDTO root = chessGame.getRootNode();
+        assertEquals("Gg1f3", root.annotation().cal());
+        assertEquals("Ge4", root.annotation().csl());
+        assertEquals("0.35", root.annotation().eval());
+        assertEquals("Starting position", root.annotation().comment());
+    }
+
+    @Test
+    @DisplayName("setCurrentMoveClock / setTimeStamp 등: csl/cal/eval/comment 와 달리 clk/timeStamp 는 루트에서 여전히 막혀야 한다")
+    void clockAndTimeStamp_atRoot_stillThrows() {
+        ChessGame chessGame = ChessGame.startPosition();
+        long rootId = chessGame.getRootNode().id();
+
+        assertThrows(ClockException.class, () -> chessGame.setCurrentMoveClock(0, 4, 55));
+        assertThrows(ClockException.class, () -> chessGame.setTimeStamp("00:00:12"));
+        assertThrows(ClockException.class, () -> chessGame.setMoveClockAt(rootId, 0, 4, 55));
+        assertThrows(ClockException.class, () -> chessGame.setTimeStampAt(rootId, "00:00:12"));
     }
 
     @Test
