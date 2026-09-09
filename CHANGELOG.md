@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame`, added `makeMoveAll(List<MoveInfo> moveInfos)` making move all with given move info list. (and also added
   `tryMakeMoveAll(List<MoveInfo> moveInfos)`)
 - On `EngineLine`, added `List<MoveInfo> pvMoveList`.
+- On `UCIEngineWarpper`, added `getCurrentEngineLines` getting every pv line with `HashMap`.
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.

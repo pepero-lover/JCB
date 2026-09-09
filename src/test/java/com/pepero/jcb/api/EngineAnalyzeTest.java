@@ -11,11 +11,11 @@ import java.util.List;
 public class EngineAnalyzeTest {
     public static void main(String[] args) throws InterruptedException {
         ChessGame chessGame = ChessGame.fromFEN(
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1"
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
 
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(
-                new File("engine/stockfish-18.exe").getAbsolutePath()
+                new File("engine/stockfish-19.exe").getAbsolutePath()
         ), 100, new EngineAnalysisListener() {
             @Override
             public void onAnalysisBundled(List<EngineLine> bundledLines) {

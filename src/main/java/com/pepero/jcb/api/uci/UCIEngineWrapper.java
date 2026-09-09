@@ -666,10 +666,15 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     /**
      * Get current first pv engine line
-     *
-     * @return current first pv engine line
      */
     public EngineLine getCurrentFirstEngineLine() {
         return latestAnalysisMap.get(1);
+    }
+
+    /**
+     * Get current pv engine lines
+     */
+    public HashMap<Integer, EngineLine> getCurrentEngineLines() {
+        return new HashMap<>(latestAnalysisMap);
     }
 }
