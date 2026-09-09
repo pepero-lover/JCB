@@ -1264,6 +1264,22 @@ public class ChessGame {
     }
 
     /**
+     * Try to remake (redo) move on this ChessGame (with variation index), without throwing an exception.
+     *
+     * @param variationIndex variation index (if 0, goes main line)
+     *
+     * @return true if a move was remade, false if there was nothing to redo at that index
+     */
+    public boolean tryRemakeMove(int variationIndex) {
+        try {
+            remakeMove(variationIndex);
+            return true;
+        } catch (EmptyMoveRedoException e) {
+            return false;
+        }
+    }
+
+    /**
      * Unmake previous move on this ChessGame, without throwing if there's nothing to undo.
      *
      * @return whether the move was unmade
