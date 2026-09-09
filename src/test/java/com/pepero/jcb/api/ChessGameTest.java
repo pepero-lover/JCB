@@ -841,9 +841,9 @@ public class ChessGameTest {
     void gameResult() {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
-        chessGame.goBackward();
-        chessGame.goBackward();
-        chessGame.goForward();
+        chessGame.unmakeMove();
+        chessGame.unmakeMove();
+        chessGame.remakeMove();
         chessGame.makeMoveSan("Qf3");
         assertEquals(GameResult.WHITE_WON, chessGame.getGameResult());
         assertEquals(GameOverReason.CHECKMATE, chessGame.getGameOverReason());
@@ -1520,9 +1520,9 @@ public class ChessGameTest {
         chessGame.makeMoveSanAll("e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#");
         long mateNodeId = chessGame.getCurrentNodeId();
 
-        chessGame.goBackward();
-        chessGame.goBackward();
-        chessGame.goForward();
+        chessGame.unmakeMove();
+        chessGame.unmakeMove();
+        chessGame.remakeMove();
         chessGame.makeMoveSan("Qf3");
         long qf3NodeId = chessGame.getCurrentNodeId();
 
@@ -1601,7 +1601,7 @@ public class ChessGameTest {
         chessGame.makeMoveLan("g8f6");
         long repetitionNodeId = chessGame.getCurrentNodeId();
 
-        chessGame.goBackward();
+        chessGame.unmakeMove();
         chessGame.makeMoveLan("b8c6");
         long branchedNodeId = chessGame.getCurrentNodeId();
 

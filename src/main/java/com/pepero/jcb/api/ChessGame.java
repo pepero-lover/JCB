@@ -1250,6 +1250,34 @@ public class ChessGame {
     }
 
     /**
+     * Remake (redo) move on this ChessGame (mainline), without throwing if there's nothing to redo.
+     *
+     * @return whether the move was remade
+     */
+    public boolean tryRemakeMove() {
+        try {
+            remakeMove();
+            return true;
+        } catch (EmptyMoveRedoException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Unmake previous move on this ChessGame, without throwing if there's nothing to undo.
+     *
+     * @return whether the move was unmade
+     */
+    public boolean tryUnmakeMove() {
+        try {
+            unmakeMove();
+            return true;
+        } catch (EmptyMoveUndoException e) {
+            return false;
+        }
+    }
+
+    /**
      * Try to make a move on this ChessGame without throwing an exception (LAN MOVE)
      *
      * @param lan move like e2e4, e7e5 (LAN move string)
@@ -1413,14 +1441,9 @@ public class ChessGame {
 
     /**
      * Result of applying an undo/redo step, before any listener notification has happened.
-     * Kept separate from notification for the same reason as {@link MoveOutcome}: callers
-     * must be able to release {@code writeLock} before dispatching to listeners, even when
-     * the undo/redo is itself invoked from another locked method (e.g. {@link #goForward()},
-     * {@link #goBackward()}).
      *
      * @param moveInfo undone/redone move
      * @param newlyOver whether this step discovered a terminal result for the first time
-     *                  for the resulting node (i.e. {@code onGameOver} should fire)
      * @param gameResult game result right after this step (UNKNOWN if the game continues)
      * @param gameOverReason game over reason right after this step
      */
@@ -1625,52 +1648,6 @@ public class ChessGame {
         } finally {
             readLock.unlock();
         }
-    }
-
-    /**
-     * Go forward on history (mainline)
-     *
-     * @return forwarded move info (if forwarding move failed, returns null)
-     *
-     * @throws EmptyMoveRedoException if move to go forward not found
-     */
-    public MoveInfo goForward() {
-        UndoRedoOutcome outcome;
-
-        writeLock.lock();
-        try {
-            if (!canRedo()) return null;
-            outcome = internalRemakeMove(0);
-        } finally {
-            writeLock.unlock();
-        }
-
-        dispatchRedoNotifications(outcome);
-
-        return outcome.moveInfo();
-    }
-
-    /**
-     * Go backward on history (mainline)
-     *
-     * @return undid move info (if undoing move failed, returns null)
-     *
-     * @throws EmptyMoveUndoException if move to go backward not found
-     */
-    public MoveInfo goBackward() {
-        UndoRedoOutcome outcome;
-
-        writeLock.lock();
-        try {
-            if (!canUndo()) return null;
-            outcome = internalUnmakeMove();
-        } finally {
-            writeLock.unlock();
-        }
-
-        dispatchUndoNotifications(outcome);
-
-        return outcome.moveInfo();
     }
 
     /**

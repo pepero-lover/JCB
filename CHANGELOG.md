@@ -26,10 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `EngineLine`, added `List<MoveInfo> pvMoveList`.
 - On `UCIEngineWarpper`, added `getCurrentEngineLines` getting every pv line with `HashMap`.
 - On `FENErrorType`, added `hasRealValue` parameter to identify this error type has an additional value.
+- On `ChessGame`, added `tryUnmakeMove`, `tryRemakeMove`.
 
 ### Changed
+- **Breaking Change**, On `EngineLine`, removed `boolean isBound`.
+- **Breaking Change**, removed `ChessGame.goForward/goBackward`. please use `unmakeMove` or `remakeMove`.
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.
-- On `EngineLine`, removed `boolean isBound`.
 
 ### Fixed
 

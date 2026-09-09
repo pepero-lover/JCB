@@ -43,10 +43,14 @@ public class PGNEditorExample {
                     chessGame.jumpToNode(Long.parseLong(arg[1]));
                 }
                 if (firstToken.equals("next")) {
-                    chessGame.goForward();
+                    if(arg.length == 1) {
+                        chessGame.remakeMove();
+                    } else {
+                        chessGame.remakeMove(Integer.parseInt(args[1]));
+                    }
                 }
                 if (firstToken.equals("prev")) {
-                    chessGame.goBackward();
+                    chessGame.unmakeMove();
                 }
                 if (firstToken.equals("board")) {
                     chessGame.printBoard();
