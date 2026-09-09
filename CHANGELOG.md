@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tryMakeMoveAll(List<MoveInfo> moveInfos)`)
 - On `EngineLine`, added `List<MoveInfo> pvMoveList`.
 - On `UCIEngineWarpper`, added `getCurrentEngineLines` getting every pv line with `HashMap`.
+- On `FENErrorType`, added `hasRealValue` parameter to identify this error type has an additional value.
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.

@@ -13,6 +13,10 @@ public class FENConvertException extends RuntimeException {
 
     public FENConvertException(String message, FENErrorType type, String realValue) {
         super(message);
+        if (!type.hasRealValue()) {
+            throw new IllegalArgumentException(
+                    "FENErrorType." + type + " does not carry a real value, but one was provided.");
+        }
         this.errorType = type;
         this.realValue = realValue;
     }
