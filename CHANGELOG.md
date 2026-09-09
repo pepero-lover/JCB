@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sequence to move info list.
 - On `EngineLine`, added `bestMoveSquares` for showing pv line move square string.
 - On `ConvertStringMoveUtils`, added `toUnicodePieces` to change piece type char like `B`, `K`, `Q` to
-  `♗`, `♔`, `♕`.
+  `♗`, `♔`, `♕` (with color).
 - On `FENValidator`, added `validate` method validating given fen syntactically correct and logically possible chess position.
 - On `ChessGame`, added getting start position fen by `GameVariant` method (`ChessGame.getStartingFen(GameVariant variant)`).
 - On `ChessGame`, added `makeMoveAll(List<MoveInfo> moveInfos)` making move all with given move info list. (and also added
