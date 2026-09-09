@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static com.pepero.jcb.core.MoveGenerator.*;
 import static com.pepero.jcb.core.constant.SideToMove.*;
@@ -839,6 +840,54 @@ public class ChessGame {
     }
 
     /**
+     * Make moves on this ChessGame (MoveInfo list)
+     * <p>
+     * If a move in the middle of the list is illegal, the position will be roll backed.
+     *
+     * @param moveInfos list of moves to make, in order
+     *
+     * @throws IllegalMoveException if move is illegal move
+     */
+    public void makeMoveAll(List<MoveInfo> moveInfos) {
+        if (moveInfos == null) throw new NullPointerException("Move info list can not be null!");
+
+        List<MoveOutcome> outcomes;
+        writeLock.lock();
+        try {
+            String moveSequenceString = moveInfos.stream()
+                    .map(MoveInfo::toLanString)
+                    .collect(Collectors.joining(" "));
+
+            Chessboard tempChessboard = new Chessboard(this.chessboard);
+            int[] encodedMoves = new int[moveInfos.size()];
+
+            for (int i = 0; i < moveInfos.size(); i++) {
+                int encodedMove = moveInfos.get(i).originEncodedData();
+
+                if (!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
+                    throw new IllegalMoveException(moveInfos.get(i).toLanString(),
+                            ChessboardUtils.getFen(tempChessboard))
+                            .withSequenceContext(i, moveSequenceString);
+                }
+
+                MoveGenerator.makeMove(tempChessboard, encodedMove);
+                encodedMoves[i] = encodedMove;
+            }
+
+            outcomes = new ArrayList<>(encodedMoves.length);
+            for (int encodedMove : encodedMoves) {
+                outcomes.add(internalMakeMoveValidated(encodedMove));
+            }
+        } finally {
+            writeLock.unlock();
+        }
+
+        for (MoveOutcome outcome : outcomes) {
+            dispatchMoveNotifications(outcome);
+        }
+    }
+
+    /**
      * Make moves on this ChessGame (San string)
      * <p>
      * If a move in the middle of the string is illegal, the position will be roll backed.
@@ -1250,6 +1299,26 @@ public class ChessGame {
             makeMove(encodedMove);
             return true;
         } catch (IllegalMoveException | ConvertMoveException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to make moves on this ChessGame without throwing an exception (MoveInfo list)
+     * <p>
+     * If a move in the middle of the string is illegal, the position will be roll backed.
+     *
+     * @param moveInfos list of moves to make, in order
+     *
+     * @return true if all moves were legal and applied, false if it stopped partway through
+     */
+    public boolean tryMakeMoveAll(List<MoveInfo> moveInfos) {
+        if (moveInfos == null) throw new NullPointerException("Move info list can not be null!");
+
+        try {
+            makeMoveAll(moveInfos);
+            return true;
+        } catch (IllegalMoveException e) {
             return false;
         }
     }

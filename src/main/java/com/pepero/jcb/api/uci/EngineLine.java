@@ -1,6 +1,9 @@
 package com.pepero.jcb.api.uci;
 
+import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
+
+import java.util.List;
 
 /**
  * Engine line data for storing analysis data
@@ -10,9 +13,9 @@ import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
  * @param score score data
  * @param pv LAN (or UCI) pv data
  * @param sanPv san pv data
- * @param isBound is upperbound, lowerbound string
+ * @param pvMoveList move info list
  */
-public record EngineLine(int depth, int pvNumber, EngineCp score, String pv, String sanPv, boolean isBound) {
+public record EngineLine(int depth, int pvNumber, EngineCp score, String pv, String sanPv, List<MoveInfo> pvMoveList) {
     /**
      * @return {from square, to square} of the best move in this PV, for arrow rendering.
      *         e.g. "d2d3 f7f5" -> {"d2", "d3"}
@@ -26,10 +29,9 @@ public record EngineLine(int depth, int pvNumber, EngineCp score, String pv, Str
         return "EngineLine{" +
                 "depth=" + depth +
                 ", pvNumber=" + pvNumber +
-                ", score='" + score + '\'' +
+                ", score=" + score +
                 ", pv='" + pv + '\'' +
                 ", sanPv='" + sanPv + '\'' +
-                ", isBound=" + isBound +
                 '}';
     }
 }

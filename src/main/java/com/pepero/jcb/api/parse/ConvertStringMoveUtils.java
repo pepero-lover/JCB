@@ -12,6 +12,8 @@ import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.encode.EncodeMove;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
@@ -907,6 +909,64 @@ public class ConvertStringMoveUtils {
         throw new IllegalMoveException(BoardSquares.square_to_coordinates[source_square]
                 +BoardSquares.square_to_coordinates[target_square]
                 +(promotion_type!=0? promotion_pieces[promotion_type] : ""), ChessboardUtils.getFen(chessboard));
+    }
+
+    /**
+     * Parse lan sequence to a list of move data
+     *
+     * @param chessboard chessboard
+     * @param lanSequence lan string (like "e2e4 e7e5 g1f3")
+     * @return parsed move data list, in order
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
+     */
+    public static List<MoveInfo> parseLanSequenceToMoveData(Chessboard chessboard, String lanSequence) {
+        chessboard = new Chessboard(chessboard);
+
+        if (lanSequence.trim().isEmpty()) return List.of();
+
+        String[] lans = lanSequence.trim().split("\\s+");
+        List<MoveInfo> moveDataList = new ArrayList<>(lans.length);
+
+        for (String lan : lans) {
+            TranslateResult result = parseLan(chessboard, lan);
+
+            moveDataList.add(new MoveInfo(result.moveData));
+
+            MoveGenerator.makeMove(chessboard, result.moveData);
+        }
+
+        return moveDataList;
+    }
+
+    /**
+     * Parse san sequence to a list of move data
+     *
+     * @param chessboard chessboard
+     * @param sanSequence san string (like "e4 e5 Nf3")
+     * @return parsed move data list, in order
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
+     */
+    public static List<MoveInfo> parseSanSequenceToMoveData(Chessboard chessboard, String sanSequence) {
+        chessboard = new Chessboard(chessboard);
+
+        if (sanSequence.trim().isEmpty()) return List.of();
+
+        String[] sans = sanSequence.trim().split("\\s+");
+        List<MoveInfo> moveDataList = new ArrayList<>(sans.length);
+
+        for (String san : sans) {
+            TranslateResult result = parseSan(chessboard, san);
+
+            moveDataList.add(new MoveInfo(result.moveData));
+
+            MoveGenerator.makeMove(chessboard, result.moveData);
+        }
+
+        return moveDataList;
     }
 
     /**

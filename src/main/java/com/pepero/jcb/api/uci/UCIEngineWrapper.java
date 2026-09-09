@@ -3,6 +3,7 @@ package com.pepero.jcb.api.uci;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.UCIEngineException;
+import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.FENDialect;
 import com.pepero.jcb.core.GameVariant;
@@ -440,7 +441,12 @@ public class UCIEngineWrapper implements AutoCloseable {
                 }
             }
 
-            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, score, pvStr, sanPvStr, false));
+            List<MoveInfo> pvMoveInfo = ConvertStringMoveUtils.parseLanSequenceToMoveData(
+                    snapshot.getBoardSnapshot(),
+                    pvStr
+            );
+
+            latestAnalysisMap.put(pvNumber, new EngineLine(depth, pvNumber, score, pvStr, sanPvStr, pvMoveInfo));
 
             if (listener != null) {
                 listener.onEngineInfo(depth, score, pvStr);

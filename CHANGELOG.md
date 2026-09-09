@@ -14,14 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1. e4 e5 2. Nf3 Nc6` to `e4 e5 Nf3 Nc6`.
   (also added on `ChessGame.removeNumberFromSan`)
 - On `ConvertStringMoveUtils`, added `parseLanSquares` converting lan string to two squares string.
+- On `ConvertStringMoveUtils`, added `parseLanSequenceToMoveData`, `parseSanSequenceToMoveData` converting lan/san
+  sequence to move info list.
 - On `EngineLine`, added `bestMoveSquares` for showing pv line move square string.
 - On `ConvertStringMoveUtils`, added `toUnicodePieces` to change piece type char like `B`, `K`, `Q` to
   `♗`, `♔`, `♕`.
 - On `FENValidator`, added `validate` method validating given fen syntactically correct and logically possible chess position.
 - On `ChessGame`, added getting start position fen by `GameVariant` method (`ChessGame.getStartingFen(GameVariant variant)`).
+- On `ChessGame`, added `makeMoveAll(List<MoveInfo> moveInfos)` making move all with given move info list. (and also added
+  `tryMakeMoveAll(List<MoveInfo> moveInfos)`)
+- On `EngineLine`, added `List<MoveInfo> pvMoveList`.
 
 ### Changed
 - On `UCIEngineWrapper`, changed `sanPv` string to add move number like `1. e4 e5 2. Nf3 Nc6`.
+- On `EngineLine`, removed `boolean isBound`.
 
 ### Fixed
 
