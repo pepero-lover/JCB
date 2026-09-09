@@ -1043,7 +1043,7 @@ public class ConvertStringMoveUtils {
         return new String[] { lan.substring(0, 2), lan.substring(2, 4) };
     }
 
-    private static String toUnicodePieces(boolean whiteToMove, String san) {
+    private static String toUnicodePiecesSingle(boolean whiteToMove, String san) {
         Map<Character, String> pieces = whiteToMove ? UNICODE_PIECES_WHITE : UNICODE_PIECES_BLACK;
         StringBuilder sb = new StringBuilder(san);
         for (int i = 0; i < sb.length(); i++) {
@@ -1059,20 +1059,18 @@ public class ConvertStringMoveUtils {
     /**
      * Replace ASCII piece letters in a SAN sequence with Unicode colored chess symbols.
      *
-     * @param chessboard chessboard at the position where the sequence starts (not mutated)
+     * @param whiteToMove is this san move starts with white's move (you can use <pre>{@code chessGame.getTurn()}</pre>)
      * @param sanSequence san move sequence separated by whitespace (like "e4 e5 Nf3")
      * @return san sequence with piece letters replaced by color-aware Unicode symbols
      */
-    public static String toUnicodePieces(Chessboard chessboard, String sanSequence) {
+    public static String toUnicodePieces(boolean whiteToMove, String sanSequence) {
         if (sanSequence == null || sanSequence.trim().isEmpty()) return "";
 
         String[] sans = sanSequence.trim().split("\\s+");
         StringBuilder result = new StringBuilder();
 
-        boolean whiteToMove = chessboard.side == white;
-
         for (String san : sans) {
-            result.append(toUnicodePieces(whiteToMove, san)).append(" ");
+            result.append(toUnicodePiecesSingle(whiteToMove, san)).append(" ");
             whiteToMove = !whiteToMove;
         }
 
