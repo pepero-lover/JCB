@@ -358,7 +358,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   package-private, tightening the public API surface.
 
 [Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.11.0...HEAD
-[1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.2...v1.11.0
+[1.11.0]: https://github.com/pepero-lover/JCB/compare/v1.10.2...v1.11.0
 [1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/pepero-lover/JCB/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/pepero-lover/JCB/compare/v1.9.0...v1.10.0
