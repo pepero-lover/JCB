@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.11.0]
+
+### Added
 - On `ConvertStringMoveUtils`, added `addMoveNumberToSanSequence` adding move number on given san sequence like `1. e4 e5 2.Nf3` for engine pv showing.
   (also added on `ChessGame.toNumberedSan`)
 - On `ConvertStringMoveUtils`, added `removeMoveNumberFromSanSequence` removing move number on given san sequence like 
@@ -347,7 +357,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.10.2...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.11.0...HEAD
+[1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.2...v1.11.0
 [1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/pepero-lover/JCB/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/pepero-lover/JCB/compare/v1.9.0...v1.10.0
