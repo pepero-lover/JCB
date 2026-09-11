@@ -59,14 +59,13 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
 
             // parse headers
             while (lookahead_line != null && lookahead_line.startsWith("[")) {
-                raw_pgn.append(lookahead_line).append('\n');
-
                 String stripped = lookahead_line.substring(1, lookahead_line.length() - 1);
                 String[] parts = stripped.split(" ", 2);
                 if (parts.length == 2) {
                     headers.put(parts[0], parts[1].replace("\"", ""));
                 }
 
+                raw_pgn.append(lookahead_line).append('\n');
                 lookahead_line = reader.readLine();
             }
 
@@ -78,14 +77,14 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
             raw_pgn.append('\n');
 
             // raw pgn parsing
-            int braceDepth = 0;
+            boolean insideComment = false;
             while (lookahead_line != null) {
-                if (braceDepth == 0 && lookahead_line.startsWith("[")) break;
+                if (!insideComment && lookahead_line.startsWith("[")) break;
 
                 for (int i = 0; i < lookahead_line.length(); i++) {
                     char c = lookahead_line.charAt(i);
-                    if (c == '{') braceDepth++;
-                    else if (c == '}' && braceDepth > 0) braceDepth--;
+                    if (c == '{') insideComment = true;
+                    else if (c == '}') insideComment = false;
                 }
 
                 raw_pgn.append(lookahead_line).append('\n');
