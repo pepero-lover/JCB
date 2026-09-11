@@ -1,6 +1,7 @@
 package com.pepero.jcb.api.arena;
 
 import com.pepero.jcb.api.book.EpdBookReader;
+import com.pepero.jcb.api.book.PGNBookReader;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariant;
@@ -22,8 +23,10 @@ public class MatchConfig {
 
     private final int seed;
 
-    private final PolyglotBookReader openingBook;
+    private final PolyglotBookReader polyglotBook;
+    private final PGNBookReader pgnBook;
     private final EpdBookReader epdBook;
+    private final int maxPly;
     private final boolean repeatOpening;
 
     private final AdjudicationRule resignRule;
@@ -55,8 +58,11 @@ public class MatchConfig {
 
         this.isChess960 = builder.isChess960;
 
-        this.openingBook = builder.openingBook;
+        this.polyglotBook = builder.polyglotBook;
+        this.pgnBook = builder.pgnBook;
         this.epdBook = builder.epdBook;
+
+        this.maxPly = builder.maxPly;
 
         this.repeatOpening = builder.repeatOpening;
 
@@ -90,11 +96,16 @@ public class MatchConfig {
     public boolean isChess960() { return isChess960; }
 
     // opening book
-    public PolyglotBookReader getOpeningBook() { return openingBook; }
-    public boolean hasOpeningBook() { return openingBook != null; }
+    public PolyglotBookReader getPolyglotBook() { return polyglotBook; }
+    public boolean hasPolyglotBook() { return polyglotBook != null; }
+
+    public PGNBookReader getPGNBook() { return pgnBook; }
+    public boolean hasPGNBook() { return pgnBook != null; }
 
     public EpdBookReader getEpdOpeningBook() { return epdBook; }
     public boolean hasEpdOpeningBook() { return epdBook != null; }
+
+    public int getMaxPly() { return maxPly; }
 
     public boolean isRepeatOpening() { return repeatOpening; }
 
@@ -130,8 +141,10 @@ public class MatchConfig {
         private GameVariant variant = GameVariant.STANDARD;
         private boolean isChess960 = false;
 
-        private PolyglotBookReader openingBook = null;
+        private PolyglotBookReader polyglotBook = null;
+        private PGNBookReader pgnBook = null;
         private EpdBookReader epdBook = null;
+        private int maxPly = 16;
         private boolean repeatOpening = true;
 
         private AdjudicationRule resignRule = null;
@@ -167,28 +180,37 @@ public class MatchConfig {
          * <ul>
          *     <li>.bin -> Polyglot opening book</li>
          *     <li>.epd -> EPD opening book (list of starting positions)</li>
+         *     <li>.pgn -> PGN opening book (picking random games)</li>
          * </ul>
-         * .pgn files are not directly supported; convert to .bin first using
-         * {@link com.pepero.jcb.api.book.PolyglotBookBuilder}.
          */
         public Builder openingBook(String bookFilePath) {
             String lowerPath = bookFilePath.toLowerCase();
 
             if (lowerPath.endsWith(".pgn")) {
-                throw new IllegalArgumentException("This opening book reader doesn't support " +
-                        ".pgn extension. if you want to translate into .bin, go to" +
-                        " 'com.pepero.jcb.api.book.PolyglotBookBuilder'.");
+                this.pgnBook = new PGNBookReader(bookFilePath);
+                this.polyglotBook = null;
+                this.epdBook = null;
             } else if (lowerPath.endsWith(".bin")) {
-                this.openingBook = new PolyglotBookReader(bookFilePath);
+                this.polyglotBook = new PolyglotBookReader(bookFilePath);
+                this.pgnBook = null;
                 this.epdBook = null;
             } else if (lowerPath.endsWith(".epd")) {
                 this.epdBook = new EpdBookReader(bookFilePath);
-                this.openingBook = null;
+                this.polyglotBook = null;
+                this.pgnBook = null;
             } else {
                 throw new IllegalArgumentException("Unsupported opening book file extension: " + bookFilePath +
-                        " (supported: .bin, .epd)");
+                        " (supported: .bin, .epd, .pgn)");
             }
 
+            return this;
+        }
+
+        /**
+         * Set the max move count of playing opening moves. (default : 16 ply)
+         */
+        public Builder maxPly(int maxPly) {
+            this.maxPly = maxPly;
             return this;
         }
 
@@ -316,13 +338,16 @@ public class MatchConfig {
             if(syzygyTablebase == null && syzygyRule != null) {
                 throw new IllegalArgumentException("Syzygy adjudication rule exists, but Syzygy tablebase not found!");
             }
+
             int startingPositionSources = 0;
+
             if (fenSettingConfig != null) startingPositionSources++;
-            if (openingBook != null) startingPositionSources++;
+            if (polyglotBook != null) startingPositionSources++;
             if (epdBook != null) startingPositionSources++;
+            if (pgnBook != null) startingPositionSources++;
             if (startingPositionSources > 1) {
                 throw new IllegalArgumentException(
-                        "Only one of FEN setting, Polyglot opening book, or EPD opening book can be used!");
+                        "Only one of FEN setting or Polyglot/EPD/PGN opening book can be used!");
             }
 
             return new MatchConfig(this);

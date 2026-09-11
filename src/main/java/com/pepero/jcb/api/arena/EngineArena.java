@@ -47,6 +47,35 @@ public class EngineArena {
         }
     }
 
+    private static final int MAX_PGN_PICK_ATTEMPTS = 50;
+
+    private ChessGame buildPGNOpeningGame(MatchConfig matchConfig, int roundNumber) {
+        int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
+        int roundSeed = mixSeed(matchConfig.getSeed(), effectiveRound);
+
+        for (int attempt = 0; attempt < MAX_PGN_PICK_ATTEMPTS; attempt++) {
+            int openingSeed = mixSeed(roundSeed, attempt);
+            String pgnText = matchConfig.getPGNBook().pickSequentialGame(openingSeed);
+
+            ChessGame chessGame = ChessGame.fromPGN(pgnText);
+            int targetPly = Math.min(matchConfig.getMaxPly(), chessGame.getTotalMainlineMoveCount());
+            chessGame.jumpToMainlinePly(targetPly);
+
+            GameOverReason reasonHere = chessGame.getGameOverReasonAt(chessGame.getCurrentNodeId());
+            boolean isRealBoardTerminal = reasonHere != GameOverReason.NOTGAMEOVER
+                    && reasonHere != GameOverReason.RESIGNATION
+                    && reasonHere != GameOverReason.AGREEMENT_DRAW;
+
+            if (isRealBoardTerminal) continue;
+
+            chessGame.truncateFuture();
+            return chessGame;
+        }
+
+        throw new IllegalStateException(
+                "Could not find a usable PGN opening after " + MAX_PGN_PICK_ATTEMPTS + " attempts!");
+    }
+
     /**
      * Get random chess 960 position index with roundNum(seed)
      *
@@ -110,11 +139,15 @@ public class EngineArena {
         boolean isEngine1White = roundNumber % 2 == 1;
 
         ChessGame chessGame;
-        String startFen = resolveStartFen(matchConfig, isEngine1White, roundNumber);
+        if(matchConfig.hasPGNBook()) {
+            chessGame = buildPGNOpeningGame(matchConfig, roundNumber);
+        } else {
+            String startFen = resolveStartFen(matchConfig, isEngine1White, roundNumber);
 
-        chessGame = matchConfig.isChess960()
-                ? ChessGame.fromFEN(startFen, true)
-                : ChessGame.fromFEN(startFen, matchConfig.getVariant());
+            chessGame = ChessGame.fromFEN(startFen, matchConfig.isChess960(), matchConfig.getVariant());
+        }
+
+        chessGame.removeHeadersAll();
 
         try(
                 UCIEngineWrapper engine1 = factory.spawn(matchConfig.getEngine1Config());
@@ -145,7 +178,7 @@ public class EngineArena {
                 chessGame.setHeader("TimeControl", time + "+" + increment);
             }
 
-            PolyglotBookReader bookReader = matchConfig.getOpeningBook();
+            PolyglotBookReader bookReader = matchConfig.getPolyglotBook();
 
             GameResult winningSide = GameResult.UNKNOWN;
 
@@ -162,7 +195,7 @@ public class EngineArena {
                 }
 
                 boolean whiteTurn = chessGame.getTurn();
-                if(matchConfig.hasOpeningBook()) {
+                if(matchConfig.hasPolyglotBook() && chessGame.getPly() <= matchConfig.getMaxPly()) {
                     long polyglotHash = chessGame.getPolyglotHash();
                     String move;
 
@@ -353,6 +386,8 @@ public class EngineArena {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        chessGame.claimDraw();
 
         GameResult result = chessGame.getGameResult(true);
         GameOverReason reason = chessGame.getGameOverReason(true);

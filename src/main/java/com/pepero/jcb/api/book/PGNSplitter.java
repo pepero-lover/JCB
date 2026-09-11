@@ -13,6 +13,7 @@ public class PGNSplitter {
 
         StringBuilder cur = new StringBuilder();
         State state = State.BEFORE_MOVES;
+        int braceDepth = 0;
 
         for (String line : lines) {
             String trimmed = line.trim();
@@ -22,7 +23,7 @@ public class PGNSplitter {
                 continue;
             }
 
-            boolean isTagLine = trimmed.startsWith("[") && trimmed.endsWith("]");
+            boolean isTagLine = braceDepth == 0 && trimmed.startsWith("[") && trimmed.endsWith("]");
 
             if (isTagLine && state == State.IN_MOVES) {
                 games.add(cur.toString());
@@ -35,6 +36,14 @@ public class PGNSplitter {
             }
 
             cur.append(line).append("\n");
+
+            if (!isTagLine) {
+                for (int i = 0; i < line.length(); i++) {
+                    char c = line.charAt(i);
+                    if (c == '{') braceDepth++;
+                    else if (c == '}' && braceDepth > 0) braceDepth--;
+                }
+            }
         }
 
         if (!cur.isEmpty()) {

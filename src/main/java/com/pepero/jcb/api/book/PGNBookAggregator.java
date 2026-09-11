@@ -11,19 +11,19 @@ class PGNBookAggregator {
     /**
      * Aggregate (hash, polyMove) occurrences across multiple games into weights.
      *
-     * @param gamePgns list of single-game PGN strings (from PGNSplitter.splitGames)
+     * @param gamePGNs list of single-game PGN strings (from PGNSplitter.splitGames)
      * @param maxPly   max ply depth to extract per game
      * @return map of (hash, polyMove) -> occurrence count (weight)
      */
-    public static Map<BookKey, Integer> aggregate(List<String> gamePgns, int maxPly) {
+    public static Map<BookKey, Integer> aggregate(List<String> gamePGNs, int maxPly) {
         Map<BookKey, Integer> weightMap = new HashMap<>();
 
         int failedCount = 0;
 
-        for (String gamePgn : gamePgns) {
-            List<PGNBookExtractor.BookMove> moves = PGNBookExtractor.extract(gamePgn, maxPly);
+        for (String gamePGN : gamePGNs) {
+            List<PGNBookExtractor.BookMove> moves = PGNBookExtractor.extract(gamePGN, maxPly);
 
-            if (moves.isEmpty() && !gamePgn.isBlank()) {
+            if (moves.isEmpty() && !gamePGN.isBlank()) {
                 failedCount++;
                 continue;
             }

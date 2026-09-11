@@ -17,8 +17,8 @@ public final class PGNGameAccessor {
             List<Integer> mainlineMoveData
     ) {}
 
-    public static ParsedMainline extractMainline(String gamePgn, int maxNodesCount, int maxPly) {
-        PGNParsedData parsed = PGNParser.parse(gamePgn, maxNodesCount, new AtomicLong(0L));
+    public static ParsedMainline extractMainline(String gamePGN, int maxNodesCount, int maxPly) {
+        PGNParsedData parsed = PGNParser.parse(gamePGN, maxNodesCount, new AtomicLong(0L));
 
         List<Integer> moves = new ArrayList<>();
         MoveNode node = parsed.rootNode();

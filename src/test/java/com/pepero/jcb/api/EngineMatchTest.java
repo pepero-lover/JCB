@@ -39,7 +39,7 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin")
+                    .openingBook("engine/opening-pgn.pgn")
                     //.openingBook("engine/UHO.epd")
                     .drawRule(new AdjudicationRule(
                             40,
@@ -69,7 +69,7 @@ public class EngineMatchTest {
                     .concurrency(4)
                     //.variant(GameVariant.SUICIDE)
                     .showClk(true)
-                    .showEval(false)
+                    .showEval(true)
                     .showPv(false)
                     .build();
 

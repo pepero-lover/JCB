@@ -11,12 +11,12 @@ public class PGNBookExtractor {
 
     public record BookMove(long hash, int polyMove) {}
 
-    public static List<BookMove> extract(String gamePgn, int maxPly) {
+    public static List<BookMove> extract(String gamePGN, int maxPly) {
         List<BookMove> result = new ArrayList<>();
 
         PGNGameAccessor.ParsedMainline parsed;
         try {
-            parsed = PGNGameAccessor.extractMainline(gamePgn, 100_000, maxPly);
+            parsed = PGNGameAccessor.extractMainline(gamePGN, 100_000, maxPly);
         } catch (Exception e) {
             return result;
         }

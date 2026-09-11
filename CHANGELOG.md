@@ -8,10 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added `PGNDatabaseIterator`,
+  streaming games out of multi-gigabyte PGN databases without loading the whole file into memory;
+  movetext is parsed lazily by `PGNGameStub#toChessGame()` method.
+- Added `PGNBookReader` for `EngineArena` book selecting (now doesn't have to parse .pgn file to .bin polyglot file.)
+- Added `ChessGame.getChildNodeIds`, getting all child node's id on this current node.
+- Added `ChessGame.truncateFuture`, removing all nodes after this current node.
+- Added `ChessGame.removeHeader`, `ChessGame.removeHeadersAll`.
+- Added `ChessGame.getPly` for checking how many moves played from start position.
+- Added `ChessGame.getTotalMainlineMoveCount`, for checking how many the mainline node count is.
+- On `MatchConfig`, added supporting `.pgn` pgn opening file.
+- On `MatchConfig`, added max move count on opening book (`.pgn`, `.bin`)
 
 ### Changed
+- On `PGNParser`, changed `nag` parsing with adding new nag instead of overwriting.
 
 ### Fixed
+- On `EngineArena`, fixed evaluating game result to `UNKNOWN` on claim draws.
+- On `PGNParser`, added checking the header's key, value, and ']' char.
+- On `PGNParser`, added changing result to `Result` header's key if the last game result is `UNKNOWN`.
+- On `PGNSplitter`, added checking comment to avoid splitting incorrectly
 
 ### Performance
 

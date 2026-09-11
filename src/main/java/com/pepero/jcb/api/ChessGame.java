@@ -2941,6 +2941,21 @@ public class ChessGame {
     }
 
     /**
+     * Get the total number of plies played from the starting position to the current position. <br>
+     * Starts at 0, incrementing by 1 after every move.
+     *
+     * @return current ply count
+     */
+    public int getPly() {
+        readLock.lock();
+        try {
+            return chessboard.ply;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Draw only reasons for validating {@link #forceEndGame(GameResult, GameOverReason)}'s parameter
      */
     private static final Set<GameOverReason> DRAW_ONLY_REASONS = EnumSet.of(
@@ -3328,7 +3343,25 @@ public class ChessGame {
     }
 
     /**
-     * Remove node and node's all children on tree and cache
+     * Delete all moves after the current position
+     */
+    public void truncateFuture() {
+        writeLock.lock();
+        try {
+            for (Long childId : getChildNodeIds()) {
+                deleteVariation(childId);
+            }
+            currentNode.terminalResult = null;
+            currentNode.terminalReason = null;
+            currentNode.isStateEvaluated = false;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Remove node and node's all children on tree and cache. <br>
+     * And when the current node deleting, the current node will be jumped to the previous node of this deleting node.
      *
      * @param nodeId node to remove (id)
      *
@@ -3422,6 +3455,18 @@ public class ChessGame {
             if(outcome.newlyOver()) {
                 notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
             }
+        }
+    }
+
+    /**
+     * Get node IDs of all children of the current node.
+     */
+    public List<Long> getChildNodeIds() {
+        readLock.lock();
+        try {
+            return currentNode.children.stream().map(n -> n.id).toList();
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -3617,6 +3662,33 @@ public class ChessGame {
         }
 
         dispatchJumpNotifications(outcome);
+    }
+
+    /**
+     * Remove a single PGN header.
+     *
+     * @param key header key (e.g. "White", "TimeControl")
+     * @return the removed value, or null if the key wasn't set
+     */
+    public String removeHeader(String key) {
+        writeLock.lock();
+        try {
+            return headers.remove(key);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Remove all PGN headers.
+     */
+    public void removeHeadersAll() {
+        writeLock.lock();
+        try {
+            headers.clear();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -4417,6 +4489,26 @@ public class ChessGame {
             }
 
             return lastNode;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Get the total number of plies (half-moves) along the mainline, from the root.
+     *
+     * @return total mainline ply count
+     */
+    public int getTotalMainlineMoveCount() {
+        readLock.lock();
+        try {
+            int count = 0;
+            MoveNode node = moveHistoryRoot;
+            while (!node.children.isEmpty()) {
+                node = node.children.getFirst();
+                count++;
+            }
+            return count;
         } finally {
             readLock.unlock();
         }

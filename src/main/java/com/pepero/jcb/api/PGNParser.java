@@ -78,6 +78,9 @@ class PGNParser {
             if (line.isEmpty()) continue;
 
             if (line.startsWith("[")) {
+                if (line.length() < 2 || !line.endsWith("]")) {
+                    throw new PGNConvertException("Malformed PGN header line: " + line);
+                }
                 line = line.substring(1, line.length() - 1);
                 String[] parts = line.split(" ", 2);
                 if (parts.length == 2) {
@@ -174,7 +177,10 @@ class PGNParser {
                     break;
 
                 case NAG:
-                    currentParsedNode.getAnnotation().nag = currentToken.value();
+                    String tokenNag = currentToken.value();
+                    currentParsedNode.getAnnotation().nag =
+                            (currentParsedNode.getAnnotation().nag == null || currentParsedNode.getAnnotation().nag.isEmpty())
+                                    ? tokenNag : currentParsedNode.getAnnotation().nag + " " + tokenNag;
                     break;
 
                 case VARIATION_START:
@@ -243,6 +249,13 @@ class PGNParser {
                     }
                     break;
             }
+        }
+
+        if (parsedGameResult == GameResult.UNKNOWN) {
+            String headerResult = parsedHeaders.get("Result");
+            if ("1-0".equals(headerResult)) parsedGameResult = GameResult.WHITE_WON;
+            else if ("0-1".equals(headerResult)) parsedGameResult = GameResult.BLACK_WON;
+            else if ("1/2-1/2".equals(headerResult)) parsedGameResult = GameResult.DRAW;
         }
 
         GameOverReason parsedGameOverReason = GameOverReason.NOTGAMEOVER;
