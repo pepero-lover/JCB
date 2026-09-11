@@ -10,12 +10,9 @@ public class PGNDatabaseTest {
         try(PGNDatabaseIterator pgnDatabaseIterator = new PGNDatabaseIterator(Path.of("pgn/GM_Games.pgn"))) {
             while (pgnDatabaseIterator.hasNext()) {
                 PGNGameStub gameStub = pgnDatabaseIterator.next();
-                System.out.println(gameStub.rawPGN());
+                System.out.println(ChessGame.fromPGN(gameStub.rawPGN()).getPGN());
                 System.out.println();
-                System.out.println();
-                System.out.println();
-                System.out.println("PGN END");
-                System.out.println();
+                System.out.println("Reconverted PGN END");
             }
         }
     }

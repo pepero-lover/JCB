@@ -24,9 +24,9 @@
   Racing Kings)
 - Syzygy tablebase probing (WDL / DTZ) and supports Standard, Atomic, Giveaway, Suicide chess variants
 - Gaviota tablebase probing (WDL / DTM)
-- PGN parsing and export, variation tree
+- PGN parsing, export, variation tree, and memory-efficient streaming for multi-gigabyte databases (`PGNDatabaseIterator`)
 - Engine matches (EngineArena)
-- Opening books: build a Polyglot (`.bin`) book from PGN games, and read Polyglot / EPD (`.epd`) opening books
+- Opening books: build a Polyglot (`.bin`) book from PGN games, and read Polyglot / EPD (`.epd`) / PGN (`.pgn`) opening books
 - Perft (single/multi-threaded)
 - No external library dependencies
 
@@ -487,17 +487,52 @@ public class PGNtoPolyglotConvertExample {
 `openingBook(String)` auto-detects the opening book type from the file extension:
 - `.bin` &rarr; a Polyglot opening book, queried move by move during the game
 - `.epd` &rarr; an EPD opening book, a list of positions where one is picked as the game's starting position
-- `.pgn` &rarr; not supported directly; throws a helpful error pointing to `PolyglotBookBuilder`, which converts PGN games into a `.bin` book first
+- `.pgn` &rarr; a PGN opening book, pick random of pgn games and plays it up to a user-defined maximum move count
 
 ```java
 MatchConfig config = new MatchConfig.Builder()
-        .openingBook("engine/opening.bin") // or "engine/opening.epd"
+        .openingBook("engine/opening.bin") // or "engine/opening.epd", "engine/opening.pgn"
         .repeatOpening(true) // play each opening twice, swapping colors
+        // If you are using the pgn opening book, you can adjust max ply value by ".maxPly(20)". (default : 16)
         .totalGames(10)
         .concurrency(1)
         .engine1Config(engine1Config)
         .engine2Config(engine2Config)
         .build();
+```
+
+### 9. Streaming Large PGN Databases
+
+For multi-gigabyte PGN files, `PGNDatabaseIterator`
+allows you to stream games line-by-line without loading the entire file into memory.
+Headers are accessible immediately, and the movetext is lazily parsed only when calling `toChessGame()`.
+
+```java
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.pgn.PGNDatabaseIterator;
+import com.pepero.jcb.api.pgn.PGNGameStub;
+
+import java.nio.file.Path;
+
+public class PGNStreamExample {
+    public static void main(String[] args) {
+        // Stream games out of multi-gigabyte PGN files with minimal memory usage
+        try (PGNDatabaseIterator iterator = new PGNDatabaseIterator(Path.of("large_database.pgn"))) {
+            while (iterator.hasNext()) {
+                PGNGameStub stub = iterator.next();
+
+                // Access headers without parsing full movetext
+                System.out.println("White: " + stub.headers().get("White"));
+                System.out.println("Black: " + stub.headers().get("Black"));
+
+                // Lazily parse movetext into a ChessGame instance when needed
+                ChessGame game = stub.toChessGame();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
 ```
 
 ## Performance

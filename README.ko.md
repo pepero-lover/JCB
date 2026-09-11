@@ -25,9 +25,9 @@
   Racing Kings)
 - Syzygy tablebase 프로빙 (WDL / DTZ) 그리고 Standard, Atomic, Giveaway, Suicide 변형 지원
 - Gaviota tablebase 프로빙 (WDL / DTM)
-- PGN 파싱 및 export, variation tree
+- PGN 파싱, export, variation tree, 수 GB급 대용량 PGN 데이터베이스 스트리밍 지원 (`PGNDatabaseIterator`)
 - 엔진 대전 (EngineArena)
-- 오프닝북: PGN 게임들을 Polyglot(`.bin`) 북으로 빌드, Polyglot / EPD(`.epd`) 오프닝북 읽기 지원
+- 오프닝북: PGN 게임들을 Polyglot(`.bin`) 북으로 빌드, Polyglot / EPD(.epd) / PGN(.pgn) 오프닝북 읽기 지원
 - Perft (싱글/멀티스레드)
 - 외부 라이브러리 의존성 없음
 
@@ -488,18 +488,52 @@ public class PGNtoPolyglotConvertExample {
 `openingBook(String)`은 파일 확장자를 보고 자동으로 오프닝북 종류를 인식합니다.
 - `.bin` &rarr; Polyglot 오프닝북, 게임 진행 중 매 수마다 조회
 - `.epd` &rarr; EPD 오프닝북, 포지션 목록 중 하나를 골라 게임 시작 포지션으로 사용
-- `.pgn` &rarr; 직접 지원하지 않으며, `PolyglotBookBuilder`로 먼저 `.bin`으로 변환하라는 안내 메시지와 함께 에러가 발생합니다.
+- `.pgn` &rarr; PGN 오프닝북, PGN 중 랜덤으로 골라 사용자가 설정한 최대 수 길이만큼 재생 후 시작
 
 ```java
 MatchConfig config = new MatchConfig.Builder()
-        .openingBook("engine/opening.bin") // 또는 "engine/opening.epd"
+        .openingBook("engine/opening.bin") // 또는 "engine/opening.epd", "engine/opening.pgn"
         .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
+        // 만약 pgn 을 사용하고 있다면, ".maxPly(20)" 으로 최대 수 길이를 설정 할 수 있습니다. (기본값 : 16)
         .totalGames(10)
         .concurrency(1)
         .engine1Config(engine1Config)
         .engine2Config(engine2Config)
         .build();
 ```
+
+### 9. 대용량 PGN 데이터베이스 스트리밍
+
+수 GB 단위의 대용량 PGN 파일도 `PGNDatabaseIterator`를 통해 전체 파일을 메모리에 올리지 않고 게임 단위로 스트리밍할 수 있습니다. 헤더 정보는 즉시 조회할 수 있으며, 기보는 `toChessGame()`을 호출할 때 Lazy Parsing 됩니다.
+
+```java
+import com.pepero.jcb.api.ChessGame;
+import com.pepero.jcb.api.pgn.PGNDatabaseIterator;
+import com.pepero.jcb.api.pgn.PGNGameStub;
+
+import java.nio.file.Path;
+
+public class PGNStreamExample {
+    public static void main(String[] args) {
+        // 메모리 부담 없이 수 GB급 PGN 파일을 스트리밍 방식으로 순회합니다.
+        try (PGNDatabaseIterator iterator = new PGNDatabaseIterator(Path.of("large_database.pgn"))) {
+            while (iterator.hasNext()) {
+                PGNGameStub stub = iterator.next();
+
+                // 기보 전체를 파싱하지 않고 헤더 데이터만 즉시 확인 가능합니다.
+                System.out.println("White: " + stub.headers().get("White"));
+                System.out.println("Black: " + stub.headers().get("Black"));
+
+                // 필요한 시점에만 ChessGame 객체로 지연 파싱 할 수도 있습니다.
+                ChessGame game = stub.toChessGame();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
 
 ## 성능
 JCB 에는 2가지 단계의 API가 있습니다.
