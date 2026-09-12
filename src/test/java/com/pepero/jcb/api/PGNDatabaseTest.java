@@ -1,7 +1,6 @@
 package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.pgn.PGNDatabaseIterator;
-import com.pepero.jcb.api.pgn.PGNGameStub;
 
 import java.nio.file.Path;
 
@@ -16,9 +15,8 @@ public class PGNDatabaseTest {
 
             while (pgnDatabaseIterator.hasNext()) {
                 games++;
-                PGNGameStub gameStub = pgnDatabaseIterator.next();
-                gameStub.toChessGame();
-                if(games % 10000 == 0) {
+                pgnDatabaseIterator.next();
+                if(games % 100000 == 0) {
                     long stopTime = System.currentTimeMillis();
                     System.out.println(games + " games searched...");
                     System.out.println(((stopTime - time) / 1000.) + " seconds");
