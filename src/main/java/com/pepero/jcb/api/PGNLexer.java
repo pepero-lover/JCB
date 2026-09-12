@@ -88,8 +88,8 @@ class PGNLexer {
     }
 
     private PGNToken classifyToken(String text) {
-        // number like '1.' , '1...' ..
-        if (text.matches("^\\d+\\.+$") || text.matches("^\\d+$") || text.equals(".")) {
+        // number indicator like '1.', '1...', '1', '.'
+        if (isNumberIndicator(text)) {
             return new PGNToken(TokenType.NUMBER_INDICATOR, text);
         }
 
@@ -98,11 +98,47 @@ class PGNLexer {
             return new PGNToken(TokenType.RESULT, text);
         }
 
-        // nag
-        if (text.matches("^[!?]+$")) {
+        // nag like '!', '?', '!!', '??', '!?', '?!'
+        if (isNagSymbol(text)) {
             return new PGNToken(TokenType.NAG, text);
         }
 
         return new PGNToken(TokenType.MOVE, text);
+    }
+
+    private boolean isNumberIndicator(String text) {
+        int len = text.length();
+        if (len == 0) return false;
+        if (len == 1 && text.charAt(0) == '.') return true;
+
+        int i = 0;
+        int digitCount = 0;
+        while (i < len && Character.isDigit(text.charAt(i))) {
+            i++;
+            digitCount++;
+        }
+        if (digitCount == 0) return false;
+        if (i == len) return true; // "^\\d+$" case
+
+        // remaining chars must be all dots ("^\\d+\\.+$" case)
+        int dotCount = 0;
+        while (i < len && text.charAt(i) == '.') {
+            i++;
+            dotCount++;
+        }
+        return i == len && dotCount > 0;
+    }
+
+    /**
+     * Matches "^[!?]+$" without regex.
+     */
+    private boolean isNagSymbol(String text) {
+        int len = text.length();
+        if (len == 0) return false;
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
+            if (c != '!' && c != '?') return false;
+        }
+        return true;
     }
 }

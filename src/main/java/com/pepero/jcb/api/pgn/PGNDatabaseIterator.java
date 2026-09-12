@@ -15,10 +15,10 @@ import java.util.NoSuchElementException;
  * loading the whole file or any previously-yielded game into memory.
  * <p>
  * Each {@link #next()} call returns a {@link PGNGameStub} — headers are parsed
- * eagerly (cheap), but movetext is kept as raw text and only parsed into a full
+ * eagerly, but movetext is kept as raw text and only parsed into a full
  * {@link com.pepero.jcb.api.ChessGame} on demand via {@link PGNGameStub#toChessGame()}.
  * <p>
- * Not thread-safe. Must be closed (try-with-resources) to release the underlying file handle.
+ * Not thread-safe. Must be closed try-with-resources to release the underlying file handle.
  */
 public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNGameStub>, AutoCloseable {
 

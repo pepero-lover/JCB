@@ -70,38 +70,59 @@ class PGNParser {
         pgnString = pgnString.replace("\uFEFF", "");
 
         Map<String, String> parsedHeaders = new HashMap<>();
-        String[] lines = pgnString.split("\\R");
-        int line_stopped = -1;
 
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i].trim();
-            if (line.isEmpty()) continue;
+        int len = pgnString.length();
+        int pos = 0;
+        int moveTextStart = len;
 
-            if (line.startsWith("[")) {
-                if (line.length() < 2 || !line.endsWith("]")) {
-                    throw new PGNConvertException("Malformed PGN header line: " + line);
+        while (pos < len) {
+            int lineStart = pos;
+            int lineEnd = pos;
+
+            while (lineEnd < len) {
+                char c = pgnString.charAt(lineEnd);
+                if (c == '\n' || c == '\r') break;
+                lineEnd++;
+            }
+
+            int nextPos = lineEnd;
+            if (nextPos < len) {
+                char c = pgnString.charAt(nextPos);
+                nextPos++;
+                if (c == '\r' && nextPos < len && pgnString.charAt(nextPos) == '\n') {
+                    nextPos++;
                 }
-                line = line.substring(1, line.length() - 1);
-                String[] parts = line.split(" ", 2);
-                if (parts.length == 2) {
-                    String type = parts[0];
-                    String what = parts[1].replace("\"", "");
+            }
+
+            int trimStart = lineStart;
+            int trimEnd = lineEnd;
+            while (trimStart < trimEnd && Character.isWhitespace(pgnString.charAt(trimStart))) trimStart++;
+            while (trimEnd > trimStart && Character.isWhitespace(pgnString.charAt(trimEnd - 1))) trimEnd--;
+
+            if (trimStart == trimEnd) {
+                pos = nextPos;
+                continue;
+            }
+
+            if (pgnString.charAt(trimStart) == '[') {
+                if (trimEnd - trimStart < 2 || pgnString.charAt(trimEnd - 1) != ']') {
+                    throw new PGNConvertException("Malformed PGN header line: " + pgnString.substring(trimStart, trimEnd));
+                }
+                String headerInner = pgnString.substring(trimStart + 1, trimEnd - 1);
+                int spaceIdx = headerInner.indexOf(' ');
+                if (spaceIdx != -1) {
+                    String type = headerInner.substring(0, spaceIdx);
+                    String what = headerInner.substring(spaceIdx + 1).replace("\"", "");
                     parsedHeaders.put(type, what);
                 }
+                pos = nextPos;
             } else {
-                line_stopped = i;
+                moveTextStart = lineStart;
                 break;
             }
         }
 
-        String movePGNString = "";
-        if (line_stopped != -1) {
-            StringBuilder moveBuilder = new StringBuilder();
-            for (int i = line_stopped; i < lines.length; i++) {
-                moveBuilder.append(lines[i]).append("\n");
-            }
-            movePGNString = moveBuilder.toString();
-        }
+        String movePGNString = (moveTextStart < len) ? pgnString.substring(moveTextStart) : "";
 
         record VariationState(MoveNode node, Chessboard snapshotBoard) {}
         Stack<VariationState> variationStack = new Stack<>();

@@ -575,15 +575,14 @@ public class MoveGenerator {
         // get king moves
         // in atomic, king cannot capture any piece(s).
         long kingAttacks = Attacks.king_attacks[kingSq] & ~chessboard.occupancies[both];
+        long tempOccForKingMoves = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
         while (kingAttacks != 0) {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
-
-            long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
 
             // if target is touching, it's safe
             boolean targetTouching = (Attacks.king_attacks[targetSq] & (1L << oppKingSq)) != 0;
 
-            if (targetTouching || !isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOcc)) {
+            if (targetTouching || !isSquareAttackedWithOccAtomic(chessboard, targetSq, oppSide, tempOccForKingMoves)) {
                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                         kingSq, targetSq, (side == white ? K : k), 0, false, false, false, false));
                 if(stopAtFirstMove) return moveCount;
@@ -832,6 +831,7 @@ public class MoveGenerator {
 
         // get king moves
         long kingAttacks = Attacks.king_attacks[kingSq] & ~chessboard.occupancies[side];
+        long tempOccForKingMoves = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
         while (kingAttacks != 0) {
             int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
 
@@ -856,8 +856,10 @@ public class MoveGenerator {
             // - R - - - k 1 -
             // - - - - 1 1 1 -
             // and this is not we wanted.
-            long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
-            boolean isSafe = !isSquareAttackedWithOcc(chessboard, targetSq, oppSide, tempOcc);
+
+            // long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
+
+            boolean isSafe = !isSquareAttackedWithOcc(chessboard, targetSq, oppSide, tempOccForKingMoves);
 
             if (isSafe) {
                 boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], targetSq);

@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `PGNSplitter`, added checking comment to avoid splitting incorrectly
 
 ### Performance
+- On `MoveGenerator`, improved performance by caching and reusing the removed king occupancy bitboard
+- On `PGNLexer`, removed using `.matches()` methods, and changed to not use that methods and making `isNumberIndicator`,
+  `isNagSymbol`.
+- On `PGNParser`, removed calculating the lines with `pgnString.split("\\R")`, and replaced fast `while`, `for` loop.
 
 ## [1.11.0]
 
