@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.gaviota;
 
+import com.pepero.jcb.api.exception.tablebase.TablebaseMissingFileException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseUnsupportedMaterialException;
 import com.pepero.jcb.core.constant.EncodedPieces;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -47,13 +49,6 @@ public final class GaviotaTablebase {
     public static final int I_WMATE = GaviotaBlockDecoder.I_WMATE;
     public static final int I_BMATE = GaviotaBlockDecoder.I_BMATE;
     public static final int I_FORBID = GaviotaBlockDecoder.I_FORBID;
-
-    /** Thrown when no table file is available for a requested material combination. */
-    public static final class MissingTableException extends RuntimeException {
-        public MissingTableException(String message) {
-            super(message);
-        }
-    }
 
     private final Path gaviotaDir;
 
@@ -113,7 +108,7 @@ public final class GaviotaTablebase {
      * req.blackPieceSquares/Types (flipping+swapping colors if the reversed
      * table had to be used), and returns the resolved, mapped table.
      *
-     * @throws MissingTableException if neither ordering has a table file available
+     * @throws TablebaseMissingFileException if neither ordering has a table file available
      */
     private GaviotaTable setupTablebase(GaviotaRequest req) {
         String whiteLetters = pieceLetters(req.whiteTypes);
@@ -175,7 +170,7 @@ public final class GaviotaTablebase {
 
             return new GaviotaTable(egKey, header, zipInfo, reversed);
         } catch (IOException e) {
-            throw new MissingTableException(
+            throw new TablebaseMissingFileException(
                     "Failed to load gaviota table for material " + naturalKey + ": " + e.getMessage());
         }
     }
@@ -211,7 +206,7 @@ public final class GaviotaTablebase {
 
         GaviotaEndgameKey key = GaviotaMaterialRegistry.EGKEY.get(req.egKey);
         if (key == null) {
-            throw new MissingTableException("unsupported gaviota material: " + req.egKey);
+            throw new TablebaseMissingFileException("Unsupported gaviota material: " + req.egKey);
         }
 
         long idx = key.pctoi().apply(req);
@@ -336,16 +331,16 @@ public final class GaviotaTablebase {
      * (including on exception, via try/finally — same as python's
      * {@code board.push(move)} / {@code finally: board.pop()}).
      *
-     * @throws IllegalArgumentException if the position has castling rights
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
      *         or more than 5 pieces
-     * @throws MissingTableException if no table file covers this material
+     * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
      *         one of its en passant children)
      */
     public int probeDtm(Chessboard board) {
         if (board.castle != 0) {
-            throw new IllegalArgumentException(
-                    "gaviota tables do not contain positions with castling rights");
+            throw new TablebaseUnsupportedMaterialException(
+                    "Gaviota tables do not contain positions with castling rights");
         }
 
         long occupied = 0L;
@@ -356,8 +351,8 @@ public final class GaviotaTablebase {
         }
 
         if (pieceCount > 5) {
-            throw new IllegalArgumentException(
-                    "gaviota tables support up to 5 pieces, not " + pieceCount);
+            throw new TablebaseUnsupportedMaterialException(
+                    "Gaviota tables support up to 5 pieces, not " + pieceCount);
         }
 
         long kingsOnly = board.bitboards[EncodedPieces.K]
@@ -401,7 +396,9 @@ public final class GaviotaTablebase {
         return dtm;
     }
 
-    /** Ported from gaviota.py's {@code _probe_dtm_no_ep}, taking its inputs off {@code board} directly. */
+    /**
+     * Ported from gaviota.py's {@code _probe_dtm_no_ep}, taking its inputs off {@code board} directly.
+     */
     private int probeDtmNoEpFromBoard(Chessboard board) {
         int[][] white = extractSide(board, true);
         int[][] black = extractSide(board, false);
@@ -425,35 +422,6 @@ public final class GaviotaTablebase {
             return ChessboardUtils.isCheckmate(board) ? -1 : 0;
         }
         return dtm > 0 ? 1 : -1;
-    }
-
-    // ============================================================
-    // get_dtm / get_wdl — default-returning wrappers, ported from
-    // gaviota.py's get_dtm()/get_wdl() (which catch KeyError; python raises
-    // plain KeyError for castling-rights/>5-piece rejection too, not just
-    // missing tables, so both exception types are caught here).
-    // ============================================================
-
-    /**
-     * Ported from gaviota.py's get_dtm(): like {@link #probeDtm}, but returns
-     * {@code defaultValue} instead of throwing when no table is available or
-     * the position is otherwise unprobeable (castling rights, &gt;5 pieces).
-     */
-    public int getDtm(Chessboard board, int defaultValue) {
-        try {
-            return probeDtm(board);
-        } catch (MissingTableException | IllegalArgumentException e) {
-            return defaultValue;
-        }
-    }
-
-    /** Ported from gaviota.py's get_wdl(). See {@link #getDtm} for the exception-handling caveat. */
-    public int getWdl(Chessboard board, int defaultValue) {
-        try {
-            return probeWdl(board);
-        } catch (MissingTableException | IllegalArgumentException e) {
-            return defaultValue;
-        }
     }
 
     /**

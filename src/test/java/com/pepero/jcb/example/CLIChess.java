@@ -3,7 +3,7 @@ package com.pepero.jcb.example;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
-import com.pepero.jcb.api.exception.ConvertMoveException;
+import com.pepero.jcb.api.exception.convert.ConvertMoveException;
 
 import java.io.BufferedReader;
 import java.io.IOException;

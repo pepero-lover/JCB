@@ -1,5 +1,10 @@
 package com.pepero.jcb.api.exception;
 
+import com.pepero.jcb.api.enums.Square;
+
+/**
+ * Thrown by converting incorrect square input on {@link Square}
+ */
 public class SquareConvertException extends RuntimeException {
     public SquareConvertException(int square){
         super("Square must be less than 64 and greater than or equal to 0 (Square input : \"" + square + "\")");

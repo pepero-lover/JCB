@@ -2,7 +2,8 @@ package com.pepero.jcb.api.syzygy;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.SyzygyAnalyzer;
-import com.pepero.jcb.api.exception.SyzygyUnsupportedMaterialException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseMissingFileException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseUnsupportedMaterialException;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -184,7 +185,7 @@ public class SyzygyTablebase {
         if(boardPiece <= 1) return 2;
 
         if(boardPiece > maxPieces)
-            throw new SyzygyUnsupportedMaterialException(
+            throw new TablebaseUnsupportedMaterialException(
                     "This Syzygy tablebase's supporting piece count is less than this board's piece count! " +
                             "(supporting : " + maxPieces +
                             ", chess board : " + boardPiece + ")"
@@ -506,7 +507,7 @@ public class SyzygyTablebase {
                 // side owns which pieces), so the same extension applies to both.
                 Path mirroredPath = syzygyDir.resolve(mirrored + wdlExt);
                 if (!Files.exists(mirroredPath)) {
-                    throw new IOException(
+                    throw new TablebaseMissingFileException(
                             "No WDL tablebase file for " + naturalMaterialName + " (" + path + ") "
                                     + "or its mirror " + mirrored + " (" + mirroredPath + ")");
                 }

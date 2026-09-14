@@ -8,8 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `ChessGame.makeMoveLanAll/SanAll`, added showing where move occurred error with ply.
+- On `ChessGame.internalRemakeMove`, added showing requested variation and real variation size when throwing `VariationNotFoundException`.
 
 ### Changed
+- **Breaking change** : Removed `EmptyMoveUndoException`, `EmptyMoveRedoException`.
+  And merged to `EmptyUndoRedoException` class.
+- Added `UndoRedoType` to distinguish whether this exception is an undo or redo for `EmptyUndoRedoException`.
+- **Breaking change** : Moved `ClockException`, `EngineArenaException` on `api.exception` to `api.exception.arena`.
+- **Breaking change** : Moved `ConvertMoveException`, `FENConvertException` on `api.exception` to `api.exception.convert`.
+- **Breaking change** : Removed `SyzygyUnsupportedMaterialException`,
+  `MissingTableException` and changed `TablebaseMissingFileException`,
+  `TablebaseUnsupportedMaterialException`.
+- On every throwing `MoveNotFoundException` when the current node is `null`, changed to `IllegalStateException`.
 
 ### Fixed
 

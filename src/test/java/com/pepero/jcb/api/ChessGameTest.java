@@ -8,6 +8,7 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.*;
+import com.pepero.jcb.api.exception.arena.ClockException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.perft.PerftResult;
 import com.pepero.jcb.core.constant.BoardSquares;
@@ -75,7 +76,7 @@ public class ChessGameTest {
     @DisplayName("아무 수도 두지 않고 무르기를 하면 예외가 발생해야 한다")
     void unmakeMoveEmpty() {
         ChessGame chessGame = ChessGame.startPosition();
-        assertThrows(EmptyMoveUndoException.class, chessGame::unmakeMove);
+        assertThrows(EmptyUndoRedoException.class, chessGame::unmakeMove);
     }
 
     @Test

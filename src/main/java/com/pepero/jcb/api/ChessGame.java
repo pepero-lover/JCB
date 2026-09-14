@@ -4,7 +4,11 @@ import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.*;
+import com.pepero.jcb.api.exception.arena.ClockException;
+import com.pepero.jcb.api.exception.convert.ConvertMoveException;
+import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
+import com.pepero.jcb.api.exception.type.UndoRedoType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.api.util.LongObjectOpenHashMap;
@@ -918,9 +922,9 @@ public class ChessGame {
                     MoveGenerator.makeMove(tempChessboard, encodedMove);
                     encodedMoves[i] = encodedMove;
                 } catch (IllegalMoveException e) {
-                    throw e.withSequenceContext(i, sanString);
+                    throw e.withSequenceContext(i, sanString).withPly(tempChessboard.ply);
                 } catch (ConvertMoveException e) {
-                    throw e.withSequenceContext(i, sanString);
+                    throw e.withSequenceContext(i, sanString).withPly(tempChessboard.ply);
                 }
             }
 
@@ -963,15 +967,14 @@ public class ChessGame {
                 try {
                     int encodedMove = ConvertStringMoveUtils.lanToMoveData(tempChessboard, lanStrings[i]);
                     if(!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
-                        throw new IllegalMoveException(lanStrings[i],
-                                ChessboardUtils.getFen(tempChessboard));
+                        throw new IllegalMoveException(lanStrings[i], ChessboardUtils.getFen(tempChessboard));
                     }
                     MoveGenerator.makeMove(tempChessboard, encodedMove);
                     encodedMoves[i] = encodedMove;
                 } catch (IllegalMoveException e) {
-                    throw e.withSequenceContext(i, lanString);
+                    throw e.withSequenceContext(i, lanString).withPly(tempChessboard.ply);
                 } catch (ConvertMoveException e) {
-                    throw e.withSequenceContext(i, lanString);
+                    throw e.withSequenceContext(i, lanString).withPly(tempChessboard.ply);
                 }
             }
 
@@ -1258,7 +1261,7 @@ public class ChessGame {
         try {
             remakeMove();
             return true;
-        } catch (EmptyMoveRedoException e) {
+        } catch (EmptyUndoRedoException e) {
             return false;
         }
     }
@@ -1274,7 +1277,7 @@ public class ChessGame {
         try {
             remakeMove(variationIndex);
             return true;
-        } catch (EmptyMoveRedoException e) {
+        } catch (EmptyUndoRedoException e) {
             return false;
         }
     }
@@ -1288,7 +1291,7 @@ public class ChessGame {
         try {
             unmakeMove();
             return true;
-        } catch (EmptyMoveUndoException e) {
+        } catch (EmptyUndoRedoException e) {
             return false;
         }
     }
@@ -1475,10 +1478,10 @@ public class ChessGame {
      *
      * @return outcome of this undo, to be passed to {@link #dispatchUndoNotifications(UndoRedoOutcome)}
      *
-     * @throws EmptyMoveUndoException if move history is empty and unmake move
+     * @throws EmptyUndoRedoException if move history is empty and unmake move
      */
     private UndoRedoOutcome internalUnmakeMove() {
-        if (!canUndo()) throw new EmptyMoveUndoException();
+        if (!canUndo()) throw new EmptyUndoRedoException(UndoRedoType.UNMAKING);
 
         MoveInfo moveInfo = currentNode.moveData;
         currentNode = currentNode.parent;
@@ -1502,11 +1505,12 @@ public class ChessGame {
      *
      * @return outcome of this redo, to be passed to {@link #dispatchRedoNotifications(UndoRedoOutcome)}
      *
-     * @throws EmptyMoveRedoException if redo history is empty and remake move
+     * @throws EmptyUndoRedoException if redo history is empty and remake move
      */
     private UndoRedoOutcome internalRemakeMove(int variationIndex) {
-        if (!canRedo()) throw new EmptyMoveRedoException();
-        if(variationIndex < 0 || currentNode.children.size() <= variationIndex) throw new VariationNotFoundException();
+        if (!canRedo()) throw new EmptyUndoRedoException(UndoRedoType.REMAKING);
+        if(variationIndex < 0 || currentNode.children.size() <= variationIndex)
+            throw new VariationNotFoundException(variationIndex, currentNode.children.size());
 
         currentNode = currentNode.children.get(variationIndex);
         MoveInfo moveInfo = currentNode.moveData;
@@ -1558,7 +1562,7 @@ public class ChessGame {
      *
      * @return unmade move info
      *
-     * @throws EmptyMoveUndoException if move history is empty and unmake move
+     * @throws EmptyUndoRedoException if move history is empty and unmake move
      */
     public MoveInfo unmakeMove() {
         UndoRedoOutcome outcome;
@@ -1583,7 +1587,7 @@ public class ChessGame {
      * Example : <br> e2e4 e7e5 (d7d5) g1f3 and pointer is e2e4
      * and remakeMove(), and pointer is now e7e5. <br>
      *
-     * @throws EmptyMoveRedoException if redo history is empty and remake move
+     * @throws EmptyUndoRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove() {
         return remakeMove(0);
@@ -1600,7 +1604,7 @@ public class ChessGame {
      * and remakeMove(1), and pointer is now d7d5. <br>
      * if remakeMove(0), pointer is now e7e5. <br>
      *
-     * @throws EmptyMoveRedoException if redo history is empty and remake move
+     * @throws EmptyUndoRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove(int variationIndex) {
         UndoRedoOutcome outcome;
@@ -1659,7 +1663,8 @@ public class ChessGame {
     public boolean canRedo(int variationIndex) {
         readLock.lock();
         try {
-            if (currentNode == null) throw new MoveNotFoundException();
+            if (currentNode == null)
+                throw new IllegalStateException("currentNode is unexpectedly null! This is likely a bug in ChessGame's internal state.");
             return variationIndex >= 0 && currentNode.children.size() > variationIndex;
         } finally {
             readLock.unlock();
@@ -3645,7 +3650,8 @@ public class ChessGame {
 
         writeLock.lock();
         try {
-            if (currentNode == null) throw new MoveNotFoundException("Current node is null!");
+            if (currentNode == null)
+                throw new IllegalStateException("currentNode is unexpectedly null! This is likely a bug in ChessGame's internal state.");
 
             MoveNode targetNode = moveHistoryRoot;
             for (int ply = 0; ply < targetPly; ply++) {
@@ -4552,7 +4558,7 @@ public class ChessGame {
 
             while (!lastNode.children.isEmpty()) {
                 if(maxNodes <= tempBoard.ply) throw new NodesOverflowException(
-                        "This mainline's node (move) count is more than max nodes count! (Max node count : " + maxNodes + ")"
+                        maxNodes
                 );
 
                 lastNode = lastNode.children.getFirst();

@@ -1,6 +1,6 @@
 package com.pepero.jcb.example;
 
-import com.pepero.jcb.api.exception.FENConvertException;
+import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.parse.FENValidator;
 import com.pepero.jcb.core.GameVariant;
 

@@ -81,9 +81,7 @@ class PGNExporter {
     static MoveNodeDTO buildPGNTreeWithSan(MoveNode node, Chessboard tempBoard, int maxNodesCount,
                                            int[] currentNodes) {
         currentNodes[0]++;
-        if (maxNodesCount < currentNodes[0]) throw new NodesOverflowException(
-                "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
-        );
+        if (maxNodesCount < currentNodes[0]) throw new NodesOverflowException(maxNodesCount);
 
         String calculatedSan = null;
         boolean moved = node.moveData != null;

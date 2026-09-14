@@ -6,7 +6,7 @@ import com.pepero.jcb.api.book.BookMoveSelector;
 import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
-import com.pepero.jcb.api.exception.EngineArenaException;
+import com.pepero.jcb.api.exception.arena.EngineArenaException;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.core.ChessboardUtils;

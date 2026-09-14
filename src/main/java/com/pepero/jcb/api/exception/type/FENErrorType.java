@@ -1,5 +1,7 @@
 package com.pepero.jcb.api.exception.type;
 
+import com.pepero.jcb.api.exception.convert.FENConvertException;
+
 public enum FENErrorType {
     FEN_NULL(false), // when FEN is null
 
@@ -47,7 +49,7 @@ public enum FENErrorType {
 
     /**
      * @return whether this error type is expected to carry a {@code realValue}
-     *         on {@link com.pepero.jcb.api.exception.FENConvertException}.
+     *         on {@link FENConvertException}.
      */
     public boolean hasRealValue() {
         return hasRealValue;

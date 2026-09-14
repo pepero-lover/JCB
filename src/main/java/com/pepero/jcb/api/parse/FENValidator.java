@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.parse;
 
-import com.pepero.jcb.api.exception.FENConvertException;
+import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;

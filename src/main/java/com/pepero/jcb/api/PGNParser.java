@@ -3,8 +3,11 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
+import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.exception.NodesOverflowException;
 import com.pepero.jcb.api.exception.PGNConvertException;
+import com.pepero.jcb.api.exception.convert.ConvertMoveException;
+import com.pepero.jcb.api.exception.type.PGNErrorType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.util.LongObjectOpenHashMap;
 import com.pepero.jcb.core.Chessboard;
@@ -12,9 +15,7 @@ import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,10 +63,12 @@ class PGNParser {
      * @param pgnString pgn string
      * @param maxNodesCount max nodes calculating count
      * @return {@link PGNParsedData} DTO (for initializing ChessGame)
+     *
+     * @throws PGNConvertException when pgn converting failed
      */
     public static PGNParsedData parse(String pgnString, int maxNodesCount, AtomicLong nodeCounter) {
         if (pgnString == null || pgnString.isEmpty()) {
-            throw new IllegalArgumentException("PGN string is empty");
+            throw new PGNConvertException("PGN string is empty", PGNErrorType.PGN_EMPTY);
         }
         pgnString = pgnString.replace("\uFEFF", "");
 
@@ -106,15 +109,25 @@ class PGNParser {
 
             if (pgnString.charAt(trimStart) == '[') {
                 if (trimEnd - trimStart < 2 || pgnString.charAt(trimEnd - 1) != ']') {
-                    throw new PGNConvertException("Malformed PGN header line: " + pgnString.substring(trimStart, trimEnd));
+                    throw new PGNConvertException("Malformed PGN header line: " + pgnString.substring(trimStart, trimEnd),
+                            PGNErrorType.WRONG_HEADER, pgnString.substring(trimStart, trimEnd));
                 }
                 String headerInner = pgnString.substring(trimStart + 1, trimEnd - 1);
                 int spaceIdx = headerInner.indexOf(' ');
-                if (spaceIdx != -1) {
-                    String type = headerInner.substring(0, spaceIdx);
-                    String what = headerInner.substring(spaceIdx + 1).replace("\"", "");
-                    parsedHeaders.put(type, what);
+                if (spaceIdx == -1) {
+                    throw new PGNConvertException("Malformed PGN header line (missing space between key and value): "
+                            + pgnString.substring(trimStart, trimEnd), PGNErrorType.WRONG_HEADER,
+                            pgnString.substring(trimStart, trimEnd));
                 }
+                String type = headerInner.substring(0, spaceIdx);
+                String rawValue = headerInner.substring(spaceIdx + 1);
+                if (rawValue.length() < 2 || rawValue.charAt(0) != '"' || rawValue.charAt(rawValue.length() - 1) != '"') {
+                    throw new PGNConvertException("Malformed PGN header value (must be quoted): "
+                            + pgnString.substring(trimStart, trimEnd), PGNErrorType.WRONG_HEADER,
+                            pgnString.substring(trimStart, trimEnd));
+                }
+                String what = rawValue.substring(1, rawValue.length() - 1);
+                parsedHeaders.put(type, what);
                 pos = nextPos;
             } else {
                 moveTextStart = lineStart;
@@ -218,7 +231,8 @@ class PGNParser {
                         currentParsedNode = state.node;
                         pgnChessboard = state.snapshotBoard;
                     } else {
-                        throw new PGNConvertException("Variation stack is empty!");
+                        throw new PGNConvertException("There is no move node's parent existing, but the variation ended!",
+                                PGNErrorType.VARIATION_STACK_EMPTY_POP);
                     }
                     break;
 
@@ -240,7 +254,18 @@ class PGNParser {
                     String pureSan = rawSan.substring(0, cleanEnd);
                     String annotation = rawSan.substring(cleanEnd);
 
-                    int moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
+                    int moveData;
+                    try {
+                        moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
+                    } catch (IllegalMoveException e) {
+                        throw e.withPgnParsePosition(
+                                variationStack.isEmpty() ? List.of() : variationStack.peek().node().pathFromRoot(),
+                                pgnChessboard.full_move, pgnChessboard.ply);
+                    } catch (ConvertMoveException e) {
+                        throw e.withPgnParsePosition(
+                                variationStack.isEmpty() ? List.of() : variationStack.peek().node().pathFromRoot(),
+                                pgnChessboard.full_move, pgnChessboard.ply);
+                    }
                     MoveGenerator.makeMove(pgnChessboard, moveData);
 
                     MoveInfo moveInfo = new MoveInfo(moveData);
@@ -264,12 +289,17 @@ class PGNParser {
                     currentParsedNode = newNode;
                     tempNodeCache.put(newNode.id, newNode);
                     if(tempNodeCache.size() >= maxNodesCount) {
-                        throw new NodesOverflowException(
-                                "This pgn's node (move) count is more than max nodes count! (Max node count : " + maxNodesCount + ")"
-                        );
+                        throw new NodesOverflowException(maxNodesCount);
                     }
                     break;
             }
+        }
+
+        if (!variationStack.isEmpty()) {
+            throw new PGNConvertException(
+                    "PGN ended with " + variationStack.size() + " unclosed variation(s)",
+                    PGNErrorType.VARIATION_STACK_NOT_EMPTY
+            );
         }
 
         if (parsedGameResult == GameResult.UNKNOWN) {

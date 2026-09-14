@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.convert;
 
 import com.pepero.jcb.api.exception.type.FENErrorType;
 
@@ -29,7 +29,8 @@ public class FENConvertException extends RuntimeException {
     }
 
     /**
-     * Get real value on this error. <b>(can be null!)</b>
+     * Get real value on this error. <b>(can be null!)</b> <br>
+     * If you want to know this error type has real value, use {@link FENErrorType#hasRealValue()}.
      */
     public String getRealValue() {
         return realValue;

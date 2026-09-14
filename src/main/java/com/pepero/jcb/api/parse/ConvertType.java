@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.parse;
 
-import com.pepero.jcb.api.exception.ConvertMoveException;
+import com.pepero.jcb.api.exception.convert.ConvertMoveException;
 
 /**
  * Convert type for distinguishing converting which to which. <br>

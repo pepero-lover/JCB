@@ -5,6 +5,7 @@ import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -91,6 +92,22 @@ class MoveNode {
      */
     public MoveNode getLastMainlineNode() {
         return getLastMainlineNode(this);
+    }
+
+
+    /**
+     * Get the move sequence (in LAN, e.g. "e2e4") from root to this node, inclusive. <br>
+     * For exception message
+     */
+    public List<String> pathFromRoot() {
+        List<String> path = new ArrayList<>();
+        MoveNode cursor = this;
+        while (cursor != null && cursor.moveData != null) {
+            path.add(cursor.moveData.toLanString());
+            cursor = cursor.parent;
+        }
+        Collections.reverse(path);
+        return path;
     }
 
     /**

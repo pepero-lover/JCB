@@ -3,7 +3,7 @@ package com.pepero.jcb.example;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
-import com.pepero.jcb.api.exception.FENConvertException;
+import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.IllegalMoveException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.uci.EngineLine;
