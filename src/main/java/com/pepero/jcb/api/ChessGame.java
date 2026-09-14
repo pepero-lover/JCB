@@ -871,6 +871,7 @@ public class ChessGame {
                 if (!ChessboardUtils.isLegalMove(tempChessboard, encodedMove)) {
                     throw new IllegalMoveException(moveInfos.get(i).toLanString(),
                             ChessboardUtils.getFen(tempChessboard))
+                            .withPly(tempChessboard.ply)
                             .withSequenceContext(i, moveSequenceString);
                 }
 
