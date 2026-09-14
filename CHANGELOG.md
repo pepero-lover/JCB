@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- Added attribution for Fathom and Gaviota Tablebases (both source and
+  README).
 
 ### Fixed
+- Fixed not showing `csl`, `cal` annotation when exporting pgn.
 
 ### Performance
 
@@ -28,8 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`GPL-3.0-or-later`), which was not compatible with JCB's MIT license.
   No changes to the public API.
   See the release notes on v1.4.0 to v1.11.1
-- Added attribution for Fathom and Gaviota Tablebases (both source and
-  README) alongside the reimplementation above.
 - **Breaking change** : Removed `EmptyMoveUndoException`, `EmptyMoveRedoException`.
   And merged to `EmptyUndoRedoException` class.
 - **Breaking change** : Moved `ClockException`, `EngineArenaException` on `api.exception` to `api.exception.arena`.

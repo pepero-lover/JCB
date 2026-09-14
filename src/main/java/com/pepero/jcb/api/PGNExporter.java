@@ -193,8 +193,10 @@ class PGNExporter {
         boolean hasEval = mainMove.annotation().eval() != null && !mainMove.annotation().eval().isEmpty();
         boolean hasTimestamp = mainMove.annotation().timeStamp() != null &&
                 !mainMove.annotation().timeStamp().isEmpty();
+        boolean hasCsl = mainMove.annotation().csl() != null && !mainMove.annotation().csl().isEmpty();
+        boolean hasCal = mainMove.annotation().cal() != null && !mainMove.annotation().cal().isEmpty();
 
-        if ((hasComment || hasClk || hasEval || hasTimestamp) && !isPure) {
+        if ((hasComment || hasClk || hasEval || hasTimestamp || hasCsl || hasCal) && !isPure) {
             StringJoiner innerContent = new StringJoiner(" ");
 
             if (hasClk) {
@@ -205,6 +207,12 @@ class PGNExporter {
             }
             if (hasEval) {
                 innerContent.add("[%eval " + mainMove.annotation().eval() + "]");
+            }
+            if (hasCsl) {
+                innerContent.add("[%csl " + mainMove.annotation().csl() + "]");
+            }
+            if (hasCal) {
+                innerContent.add("[%cal " + mainMove.annotation().cal() + "]");
             }
             if (hasComment) {
                 innerContent.add(mainMove.annotation().comment());
