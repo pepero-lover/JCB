@@ -27,6 +27,10 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * Probe and get the DTZ (Distance to zero) / WDL (Win Draw Loss) data.
  * This uses {@link Chessboard} to probe the data, if you want to probe the data with {@link ChessGame},
  * go to {@link SyzygyAnalyzer}.
+ * <p>
+ * The probing logic here is derived from Fathom, Ronald de Man and Jon
+ * Dart's C reference implementation for probing Syzygy tablebases
+ * (MIT license, https://github.com/jdart1/Fathom).
  */
 public class SyzygyTablebase {
 

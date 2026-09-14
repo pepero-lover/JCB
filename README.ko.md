@@ -47,6 +47,8 @@
 
 ## 참고 및 출처
 * 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 은 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
+* Syzygy 테이블베이스 프로빙(`com.pepero.jcb.api.syzygy`)은 Ronald de Man과 Jon Dart의 **Fathom**(MIT 라이선스, https://github.com/jdart1/Fathom)에서 파생되었습니다.
+* Gaviota 테이블베이스 프로빙(`com.pepero.jcb.api.gaviota`)은 Miguel A. Ballicora의 **Gaviota Tablebases** 프로빙 코드(X11/MIT 라이선스, https://github.com/michiguel/Gaviota-Tablebases)에서 파생되었습니다.
 
 ## 설치 방법
 

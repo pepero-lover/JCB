@@ -46,6 +46,8 @@
 
 ## Credits and References
 * The move generation methods and bitboard logic in this chess engine (nearly everything outside of `com.pepero.jcb.api`) were deeply inspired by a tutorial created by **Code Monkey King**.
+* Syzygy tablebase probing (`com.pepero.jcb.api.syzygy`) is derived from **Fathom** by Ronald de Man and Jon Dart (MIT license, https://github.com/jdart1/Fathom).
+* Gaviota tablebase probing (`com.pepero.jcb.api.gaviota`) is derived from the **Gaviota Tablebases** probing code by Miguel A. Ballicora (X11/MIT license, https://github.com/michiguel/Gaviota-Tablebases).
 
 ## Installation
 
