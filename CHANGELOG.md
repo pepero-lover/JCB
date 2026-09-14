@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.12.0]
+
+### Added
 - On `ChessGame.makeMove'LanAll/SanAll/All'`, added showing where move occurred error with ply.
 - On `ChessGame.internalRemakeMove`, added showing requested variation and real variation size when throwing `VariationNotFoundException`.
 
@@ -404,7 +414,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.11.1...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/pepero-lover/JCB/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/pepero-lover/JCB/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/pepero-lover/JCB/compare/v1.10.2...v1.11.0
 [1.10.2]: https://github.com/pepero-lover/JCB/compare/v1.10.1...v1.10.2
