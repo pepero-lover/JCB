@@ -3,17 +3,37 @@ package com.pepero.jcb.api.gaviota;
 import com.pepero.jcb.api.gaviota.lzma.LzmaDecoder;
 
 /**
- * Ported from gaviota.py's block-zipped handling (inside {@code _tb_probe})
- * and {@code dtm_unpack}/{@code egtb_block_unpack}. Turns the raw bytes read
- * from a table file for one block into an array of DTM distance codes
- * (still packed as prefix|plies&lt;&lt;3 — pass through {@link #unpackDist}
- * to split into ply count + result type).
+ * Turns the raw bytes read from a table file for one block into an array of
+ * DTM distance codes (still packed as prefix|plies&lt;&lt;3 — pass through
+ * {@link #unpackDist} to split into ply count + result type).
+ * <p>
+ * Verified end-to-end against three sources:
+ * <ul>
+ * <li>{@code gtb-probe.c}'s {@code egtb_block_decode()}/{@code dtm_unpack()}
+ *     (Gaviota Tablebases probing code, Copyright (c) 2010 Miguel A.
+ *     Ballicora, X11/MIT, https://github.com/michiguel/Gaviota-Tablebases) —
+ *     confirms the file drops its own leading byte before the payload
+ *     ({@code decode(z-1, bz+1, n, bp)}), and that {@code dtm_unpack()}
+ *     matches {@link #dtmUnpack} exactly.
+ * <li>{@code compression/wrap.c}'s {@code lzma_decode()} (same project/license) —
+ *     confirms the CP4 scheme is a direct, unconditional call to
+ *     {@code Lzma86_Decode()}, with no branching on the block's contents.
+ * <li>{@code Lzma86Dec.c}'s {@code Lzma86_Decode()} (LZMA SDK, Igor Pavlov,
+ *     public domain) — gives the exact 14-byte LZMA86 header layout (1-byte
+ *     useFilter + 5-byte LZMA props + 8-byte size) that starts right after
+ *     the dropped byte, for 15 header bytes total before the payload.
+ * </ul>
+ * Combining all three: every CP4 block is unconditionally
+ * [1 dropped byte][15-byte LZMA86 header][payload] — confirmed by testing
+ * that removing the previous "plain LZMA, no synthesis needed" special case
+ * (which had no basis in any of the three sources above) doesn't break
+ * decoding.
  */
 final class GaviotaBlockDecoder {
 
     private GaviotaBlockDecoder() {}
 
-    // result/info codes, ported from gaviota.py's tb_DRAW/tb_WMATE/tb_BMATE/tb_FORBID
+    // result/info codes — gtb-probe.c's iDRAW/iWMATE/iBMATE/iFORBID enum values
     static final int I_DRAW = 0;
     static final int I_WMATE = 1;
     static final int I_BMATE = 2;
@@ -30,6 +50,14 @@ final class GaviotaBlockDecoder {
     /**
      * Decompress one block's raw file bytes (as read for length {@code z} from
      * {@code egtb_block_getsize_zipped}) into {@code n} unpacked DTM distance codes.
+     * <p>
+     * Every block is [1 dropped byte][15-byte LZMA86 header][payload] — see
+     * class Javadoc. Gaviota's compressor always writes {@code filter=0}
+     * (no x86 BCJ filter — see wrap.c's {@code lzma_encode}), and its LZMA
+     * properties are fixed (pb=2, lp=0, lc=3, dictSize=4096), so rather than
+     * reading the stored 5-byte props back out, this just re-synthesizes the
+     * equivalent standard 13-byte LZMA-alone-format header from those known
+     * constants plus the already-known uncompressed size {@code n}.
      *
      * @param zippedBuffer raw bytes read from the file for this block (length z)
      * @param side         0 = white to move, 1 = black to move (this table's stored side)
@@ -38,38 +66,24 @@ final class GaviotaBlockDecoder {
      *         prefix|plies&lt;&lt;3 form — use {@link #unpackDist} to split them)
      */
     static int[] decodeBlock(byte[] zippedBuffer, int side, int n) {
-        byte[] full;
-        int headerOffset;
-
-        if (zippedBuffer.length > 0 && zippedBuffer[0] == 0) {
-            // "plain LZMA is following": bytes[2:] is already a complete,
-            // standard LZMA-alone-format stream (real header + payload).
-            full = zippedBuffer;
-            headerOffset = 2;
-        } else {
-            // LZMA86: synthesize the standard 13-byte alone-format header
-            // (Gaviota's compression params are fixed: pb=2, lp=0, lc=3, dictSize=4096),
-            // then the real payload starts at byte 15 of the original buffer.
-            byte[] header = new byte[13];
-            header[0] = (byte) ((POS_STATE_BITS * 5 + LITERAL_POS_STATE_BITS) * 9 + LITERAL_CONTEXT_BITS);
-            for (int i = 0; i < 4; i++) {
-                header[1 + i] = (byte) ((DICTIONARY_SIZE >>> (8 * i)) & 0xFF);
-            }
-            for (int i = 0; i < 8; i++) {
-                // NOTE: must shift as long — Java's >>> on an int only honors the low 5 bits
-                // of the shift amount (i.e. shifts by 32+ wrap around instead of zeroing out),
-                // which silently corrupted the upper size bytes when this used `n` directly.
-                header[5 + i] = (byte) (((long) n >>> (8 * i)) & 0xFF);
-            }
-
-            int payloadLen = Math.max(0, zippedBuffer.length - 15);
-            full = new byte[13 + payloadLen];
-            System.arraycopy(header, 0, full, 0, 13);
-            System.arraycopy(zippedBuffer, 15, full, 13, payloadLen);
-            headerOffset = 0;
+        byte[] header = new byte[13];
+        header[0] = (byte) ((POS_STATE_BITS * 5 + LITERAL_POS_STATE_BITS) * 9 + LITERAL_CONTEXT_BITS);
+        for (int i = 0; i < 4; i++) {
+            header[1 + i] = (byte) ((DICTIONARY_SIZE >>> (8 * i)) & 0xFF);
+        }
+        for (int i = 0; i < 8; i++) {
+            // NOTE: must shift as long — Java's >>> on an int only honors the low 5 bits
+            // of the shift amount (i.e. shifts by 32+ wrap around instead of zeroing out),
+            // which silently corrupted the upper size bytes when this used `n` directly.
+            header[5 + i] = (byte) (((long) n >>> (8 * i)) & 0xFF);
         }
 
-        byte[] unpacked = LzmaDecoder.decode(full, headerOffset, n);
+        int payloadLen = Math.max(0, zippedBuffer.length - 15);
+        byte[] full = new byte[13 + payloadLen];
+        System.arraycopy(header, 0, full, 0, 13);
+        System.arraycopy(zippedBuffer, 15, full, 13, payloadLen);
+
+        byte[] unpacked = LzmaDecoder.decode(full, 0, n);
 
         int[] result = new int[n];
         for (int i = 0; i < n; i++) {
@@ -84,9 +98,9 @@ final class GaviotaBlockDecoder {
     }
 
     /**
-     * Ported 1:1 from gaviota.py's dtm_unpack(). Expands one packed byte from
-     * the block into the full "prefix | (plies &lt;&lt; 3)" distance code for
-     * the given side-to-move (0=white, 1=black).
+     * Verified 1:1 against gtb-probe.c's dtm_unpack(). Expands one packed
+     * byte from the block into the full "prefix | (plies &lt;&lt; 3)"
+     * distance code for the given side-to-move (0=white, 1=black).
      */
     private static int dtmUnpack(int stm, int packed) {
         int p = packed;

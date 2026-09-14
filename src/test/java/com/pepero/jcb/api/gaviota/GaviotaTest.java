@@ -17,7 +17,7 @@ public class GaviotaTest {
     void assertGaviota(String fen) {
         ChessGame game = ChessGame.fromFEN(fen);
 
-        GaviotaTablebase tb = new GaviotaTablebase(Path.of("gaviota/"));
+        GaviotaTablebase tb = new GaviotaTablebase(Path.of("D:/tablebases/gaviota/"));
 
         int previousDtm = GaviotaAnalyzer.probeDtm(game, tb);
 

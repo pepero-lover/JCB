@@ -9,23 +9,26 @@ import java.util.Map;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
- * Ported from Fathom's fill_squares(). Given an actual board position and the
- * expected piece-type order for a sub-table/side (from SyzygySubTable), builds
- * the square array that SyzygyEncoder.encode() needs.
+ * Ported from Fathom's {@code tbprobe.c} — the piece/square-gathering loop shared
+ * by {@code probe_wdl_table()} and {@code probe_dtz_table()} (the loop that fills
+ * the local {@code p[]} array right before {@code encode_piece()}/{@code encode_pawn()}
+ * is called), not a separate named helper in the original C.
  * <p>
- * IMPORTANT: "colorFlipped" (Fathom/python-chess's "cmirror") and the actual
- * SQUARE mirror (python-chess's "mirror", i.e. {@code ^ 0x38}) are two
- * independent things:
- *   - colorFlipped always flips which side's bitboard we pull pieces from
- *     (swap white/black piece codes) whenever the natural material string
- *     wasn't the one actually stored on disk.
- *   - the square itself must ONLY be flipped when the material HAS PAWNS.
- *     For pawnless material, SyzygyEncoder's own symmetry normalization
- *     (TRIANGLE/OFF_DIAG/FLIP_DIAG etc.) already handles full board symmetry
- *     internally, so pre-flipping squares here would corrupt the encoded index.
- *     See python-chess's _probe_wdl_table / _probe_dtz_table: in the
- *     has_pawns==False branch it's "p[i] = square" (no ^ mirror); the
- *     "p[i] = square ^ mirror" line only exists in the has_pawns==True branch.
+ * IMPORTANT: "colorFlipped" (Fathom's {@code cmirror}) and the actual SQUARE
+ * mirror (Fathom's {@code mirror}, i.e. {@code ^ 0x38}) are two independent things,
+ * both derived once per probe from whether the position's own material key
+ * matches the table's stored key ({@code key != ptr->key} in Fathom):
+ *   - colorFlipped ({@code cmirror}, 0 or 8) always flips which side's bitboard
+ *     we pull pieces from (swap white/black piece codes) whenever the position's
+ *     natural material string wasn't the one actually stored on disk.
+ *   - the square itself ({@code mirror}, 0 or 0x38) must ONLY be XORed in when the
+ *     material HAS PAWNS. For pawnless material, SyzygyEncoder's own symmetry
+ *     normalization (TRIANGLE/OFF_DIAG/FLIP_DIAG etc.) already handles full board
+ *     symmetry internally, so pre-flipping squares here would corrupt the encoded index.
+ *     In Fathom's {@code !ptr->has_pawns} branch the fill is "{@code p[i++] = lsb(bb);}"
+ *     (no {@code ^ mirror} at all); the "{@code p[i++] = lsb(bb) ^ mirror;}" line only
+ *     exists in the {@code has_pawns} branch. {@code mirror} is computed either way,
+ *     but the pawnless branch simply never reads it.
  */
 class SyzygyFillSquares {
 
@@ -61,10 +64,10 @@ class SyzygyFillSquares {
      * @param subTable     the sub-table whose piece order we must follow
      * @param isWtm        true to use the white-to-move piece order, false for black-to-move
      * @param colorFlipped whether we're reading from the color-swapped bitboards
-     *                     (matches Fathom/python-chess's "cmirror")
+     *                     (matches Fathom's {@code cmirror})
      * @param hasPawns     whether this material has pawns; ONLY when true does
      *                     colorFlipped also trigger the actual square ({@code ^ 0x38})
-     *                     mirror (matches python-chess's "mirror"). Pawnless
+     *                     mirror (matches Fathom's {@code mirror}). Pawnless
      *                     material must never have its squares mirrored here.
      * @return int[] of board squares (0~63), one per piece, in subTable's order
      */

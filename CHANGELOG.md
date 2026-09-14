@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MissingTableException` and changed `TablebaseMissingFileException`,
   `TablebaseUnsupportedMaterialException`.
 - On every throwing `MoveNotFoundException` when the current node is `null`, changed to `IllegalStateException`.
+- Reimplemented the `Gaviota` and `Syzygy` tablebases probing code
+  (`api.gaviota` and `api.syzygy` packages) from original C sources — Gaviota Tablebases probing code and Fathom,
+  both licensed under X11/MIT — instead of a previous port from python-chess
+  (`GPL-3.0-or-later`), which was not compatible with JCB's MIT license.
+  No changes to the public API.
+  See the changelog from v1.4.0 to v1.11
 
 ### Fixed
 

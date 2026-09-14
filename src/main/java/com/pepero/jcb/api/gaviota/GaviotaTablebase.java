@@ -21,24 +21,34 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Ported from gaviota.py's PythonTablebase class. This class owns the
- * material-key resolution ({@code _setup_tablebase}), file/mmap management
- * ({@code _open_tablebase}), the block-fetch + LRU cache pipeline
- * ({@code _tb_probe}), and the Chessboard-facing probe entry points
- * ({@link #probeDtm}/{@link #probeWdl}, ported from {@code probe_dtm}/
- * {@code probe_wdl} including the en passant resolution loop).
+ * Owns material-key resolution, file/mmap management, the block-fetch + LRU
+ * cache pipeline, and the {@link Chessboard}-facing probe entry points
+ * ({@link #probeDtm}/{@link #probeWdl}).
  * <p>
- * Usage structure mirrors {@link com.pepero.jcb.api.syzygy.SyzygyTablebase}:
- * the table directory is handed to the constructor (no separate
- * {@code addDirectory()} step), and each distinct material key is resolved,
- * mapped, and cached lazily the first time it's probed, via
- * {@code tableCache.computeIfAbsent(...)} — same as Syzygy's
- * {@code wdlCache}/{@code dtzCache}. Natural-vs-mirrored file resolution
- * (white-then-black material name, falling back to black-then-white) also
- * follows Syzygy's natural/mirrored-path fallback in {@code loadWdlTable}/
- * {@code loadDtzTable}. There is no explicit {@code close()}; like Syzygy,
- * mapped byte buffers are simply left for the GC (no unmap in plain
- * {@code java.nio}).
+ * The material-key resolution ({@link #setupTablebase}) and block-fetch
+ * pipeline ({@link #tbProbe}) correspond to {@code gtb-probe.c}'s
+ * {@code tb_probe_()}/{@code preload_cache()} (Gaviota Tablebases probing
+ * code, Copyright (c) 2010 Miguel A. Ballicora, X11/MIT,
+ * https://github.com/michiguel/Gaviota-Tablebases) — restructured around
+ * JCB's own lazy per-material {@code ConcurrentHashMap} cache rather than
+ * C's static global tables, the same way
+ * {@link com.pepero.jcb.api.syzygy.SyzygyTablebase}'s
+ * {@code wdlCache}/{@code dtzCache} restructure Fathom's C globals.
+ * <p>
+ * {@link #probeDtm}'s en passant handling is conceptually the same idea as
+ * {@code tb_probe_()}'s {@code epsq} handling (try the available en passant
+ * capture, recursively probe the resulting position, and keep whichever
+ * outcome the side to move prefers via a decisive-result-first merge — the
+ * C's {@code bestx()} table-driven merge on packed {@code dtm_t} codes,
+ * verified equivalent to this method's simpler same-sign-min/different-sign-max
+ * merge on plain signed ply counts) — but the implementation is JCB's own:
+ * it uses JCB's real {@link MoveGenerator} to enumerate legal en passant
+ * moves and JCB's own make/unmake on a {@link Chessboard}, rather than C's
+ * manual square-array simulation (which exists because bare index-based
+ * probing code has no move generator of its own to call).
+ * <p>
+ * There is no explicit {@code close()} — mapped byte buffers are simply
+ * left for the GC (no unmap in plain {@code java.nio}).
  */
 public final class GaviotaTablebase {
 
@@ -97,9 +107,10 @@ public final class GaviotaTablebase {
     }
 
     // ============================================================
-    // Material-key resolution + file loading — ported from
-    // _setup_tablebase()/_open_tablebase(), restructured around a single
-    // lazy per-material cache the way Syzygy's loadWdlTable()/loadDtzTable() are.
+    // Material-key resolution + file loading — corresponds to gtb-probe.c's
+    // egtb_get_id()/list_sq_flipNS() straight-vs-reversed branch inside
+    // tb_probe_(), restructured around a single lazy per-material cache the
+    // way Syzygy's loadWdlTable()/loadDtzTable() are.
     // ============================================================
 
     /**
@@ -192,7 +203,9 @@ public final class GaviotaTablebase {
     }
 
     // ============================================================
-    // Block fetch + cache — ported from _tb_probe()
+    // Block fetch + cache — corresponds to gtb-probe.c's preload_cache()/
+    // dtm_cache_pointblock(), restructured around a ConcurrentHashMap +
+    // atomic age counter instead of C's fixed-size array + linear LRU scan.
     // ============================================================
 
     /**
@@ -265,18 +278,22 @@ public final class GaviotaTablebase {
     }
 
     // ============================================================
-    // DTM probing (no en passant) — ported from _probe_dtm_no_ep()
+    // DTM probing (no en passant) — corresponds to the non-ep body of
+    // gtb-probe.c's tb_probe_() (egtb_get_id() + egtb_get_dtm()), taking
+    // JCB-native square/type arrays instead of C's null-terminated SQUARE*/
+    // SQ_CONTENT* lists.
     // ============================================================
 
     /**
-     * Ported from gaviota.py's {@code _probe_dtm_no_ep}. Does not itself
-     * handle en passant (see class doc) — the caller is responsible for
-     * that loop, matching python's {@code probe_dtm}.
+     * Does not itself handle en passant (see class doc) — the caller is
+     * responsible for that (see {@link #probeDtm}), matching the way
+     * {@code tb_probe_()}'s own en passant branch wraps its core
+     * {@code egtb_get_id}/{@code egtb_get_dtm} logic.
      *
      * @param whiteSquares squares occupied by white pieces (any order)
-     * @param whiteTypes   piece types at those squares, python-chess convention
-     *                     (PAWN=1, KNIGHT=2, BISHOP=3, ROOK=4, QUEEN=5, KING=6) —
-     *                     see {@link GaviotaRequest}
+     * @param whiteTypes   piece types at those squares — see {@link GaviotaRequest}
+     *                     for the PAWN=1..KING=6 numbering (asserted by
+     *                     gtb-probe.c itself, not a convention this port invented)
      * @param blackSquares squares occupied by black pieces (any order)
      * @param blackTypes   piece types at those squares
      * @param side         0 = white to move, 1 = black to move
@@ -318,18 +335,16 @@ public final class GaviotaTablebase {
     // ============================================================
 
     /**
-     * Probes DTM for the given board position. Ported 1:1 from gaviota.py's
-     * {@code probe_dtm}: computes the no-en-passant DTM first, then — for
-     * every legal en passant capture available in this exact position —
-     * plays it, recursively probes the resulting position, and folds the
-     * result in (mirroring python's {@code min}/{@code max} merge, which
-     * picks whichever candidate is better for the side to move).
+     * Probes DTM for the given board position: computes the no-en-passant
+     * DTM first, then — for every legal en passant capture available in
+     * this exact position — plays it, recursively probes the resulting
+     * position, and folds the result in via a decisive-result-first merge
+     * (see class doc's note on {@code bestx()} equivalence).
      * <p>
      * Mutates {@code board} via {@link MoveGenerator#makeMove}/
      * {@link MoveGenerator#unmakeMove} while probing en passant children,
      * but always restores it to its original state before returning
-     * (including on exception, via try/finally — same as python's
-     * {@code board.push(move)} / {@code finally: board.pop()}).
+     * (including on exception, via try/finally).
      *
      * @throws TablebaseUnsupportedMaterialException if the position has castling rights
      *         or more than 5 pieces
@@ -397,7 +412,9 @@ public final class GaviotaTablebase {
     }
 
     /**
-     * Ported from gaviota.py's {@code _probe_dtm_no_ep}, taking its inputs off {@code board} directly.
+     * Pulls this exact board position's square/type lists and probes
+     * {@link #probeDtmNoEp} directly off {@code board} — the no-en-passant
+     * core that {@link #probeDtm} wraps with its en passant loop.
      */
     private int probeDtmNoEpFromBoard(Chessboard board) {
         int[][] white = extractSide(board, true);
@@ -406,14 +423,14 @@ public final class GaviotaTablebase {
     }
 
     // ============================================================
-    // WDL — ported from probe_wdl(). Gaviota tables store DRAW==0 for both
-    // genuine draws AND a mated position, so a dtm==0 result alone can't
-    // tell them apart — checkmate is checked separately via ChessboardUtils.
+    // WDL — derived from DTM (gtb-probe.c has no separate WDL-only probe
+    // path for the DTM tables; WDL is just DTM's sign). Gaviota tables store
+    // DRAW==0 for both genuine draws AND a mated position, so a dtm==0
+    // result alone can't tell them apart — checkmate is checked separately
+    // via ChessboardUtils.
     // ============================================================
 
     /**
-     * Ported from gaviota.py's {@code probe_wdl}.
-     *
      * @return 1 if the side to move is winning, 0 if drawn, -1 if losing
      */
     public int probeWdl(Chessboard board) {

@@ -1,9 +1,17 @@
 package com.pepero.jcb.api.gaviota;
 
 /**
- * Ported from gaviota.py's ZipInfo dataclass. blockIndex[i]/blockIndex[i+1]
- * are the byte offsets bounding compressed block i within the file (after
- * extraOffset is added) — see egtb_block_getsize_zipped()/egtb_block_park().
+ * Ported from gtb-probe.c's {@code struct ZIPINFO}:
+ * <pre>
+ * struct ZIPINFO {
+ *     index_t  extraoffset;
+ *     index_t  totalblocks;
+ *     index_t *blockindex;
+ * };
+ * </pre>
+ * blockIndex[i]/blockIndex[i+1] are the byte offsets bounding compressed
+ * block i within the file (after extraOffset is added) — see
+ * {@code egtb_block_getsize_zipped()}/{@code egtb_block_park()}.
  */
 final class GaviotaZipInfo {
     final long extraOffset;

@@ -7,10 +7,12 @@ interface GaviotaPcToIndex {
 }
 
 /**
- * Ported from gaviota.py's EndgameKey. maxIndex bounds the index space for
- * this material (used to compute block counts); sliceN is the "pawn slice"
- * count (24 for materials with exactly one pawn-file-normalized pawn, etc,
- * 1 for pawnless materials) used the same way gaviota.py uses it.
+ * Bundles what gtb-probe.c's {@code egkey[]} entry stores per material class:
+ * {@code maxindex} (index-space size) and {@code pctoi} (the index-computing
+ * function pointer). {@code sliceN} ("pawn slice" count — 24 for one
+ * pawn-file-normalized pawn, a PP/PPP-index max for two/three pawns, 1 for
+ * pawnless materials) mirrors the C's {@code slice_n} field, used the same
+ * way when partitioning a table's block-cache space by pawn slice.
  */
 record GaviotaEndgameKey(long maxIndex, int sliceN, GaviotaPcToIndex pctoi) {
 }

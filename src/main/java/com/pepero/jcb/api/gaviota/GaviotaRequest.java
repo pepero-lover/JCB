@@ -3,11 +3,26 @@ package com.pepero.jcb.api.gaviota;
 import java.util.Arrays;
 
 /**
- * Ported from gaviota.py's Request class. Piece type constants follow the
- * python-chess convention used throughout gaviota.py: PAWN=1, KNIGHT=2,
- * BISHOP=3, ROOK=4, QUEEN=5, KING=6 (so sorting descending puts the king
- * first, matching every pctoindex() function's assumption that index 0 is
- * always the king).
+ * NOT a ported C struct/class — {@code gtb-probe.c} has no "Request" object.
+ * {@code tb_probe_hard()}/{@code tb_probe_soft()}/{@code tb_probe_()} take the
+ * equivalent data as plain parameters instead:
+ * <pre>
+ * tb_probe_(unsigned stm, SQUARE epsq,
+ *           const SQUARE *inp_wSQ, const SQUARE *inp_bSQ,
+ *           const SQ_CONTENT *inp_wPC, const SQ_CONTENT *inp_bPC,
+ *           bool_t probingtype, unsigned *res, unsigned *ply)
+ * </pre>
+ * This class exists purely to bundle those same six pieces of per-probe state
+ * (white/black square+type lists, side-to-move) into one object for JCB's own
+ * call sites; grouping them isn't something to "match" against the C, since
+ * the C intentionally keeps them as separate parameters.
+ * <p>
+ * The piece-type constants (PAWN=1 .. KING=6) are NOT merely a python-chess
+ * convention — {@code gtb-probe.c} asserts this exact numbering itself:
+ * {@code assert (PAWN == 1 && KNIGHT == 2 && BISHOP == 3 && ROOK == 4 &&
+ * QUEEN == 5 && KING == 6);}. Sorting descending by this value puts the king
+ * first, matching every {@code pctoindex()} function's assumption that index 0
+ * is always the king.
  */
 final class GaviotaRequest {
 
@@ -30,8 +45,10 @@ final class GaviotaRequest {
         }
     }
 
-    // sorted (descending by piece type: king..pawn), set at construction — mirrors
-    // gaviota.py's self.white_squares/self.white_types (pre material-key resolution)
+    // sorted (descending by piece type: king..pawn), set at construction — corresponds
+    // to gtb-probe.c's tb_probe_() local ws/wp (white) and bs/bp (black) arrays
+    // right after its own sortlists(ws, wp)/sortlists(bs, bp) calls, before the
+    // straight-vs-reversed material-key branch below runs.
     final int[] whiteSquares;
     final int[] whiteTypes;
     final int[] blackSquares;
@@ -40,9 +57,15 @@ final class GaviotaRequest {
     final int realSide; // 0 = white to move, 1 = black to move (as originally requested)
     int side;            // may get flipped (opp()) if the material key needed reversal
 
-    // set by GaviotaTablebase's material-key resolution step (mirrors _setup_tablebase):
-    // the actual piece order/side used to probe, which may be a color-flipped mirror
-    // of the original position if only the reversed material name has a table file.
+    // set by GaviotaTablebase's material-key resolution step. Corresponds to
+    // tb_probe_()'s straight-vs-reversed branch: it tries egtb_get_id(wp, bp) first
+    // (straight — table file matches white-then-black material), and only if that
+    // fails falls back to egtb_get_id(bp, wp) (reversed — only the black-then-white
+    // table file exists). In the reversed case the C does
+    // list_sq_flipNS(ws); list_sq_flipNS(bs); swap(ws, bs); stm = Opp(stm);
+    // — i.e. XOR every square by 0x38 (070 octal) AND swap which side's list plays
+    // which role AND flip side-to-move, all together. whitePieceSquares/blackPieceSquares
+    // below hold that same post-swap, post-flip result.
     String egKey;
     int[] whitePieceSquares;
     int[] whitePieceTypes;
@@ -63,7 +86,18 @@ final class GaviotaRequest {
         this.side = side;
     }
 
-    /** Ported from gaviota.py's sortlists(): stable sort by piece type, descending. */
+    /**
+     * Corresponds to gtb-probe.c's {@code sortlists()}: descending sort by piece
+     * type (king first). Note one deliberate difference: the C version is a plain
+     * swap-based nested loop ({@code if (wp[j] > wp[i]) swap(...)}), which is NOT
+     * guaranteed stable for two pieces of the same type — whichever ends up in the
+     * lower index after the swaps is whatever the swap pattern happens to produce.
+     * This port uses a stable sort instead. This has not been verified to be safe
+     * across every {@code pctoindex()} function for materials with duplicate piece
+     * types (e.g. KRR, KNN) — if a specific pctoindex() function turns out to
+     * assume the C's particular tie-breaking order rather than treating same-type
+     * squares as freely reorderable, this stable sort could disagree with it.
+     */
     private static int[][] sortByTypeDescending(int[] squares, int[] types) {
         int n = squares.length;
         Integer[] order = new Integer[n];

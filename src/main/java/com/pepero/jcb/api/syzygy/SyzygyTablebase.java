@@ -252,13 +252,17 @@ public class SyzygyTablebase {
         int wdlResult = probeWdl(board);
         if (wdlResult == 2) return 0;
 
-        // Capture-compulsory shortcut, ported from python-chess's sprobe_ab
-        // (success == 2) / probe_dtz_no_ep ("if success == 2: return dtz_before_zeroing(wdl)").
-        // If THIS position already has a legal capture, mandatory-capture rules make
-        // EVERY legal move here a capture -- i.e. a zeroing move -- so DTZ is forced
-        // to be +-1 (unconditional win/loss) or +-101 (cursed win / blessed loss),
-        // regardless of what the DTZ table or a deeper search would say. No table
-        // probe or recursive search is needed (or correct) here.
+        // Capture-compulsory shortcut, derived directly from the game rule +
+        // standard Syzygy DTZ encoding (not from any probing-code source):
+        // in Antichess/Giveaway, a legal capture makes every other move
+        // illegal, so if THIS position has one, EVERY legal move here is a
+        // capture -- i.e. a zeroing move. A zeroing move immediately resets
+        // the 50-move counter, so DTZ can only be the standard Syzygy
+        // "one zeroing move away" encoding: +-1 for an unconditional
+        // win/loss, or +-101 for a cursed win / blessed loss (the +-100
+        // 50-move-rule offset applied to a zeroing move, per Syzygy's own
+        // WdlToDtz convention). No table probe or recursive search is
+        // needed (or correct) here.
         if (variant == GameVariant.SUICIDE || variant == GameVariant.GIVEAWAY) {
             int[] rootMoveArray = new int[MoveCache.MAX_MOVE_SIZE];
             int rootMoveCount = MoveGenerator.generateMoves(board, rootMoveArray);

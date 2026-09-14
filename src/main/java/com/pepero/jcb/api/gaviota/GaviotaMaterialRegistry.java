@@ -4,13 +4,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.pepero.jcb.api.gaviota.GaviotaConstants.*;
-import static com.pepero.jcb.api.gaviota.GaviotaPieceIndexers.*;
 
 /**
- * Ported 1:1 from gaviota.py's EGKEY dict. Maps a material string (white
- * pieces then black pieces, lowercase, king-first descending order, e.g.
- * "kqk" for KQvK, "kabpk" for K+bishop+knight+pawn vs K) to the
- * GaviotaEndgameKey describing how to compute its probe index.
+ * Maps a material string (white pieces then black pieces, lowercase,
+ * king-first descending order, e.g. "kqk" for KQvK, "kabpk" for
+ * K+bishop+knight+pawn vs K) to the {@link GaviotaEndgameKey} describing how
+ * to compute its probe index. Derived directly from the {@code egkey[]}
+ * struct array in {@code gtb-probe.c}, part of the Gaviota Tablebases
+ * probing code:
+ * <pre>
+ * Gaviota Tablebases Probing Code
+ * Copyright (c) 2010 Miguel A. Ballicora
+ * Released under the X11 ("MIT") license — see gtb-probe.c's own header.
+ * https://github.com/michiguel/Gaviota-Tablebases
+ * </pre>
+ * Each C entry ({@code {id, name, maxindex, slice_n, itopc, pctoi, ...}})
+ * becomes one {@code put(name, maxIndex, sliceN, pctoindexFn)} call below —
+ * the {@code id}/{@code itopc}/cache-state fields aren't needed here since
+ * material lookup is keyed by name and index-to-position conversion isn't used.
  */
 final class GaviotaMaterialRegistry {
 
