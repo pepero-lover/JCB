@@ -2,7 +2,7 @@ package com.pepero.jcb.api.parse;
 
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.convert.ConvertMoveException;
-import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.exception.game.IllegalMoveException;
 import com.pepero.jcb.api.exception.type.ConvertErrorType;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.constant.MoveCache;

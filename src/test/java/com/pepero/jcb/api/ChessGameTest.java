@@ -7,8 +7,8 @@ import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.exception.*;
-import com.pepero.jcb.api.exception.arena.ClockException;
+import com.pepero.jcb.api.exception.engine.ClockException;
+import com.pepero.jcb.api.exception.game.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.perft.PerftResult;
 import com.pepero.jcb.core.constant.BoardSquares;
@@ -1111,10 +1111,10 @@ public class ChessGameTest {
     }
 
     @Test
-    @DisplayName("jumpToMainlinePly: 음수 ply는 MoveNotFoundException")
+    @DisplayName("jumpToMainlinePly: 음수 ply는 IllegalArgumentException")
     void jumpToMainlinePly_negative_throws() {
         ChessGame chessGame = ChessGame.startPosition();
-        assertThrows(MoveNotFoundException.class, () -> chessGame.jumpToMainlinePly(-1));
+        assertThrows(IllegalArgumentException.class, () -> chessGame.jumpToMainlinePly(-1));
     }
 
     @Test

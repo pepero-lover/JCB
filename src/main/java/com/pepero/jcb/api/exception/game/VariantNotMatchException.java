@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.game;
 
 /**
  * Thrown by the game variant not matches the called method

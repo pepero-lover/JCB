@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.pgn;
 
 public class NodesOverflowException extends RuntimeException {
     private final long maxNodesCount;

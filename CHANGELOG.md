@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added attribution for Fathom and Gaviota Tablebases (both source and
   README).
+- **Breaking change** : On `EmtpyUndoRedoException`, `HistoryTreeException`, `IllegalMoveException`,
+  `MoveNotFoundException`, `PieceNotFoundException`, `SquareConvertException`, `VariantNotMatchException`, `VariationNotFoundException`
+  moved to `api.exception.game` package.
+- **Breaking change** : On `NodesOverflowException`, `PGNConvertException`, moved to `api.exception.pgn` package.
+- **Breaking change** : On `ClockException`, `EngineArenaException`, `UCIEngineException`, moved to `api.exception.engine` package.
+- On `ChessGame`,
+  changed throwing `InvalidGameEndException` instead of throwing `IllegalArgumentException` on validating game result and 
+  game over reason at `validateForcedResult` (`forceEndGameExternal`)
+- On `ChessGame.jumpToMainlinePly`, changed `MoveNotFoundException` to
+  `IllegalArgumentException` when the target ply is negative
 
 ### Fixed
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.

@@ -3,10 +3,11 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.exception.*;
-import com.pepero.jcb.api.exception.arena.ClockException;
+import com.pepero.jcb.api.exception.engine.ClockException;
 import com.pepero.jcb.api.exception.convert.ConvertMoveException;
 import com.pepero.jcb.api.exception.convert.FENConvertException;
+import com.pepero.jcb.api.exception.game.*;
+import com.pepero.jcb.api.exception.pgn.NodesOverflowException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.exception.type.UndoRedoType;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
@@ -2990,28 +2991,29 @@ public class ChessGame {
      *
      * @param result game result to validate
      * @param reason game over reason to validate
-     * @throws IllegalArgumentException if the pair is contradictory
+     *
+     * @throws InvalidGameEndException if the pair is contradictory
      */
     private void validateForcedResult(GameResult result, GameOverReason reason) {
         Objects.requireNonNull(result, "Game result can not be null!");
         Objects.requireNonNull(reason, "Game over reason can not be null!");
 
         if (reason == GameOverReason.NOTGAMEOVER) {
-            throw new IllegalArgumentException("Game over reason can not be NOTGAMEOVER when forcing a game end!");
+            throw new InvalidGameEndException("Game over reason can not be NOTGAMEOVER when forcing a game end!");
         }
         if (result == GameResult.UNKNOWN) {
-            throw new IllegalArgumentException("Game result can not be UNKNOWN when forcing a game end!");
+            throw new InvalidGameEndException("Game result can not be UNKNOWN when forcing a game end!");
         }
         if (DRAW_ONLY_REASONS.contains(reason) && result != GameResult.DRAW) {
-            throw new IllegalArgumentException(
+            throw new InvalidGameEndException(
                     "Game over reason " + reason + " can only be paired with GameResult.DRAW, but got " + result + "!");
         }
         if (DECISIVE_ONLY_REASONS.contains(reason) && result == GameResult.DRAW) {
-            throw new IllegalArgumentException(
+            throw new InvalidGameEndException(
                     "Game over reason " + reason + " can not be paired with GameResult.DRAW!");
         }
         if (reason == GameOverReason.HORDE && result != GameResult.BLACK_WON) {
-            throw new IllegalArgumentException(
+            throw new InvalidGameEndException(
                     "Game over reason HORDE can only be paired with GameResult.BLACK_WON, but got " + result + "!");
         }
     }
@@ -3022,7 +3024,7 @@ public class ChessGame {
      * @param result game result
      * @param reason game over reason
      *
-     * @throws IllegalArgumentException if result and reason contradict each other (see {@link #validateForcedResult})
+     * @throws InvalidGameEndException if result and reason contradict each other (see {@link #validateForcedResult})
      */
     private void forceEndGame(GameResult result, GameOverReason reason) {
         validateForcedResult(result, reason);
@@ -3645,7 +3647,7 @@ public class ChessGame {
      * @throws MoveNotFoundException if move is not found or targetPly is out of bounds
      */
     public void jumpToMainlinePly(int targetPly) {
-        if (targetPly < 0) throw new MoveNotFoundException("Target ply is less than 0! (Given : " + targetPly + ")");
+        if (targetPly < 0) throw new IllegalArgumentException("Target ply can not be negative! (Given : " + targetPly + ")");
 
         JumpOutcome outcome;
 

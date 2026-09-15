@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception.arena;
+package com.pepero.jcb.api.exception.engine;
 
 public class ClockException extends RuntimeException {
     public ClockException(String message) {

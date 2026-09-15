@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.game;
 
 import com.pepero.jcb.api.enums.Square;
 

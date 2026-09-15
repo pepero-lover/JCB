@@ -1,4 +1,4 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.game;
 
 /**
  * Thrown when the variation index out of bounds.

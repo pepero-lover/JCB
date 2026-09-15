@@ -1,6 +1,5 @@
-package com.pepero.jcb.api.exception;
+package com.pepero.jcb.api.exception.pgn;
 
-import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.api.exception.type.PGNErrorType;
 
 /**

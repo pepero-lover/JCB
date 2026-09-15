@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.enums;
 
-import com.pepero.jcb.api.exception.SquareConvertException;
+import com.pepero.jcb.api.exception.game.SquareConvertException;
 import com.pepero.jcb.core.constant.BoardSquares;
 
 /**

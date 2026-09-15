@@ -5,7 +5,7 @@ import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.PieceType;
-import com.pepero.jcb.api.exception.IllegalMoveException;
+import com.pepero.jcb.api.exception.game.IllegalMoveException;
 import com.pepero.jcb.core.GameVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

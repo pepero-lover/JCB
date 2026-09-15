@@ -2,12 +2,10 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
-import com.pepero.jcb.api.exception.VariantNotMatchException;
-import com.pepero.jcb.api.gaviota.GaviotaTablebase;
+import com.pepero.jcb.api.exception.game.VariantNotMatchException;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
-import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.encode.EncodeMove;

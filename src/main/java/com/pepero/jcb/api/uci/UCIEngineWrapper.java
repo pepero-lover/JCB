@@ -2,7 +2,7 @@ package com.pepero.jcb.api.uci;
 
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.exception.UCIEngineException;
+import com.pepero.jcb.api.exception.engine.UCIEngineException;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.FENDialect;

@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.exception.type;
 
-import com.pepero.jcb.api.exception.PGNConvertException;
+import com.pepero.jcb.api.exception.pgn.PGNConvertException;
 
 public enum PGNErrorType {
     PGN_EMPTY(false),  // when pgn string is empty

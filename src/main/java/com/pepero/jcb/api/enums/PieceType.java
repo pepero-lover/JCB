@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.enums;
 
-import com.pepero.jcb.api.exception.PieceNotFoundException;
+import com.pepero.jcb.api.exception.game.PieceNotFoundException;
 import com.pepero.jcb.core.constant.EncodedPieces;
 
 /**
