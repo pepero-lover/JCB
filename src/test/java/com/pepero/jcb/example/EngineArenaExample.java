@@ -7,7 +7,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-public class EngineExample {
+public class EngineArenaExample {
     public static void main(String[] args) {
         // Specify the executable paths for the engines.
         String engine1Path = new File("engine/stockfish").getAbsolutePath();
@@ -46,6 +46,7 @@ public class EngineExample {
             // openingBook() auto-detects the file extension:
             //   .bin -> Polyglot opening book (queried move by move)
             //   .epd -> EPD opening book (a fixed starting position per game)
+            //   .pgn -> PGN opening book (pick random pgn game) the max opening move count is 16 ply.
             MatchConfig config = new MatchConfig.Builder()
                     .openingBook("engine/opening.bin") // You can set an opening book.
                     .repeatOpening(true) // Play each opening twice, swapping colors.
