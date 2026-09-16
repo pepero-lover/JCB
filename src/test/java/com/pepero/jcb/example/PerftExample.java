@@ -16,8 +16,14 @@ public class PerftExample {
 
         // Run Perft and store the result.
 
-        // As noted in the Javadoc, perft(int depth) is single-threaded and includes JVM warmup.
-        chessGame.perft(5);
+        // As noted in the Javadoc, perft(int depth) is single-threaded and includes JVM warmup
+        // and includes bulk-counting.
+        chessGame.perft(
+                5,  // Perft depth
+                1, // Number of threads to use
+                false, // Whether to suppress the test result and output
+                false // Whether to use bulk counting
+        );
 
         // Now let's see the result with 4 threads.
         System.out.println();
@@ -26,8 +32,10 @@ public class PerftExample {
         System.out.println("--------------------");
 
         chessGame.perft(
-                6, // Perft depth
-                4 // Number of threads to use
+                6,  // Perft depth
+                4, // Number of threads to use
+                false, // Whether to suppress the test result and output
+                false // Whether to use bulk counting
         );
 
         // Now let's run Perft using Chessboard instead.
