@@ -43,7 +43,7 @@ public class UCIEngineWrapper implements AutoCloseable {
     private final Set<String> availableOptions = ConcurrentHashMap.newKeySet();
     private final HashMap<String, String> engineIdData = new HashMap<>();
 
-    private final AtomicReference<CompletableFuture<String>> currentMoveFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<AnalysisResult>> currentMoveFuture = new AtomicReference<>();
 
     private final ConcurrentHashMap<Integer, EngineLine> latestAnalysisMap = new ConcurrentHashMap<>();
     private volatile boolean isAnalyzing = false;
@@ -297,19 +297,21 @@ public class UCIEngineWrapper implements AutoCloseable {
                     } else if (line.startsWith("id")) {
                         parseIdLine(line);
                     } else if (line.startsWith("bestmove")) {
-                        if (!latestAnalysisMap.isEmpty() && listener != null) {
-                            List<EngineLine> finalBundle = latestAnalysisMap.values().stream()
-                                    .sorted(Comparator.comparingInt(EngineLine::pvNumber))
-                                    .toList();
+                        List<EngineLine> finalBundle = latestAnalysisMap.isEmpty()
+                                ? List.of()
+                                : latestAnalysisMap.values().stream()
+                                .sorted(Comparator.comparingInt(EngineLine::pvNumber))
+                                .toList();
+                        if (!finalBundle.isEmpty() && listener != null) {
                             listener.onAnalysisBundled(finalBundle);
                         }
                         isAnalyzing = false;
                         String bestMove = line.split(" ")[1];
                         if (listener != null) listener.onBestMoveFound(bestMove);
 
-                        CompletableFuture<String> future = currentMoveFuture.get();
+                        CompletableFuture<AnalysisResult> future = currentMoveFuture.get();
                         if (future != null && !future.isDone()) {
-                            future.complete(bestMove);
+                            future.complete(new AnalysisResult(bestMove, finalBundle));
                         }
 
                         CountDownLatch latch = stopLatch;
@@ -531,20 +533,34 @@ public class UCIEngineWrapper implements AutoCloseable {
      * Same as before, but with a bounded wait instead of an
      * unconditional get() that can hang forever if the engine dies or
      * never returns a bestmove.
+     *
+     * @return the engine's bestmove together with all pv lines at that point
      */
-    public String startAnalysisSync(ChessGame chessGame, int depthLimit,
+    public AnalysisResult startAnalysisSync(ChessGame chessGame, int depthLimit,
                                     long wtimeMs, long btimeMs,
                                     long wincMs, long bincMs,
                                     int multiPv) {
         return startAnalysisSync(chessGame, depthLimit, wtimeMs, btimeMs, wincMs, bincMs, multiPv, DEFAULT_SYNC_TIMEOUT_SEC);
     }
 
-    public String startAnalysisSync(ChessGame chessGame, int depthLimit,
+    /**
+     * Start analysis and get best move lan string synchronized
+     *
+     * @param depthLimit depth limit
+     * @param wtimeMs white time ms
+     * @param btimeMs black time ms
+     * @param wincMs white time increment ms
+     * @param bincMs black time increment ms
+     * @param multiPv multi pv count
+     * @param timeoutSeconds best move synchronize timeout seconds
+     * @return the engine's bestmove together with all pv lines at that point
+     */
+    public AnalysisResult startAnalysisSync(ChessGame chessGame, int depthLimit,
                                     long wtimeMs, long btimeMs,
                                     long wincMs, long bincMs,
                                     int multiPv, long timeoutSeconds) {
         isWhiteToMove = chessGame.getTurn();
-        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<AnalysisResult> future = new CompletableFuture<>();
         currentMoveFuture.set(future);
         latestAnalysisMap.clear();
         isAnalyzing = true;
@@ -590,7 +606,7 @@ public class UCIEngineWrapper implements AutoCloseable {
 
     private void handleProcessExit() {
         isAnalyzing = false;
-        CompletableFuture<String> future = currentMoveFuture.get();
+        CompletableFuture<AnalysisResult> future = currentMoveFuture.get();
         IllegalStateException cause = new IllegalStateException("Engine process exited unexpectedly");
         if (future != null && !future.isDone()) {
             future.completeExceptionally(cause);

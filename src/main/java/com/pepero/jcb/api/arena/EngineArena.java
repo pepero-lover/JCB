@@ -7,6 +7,7 @@ import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.engine.EngineArenaException;
+import com.pepero.jcb.api.uci.AnalysisResult;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.core.ChessboardUtils;
@@ -244,7 +245,7 @@ public class EngineArena {
 
                 long startTime = System.currentTimeMillis();
 
-                String bestMove = currentEngine.startAnalysisSync(chessGame,
+                AnalysisResult engineAnalysisResult = currentEngine.startAnalysisSync(chessGame,
                         currentLimit.depthLimit(),
                         clock.getWhiteTimeMs(),
                         clock.getBlackTimeMs(),
@@ -348,8 +349,8 @@ public class EngineArena {
                     }
                 }
 
-                if(bestMove != null) {
-                    String san = chessGame.makeMoveLanReturningSan(bestMove);
+                if(engineAnalysisResult != null) {
+                    String san = chessGame.makeMoveLanReturningSan(engineAnalysisResult.bestMove());
 
                     EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
                     if(currentEngineLine != null) {
@@ -370,7 +371,7 @@ public class EngineArena {
                     if(listener != null) {
                         listener.onMovePlayed(new MoveEvent(
                                 chessGame.getFEN(),
-                                bestMove,
+                                engineAnalysisResult.bestMove(),
                                 san,
                                 roundNumber,
                                 chessGame.getTurn(),

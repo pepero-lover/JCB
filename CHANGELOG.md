@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   game over reason at `validateForcedResult` (`forceEndGameExternal`)
 - On `ChessGame.jumpToMainlinePly`, changed `MoveNotFoundException` to
   `IllegalArgumentException` when the target ply is negative
+- On `UCIEngineWrapper.startAnalysisSync`, changed function result to `AnalysisResult` including `EngineLine` data and best move lan string.
 
 ### Fixed
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.
