@@ -4814,24 +4814,40 @@ public class ChessGame {
      * @param out print stream to print to
      */
     private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId, long currentId) {
-        while (rootNode != null) {
-            boolean isCurrent = rootNode.id() == currentId;
-            String pointer = isCurrent ? " <-" : "";
-            String idTag = showNodeId ? " [#" + rootNode.id() + "]" : "";
+        record Frame(MoveNodeDTO node, int depth) {}
 
-            if (Objects.equals(rootNode.id(), this.moveHistoryRoot.id)) {
+        Deque<Frame> stack = new ArrayDeque<>();
+        stack.push(new Frame(rootNode, depth));
+
+        while (!stack.isEmpty()) {
+            Frame frame = stack.pop();
+            MoveNodeDTO node = frame.node();
+            int nodeDepth = frame.depth();
+
+            // if this node is current move, add pointer string "<-"
+            boolean isCurrent = node.id() == currentId;
+
+            // pre-calculate the pointer string, id tag
+            String pointer = isCurrent ? " <-" : "";
+            String idTag = showNodeId ? " [#" + node.id() + "]" : "";
+
+            // if the node is root, add "ROOT"
+            if (node.id() == this.moveHistoryRoot.id) {
                 out.println("ROOT " + (idTag + pointer).trim());
             } else {
-                String prefix = (depth > 0) ? "- " : "";
-                out.println(" ".repeat(depth) + prefix + rootNode.san() + idTag + pointer);
+                String prefix = (nodeDepth > 0) ? "- " : "";
+                out.println(" ".repeat(nodeDepth) + prefix + node.san() + idTag + pointer);
             }
 
-            for (int i = 1; i < rootNode.children().size(); i++) {
-                MoveNodeDTO child = rootNode.children().get(i);
-                printHistory(child, depth + 1, out, showNodeId, currentId);
+            List<MoveNodeDTO> children = node.children();
+            if (!children.isEmpty()) {
+                // the mainline continues at the same depth, so push it first
+                stack.push(new Frame(children.getFirst(), nodeDepth));
+                // side variations go on top in reverse, so they pop in original order. (1, 2, ..., n-1, mainline)
+                for (int i = children.size() - 1; i >= 1; i--) {
+                    stack.push(new Frame(children.get(i), nodeDepth + 1));
+                }
             }
-
-            rootNode = rootNode.children().isEmpty() ? null : rootNode.children().getFirst();
         }
     }
 

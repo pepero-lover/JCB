@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `IllegalArgumentException` when the target ply is negative
 - On `UCIEngineWrapper.startAnalysisSync`, changed function result to `AnalysisResult` including `EngineLine` data and best move lan string.
 - On `SyzygyTablebase` and `GaviotaTablebase`, added checking the constructor's given directory exists / is readable / has any of syzygy/gaviota file 
+- On `ChessGame.printHistory*` methods, replaced recursion with an explicit stack (ArrayDeque)
+  for iterative pre-order traversal, avoiding `StackOverflowException`.
 
 ### Fixed
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.
