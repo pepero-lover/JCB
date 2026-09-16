@@ -352,41 +352,33 @@ public class MoveGenerator {
         int end_piece = (side == white) ? K : k;
 
         boolean capture = false;
+        long[] pieceAttacksCache = new long[64];
 
         for(int piece = start_piece; piece <= end_piece; piece++) {
             long bitboard = chessboard.bitboards[piece];
+            boolean isPawn = (piece == P || piece == p);
+
             while (bitboard != 0) {
                 int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
 
-                long pieceAttacks;
+                long pieceAttacks = switch (piece) {
+                    case N, n -> Attacks.knight_attacks[sourceSq];
+                    case B, b -> Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]);
+                    case R, r -> Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]);
+                    case Q, q -> Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]);
+                    case P, p -> Attacks.pawn_attacks[side][sourceSq];
+                    default -> Attacks.king_attacks[sourceSq];
+                };
 
-                switch (piece) {
-                    case N: case n: pieceAttacks = Attacks.knight_attacks[sourceSq]; break;
-                    case B: case b: pieceAttacks = Attacks.getBishopAttacks(sourceSq, chessboard.occupancies[both]); break;
-                    case R: case r: pieceAttacks = Attacks.getRookAttacks(sourceSq, chessboard.occupancies[both]); break;
-                    case Q: case q: pieceAttacks = Attacks.getQueenAttacks(sourceSq, chessboard.occupancies[both]); break;
-                    case P: case p:
-                        pieceAttacks = Attacks.pawn_attacks[side][sourceSq];
-                        if (chessboard.enpassant != no_sq) {
-                            pieceAttacks |= (1L << chessboard.enpassant);
-                        }
-                        break;
-                    default: pieceAttacks = Attacks.king_attacks[sourceSq];
-                }
+                pieceAttacksCache[sourceSq] = pieceAttacks;
 
-                boolean hasCapture = (pieceAttacks & chessboard.occupancies[oppSide]) != 0L;
-                if (!hasCapture && (piece == P || piece == p) && chessboard.enpassant != no_sq) {
-                    hasCapture = (Attacks.pawn_attacks[side][sourceSq] & (1L << chessboard.enpassant)) != 0L;
-                }
-                if (hasCapture) {
+                long epBit = (isPawn && chessboard.enpassant != no_sq) ? (1L << chessboard.enpassant) : 0L;
+                if ((pieceAttacks & (chessboard.occupancies[oppSide] | epBit)) != 0L) {
                     capture = true;
-                    break;
                 }
 
                 bitboard &= (bitboard - 1);
             }
-
-            if(capture) break;
         }
 
         for(int piece = start_piece; piece <= end_piece; piece++) {
@@ -456,8 +448,7 @@ public class MoveGenerator {
                 while (bitboard != 0) {
                     int sourceSq = BitBoardUtils.getLS1BIndex(bitboard);
 
-                    long pieceAttacks = getPieceAttacks(chessboard, piece, side, sourceSq) &
-                            ~chessboard.occupancies[side];
+                    long pieceAttacks = pieceAttacksCache[sourceSq] & ~chessboard.occupancies[side];
 
                     // if capture only,
                     if(capture) {
@@ -547,7 +538,7 @@ public class MoveGenerator {
 
         // if kings touching, all check and pin is disabled.
         boolean kingsTouching = (Attacks.king_attacks[kingSq] & (1L << oppKingSq)) != 0;
-        long pinnedPieces = kingsTouching ? 0L : getPinnedPiecesBitboard(chessboard, kingSq, side);
+        long pinnedPieces = (kingsTouching || isDoubleCheck) ? 0L : getPinnedPiecesBitboard(chessboard, kingSq, side);
 
         // avoiding check mask
         long checkMask = ~0L;
@@ -636,7 +627,7 @@ public class MoveGenerator {
                         int targetSq = BitBoardUtils.getLS1BIndex(captures);
 
                         if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
-                                -1, 0)) {
+                                -1, 0, kingSq, oppKingSq, kingsTouching)) {
                             moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                     sourceSq, targetSq, piece, 0, true, false, false, false));
                             if(stopAtFirstMove) return moveCount;
@@ -678,7 +669,7 @@ public class MoveGenerator {
 
                         if (!isPromotion) {
                             if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
-                                    -1, 0)) {
+                                    -1, 0, kingSq, oppKingSq, kingsTouching)) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true, false,
                                         false, false));
@@ -688,7 +679,7 @@ public class MoveGenerator {
                             int[] promoPieces = (side == white) ? new int[]{Q,R,B,N} : new int[]{q,r,b,n};
                             for (int promo : promoPieces) {
                                 if (isAtomicCaptureLegal(chessboard, side, piece, sourceSq, targetSq,
-                                        -1, promo)) {
+                                        -1, promo, kingSq, oppKingSq, kingsTouching)) {
                                     moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                             sourceSq, targetSq, piece, promo, true,
                                             false, false, false));
@@ -706,7 +697,7 @@ public class MoveGenerator {
                             int capturedPawnSq = (side == white) ? targetSq - 8 : targetSq + 8;
 
                             if (isAtomicCaptureLegal(chessboard, side, piece,
-                                    sourceSq,targetSq, capturedPawnSq, 0)) {
+                                    sourceSq,targetSq, capturedPawnSq, 0, kingSq, oppKingSq, kingsTouching)) {
                                 moveCount = addMove(moveArray, moveCount, EncodeMove.encodeMove(
                                         sourceSq, targetSq, piece, 0, true,
                                         false, true, false));
@@ -1173,16 +1164,13 @@ public class MoveGenerator {
      */
     private static boolean isAtomicCaptureLegal(Chessboard chessboard, int side, int piece,
                                                 int sourceSq, int targetSq, int extraRemoveSq,
-                                                int promotedPiece) {
-        int ourKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? K : k]);
-        int oppKing = BitBoardUtils.getLS1BIndex(chessboard.bitboards[side == white ? k : K]);
-
+                                                int promotedPiece, int ourKing, int oppKing,
+                                                boolean kingsTouching) {
         long removalMask = computeExplosionRemovalMask(chessboard, sourceSq, targetSq, extraRemoveSq);
 
         if(BitBoardUtils.getBit(removalMask, ourKing)) return false;
         if(BitBoardUtils.getBit(removalMask, oppKing)) return true;
 
-        boolean kingsTouching = (Attacks.king_attacks[ourKing] & (1L << oppKing)) != 0;
         if (kingsTouching) return true;
 
         int oppSide = side ^ 1;

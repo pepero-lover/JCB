@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.
 
 ### Performance
+- On `MoveGenerator.generateAntiChessMoves`, added caching attacks on checking the legal moves have capture move.
+- On calculating `pinnedPieces` at `MoveGenerator.generateAtomicMoves` added early exiting when the king is under a double check.
+- On `MoveGenerator.isAtomicCaptureLegal`, removed calculating king / opposite king position and king touching flag and
+  added parameters to get these values on `generateAtomicMoves`.
 
 ## [1.12.0]
 
