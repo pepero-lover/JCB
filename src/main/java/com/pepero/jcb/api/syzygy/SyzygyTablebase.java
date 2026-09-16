@@ -13,6 +13,7 @@ import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.encode.EncodeMove;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -47,6 +48,42 @@ public class SyzygyTablebase {
     private final GameVariant variant;
     private final boolean connectedKingsEnc;
 
+    private static final String[] SYZYGY_EXTENSIONS = {
+            "*.rtbw", "*.rtbz", // standard
+            "*.atbw", "*.atbz", // atomic
+            "*.gtbw", "*.gtbz", // giveaway
+            "*.stbw", "*.stbz", // suicide
+    };
+
+    /**
+     * Validate the given gaviota directory when initializing {@link SyzygyTablebase}
+     */
+    private void validateTablebaseDir(Path dir) {
+        if (!Files.isDirectory(dir)) {
+            throw new TablebaseMissingFileException("Tablebase directory does not exist: " + dir);
+        }
+        if (!Files.isReadable(dir)) {
+            throw new TablebaseMissingFileException("Tablebase directory is not readable: " + dir);
+        }
+
+        boolean hasAnyTablebaseFile = false;
+        for (String pattern : SYZYGY_EXTENSIONS) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, pattern)) {
+                if (stream.iterator().hasNext()) {
+                    hasAnyTablebaseFile = true;
+                    break;
+                }
+            } catch (IOException e) {
+                throw new TablebaseMissingFileException("Failed to scan tablebase directory: " + dir, e);
+            }
+        }
+
+        if (!hasAnyTablebaseFile) {
+            throw new TablebaseMissingFileException(
+                    "No syzygy files found in tablebase directory: " + dir);
+        }
+    }
+
     public SyzygyTablebase(Path syzygyDir) {
         this(syzygyDir, DEFAULT_MAX_PIECES, GameVariant.STANDARD);
     }
@@ -60,6 +97,7 @@ public class SyzygyTablebase {
     }
 
     public SyzygyTablebase(Path syzygyDir, int maxPieces, GameVariant variant) {
+        validateTablebaseDir(syzygyDir);
         this.syzygyDir = syzygyDir;
         this.maxPieces = maxPieces;
         this.variant = variant;

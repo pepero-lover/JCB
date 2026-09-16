@@ -12,7 +12,7 @@ import java.nio.file.Path;
 
 public class GaviotaBestMove {
     public static void main(String[] args) throws IOException {
-        Path syzygyDir = Path.of("gaviota/");
+        Path syzygyDir = Path.of("D:/tablebases/gaviota/");
         GaviotaTablebase tb = new GaviotaTablebase(syzygyDir);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));

@@ -13,6 +13,7 @@ import com.pepero.jcb.core.encode.EncodeMove;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -70,7 +71,37 @@ public final class GaviotaTablebase {
     private final Map<String, TableBlock> blockCache = new ConcurrentHashMap<>();
     private final AtomicLong blockAge = new AtomicLong();
 
+    /**
+     * Validate the given gaviota directory when initializing {@link GaviotaTablebase}
+     */
+    private void validateTablebaseDir(Path dir) {
+        if (!Files.isDirectory(dir)) {
+            throw new TablebaseMissingFileException("Tablebase directory does not exist: " + dir);
+        }
+        if (!Files.isReadable(dir)) {
+            throw new TablebaseMissingFileException("Tablebase directory is not readable: " + dir);
+        }
+
+        boolean hasAnyTablebaseFile = false;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.gtb.cp4")) {
+            if (stream.iterator().hasNext()) {
+                hasAnyTablebaseFile = true;
+            }
+        } catch (IOException e) {
+            throw new TablebaseMissingFileException("Failed to scan tablebase directory: " + dir, e);
+        }
+
+        if (!hasAnyTablebaseFile) {
+            throw new TablebaseMissingFileException(
+                    "No .rtbw/.rtbz files found in tablebase directory: " + dir);
+        }
+    }
+
+    /**
+     * @throws TablebaseMissingFileException if given gaviota directory doesn't exist or can't read
+     */
     public GaviotaTablebase(Path gaviotaDir) {
+        validateTablebaseDir(gaviotaDir);
         this.gaviotaDir = gaviotaDir;
     }
 

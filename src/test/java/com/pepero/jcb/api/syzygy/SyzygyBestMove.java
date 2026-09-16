@@ -12,7 +12,7 @@ import java.nio.file.Path;
 
 public class SyzygyBestMove {
     public static void main(String[] args) throws IOException {
-        Path syzygyDir = Path.of("D:\\syzygy");
+        Path syzygyDir = Path.of("D:/tablebases/syzygy");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 7);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
