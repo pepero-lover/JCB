@@ -667,6 +667,7 @@ public class ChessboardUtils {
                 // get black king moves
                 long kingAttacks = Attacks.king_attacks[blackKingSq] & ~chessboard.occupancies[black];
                 boolean canDrawRace = false;
+                long tempOccForKingMoves = BitBoardUtils.popBit(chessboard.occupancies[both], blackKingSq);
                 while (kingAttacks != 0) {
                     int targetSq = BitBoardUtils.getLS1BIndex(kingAttacks);
                     if(!BitBoardUtils.getBit(GOAL_LINE, targetSq)) {
@@ -685,11 +686,13 @@ public class ChessboardUtils {
                     // - - - - 1 1 1 -
 
                     // but if we don't pop the king square, the attack is blocked by king square so
-                    // - R - - 1 k - -
+                    // - R - - - k 1 -
                     // - - - - 1 1 1 -
                     // and this is not we wanted.
-                    long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], blackKingSq);
-                    boolean isSafe = !isSquareAttackedWithOcc(chessboard, targetSq, white, tempOcc);
+
+                    // long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], blackKingSq);
+
+                    boolean isSafe = !isSquareAttackedWithOcc(chessboard, targetSq, white, tempOccForKingMoves);
 
                     if (isSafe) {
                         canDrawRace = true;
