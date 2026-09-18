@@ -31,7 +31,7 @@
 - No external library dependencies
 
 ## Supported Chess Variants
-| Variant          | FEN | UCI Integration      |
+| Variant          | FEN | UCI Integration       |
 |------------------|-----|-----------------------|
 | Standard         | ✅   | ✅ (default UCI setup) |
 | Chess960         | ✅   | ✅ (`UCI_Chess960`)    |
@@ -112,7 +112,7 @@ dependencies {
 
 ## Usage Examples
 
-> More runnable examples, including a minimal UCI engine skeleton (`SimpleEngine`), are available under [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) in the repository.
+> More runnable examples, including a minimal engine skeleton (`SimpleEngine`), are available under [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) in the repository.
 
 ### 1. Basic Gameplay
 This is the most standard way to create a chess game and make moves in sequence, whether from the console or from user input (using LAN format).
@@ -573,10 +573,10 @@ JCB provides two levels of API.
 
 Since `ConvertStringMoveUtils` is called heavily during PGN parsing, opening book building, and UCI communication, its conversion throughput was also benchmarked (single-threaded, after JIT warmup, converting move sequences from randomly-played games).
 
-| Conversion            | Throughput                 |
-|------------------------|-----------------------------|
-| SAN &rarr; move data   | 2,246,771 conversions/sec  |
-| LAN &rarr; move data   | 2,603,415 conversions/sec  |
+| Conversion           | Throughput                |
+|----------------------|---------------------------|
+| SAN &rarr; move data | 2,246,771 conversions/sec |
+| LAN &rarr; move data | 2,603,415 conversions/sec |
 
 > LAN conversion is faster because SAN parsing also has to resolve move ambiguity (e.g. disambiguating `Nbd2` from another knight) and determine whether to append `+`/`#`, on top of the move generation both conversions share.
 
