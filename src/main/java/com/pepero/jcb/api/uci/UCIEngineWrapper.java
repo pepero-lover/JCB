@@ -67,6 +67,8 @@ public class UCIEngineWrapper implements AutoCloseable {
      * @param engine engine process builder class
      * @param tickRateMs tick rate (for analyze delay)
      * @param listener listener
+     *
+     * @throws UCIEngineException when engine initialization failed like uciok timeout, readyok timeout.
      */
     public UCIEngineWrapper(ProcessBuilder engine, int tickRateMs, EngineAnalysisListener listener) {
         this.tickRateMs = tickRateMs;
@@ -103,15 +105,15 @@ public class UCIEngineWrapper implements AutoCloseable {
 
             sendCommand("uci");
             if (!uciokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
-                throw new RuntimeException("uciok Timeout!");
+                throw new UCIEngineException("uciok Timeout!");
             }
 
             sendCommand("isready");
             if (!readyokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
-                throw new RuntimeException("readyok Timeout!");
+                throw new UCIEngineException("readyok Timeout!");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Engine initialization failed.", e);
+            throw new UCIEngineException("Engine initialization failed.", e);
         }
     }
 
@@ -142,11 +144,11 @@ public class UCIEngineWrapper implements AutoCloseable {
     private void awaitReady() {
         try {
             if (!readyokLatch.await(HANDSHAKE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
-                throw new RuntimeException("readyok Timeout!");
+                throw new UCIEngineException("readyok Timeout!");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for readyok", e);
+            throw new UCIEngineException("Interrupted while waiting for readyok", e);
         }
     }
 
@@ -598,9 +600,9 @@ public class UCIEngineWrapper implements AutoCloseable {
             return future.get(timeoutSeconds, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             future.cancel(true);
-            throw new RuntimeException("Engine did not return bestmove within " + timeoutSeconds + "s", e);
+            throw new UCIEngineException("Engine did not return bestmove within " + timeoutSeconds + "s", e);
         } catch (Exception e) {
-            throw new RuntimeException("Sync failed while waiting engine's response", e);
+            throw new UCIEngineException("Sync failed while waiting engine's response", e);
         }
     }
 

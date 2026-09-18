@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `SyzygyTablebase` and `GaviotaTablebase`, added checking the constructor's given directory exists / is readable / has any of syzygy/gaviota file 
 - On `ChessGame.printHistory*` methods, replaced recursion with an explicit stack (ArrayDeque)
   for iterative pre-order traversal, avoiding `StackOverflowException`.
+- On every throwing `RuntimeException` at `UCIEngineWrapper`, changed to `UCIEngineException`.
 
 ### Fixed
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.
