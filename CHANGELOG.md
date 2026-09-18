@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Performance
+
+## [1.13.0]
+
+### Added
+
+### Changed
 - Added attribution for Fathom and Gaviota Tablebases (both source and
   README).
 - **Breaking change** : On `EmtpyUndoRedoException`, `HistoryTreeException`, `IllegalMoveException`,
@@ -439,7 +449,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/pepero-lover/JCB/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/pepero-lover/JCB/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/pepero-lover/JCB/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/pepero-lover/JCB/compare/v1.10.2...v1.11.0
