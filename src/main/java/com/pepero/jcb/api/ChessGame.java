@@ -4967,7 +4967,7 @@ public class ChessGame {
 
     /**
      * Do perft test <br>
-     * (using single thread, bulk counting is enabled by default)
+     * (JVM preheat included, using single thread, bulk counting is enabled by default)
      *
      * @param depth perft depth
      * @param concurrency using this amount of threads
@@ -4979,7 +4979,7 @@ public class ChessGame {
 
     /**
      * Do perft test <br>
-     * (bulk counting is enabled by default)
+     * (JVM preheat included, bulk counting is enabled by default)
      *
      * @param depth perft depth
      * @param concurrency using this amount of threads
@@ -4992,7 +4992,8 @@ public class ChessGame {
     }
 
     /**
-     * Do perft test
+     * Do perft test <br>
+     * (JVM preheat included)
      *
      * @param depth perft depth
      * @param concurrency using this amount of threads
