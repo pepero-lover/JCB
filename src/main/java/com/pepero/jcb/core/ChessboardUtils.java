@@ -374,12 +374,12 @@ public class ChessboardUtils {
 
     /**
      * Get piece type on square
-     * if there is notting, returns -1
+     * if there is noting, returns -1
      *
      * @param chessboard chessboard
      * @param square square
      * @return Get piece type on square
-     * if there is notting, returns -1
+     * if there is noting, returns -1
      */
     public static int getPieceTypeOnSquare(Chessboard chessboard, int square){
         return chessboard.mailbox[square];
