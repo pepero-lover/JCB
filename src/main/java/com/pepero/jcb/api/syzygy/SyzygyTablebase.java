@@ -723,6 +723,12 @@ public class SyzygyTablebase {
      *
      * @param board chess board
      * @return WDL data
+     *
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public int getWdlData(Chessboard board) throws IOException {
         int wdlRaw = probeWdl(board);
@@ -746,6 +752,12 @@ public class SyzygyTablebase {
      *
      * @param board chess board
      * @return DTZ data
+     *
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public int getDtzData(Chessboard board) throws IOException {
         return probeDtz(board);

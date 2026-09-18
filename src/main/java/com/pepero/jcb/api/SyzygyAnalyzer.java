@@ -3,6 +3,8 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.SyzygyMoveDTO;
 import com.pepero.jcb.api.exception.game.VariantNotMatchException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseMissingFileException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseUnsupportedMaterialException;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -36,7 +38,11 @@ public class SyzygyAnalyzer {
      * @return WDL result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws IllegalArgumentException if this position has castling right
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static int probeWdl(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         validateVariant(game);
@@ -52,7 +58,11 @@ public class SyzygyAnalyzer {
      * @return WDL result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws IllegalArgumentException if this position has castling right
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static int probeWdl(ChessGame game, SyzygyTablebase tablebase) throws IOException {
         return probeWdl(game, tablebase, false);
@@ -72,7 +82,11 @@ public class SyzygyAnalyzer {
      * @return signed DTZ result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws IllegalArgumentException if this position has castling right
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static int probeDtz(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         validateVariant(game);
@@ -91,7 +105,11 @@ public class SyzygyAnalyzer {
      * @return signed DTZ result
      *
      * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws IllegalArgumentException if this position has castling right
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static int probeDtz(ChessGame game, SyzygyTablebase tablebase) throws IOException {
         return probeDtz(game, tablebase, false);
@@ -105,8 +123,14 @@ public class SyzygyAnalyzer {
      * @param containCastle do not throw exception when game has castling rights <br>
      *                      Warning : if you enable this, the position that contained castling rights
      *                      wdl probing might be inaccurate.
-     * @return best move
-     * @throws IOException if tablebase could not find or something
+     * @return best move info
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         List<SyzygyMoveDTO> bestMoves = findRankedMoves(game, tablebase, containCastle);
@@ -120,8 +144,14 @@ public class SyzygyAnalyzer {
      *
      * @param tablebase Syzygy tablebase
      *
-     * @return best move
-     * @throws IOException if tablebase could not find or something
+     * @return best move info
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase) throws IOException {
         return findBestMove(game, tablebase, false);
@@ -138,7 +168,13 @@ public class SyzygyAnalyzer {
      *                      wdl probing might be inaccurate.
      *
      * @return sorted moves list
-     * @throws IOException if tablebase could not find or something
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
         validateVariant(game);
@@ -194,7 +230,13 @@ public class SyzygyAnalyzer {
      * @param tablebase Syzygy table base
      *
      * @return sorted moves list
-     * @throws IOException if tablebase could not find or something
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or this position's piece count is more than this class's supporting piece count
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached by playing
+     *         a capture or promotion from it during probing)
      */
     public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) throws IOException {
         return findRankedMoves(game, tablebase, false);

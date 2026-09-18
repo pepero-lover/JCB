@@ -3,6 +3,8 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.dto.GaviotaMoveDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.exception.game.VariantNotMatchException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseMissingFileException;
+import com.pepero.jcb.api.exception.tablebase.TablebaseUnsupportedMaterialException;
 import com.pepero.jcb.api.gaviota.GaviotaTablebase;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
@@ -36,8 +38,11 @@ public class GaviotaAnalyzer {
      * @return DTM result
      *
      * @throws VariantNotMatchException if variant isn't standard chess
-     * @throws IllegalArgumentException if this position has castling rights, or has more than 5 pieces
-     * @throws GaviotaTablebase.MissingTableException if no table file covers this material
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static int probeDtm(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -53,8 +58,11 @@ public class GaviotaAnalyzer {
      * @return DTM result
      *
      * @throws VariantNotMatchException if variant isn't standard chess
-     * @throws IllegalArgumentException if this position has castling rights, or has more than 5 pieces
-     * @throws GaviotaTablebase.MissingTableException if no table file covers this material
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static int probeDtm(ChessGame game, GaviotaTablebase tablebase) {
         return probeDtm(game, tablebase, false);
@@ -72,8 +80,11 @@ public class GaviotaAnalyzer {
      * @return WDL result, on a -1..1 scale (Loss/Draw/Win)
      *
      * @throws VariantNotMatchException if variant isn't standard chess
-     * @throws IllegalArgumentException if this position has castling rights, or has more than 5 pieces
-     * @throws GaviotaTablebase.MissingTableException if no table file covers this material
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when containCastle is disabled)
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static int probeWdl(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -89,8 +100,11 @@ public class GaviotaAnalyzer {
      * @return WDL result, on a -1..1 scale (Loss/Draw/Win)
      *
      * @throws VariantNotMatchException if variant isn't standard chess
-     * @throws IllegalArgumentException if this position has castling rights, or has more than 5 pieces
-     * @throws GaviotaTablebase.MissingTableException if no table file covers this material
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static int probeWdl(ChessGame game, GaviotaTablebase tablebase) {
         return probeWdl(game, tablebase, false);
@@ -105,7 +119,14 @@ public class GaviotaAnalyzer {
      *                      Warning : Gaviota tables do not contain any position with
      *                      castling rights, so ranking will still fail on any move
      *                      leading to a &gt;5-piece or castling-flagged child position.
-     * @return best move
+     * @return best move info
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when containCastle is disabled)
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static MoveInfo findBestMove(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         List<GaviotaMoveDTO> bestMoves = findRankedMoves(game, tablebase, containCastle);
@@ -118,7 +139,14 @@ public class GaviotaAnalyzer {
      * if is checkmate or stalemate, return null
      *
      * @param tablebase Gaviota tablebase
-     * @return best move
+     * @return best move info
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static MoveInfo findBestMove(ChessGame game, GaviotaTablebase tablebase) {
         return findBestMove(game, tablebase, false);
@@ -139,6 +167,13 @@ public class GaviotaAnalyzer {
      *                      leading to a &gt;5-piece or castling-flagged child position.
      *
      * @return sorted moves list
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when containCastle is disabled)
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static List<GaviotaMoveDTO> findRankedMoves(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -185,6 +220,13 @@ public class GaviotaAnalyzer {
      * @param tablebase Gaviota table base
      *
      * @return sorted moves list
+     *
+     * @throws VariantNotMatchException if variant isn't standard chess
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     *         or more than 5 pieces
+     * @throws TablebaseMissingFileException if no table file covers this material
+     *         (for the original position, or for a position reached via
+     *         one of its en passant children)
      */
     public static List<GaviotaMoveDTO> findRankedMoves(ChessGame game, GaviotaTablebase tablebase) {
         return findRankedMoves(game, tablebase, false);
