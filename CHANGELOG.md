@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed not showing `csl`, `cal` annotation when exporting pgn.
+- Fixed variables on `MoveAnnotation` can be changed on external but there is another change method on `ChessGame`.
+  so fixed the variable can only be gotten on external, but can't be changed.
+- On `MoveAnnotation`, fixed not checking `comment`, `nag`, `clk`, `timeStamp` on `isEmpty` method.
 
 ### Performance
 - On `MoveGenerator.generateAntiChessMoves`, added caching attacks on checking the legal moves have capture move.

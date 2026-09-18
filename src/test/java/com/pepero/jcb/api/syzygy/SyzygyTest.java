@@ -21,8 +21,8 @@ public class SyzygyTest {
         Path path = Path.of(
                 switch (variant) {
                     case STANDARD -> "D:/tablebases/syzygy/";
-                    case SUICIDE, GIVEAWAY -> "syzygy-antichess/";
-                    case ATOMIC -> "syzygy-atomic/";
+                    case SUICIDE, GIVEAWAY -> "D:/tablebases/syzygy-antichess/";
+                    case ATOMIC -> "D:/tablebases/syzygy-atomic/";
                     default -> "";
                 }
         );

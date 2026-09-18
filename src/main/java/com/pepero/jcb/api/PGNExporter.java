@@ -105,9 +105,9 @@ class PGNExporter {
         }
 
         MoveAnnotation nodeAnnotation = node.getAnnotation();
-        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.comment,
-                nodeAnnotation.nag, nodeAnnotation.clk, nodeAnnotation.timeStamp,
-                nodeAnnotation.eval, nodeAnnotation.csl, nodeAnnotation.cal);
+        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.getComment(),
+                nodeAnnotation.getNag(), nodeAnnotation.getClk(), nodeAnnotation.getTimeStamp(),
+                nodeAnnotation.getEval(), nodeAnnotation.getCsl(), nodeAnnotation.getCal());
 
         return new MoveNodeDTO(
                 node.id,
