@@ -7,10 +7,13 @@ package com.pepero.jcb.api.gaviota.lzma;
  *   bytes 1..4   : dictionary size (uint32 LE)
  *   bytes 5..12  : uncompressed size (uint64 LE)
  * </pre>
- * Gaviota's .gtb.cp4 blocks don't carry a real LZMA header — the caller
- * (GaviotaBlockDecoder) synthesizes one matching gaviota.py's fake-header
- * construction, since the actual compression parameters are fixed constants
- * for Gaviota tables (pb=2, lp=0, lc=3, dictSize=4096).
+ * Gaviota .gtb.cp4 blocks (CP4 = LZMA86, per gtb-dec.c's {@code f_decode}
+ * → wrap.c's {@code lzma_decode} → {@code Lzma86_Decode}) don't embed a real
+ * LZMA alone-format header — {@code GaviotaBlockDecoder}
+ * synthesizes one before passing the stream here. The fixed compression
+ * parameters come from wrap.c's {@code lzma_encode}:
+ * {@code level=5, memory=4096 (dictSize), filter=SZ_FILTER_NO},
+ * which gives {@code pb=2, lp=0, lc=3, dictSize=4096, useFilter=0}.
  */
 final class LzmaProps {
 
