@@ -141,7 +141,7 @@ class PGNExporter {
 
         if (pgn.rootNode() != null && pgn.rootNode().children() != null && !pgn.rootNode().children().isEmpty()) {
             buildMoveText(pgn.rootNode().children(), sb, spilt_startFEN[1].equals("w"),
-                    Integer.parseInt(spilt_startFEN[5]) / 2 + 1, true, isPure);
+                    Integer.parseInt(spilt_startFEN[5]), true, isPure);
         }
 
         sb.append(" ").append(getGameResultString(pgn.matchResult()));

@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame.getCurrentMoveInfo`, changed returning null when the current node is root, instead of throwing `MoveNotFoundException`.
 
 ### Fixed
+- On `PGNExporter`, fixed calculating starting move number incorrectly because of dividing half on full move counter at fen.
 
 ### Performance
 
