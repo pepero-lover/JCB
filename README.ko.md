@@ -223,8 +223,8 @@ import java.util.Map;
 public class EngineExample {
     public static void main(String[] args) {
         // 엔진들의 실행 경로를 지정합니다.
-        String engine1Path = new File("engine/stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
 
         // 엔진의 작업 폴더를 지정합니다.
         String folder = new File("engine/").getAbsolutePath();

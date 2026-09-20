@@ -12,8 +12,8 @@ import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish-18").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish-19").getAbsolutePath();
 
         String folder = new File("engine/").getAbsolutePath();
 
@@ -25,21 +25,21 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(1000, 100)
+                    new EngineLimit(10000, 0)
             );
 
             EngineConfig engine2Config = new EngineConfig(
-                    "Stockfish 18",
+                    "Stockfish 19",
                     engine2Path,
                     folder,
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(1000, 100)
+                    new EngineLimit(10000, 0)
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening-pgn.pgn")
+                    .openingBook("engine/UHO.pgn")
                     //.openingBook("engine/UHO.epd")
                     .drawRule(new AdjudicationRule(
                             40,

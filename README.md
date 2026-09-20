@@ -222,8 +222,8 @@ import java.util.Map;
 public class EngineExample {
     public static void main(String[] args) {
         // Specify the executable paths for the engines.
-        String engine1Path = new File("engine/stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
+        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
 
         // Specify the engines' working directory.
         String folder = new File("engine/").getAbsolutePath();
