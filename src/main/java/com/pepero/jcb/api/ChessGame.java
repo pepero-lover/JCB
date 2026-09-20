@@ -1686,11 +1686,14 @@ public class ChessGame {
     }
 
     /**
-     * Get previous moves
+     * Get the move path from the root to the current pointer position.
      * <p>
-     * Example : <br>
-     * <b>e2e4 e7e5 g1f3 ( b1c3 <- pointer) b8c6 ) g8f6 </b>
-     * and the result is <b>e2e4 e7e5 b1c3</b>
+     * Returns only the moves along the path to the current node —
+     * NOT the full tree. Variations not on this path are excluded.
+     * <p>
+     * Example: <br>
+     * <b>e2e4 e7e5 g1f3 ( b1c3 &lt;- pointer ) b8c6 ) g8f6</b> <br>
+     * result: <b>e2e4 e7e5 b1c3</b>
      */
     public List<MoveInfo> getMoveHistory() {
         readLock.lock();
@@ -2083,7 +2086,8 @@ public class ChessGame {
     }
 
     /**
-     * Get board state Map(square)(piece)
+     * Get board state Map(square)(piece) <br>
+     * If the square is empty, doesn't contain on Map.
      */
     public Map<Square, Piece> getBoardStateMap() {
         readLock.lock();
