@@ -847,7 +847,9 @@ public class ChessGame {
     /**
      * Make moves on this ChessGame (MoveInfo list)
      * <p>
-     * If a move in the middle of the list is illegal, the position will be roll backed.
+     * If a move in the middle of the list is illegal, the position will be roll backed. <br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param moveInfos list of moves to make, in order
      *
@@ -896,7 +898,9 @@ public class ChessGame {
     /**
      * Make moves on this ChessGame (San string)
      * <p>
-     * If a move in the middle of the string is illegal, the position will be roll backed.
+     * If a move in the middle of the string is illegal, the position will be roll backed. <br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param sanString san string like "e4 e5 Nf3 Nc6"
      *
@@ -946,7 +950,9 @@ public class ChessGame {
     /**
      * Make moves on this ChessGame
      * <p>
-     * If a move in the middle of the string is illegal, the position will be roll backed.
+     * If a move in the middle of the string is illegal, the position will be roll backed. <br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
@@ -1355,7 +1361,9 @@ public class ChessGame {
     /**
      * Try to make moves on this ChessGame without throwing an exception (MoveInfo list)
      * <p>
-     * If a move in the middle of the string is illegal, the position will be roll backed.
+     * If a move in the middle of the string is illegal, the position will be roll backed. <br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param moveInfos list of moves to make, in order
      *
@@ -1375,7 +1383,9 @@ public class ChessGame {
     /**
      * Try to make moves on this ChessGame without throwing an exception (San string)
      * <p>
-     * If a move in the middle of the string is illegal, the position will be roll backed.
+     * If a move in the middle of the string is illegal, the position will be roll backed. <br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param sanString san string like "e4 e5 Nf3 Nc6"
      *
@@ -1395,7 +1405,9 @@ public class ChessGame {
     /**
      * Try to make moves on this ChessGame without throwing an exception (Lan string)
      * <p>
-     * If a move in the middle of the string is illegal, the position will be roll backed.
+     * If a move in the middle of the string is illegal, the position will be roll backed.<br>
+     * If a child node with the same move already exists, it follows that
+     * existing node instead of creating a new variation.
      *
      * @param lanString lan string like "e2e4 e7e5 g1f3 b8c6"
      *
@@ -3479,6 +3491,18 @@ public class ChessGame {
     }
 
     /**
+     * Get node move infos of all children of the current node.
+     */
+    public List<MoveInfo> getChildMoveInfos() {
+        readLock.lock();
+        try {
+            return currentNode.children.stream().map(n -> n.moveData).toList();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
      * Get current node's long id
      */
     public long getCurrentNodeId() {
@@ -3491,14 +3515,13 @@ public class ChessGame {
     }
 
     /**
-     * Get current move info.
-     *
-     * @throws MoveNotFoundException if the current move is root move
+     * Get current move info. <br>
+     * If current node is root node, returns null.
      */
     public MoveInfo getCurrentMoveInfo() {
         readLock.lock();
         try {
-            if (currentNode == moveHistoryRoot) throw new MoveNotFoundException("Current position is the start position!");
+            if (currentNode == moveHistoryRoot) return null;
             return new MoveInfo(currentNode.moveData.originEncodedData());
         } finally {
             readLock.unlock();
@@ -4026,7 +4049,12 @@ public class ChessGame {
     }
 
     /**
-     * Add highlighting square data on this current move
+     * Add highlighting square data on this current move <p>
+     *
+     * “Current” refers to the node on which the internal pointer is pointing at –
+     * which is the latest move made or navigated to, NOT the next move to be made.
+     * For instance, after makeMoveLan(“e2e4”),
+     * the annotation will be attached to the node of the “e4” move, not to the root.
      *
      * @param csl square data like "Ge4" (Green square on e4), "Yd5" (Yellow square on d5)
      */
@@ -4058,7 +4086,12 @@ public class ChessGame {
     }
 
     /**
-     * Add highlighting arrow data on this current move
+     * Add highlighting arrow data on this current move<p>
+     *
+     * “Current” refers to the node on which the internal pointer is pointing at –
+     * which is the latest move made or navigated to, NOT the next move to be made.
+     * For instance, after makeMoveLan(“e2e4”),
+     * the annotation will be attached to the node of the “e4” move, not to the root.
      *
      * @param cal arrow data like "Gg1f3" (Green arrow g1 to f3), "Ye2e4" (Yellow arrow e2 to e4)
      */

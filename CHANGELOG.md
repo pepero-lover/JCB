@@ -8,12 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
 
 ### Changed
 - On `GaviotaRequest`, revised from "ported Request class" to "contains `tb_probe_()`
   arguments as a struct"; noted the PAWN=1..KING=6 assertion in gtb-probe.c;
   noted the distinction between stable sort and `sortlists()`
 - On `GaviotaBlockDecoder`, corrected source reference from gaviota.py to `gtb-probe.c`, `gtb-dec.c`, `wrap.c`
+- On `ChessGame.getCurrentMoveInfo`, changed returning null when the current node is root, instead of throwing `MoveNotFoundException`.
 
 ### Fixed
 
