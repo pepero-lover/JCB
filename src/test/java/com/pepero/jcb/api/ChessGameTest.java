@@ -2157,7 +2157,7 @@ public class ChessGameTest {
     void getCurrentMoveInfo() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        assertThrows(MoveNotFoundException.class, chessGame::getCurrentMoveInfo);
+        assertEquals(null, chessGame.getCurrentMoveInfo());
 
         chessGame.makeMoveLan("e2e4");
         assertEquals("e2e4", chessGame.getCurrentMoveInfo().toLanString());
