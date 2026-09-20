@@ -1141,6 +1141,40 @@ public class ChessGame {
     }
 
     /**
+     * Try to unmake move on this ChessGame without throwing an exception <br>
+     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b>
+     *
+     * @param moveInfo move info
+     * @return true if the move was successfully unmade, false otherwise
+     */
+    public boolean tryUnmakeMoveRaw(MoveInfo moveInfo) {
+        try {
+            unmakeMoveRaw(moveInfo);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Try to unmake move on this ChessGame without throwing an exception <br>
+     * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b><p>
+     *
+     * if you want to know what's the <b>encodedMove</b>, go to {@link EncodeMove}
+     *
+     * @param encodedMove the move encoded as an integer (contains source, target, flags, etc.)
+     * @return true if the move was successfully unmade, false otherwise
+     */
+    public boolean tryUnmakeMoveRaw(int encodedMove) {
+        try {
+            unmakeMoveRaw(encodedMove);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Get whether a move from sourceSquare to targetSquare (with the given promotion type)
      * would be a legal move, without actually making it. <p>
      *

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
+- On `ChessGame`, added `tryUnmakeMoveRaw`, `tryUnmakeMoveRaw`.
 
 ### Changed
 - **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.

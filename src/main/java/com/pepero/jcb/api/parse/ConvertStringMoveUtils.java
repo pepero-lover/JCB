@@ -27,6 +27,8 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * LAN(or UCI) to SAN = "e2e4" -> "e4" <br>
  * SAN to LAN(or UCI) = "e4"   -> "e2e4" <p>
  *
+ * <b>All convert methods containing {@link Chessboard} parameter should be called before the move applied.</b> <p>
+ *
  * Move data to SAN = MoveInfo[e2e4] (or encoded int data) -> "e4" <p>
  * (Move data to LAN doesn't exist on this class. if you want to convert <b>MoveInfo</b> to LAN,
  * use <b>{@link MoveInfo#toLanString()}</b> <p>
