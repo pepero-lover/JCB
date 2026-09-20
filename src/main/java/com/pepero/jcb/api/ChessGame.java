@@ -1654,11 +1654,13 @@ public class ChessGame {
      *
      * @return whether this position can redo
      *
-     * @throws MoveNotFoundException if the current node is not found
+     * @throws IllegalStateException if current node (move) not found
      */
     public boolean canRedo() {
         readLock.lock();
         try {
+            if (currentNode == null)
+                throw new IllegalStateException("currentNode is unexpectedly null! This is likely a bug in ChessGame's internal state.");
             return !currentNode.children.isEmpty();
         } finally {
             readLock.unlock();
@@ -1672,7 +1674,7 @@ public class ChessGame {
      *
      * @return whether this position can redo
      *
-     * @throws MoveNotFoundException if current node (move) not found
+     * @throws IllegalStateException if current node (move) not found
      */
     public boolean canRedo(int variationIndex) {
         readLock.lock();
