@@ -1688,16 +1688,12 @@ public class ChessGame {
     }
 
     /**
-     * Get the move path from the root to the current pointer position.
-     * <p>
-     * Returns only the moves along the path to the current node —
-     * NOT the full tree. Variations not on this path are excluded.
-     * <p>
+     * Get the move path from the root to the current pointer position. <p>
      * Example: <br>
      * <b>e2e4 e7e5 g1f3 ( b1c3 &lt;- pointer ) b8c6 ) g8f6</b> <br>
      * result: <b>e2e4 e7e5 b1c3</b>
      */
-    public List<MoveInfo> getMoveHistory() {
+    public List<MoveInfo> getPathToCurrentNode() {
         readLock.lock();
         try {
             List<MoveInfo> result = new ArrayList<>();

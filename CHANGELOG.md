@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
 
 ### Changed
+- **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.
 - On `GaviotaRequest`, revised from "ported Request class" to "contains `tb_probe_()`
   arguments as a struct"; noted the PAWN=1..KING=6 assertion in gtb-probe.c;
   noted the distinction between stable sort and `sortlists()`

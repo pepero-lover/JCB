@@ -64,10 +64,10 @@ public class ChessGameTest {
     void unmakeMove() {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMoveLan("e2e4");
-        assertEquals(1, chessGame.getMoveHistory().size());
+        assertEquals(1, chessGame.getPathToCurrentNode().size());
 
         MoveInfo undoneMove = chessGame.unmakeMove();
-        assertEquals(0, chessGame.getMoveHistory().size());
+        assertEquals(0, chessGame.getPathToCurrentNode().size());
         assertEquals(START_FEN, chessGame.getFEN());
         assertNotNull(undoneMove);
     }
@@ -686,7 +686,7 @@ public class ChessGameTest {
         chessGame.makeMoveLan("P@e4");
 
         assertEquals(Piece.WHITE_PAWN, chessGame.getPieceOnSquare(Square.e4));
-        assertTrue(chessGame.getMoveHistory().getFirst().isDrop(), "히스토리에 기록된 DTO의 isDrop 플래그가 true여야 합니다.");
+        assertTrue(chessGame.getPathToCurrentNode().getFirst().isDrop(), "히스토리에 기록된 DTO의 isDrop 플래그가 true여야 합니다.");
     }
 
     @Test
@@ -884,7 +884,7 @@ public class ChessGameTest {
 
         assertFalse(chessGame.tryMakeMoveLan("e2f3"));
         assertEquals(START_FEN, chessGame.getFEN());
-        assertEquals(0, chessGame.getMoveHistory().size());
+        assertEquals(0, chessGame.getPathToCurrentNode().size());
     }
 
     @Test
@@ -893,7 +893,7 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
 
         assertFalse(chessGame.tryMakeMoveSan("Qh5#"));
-        assertEquals(0, chessGame.getMoveHistory().size());
+        assertEquals(0, chessGame.getPathToCurrentNode().size());
     }
 
     @Test
@@ -925,7 +925,7 @@ public class ChessGameTest {
 
         assertTrue(chessGame.tryMakeMoveRawLan("e2e4"));
         assertFalse(chessGame.isEmpty(com.pepero.jcb.api.enums.Square.e4), "보드 상태 자체는 반영되어야 합니다.");
-        assertEquals(0, chessGame.getMoveHistory().size(), "raw 메서드는 히스토리를 갱신하지 않아야 합니다.");
+        assertEquals(0, chessGame.getPathToCurrentNode().size(), "raw 메서드는 히스토리를 갱신하지 않아야 합니다.");
         assertTrue(notified.isEmpty(), "raw 메서드는 리스너도 호출하지 않아야 합니다.");
     }
 
@@ -1624,7 +1624,7 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.fromChessboard(board);
 
         assertEquals(SCHOLARS_MATE_FEN, chessGame.getFEN());
-        assertTrue(chessGame.getMoveHistory().isEmpty(), "히스토리 트리는 포함하지 않고 새로 시작해야 합니다.");
+        assertTrue(chessGame.getPathToCurrentNode().isEmpty(), "히스토리 트리는 포함하지 않고 새로 시작해야 합니다.");
     }
 
     @Test
@@ -1653,7 +1653,7 @@ public class ChessGameTest {
 
         assertEquals(original.getFEN(), copy.getFEN());
         assertEquals(original.getTotalNodeCount(), copy.getTotalNodeCount());
-        assertEquals(original.getMoveHistory().size(), copy.getMoveHistory().size());
+        assertEquals(original.getPathToCurrentNode().size(), copy.getPathToCurrentNode().size());
 
         String copyFenBefore = copy.getFEN();
         original.makeMoveLan("g8f6");
@@ -1846,7 +1846,7 @@ public class ChessGameTest {
         chessGame.makeMoveRawLan("e2e4");
 
         assertFalse(chessGame.isEmpty(Square.e4));
-        assertTrue(chessGame.getMoveHistory().isEmpty(), "raw 메서드는 히스토리를 갱신하면 안 됩니다.");
+        assertTrue(chessGame.getPathToCurrentNode().isEmpty(), "raw 메서드는 히스토리를 갱신하면 안 됩니다.");
     }
 
     @Test
@@ -1907,7 +1907,7 @@ public class ChessGameTest {
 
         assertEquals("e4", san);
         assertFalse(chessGame.isEmpty(Square.e4));
-        assertEquals(1, chessGame.getMoveHistory().size(), "이 메서드는 raw 가 아니므로 히스토리가 갱신되어야 합니다.");
+        assertEquals(1, chessGame.getPathToCurrentNode().size(), "이 메서드는 raw 가 아니므로 히스토리가 갱신되어야 합니다.");
     }
 
     @Test
@@ -1918,7 +1918,7 @@ public class ChessGameTest {
         boolean result = chessGame.tryMakeMoveSanAll("e4 e5 Nf3 Nc6");
 
         assertTrue(result);
-        assertEquals(4, chessGame.getMoveHistory().size());
+        assertEquals(4, chessGame.getPathToCurrentNode().size());
     }
 
     @Test

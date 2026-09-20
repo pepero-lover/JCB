@@ -266,7 +266,7 @@ public class UCIEngineWrapper implements AutoCloseable {
             positionCmd.append("position fen ").append(startFen);
         }
 
-        List<MoveInfo> history = chessGame.getMoveHistory();
+        List<MoveInfo> history = chessGame.getPathToCurrentNode();
         if (history != null && !history.isEmpty()) {
             positionCmd.append(" moves");
             for (MoveInfo move : history) {
