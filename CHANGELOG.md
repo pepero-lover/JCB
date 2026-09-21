@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
 - On `ChessGame`, added `tryUnmakeMoveRaw`, `tryUnmakeMoveRaw`.
+- `PGNDatabaseIterator(Path, Charset)` constructor for non-UTF-8 (e.g. Latin-1) databases.
 
 ### Changed
 - **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.
@@ -18,9 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   noted the distinction between stable sort and `sortlists()`
 - On `GaviotaBlockDecoder`, corrected source reference from gaviota.py to `gtb-probe.c`, `gtb-dec.c`, `wrap.c`
 - On `ChessGame.getCurrentMoveInfo`, changed returning null when the current node is root, instead of throwing `MoveNotFoundException`.
+- `PGNGameStub.headers()` values will now just remove the outer quotes, preserving any internal escape sequences (e.g. `\"`) instead of stripping out all quotes, like `PGNParser` does.
+- `PGNDatabaseIterator` uses U+FFFD substitution when decoding fails instead of failing with `UncheckedIOException` and halting scanning.
+- `PGNDatabaseIterator.next()` now throws `UncheckedIOException` instead of `RuntimeException` on I/O error.
 
 ### Fixed
 - On `PGNExporter`, fixed calculating starting move number incorrectly because of dividing half on full move counter at fen.
+- On `PGNDatabaseIterator`, fixed losing headers of the first game when reading a file with a UTF-8 BOM at the beginning.
+- On `PGNDatabaseIterator`, fixed header lines starting with `[` caused `StringIndexOutOfBoundsException` exception,
+  and header lines with trailing whitespace were parsed improperly.
+- An unterminated `{` comment caused `PGNDatabaseIterator` to join the rest of the file in a single game;
+  `[Event ` keyword always starts a new game. Braces following a `;` comment are ignored now.
+- Fixed `PGNDatabaseIterator.hasNext()` returning `true` even after `close()`.
 
 ### Performance
 
