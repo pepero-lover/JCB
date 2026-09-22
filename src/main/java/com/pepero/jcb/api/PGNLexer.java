@@ -12,68 +12,53 @@ class PGNLexer {
     }
 
     public PGNToken nextToken() {
-        skipWhitespace(); // when empty char is given on pointer
+        while (true) {
+            skipWhitespace();
 
-        if (pointer >= pgn.length()) return new PGNToken(TokenType.EOF, "");
+            if (pointer >= pgn.length()) return new PGNToken(TokenType.EOF, "");
 
-        char token = pgn.charAt(pointer);
+            char token = pgn.charAt(pointer);
 
-        // when variation
-        if (token == '(') {
-            pointer++;
-            return new PGNToken(TokenType.VARIATION_START, "(");
-        }
-        if (token == ')') {
-            pointer++;
-            return new PGNToken(TokenType.VARIATION_END, ")");
-        }
-
-        // when comment
-        if (token == '{') {
-            int start = ++pointer;
-            while (pointer < pgn.length() && pgn.charAt(pointer) != '}') {
+            if (token == '(') {
                 pointer++;
+                return new PGNToken(TokenType.VARIATION_START, "(");
             }
-            String comment = pgn.substring(start, pointer);
-            if(pointer < pgn.length()) pointer++; // skip '}'
-            return new PGNToken(TokenType.COMMENT, comment);
-        }
-        if (token == '}') {
-            pointer++;
-            return nextToken();
-        }
-
-        // when nag
-        if (token == '$') {
-            int start = pointer++;
-            while (pointer < pgn.length() && Character.isDigit(pgn.charAt(pointer))) {
+            if (token == ')') {
                 pointer++;
+                return new PGNToken(TokenType.VARIATION_END, ")");
             }
-            return new PGNToken(TokenType.NAG, pgn.substring(start, pointer));
+
+            if (token == '{') {
+                int start = ++pointer;
+                while (pointer < pgn.length() && pgn.charAt(pointer) != '}') pointer++;
+                String comment = pgn.substring(start, pointer);
+                if (pointer < pgn.length()) pointer++;
+                return new PGNToken(TokenType.COMMENT, comment);
+            }
+            if (token == '}') {
+                pointer++;
+                continue;
+            }
+
+            if (token == '$') {
+                int start = pointer++;
+                while (pointer < pgn.length() && Character.isDigit(pgn.charAt(pointer))) pointer++;
+                return new PGNToken(TokenType.NAG, pgn.substring(start, pointer));
+            }
+
+            if (token == ';') {
+                int start = ++pointer;
+                while (pointer < pgn.length() && pgn.charAt(pointer) != '\n' && pgn.charAt(pointer) != '\r') pointer++;
+                return new PGNToken(TokenType.COMMENT, pgn.substring(start, pointer));
+            }
+
+            int start = pointer;
+            while (pointer < pgn.length() && !isTerminator(pgn.charAt(pointer))) pointer++;
+
+            if (start == pointer) { pointer++; continue; }
+
+            return classifyToken(pgn.substring(start, pointer));
         }
-
-        // comment with one line
-        if (token == ';') {
-            int start = ++pointer;
-            while (pointer < pgn.length() && pgn.charAt(pointer) != '\n' && pgn.charAt(pointer) != '\r') pointer++;
-            String comment = pgn.substring(start, pointer);
-            return new PGNToken(TokenType.COMMENT, comment);
-        }
-
-        // when move string, result, move number, etc.
-        int start = pointer;
-        while (pointer < pgn.length() && !isTerminator(pgn.charAt(pointer))) {
-            pointer++;
-        }
-
-        if (start == pointer) {
-            pointer++;
-            return nextToken();
-        }
-
-        String text = pgn.substring(start, pointer);
-
-        return classifyToken(text);
     }
 
     private void skipWhitespace() {

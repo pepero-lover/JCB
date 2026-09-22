@@ -45,6 +45,12 @@ public class ConvertStringMoveUtils {
             'K', "♚", 'Q', "♛", 'R', "♜", 'B', "♝", 'N', "♞"
     );
 
+    private static final Map<Character, String> PROMOTION_SUFFIX = Map.of(
+            'q', "=Q", 'Q', "=Q", 'r', "=R", 'R', "=R",
+            'b', "=B", 'B', "=B", 'n', "=N", 'N', "=N",
+            'k', "=K", 'K', "=K"
+    );
+
     private record TranslateResult(
             String moveString,
             int moveData
@@ -250,12 +256,12 @@ public class ConvertStringMoveUtils {
 
             // if the move is promotion
             if (target_rank == 0 || target_rank == 7) {
-                try {
-                    promotionStr = "=" + String.valueOf(lan.charAt(4)).toUpperCase();
-                } catch (IndexOutOfBoundsException e){
+                String suffix = PROMOTION_SUFFIX.get(lan.length() > 4 ? lan.charAt(4) : '\0');
+                if (suffix == null) {
                     throw new ConvertMoveException("Promotion char not found!",
                             lan, ConvertType.LAN, ConvertErrorType.PROMOTION_CHARACTER);
                 }
+                promotionStr = suffix;
             }
         } else {
             if(!castle) {

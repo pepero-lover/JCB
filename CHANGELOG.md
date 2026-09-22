@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `PGNDatabaseIterator.hasNext()` returning `true` even after `close()`.
 
 ### Performance
+- On `ConvertStringMoveUtils`, changed promotion char type converting to `PROMOTION_SUFFIX` map at `parseSan`.
+- On `PGNLexer.nextToken`, changed using while loop instead of using recursive function.
 
 ## [1.13.0]
 
