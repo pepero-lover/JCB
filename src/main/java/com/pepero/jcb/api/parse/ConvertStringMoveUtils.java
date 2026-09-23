@@ -15,6 +15,7 @@ import com.pepero.jcb.core.encode.EncodeMove;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static com.pepero.jcb.core.MoveGenerator.ILLEGAL_MOVE;
 
@@ -50,6 +51,9 @@ public class ConvertStringMoveUtils {
             'b', "=B", 'B', "=B", 'n', "=N", 'N', "=N",
             'k', "=K", 'K', "=K"
     );
+
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern MOVE_NUMBER = Pattern.compile("\\d+\\.+\\s*");
 
     private record TranslateResult(
             String moveString,
@@ -160,7 +164,7 @@ public class ConvertStringMoveUtils {
         int target_square = BoardSquares.coordinates_to_square(lan.substring(2,4));
 
         // lan is not correct
-        if(source_square == -1 || target_square == -1) {
+        if(source_square == no_sq || target_square == no_sq) {
             throw new ConvertMoveException("Square string is not correct!", lan, chessboard,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
         }
@@ -168,7 +172,7 @@ public class ConvertStringMoveUtils {
         int type = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
 
         // if piece is not found
-        if(type == -1) {
+        if(type == NO_PIECE_CONSTANT) {
             throw new ConvertMoveException("Piece not found!", lan, chessboard,
                     ConvertType.LAN,
                     ConvertErrorType.PIECE_NOT_FOUND
@@ -191,26 +195,7 @@ public class ConvertStringMoveUtils {
         }
 
         int encoded_move = -1;
-        if(!chessboard.isChess960) {
-            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
-            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(pieceType == K && targetType == R &&
-                    source_square == e1 && target_square == h1) {
-                target_square = g1;
-            }
-            if(pieceType == K && targetType == R &&
-                    source_square == e1 && target_square == a1) {
-                target_square = c1;
-            }
-            if(pieceType == k && targetType == r &&
-                    source_square == e8 && target_square == h8) {
-                target_square = g8;
-            }
-            if(pieceType == k && targetType == r &&
-                    source_square == e8 && target_square == a8) {
-                target_square = c8;
-            }
-        }
+        target_square = MoveGenerator.normalizeCastleTarget(chessboard, source_square, target_square, type);
         for (int i = 0; i < move_count; i++) {
             int move = move_list[i];
             if (EncodeMove.getMoveSource(move) == source_square
@@ -531,7 +516,7 @@ public class ConvertStringMoveUtils {
 
         if(lanSequence.trim().isEmpty()) return "";
 
-        String[] lans = lanSequence.trim().split("\\s+");
+        String[] lans = WHITESPACE.split(lanSequence.trim());
         StringBuilder sanSequence = new StringBuilder();
 
         for (String lan : lans) {
@@ -566,7 +551,7 @@ public class ConvertStringMoveUtils {
 
             char pieceChar = parts[0].charAt(0);
             int target_square = BoardSquares.coordinates_to_square(parts[1]);
-            if (target_square == -1) throw new ConvertMoveException("Invalid drop target square!", lan,
+            if (target_square == no_sq) throw new ConvertMoveException("Invalid drop target square!", lan,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
 
             Integer pieceTypeBoxed = char_to_encoded_piece.get(pieceChar);
@@ -593,7 +578,7 @@ public class ConvertStringMoveUtils {
         int target_square = BoardSquares.coordinates_to_square(lan.substring(2,4));
 
         // lan is not correct
-        if(source_square == -1 || target_square == -1) {
+        if(source_square == no_sq || target_square == no_sq) {
             throw new ConvertMoveException("Square string is not correct!", lan,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
         }
@@ -606,27 +591,6 @@ public class ConvertStringMoveUtils {
                         ConvertType.LAN, ConvertErrorType.PROMOTION_CHARACTER);
             }
             promotion_type = normalizePieceColor(promotionPiece, chessboard.side);
-        }
-
-        if(!chessboard.isChess960) {
-            int pieceType = ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square);
-            int targetType = ChessboardUtils.getPieceTypeOnSquare(chessboard, target_square);
-            if(pieceType == K && targetType == R &&
-                    source_square == e1 && target_square == h1) {
-                target_square = g1;
-            }
-            if(pieceType == K && targetType == R &&
-                    source_square == e1 && target_square == a1) {
-                target_square = c1;
-            }
-            if(pieceType == k && targetType == r &&
-                    source_square == e8 && target_square == h8) {
-                target_square = g8;
-            }
-            if(pieceType == k && targetType == r &&
-                    source_square == e8 && target_square == a8) {
-                target_square = c8;
-            }
         }
 
         int isLegal = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
@@ -857,7 +821,7 @@ public class ConvertStringMoveUtils {
 
         if(sanSequence.trim().isEmpty()) return "";
 
-        String[] sans = sanSequence.trim().split("\\s+");
+        String[] sans = WHITESPACE.split(sanSequence.trim());
         StringBuilder lanSequence = new StringBuilder();
 
         for (String san : sans) {
@@ -885,7 +849,7 @@ public class ConvertStringMoveUtils {
      */
     public static int parseMoveDataToEncodedMove(Chessboard chessboard, int source_square, int target_square,
                                                  int promotion_type){
-        if(promotion_type == -1) promotion_type = 0;
+        if(promotion_type == NO_PIECE_CONSTANT) promotion_type = 0;
 
         // source square is not correct
         if(source_square < 0 || source_square >= 64) {
@@ -937,7 +901,7 @@ public class ConvertStringMoveUtils {
 
         if (lanSequence.trim().isEmpty()) return List.of();
 
-        String[] lans = lanSequence.trim().split("\\s+");
+        String[] lans = WHITESPACE.split(lanSequence.trim());
         List<MoveInfo> moveDataList = new ArrayList<>(lans.length);
 
         for (String lan : lans) {
@@ -966,7 +930,7 @@ public class ConvertStringMoveUtils {
 
         if (sanSequence.trim().isEmpty()) return List.of();
 
-        String[] sans = sanSequence.trim().split("\\s+");
+        String[] sans = WHITESPACE.split(sanSequence.trim());
         List<MoveInfo> moveDataList = new ArrayList<>(sans.length);
 
         for (String san : sans) {
@@ -994,7 +958,7 @@ public class ConvertStringMoveUtils {
     public static String addMoveNumberToSanSequence(Chessboard chessboard, String sanSequence) {
         if (sanSequence == null || sanSequence.trim().isEmpty()) return "";
 
-        String[] sans = sanSequence.trim().split("\\s+");
+        String[] sans = WHITESPACE.split(sanSequence.trim());
         StringBuilder sb = new StringBuilder();
 
         int ply = chessboard.full_move;
@@ -1031,10 +995,8 @@ public class ConvertStringMoveUtils {
     public static String removeMoveNumberFromSanSequence(String numberedSanSequence) {
         if (numberedSanSequence == null || numberedSanSequence.isBlank()) return "";
 
-        return numberedSanSequence.trim()
-                .replaceAll("\\d+\\.+\\s*", " ")
-                .trim()
-                .replaceAll("\\s+", " ");
+        String stripped = MOVE_NUMBER.matcher(numberedSanSequence.trim()).replaceAll(" ").trim();
+        return WHITESPACE.matcher(stripped).replaceAll(" ");
     }
 
     /**
@@ -1074,7 +1036,7 @@ public class ConvertStringMoveUtils {
     public static String toUnicodePieces(boolean whiteToMove, String sanSequence) {
         if (sanSequence == null || sanSequence.trim().isEmpty()) return "";
 
-        String[] sans = sanSequence.trim().split("\\s+");
+        String[] sans = WHITESPACE.split(sanSequence.trim());
         StringBuilder result = new StringBuilder();
 
         for (String san : sans) {

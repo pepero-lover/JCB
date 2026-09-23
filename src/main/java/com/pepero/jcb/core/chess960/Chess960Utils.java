@@ -81,7 +81,7 @@ public class Chess960Utils {
      * @param piece piece
      * @param emptyIndex empty index
      *
-     * @return placed file
+     * @return placed file (if failed, return -1)
      */
     private static int placePieceAtEmpty(char[] rank, char piece, int emptyIndex) {
         int emptyCount = 0;

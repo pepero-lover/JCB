@@ -278,7 +278,7 @@ public class ChessboardUtils {
                 int square = (7 - rank) * 8 + file;
 
                 int type = getPieceTypeOnSquare(chessboard, square);
-                if(type == -1) {
+                if(type == NO_PIECE_CONSTANT) {
                     empty_square++;
                     continue;
                 }

@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
 - On `ChessGame`, added `tryUnmakeMoveRaw`, `tryUnmakeMoveRaw`.
 - `PGNDatabaseIterator(Path, Charset)` constructor for non-UTF-8 (e.g. Latin-1) databases.
+- On `MoveGenerator`, added generating pseudo legal moves method `generatePseudoLegalMoves`.
+- On `MoveGenerator`, added normalizing castling target when the game isn't chess 960 but the given target square is chess 960 style. (`normalizeCastleTarget`)
 
 ### Changed
 - **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.
+- **Breaking Change** : On `BoardSquares.coordinates_to_square`, changed returning `no_sq (64)` constant when could not convert
+  the square string, instead of `-1`.
+- On every checking the square is empty with `-1`, changed `EncodedPieces.NO_PIECE_CONSTANT`
 - On `GaviotaRequest`, revised from "ported Request class" to "contains `tb_probe_()`
   arguments as a struct"; noted the PAWN=1..KING=6 assertion in gtb-probe.c;
   noted the distinction between stable sort and `sortlists()`
@@ -35,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 - On `ConvertStringMoveUtils`, changed promotion char type converting to `PROMOTION_SUFFIX` map at `parseSan`.
 - On `PGNLexer.nextToken`, changed using while loop instead of using recursive function.
+- On `MoveGenerator.isLegalMove`, changed generating the source square only moves using `generatePseudoLegalMovesForSquare`,
+  instead of generating all possible moves.
+- On `ConvertStringMoveUtils`, added `WHITESPACE`, `MOVE_NUMBER` Pattern, caching the pattern class instead of making new every call.
 
 ## [1.13.0]
 

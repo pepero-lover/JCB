@@ -3,25 +3,27 @@ package com.pepero.jcb.api.enums;
 import com.pepero.jcb.api.exception.game.PieceNotFoundException;
 import com.pepero.jcb.core.constant.EncodedPieces;
 
+import static com.pepero.jcb.core.constant.EncodedPieces.*;
+
 /**
  * Piece type enum with color distinguishing
  */
 public enum Piece {
-    WHITE_PAWN(0),
-    WHITE_KNIGHT(1),
-    WHITE_BISHOP(2),
-    WHITE_ROOK(3),
-    WHITE_QUEEN(4),
-    WHITE_KING(5),
+    WHITE_PAWN(P),
+    WHITE_KNIGHT(N),
+    WHITE_BISHOP(B),
+    WHITE_ROOK(R),
+    WHITE_QUEEN(Q),
+    WHITE_KING(K),
 
-    BLACK_PAWN(6),
-    BLACK_KNIGHT(7),
-    BLACK_BISHOP(8),
-    BLACK_ROOK(9),
-    BLACK_QUEEN(10),
-    BLACK_KING(11),
+    BLACK_PAWN(p),
+    BLACK_KNIGHT(n),
+    BLACK_BISHOP(b),
+    BLACK_ROOK(r),
+    BLACK_QUEEN(q),
+    BLACK_KING(k),
 
-    NONE(-1);
+    NONE(NO_PIECE_CONSTANT);
 
     private final int pieceType;
 
@@ -116,7 +118,7 @@ public enum Piece {
      * @return piece
      */
     public static Piece fromIndex(int index) {
-        if(index == -1) return NONE;
+        if(index == NO_PIECE_CONSTANT) return NONE;
 
         if (index < 0 || index > 11) {
             throw new PieceNotFoundException();

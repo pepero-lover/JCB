@@ -28,6 +28,9 @@ public class EncodedPieces {
     public static final int q = 10; // black queen
     public static final int k = 11; // black king
 
+    // no piece constant
+    public static final int NO_PIECE_CONSTANT = -1;
+
     public static final char[] ascii_pieces = {
             'P','N','B','R','Q','K',
             'p','n','b','r','q','k'

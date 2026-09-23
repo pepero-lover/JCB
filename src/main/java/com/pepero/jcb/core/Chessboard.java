@@ -5,6 +5,7 @@ import com.pepero.jcb.core.hash.Zobrist;
 
 import java.util.Arrays;
 
+import static com.pepero.jcb.core.constant.EncodedPieces.NO_PIECE_CONSTANT;
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.BoardSquares.*;
 
@@ -171,7 +172,7 @@ public class Chessboard {
         Arrays.fill(this.occupancies, 0L);
 
         // reset mailbox
-        Arrays.fill(this.mailbox, -1);
+        Arrays.fill(this.mailbox, NO_PIECE_CONSTANT);
 
         Arrays.fill(this.enpassant_history, 0);
         Arrays.fill(this.castle_history, 0);

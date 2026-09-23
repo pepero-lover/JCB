@@ -52,14 +52,15 @@ public class BoardSquares {
     };
 
     /**
-     * Convert coordinate string square to integer square data
+     * Convert coordinate string square to integer square data <br>
+     * If converting failed, return no_sq (64).
      *
      * @param coordinate coordinate square like 'e1', 'd6'
      * @return converted integer square data
      */
     public static int coordinates_to_square(String coordinate) {
         if (coordinate == null || coordinate.length() != 2) {
-            return -1; // return if the coordinate is not right
+            return no_sq; // return if the coordinate is not right
         }
 
         int file = coordinate.charAt(0) - 'a';
@@ -67,7 +68,7 @@ public class BoardSquares {
 
         // if square is out of bounds
         if (file < 0 || file > 7 || rank < 0 || rank > 7) {
-            return -1;
+            return no_sq;
         }
 
         // return result
