@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PGNGameStub.headers()` values will now just remove the outer quotes, preserving any internal escape sequences (e.g. `\"`) instead of stripping out all quotes, like `PGNParser` does.
 - `PGNDatabaseIterator` uses U+FFFD substitution when decoding fails instead of failing with `UncheckedIOException` and halting scanning.
 - `PGNDatabaseIterator.next()` now throws `UncheckedIOException` instead of `RuntimeException` on I/O error.
+- On every `en passant` or `enPassant` word, refactored to `enpassant`.
 
 ### Fixed
 - On `PGNExporter`, fixed calculating starting move number incorrectly because of dividing half on full move counter at fen.
@@ -50,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator`, added `generateMoves(chessboard, moveArray, stopAtFirstMove,
   pieceTypeFilter, targetSquareFilter)`, filtering target square, piece type for `ConvertStringMoveUtils` and reused this method 
   on `generateMoves(chessboard, moveArray, stopAtFirstMove)`, `generateMoves(chessboard, moveArray)`.
+- On `ChessboardUtils`, replaced `.matches("\\+?\\d+\\+\\d+")` to cached `THREE_CHECK_TOKEN_PATTERN`.
+- On `ChessboardUtils`, added `splitFenFields`, and replaced on every dividing fen (`FENValidator`, `ChessboardUtils`)
+- On `FENValidator`, added pattern cache (`THREE_CHECK_TOKEN_PATTERN`, 
+  `CASTLING_PATTERN_STANDARD`, `CASTLING_PATTERN_CHESS960`, `ENPASSANT_PATTERN`)
 
 ## [1.13.0]
 

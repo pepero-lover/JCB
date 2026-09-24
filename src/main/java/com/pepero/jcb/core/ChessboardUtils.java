@@ -9,6 +9,7 @@ import com.pepero.jcb.core.encode.EncodeMove;
 import com.pepero.jcb.core.hash.Zobrist;
 
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import static com.pepero.jcb.core.constant.MoveCache.CHESSBOARD_UTIL_CACHE;
 import static com.pepero.jcb.core.MoveGenerator.isSquareAttacked;
@@ -25,11 +26,45 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * and getting FEN from given Chessboard ({@link #getFen(Chessboard)}), and more.
  */
 public class ChessboardUtils {
+    private static final Pattern THREE_CHECK_TOKEN_PATTERN = Pattern.compile("\\+?\\d+\\+\\d+");
+
     /**
      * Print this chessboard
      */
     public static void printChessBoard(Chessboard chessboard) {
         System.out.println(toStringChessboard(chessboard));
+    }
+
+    /**
+     * Splits a FEN string into whitespace-separated fields,
+     * but without compiling/running a regex {@link java.util.regex.Pattern} on every call.
+     */
+    public static String[] splitFenFields(String fen) {
+        int len = fen.length();
+
+        int fieldCount = 0;
+        int i = 0;
+        while (i < len) {
+            while (i < len && Character.isWhitespace(fen.charAt(i))) i++;
+            if (i >= len) break;
+            fieldCount++;
+            while (i < len && !Character.isWhitespace(fen.charAt(i))) i++;
+        }
+
+        if (fieldCount == 0) return new String[]{""};
+
+        String[] fields = new String[fieldCount];
+        int idx = 0;
+        i = 0;
+        while (i < len) {
+            while (i < len && Character.isWhitespace(fen.charAt(i))) i++;
+            if (i >= len) break;
+            int start = i;
+            while (i < len && !Character.isWhitespace(fen.charAt(i))) i++;
+            fields[idx++] = fen.substring(start, i);
+        }
+
+        return fields;
     }
 
     /**
@@ -40,7 +75,7 @@ public class ChessboardUtils {
         chessboard.resetBoard(chessboard.gameVariant);
 
         // divide fen
-        String[] fenDivided = fen.trim().split("\\s+");
+        String[] fenDivided = splitFenFields(fen);
 
         String boardPart = fenDivided[0];
         Arrays.fill(chessboard.pocket, 0);
@@ -188,7 +223,7 @@ public class ChessboardUtils {
 
         int checksTokenIndex = -1;
         for (int i = 4; i < fenDivided.length; i++) {
-            if (fenDivided[i].matches("\\+?\\d+\\+\\d+")) {
+            if (THREE_CHECK_TOKEN_PATTERN.matcher(fenDivided[i]).matches()) {
                 checksTokenIndex = i;
                 break;
             }
@@ -307,16 +342,16 @@ public class ChessboardUtils {
 
         if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             String pocketStr =
-                    "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
-                    "R".repeat(Math.max(0, chessboard.pocket[R])) +
-                    "B".repeat(Math.max(0, chessboard.pocket[B])) +
-                    "N".repeat(Math.max(0, chessboard.pocket[N])) +
-                    "P".repeat(Math.max(0, chessboard.pocket[P])) +
-                    "q".repeat(Math.max(0, chessboard.pocket[q])) +
-                    "r".repeat(Math.max(0, chessboard.pocket[r])) +
-                    "b".repeat(Math.max(0, chessboard.pocket[b])) +
-                    "n".repeat(Math.max(0, chessboard.pocket[n])) +
-                    "p".repeat(Math.max(0, chessboard.pocket[p]));
+                            "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
+                            "R".repeat(Math.max(0, chessboard.pocket[R])) +
+                            "B".repeat(Math.max(0, chessboard.pocket[B])) +
+                            "N".repeat(Math.max(0, chessboard.pocket[N])) +
+                            "P".repeat(Math.max(0, chessboard.pocket[P])) +
+                            "q".repeat(Math.max(0, chessboard.pocket[q])) +
+                            "r".repeat(Math.max(0, chessboard.pocket[r])) +
+                            "b".repeat(Math.max(0, chessboard.pocket[b])) +
+                            "n".repeat(Math.max(0, chessboard.pocket[n])) +
+                            "p".repeat(Math.max(0, chessboard.pocket[p]));
 
             fen.append("[").append(pocketStr).append("]");
         }

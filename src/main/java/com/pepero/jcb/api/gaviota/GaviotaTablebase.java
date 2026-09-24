@@ -36,14 +36,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * {@link com.pepero.jcb.api.syzygy.SyzygyTablebase}'s
  * {@code wdlCache}/{@code dtzCache} restructure Fathom's C globals.
  * <p>
- * {@link #probeDtm}'s en passant handling is conceptually the same idea as
- * {@code tb_probe_()}'s {@code epsq} handling (try the available en passant
+ * {@link #probeDtm}'s enpassant handling is conceptually the same idea as
+ * {@code tb_probe_()}'s {@code epsq} handling (try the available enpassant
  * capture, recursively probe the resulting position, and keep whichever
  * outcome the side to move prefers via a decisive-result-first merge — the
  * C's {@code bestx()} table-driven merge on packed {@code dtm_t} codes,
  * verified equivalent to this method's simpler same-sign-min/different-sign-max
  * merge on plain signed ply counts) — but the implementation is JCB's own:
- * it uses JCB's real {@link MoveGenerator} to enumerate legal en passant
+ * it uses JCB's real {@link MoveGenerator} to enumerate legal enpassant
  * moves and JCB's own make/unmake on a {@link Chessboard}, rather than C's
  * manual square-array simulation (which exists because bare index-based
  * probing code has no move generator of its own to call).
@@ -309,16 +309,16 @@ public final class GaviotaTablebase {
     }
 
     // ============================================================
-    // DTM probing (no en passant) — corresponds to the non-ep body of
+    // DTM probing (no enpassant) — corresponds to the non-ep body of
     // gtb-probe.c's tb_probe_() (egtb_get_id() + egtb_get_dtm()), taking
     // JCB-native square/type arrays instead of C's null-terminated SQUARE*/
     // SQ_CONTENT* lists.
     // ============================================================
 
     /**
-     * Does not itself handle en passant (see class doc) — the caller is
+     * Does not itself handle enpassant (see class doc) — the caller is
      * responsible for that (see {@link #probeDtm}), matching the way
-     * {@code tb_probe_()}'s own en passant branch wraps its core
+     * {@code tb_probe_()}'s own enpassant branch wraps its core
      * {@code egtb_get_id}/{@code egtb_get_dtm} logic.
      *
      * @param whiteSquares squares occupied by white pieces (any order)
@@ -367,13 +367,13 @@ public final class GaviotaTablebase {
 
     /**
      * Probes DTM for the given board position: computes the no-en-passant
-     * DTM first, then — for every legal en passant capture available in
+     * DTM first, then — for every legal enpassant capture available in
      * this exact position — plays it, recursively probes the resulting
      * position, and folds the result in via a decisive-result-first merge
      * (see class doc's note on {@code bestx()} equivalence).
      * <p>
      * Mutates {@code board} via {@link MoveGenerator#makeMove}/
-     * {@link MoveGenerator#unmakeMove} while probing en passant children,
+     * {@link MoveGenerator#unmakeMove} while probing enpassant children,
      * but always restores it to its original state before returning
      * (including on exception, via try/finally).
      *
@@ -381,7 +381,7 @@ public final class GaviotaTablebase {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public int probeDtm(Chessboard board) {
         if (board.castle != 0) {
@@ -445,7 +445,7 @@ public final class GaviotaTablebase {
     /**
      * Pulls this exact board position's square/type lists and probes
      * {@link #probeDtmNoEp} directly off {@code board} — the no-en-passant
-     * core that {@link #probeDtm} wraps with its en passant loop.
+     * core that {@link #probeDtm} wraps with its enpassant loop.
      */
     private int probeDtmNoEpFromBoard(Chessboard board) {
         int[][] white = extractSide(board, true);

@@ -42,7 +42,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static int probeDtm(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -62,7 +62,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static int probeDtm(ChessGame game, GaviotaTablebase tablebase) {
         return probeDtm(game, tablebase, false);
@@ -84,7 +84,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static int probeWdl(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -104,7 +104,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static int probeWdl(ChessGame game, GaviotaTablebase tablebase) {
         return probeWdl(game, tablebase, false);
@@ -126,7 +126,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static MoveInfo findBestMove(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         List<GaviotaMoveDTO> bestMoves = findRankedMoves(game, tablebase, containCastle);
@@ -146,7 +146,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static MoveInfo findBestMove(ChessGame game, GaviotaTablebase tablebase) {
         return findBestMove(game, tablebase, false);
@@ -173,7 +173,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static List<GaviotaMoveDTO> findRankedMoves(ChessGame game, GaviotaTablebase tablebase, boolean containCastle) {
         validateVariant(game);
@@ -226,7 +226,7 @@ public class GaviotaAnalyzer {
      *         or more than 5 pieces
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached via
-     *         one of its en passant children)
+     *         one of its enpassant children)
      */
     public static List<GaviotaMoveDTO> findRankedMoves(ChessGame game, GaviotaTablebase tablebase) {
         return findRankedMoves(game, tablebase, false);

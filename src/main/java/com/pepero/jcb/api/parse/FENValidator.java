@@ -2,10 +2,13 @@ package com.pepero.jcb.api.parse;
 
 import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
 import com.pepero.jcb.core.MoveGenerator;
+
+import java.util.regex.Pattern;
 
 import static com.pepero.jcb.core.constant.SideToMove.*;
 import static com.pepero.jcb.core.constant.EncodedPieces.*;
@@ -16,6 +19,11 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * About error types on {@link FENConvertException}, go to {@link FENErrorType}.
  */
 public class FENValidator {
+    private static final Pattern THREE_CHECK_TOKEN_PATTERN = Pattern.compile("\\d+\\+\\d+");
+    private static final Pattern CASTLING_PATTERN_STANDARD = Pattern.compile("^(-|[KQkq]{1,4})$");
+    private static final Pattern CASTLING_PATTERN_CHESS960 = Pattern.compile("^(-|[KQkqA-Ha-h]{1,4})$");
+    private static final Pattern ENPASSANT_PATTERN = Pattern.compile("^(-|[a-h][36])$");
+
     /**
      * Validate this FEN syntactically correct and logically possible chess position.
      *
@@ -44,7 +52,7 @@ public class FENValidator {
             throw new FENConvertException("Invalid FEN: FEN string cannot be null or empty!",
                     FENErrorType.FEN_NULL);
 
-        String[] parts = fen.trim().split("\\s+");
+        String[] parts = ChessboardUtils.splitFenFields(fen.trim());
         if (parts.length < 4 || parts.length > 7) {
             throw new FENConvertException("Invalid FEN: FEN must contain between 4 and 7 parts.",
                     FENErrorType.FEN_TOKEN_SIZE);
@@ -72,17 +80,17 @@ public class FENValidator {
 
         String turn = parts[1];
         String castling = parts[2];
-        String enPassant = parts[3];
+        String enpassant = parts[3];
 
         validateBoard(board, variant);
         validateTurn(turn);
         validateCastling(castling, isChess960);
-        validateEnPassant(turn, enPassant);
+        validateEnPassant(turn, enpassant);
 
         // get 3 check index
         int checksTokenIndex = -1;
         for (int i = 4; i < parts.length; i++) {
-            if (parts[i].matches("\\d+\\+\\d+")) {
+            if (THREE_CHECK_TOKEN_PATTERN.matcher(parts[i]).matches()) {
                 checksTokenIndex = i;
                 break;
             }
@@ -189,35 +197,35 @@ public class FENValidator {
         }
     }
     private static void validateCastling(String castling, boolean isChess960) {
-        String regex = isChess960 ? "^(-|[KQkqA-Ha-h]{1,4})$" : "^(-|[KQkq]{1,4})$";
+        Pattern pattern = isChess960 ? CASTLING_PATTERN_CHESS960 : CASTLING_PATTERN_STANDARD;
 
-        if (castling == null || !castling.matches(regex)) {
+        if (castling == null || !pattern.matcher(castling).matches()) {
             throw new FENConvertException("Invalid FEN: Invalid castling rights string. (" + castling +")",
                     FENErrorType.CASTLING,
                     castling);
         }
     }
 
-    private static void validateEnPassant(String turn, String enPassant) {
-        if (!enPassant.matches("^(-|[a-h][36])$")) {
-            throw new FENConvertException("Invalid FEN: Invalid enpassant target square. (" + enPassant + ")",
+    private static void validateEnPassant(String turn, String enpassant) {
+        if (!ENPASSANT_PATTERN.matcher(enpassant).matches()) {
+            throw new FENConvertException("Invalid FEN: Invalid enpassant target square. (" + enpassant + ")",
                     FENErrorType.ENPASSANT_SQUARE,
-                    enPassant);
+                    enpassant);
         }
 
-        if (!enPassant.equals("-")) {
-            if (turn.equals("w") && enPassant.charAt(1) != '6') {
+        if (!enpassant.equals("-")) {
+            if (turn.equals("w") && enpassant.charAt(1) != '6') {
                 throw new FENConvertException(
-                        "Invalid FEN: White to move, but en passant square is not on the 6th rank. (" + enPassant + ")",
+                        "Invalid FEN: White to move, but enpassant square is not on the 6th rank. (" + enpassant + ")",
                         FENErrorType.ENPASSANT_SQUARE,
-                        enPassant
+                        enpassant
                 );
             }
-            if (turn.equals("b") && enPassant.charAt(1) != '3') {
+            if (turn.equals("b") && enpassant.charAt(1) != '3') {
                 throw new FENConvertException(
-                        "Invalid FEN: Black to move, but en passant square is not on the 3rd rank. (" + enPassant + ")",
+                        "Invalid FEN: Black to move, but enpassant square is not on the 3rd rank. (" + enpassant + ")",
                         FENErrorType.ENPASSANT_SQUARE,
-                        enPassant
+                        enpassant
                 );
             }
         }
@@ -300,7 +308,7 @@ public class FENValidator {
     }
 
     private static void validateChecksToken(String checksToken) {
-        if (!checksToken.matches("^\\d+\\+\\d+$")) {
+        if (!THREE_CHECK_TOKEN_PATTERN.matcher(checksToken).matches()) {
             throw new FENConvertException("Invalid FEN: Invalid check count format. (" + checksToken + ")",
                     FENErrorType.INVALID_THREE_CHECK_FORMAT,
                     checksToken);
