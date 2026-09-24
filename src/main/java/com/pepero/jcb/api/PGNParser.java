@@ -17,20 +17,11 @@ import com.pepero.jcb.core.MoveGenerator;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Parse PGN string data and return {@link PGNParsedData} for initializing {@link ChessGame} class.
  */
 class PGNParser {
-
-    // for pgn parsing pattern
-    private static final Pattern CLK_PATTERN = Pattern.compile("\\[%clk\\s+([^\\]]+)\\]");
-    private static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\[%timestamp\\s+([^\\]]+)\\]");
-    private static final Pattern EVAL_PATTERN = Pattern.compile("\\[%eval\\s+([^\\]]+)\\]");
-    private static final Pattern CSL_PATTERN = Pattern.compile("\\[%csl\\s+([^\\]]+)\\]");
-    private static final Pattern CAL_PATTERN = Pattern.compile("\\[%cal\\s+([^\\]]+)\\]");
 
     /**
      * Parse "Variant" section on PGN header to GameVariant enum
@@ -173,40 +164,11 @@ class PGNParser {
             switch (currentToken.type()) {
                 case COMMENT:
                     String rawComment = currentToken.value().trim();
+                    String remainingComment = extractAnnotations(rawComment, currentParsedNode.getAnnotation());
 
-                    Matcher clkMatcher = CLK_PATTERN.matcher(rawComment);
-                    if (clkMatcher.find()) {
-                        currentParsedNode.getAnnotation().clk = clkMatcher.group(1);
-                        rawComment = clkMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher timestampMatcher = TIMESTAMP_PATTERN.matcher(rawComment);
-                    if (timestampMatcher.find()) {
-                        currentParsedNode.getAnnotation().timeStamp = timestampMatcher.group(1);
-                        rawComment = timestampMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher evalMatcher = EVAL_PATTERN.matcher(rawComment);
-                    if (evalMatcher.find()) {
-                        currentParsedNode.getAnnotation().eval = evalMatcher.group(1);
-                        rawComment = evalMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher cslMatcher = CSL_PATTERN.matcher(rawComment);
-                    if (cslMatcher.find()) {
-                        currentParsedNode.getAnnotation().csl = cslMatcher.group(1);
-                        rawComment = cslMatcher.replaceAll("").trim();
-                    }
-
-                    Matcher calMatcher = CAL_PATTERN.matcher(rawComment);
-                    if (calMatcher.find()) {
-                        currentParsedNode.getAnnotation().cal = calMatcher.group(1);
-                        rawComment = calMatcher.replaceAll("").trim();
-                    }
-
-                    if (!rawComment.isEmpty()) {
+                    if (!remainingComment.isEmpty()) {
                         currentParsedNode.getAnnotation().comment = (currentParsedNode.getAnnotation().comment == null)
-                                ? rawComment : currentParsedNode.getAnnotation().comment + " " + rawComment;
+                                ? remainingComment : currentParsedNode.getAnnotation().comment + " " + remainingComment;
                     }
                     break;
 
@@ -331,5 +293,48 @@ class PGNParser {
                 parsedFen, parsedVariant, isChess960,
                 rootNode, tempNodeCache, parsedHeaders, parsedGameResult,parsedGameOverReason
         );
+    }
+
+    /**
+     * Extracts {@code [%tag value]} style annotations (clk, timestamp, eval, csl, cal) and stores into given
+     * {@code annotation}, and return the annotation removed comment
+     */
+    private static String extractAnnotations(String comment, MoveAnnotation annotation) {
+        int len = comment.length();
+        StringBuilder remaining = new StringBuilder(len);
+        int i = 0;
+
+        while (i < len) {
+            if (comment.charAt(i) == '[' && i + 1 < len && comment.charAt(i + 1) == '%') {
+                int tagStart = i + 2;
+                int tagEnd = tagStart;
+                while (tagEnd < len && comment.charAt(tagEnd) != ' ' && comment.charAt(tagEnd) != ']') tagEnd++;
+
+                int valStart = tagEnd;
+                while (valStart < len && comment.charAt(valStart) == ' ') valStart++;
+
+                int valEnd = comment.indexOf(']', valStart);
+                if (valEnd != -1) {
+                    String tag = comment.substring(tagStart, tagEnd);
+                    String value = comment.substring(valStart, valEnd);
+
+                    switch (tag) {
+                        case "clk" -> annotation.clk = value;
+                        case "timestamp" -> annotation.timeStamp = value;
+                        case "eval" -> annotation.eval = value;
+                        case "csl" -> annotation.csl = value;
+                        case "cal" -> annotation.cal = value;
+                        default -> remaining.append(comment, i, valEnd + 1);
+                    }
+
+                    i = valEnd + 1;
+                    continue;
+                }
+            }
+            remaining.append(comment.charAt(i));
+            i++;
+        }
+
+        return remaining.toString().trim();
     }
 }

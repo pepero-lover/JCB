@@ -4,6 +4,28 @@ package com.pepero.jcb.api;
  * Get PGN string tokens data for converting into {@link ChessGame}
  */
 class PGNLexer {
+    private static final boolean[] TERMINATOR = new boolean[128];
+    private static final boolean[] PGN_WHITESPACE = new boolean[128];
+
+    static {
+        TERMINATOR[' '] = true;
+        TERMINATOR['\t'] = true;
+        TERMINATOR['\n'] = true;
+        TERMINATOR['\r'] = true;
+        TERMINATOR['('] = true;
+        TERMINATOR[')'] = true;
+        TERMINATOR['{'] = true;
+        TERMINATOR['}'] = true;
+        TERMINATOR['$'] = true;
+        TERMINATOR[';'] = true;
+        TERMINATOR['.'] = true;
+
+        PGN_WHITESPACE[' '] = true;
+        PGN_WHITESPACE['\t'] = true;
+        PGN_WHITESPACE['\n'] = true;
+        PGN_WHITESPACE['\r'] = true;
+    }
+
     private final String pgn;
     private int pointer = 0;
 
@@ -42,7 +64,7 @@ class PGNLexer {
 
             if (token == '$') {
                 int start = pointer++;
-                while (pointer < pgn.length() && Character.isDigit(pgn.charAt(pointer))) pointer++;
+                while (pointer < pgn.length() && isAsciiDigit(pgn.charAt(pointer))) pointer++;
                 return new PGNToken(TokenType.NAG, pgn.substring(start, pointer));
             }
 
@@ -62,14 +84,21 @@ class PGNLexer {
     }
 
     private void skipWhitespace() {
-        while (pointer < pgn.length() && Character.isWhitespace(pgn.charAt(pointer))) {
+        while (pointer < pgn.length() && isPgnWhitespace(pgn.charAt(pointer))) {
             pointer++;
         }
     }
 
     private boolean isTerminator(char c) {
-        return Character.isWhitespace(c) || c == '(' || c == ')' ||
-                c == '{' || c == '}' || c == '$' || c == ';' || c == '.';
+        return c < 128 && TERMINATOR[c];
+    }
+
+    private boolean isPgnWhitespace(char c) {
+        return c < 128 && PGN_WHITESPACE[c];
+    }
+
+    private static boolean isAsciiDigit(char c) {
+        return c >= '0' && c <= '9';
     }
 
     private PGNToken classifyToken(String text) {
@@ -98,7 +127,7 @@ class PGNLexer {
 
         int i = 0;
         int digitCount = 0;
-        while (i < len && Character.isDigit(text.charAt(i))) {
+        while (i < len && isAsciiDigit(text.charAt(i))) {
             i++;
             digitCount++;
         }

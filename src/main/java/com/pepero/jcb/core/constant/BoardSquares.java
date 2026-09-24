@@ -74,4 +74,24 @@ public class BoardSquares {
         // return result
         return rank * 8 + file;
     }
+
+    /**
+     * Convert a (file, rank) character pair directly to a square index, without allocating a String. <br>
+     * Same semantics as {@link #coordinates_to_square(String)}: returns no_sq (64) if either character is out
+     * of the 'a'-'h' / '1'-'8' range.
+     *
+     * @param fileChar file character, 'a'-'h'
+     * @param rankChar rank character, '1'-'8'
+     * @return converted integer square data
+     */
+    public static int coordinates_to_square(char fileChar, char rankChar) {
+        int file = fileChar - 'a';
+        int rank = rankChar - '1';
+
+        if (file < 0 || file > 7 || rank < 0 || rank > 7) {
+            return no_sq;
+        }
+
+        return rank * 8 + file;
+    }
 }

@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator.isLegalMove`, changed generating the source square only moves using `generatePseudoLegalMovesForSquare`,
   instead of generating all possible moves.
 - On `ConvertStringMoveUtils`, added `WHITESPACE`, `MOVE_NUMBER` Pattern, caching the pattern class instead of making new every call.
+- On `ConvertStringMoveUtils.parseSan`, removed `substring` and changed moving pointer.
+- On `PGNLexer`, removed `Character.isDigit`, `Character.isWhitespace`, `isTerminator` and replaced to checking cached array.
+- On `PGNParser`, removed Patterns (like `CLK_PATTERN`, `TIMESTAMP_PATTERN`, ...) and replaced `extractAnnotations`.
 
 ## [1.13.0]
 

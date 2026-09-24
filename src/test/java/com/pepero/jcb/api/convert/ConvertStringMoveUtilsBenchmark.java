@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ConvertStringMoveUtilsBenchmark {
     public static void main(String[] args) throws IOException {
-        boolean lanMode = true;
+        boolean lanMode = false;
 
         List<String> games = Files.readAllLines(Path.of("random_games_benchmark.txt"))
                 .stream()

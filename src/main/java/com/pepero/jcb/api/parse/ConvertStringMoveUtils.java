@@ -181,9 +181,6 @@ public class ConvertStringMoveUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
         int promotion_type = 0;
         if (lan.length() == 5) {
             Integer promotionPiece = char_to_encoded_piece.get(lan.charAt(4));
@@ -194,18 +191,10 @@ public class ConvertStringMoveUtils {
             promotion_type = normalizePieceColor(promotionPiece, chessboard.side);
         }
 
-        int encoded_move = -1;
         target_square = MoveGenerator.normalizeCastleTarget(chessboard, source_square, target_square, type);
-        for (int i = 0; i < move_count; i++) {
-            int move = move_list[i];
-            if (EncodeMove.getMoveSource(move) == source_square
-                    && EncodeMove.getMoveTarget(move) == target_square
-                    && EncodeMove.getMovePromoted(move) == promotion_type) {
-                encoded_move = move;
-                break;
-            }
-        }
-        if (encoded_move == -1) {
+
+        int encoded_move = MoveGenerator.isLegalMove(chessboard, source_square, target_square, promotion_type);
+        if (encoded_move == ILLEGAL_MOVE) {
             throw new IllegalMoveException(lan, ChessboardUtils.getFen(chessboard));
         }
         boolean castle = EncodeMove.getMoveCastling(encoded_move);
@@ -258,6 +247,9 @@ public class ConvertStringMoveUtils {
                         && chessboard.gameVariant != GameVariant.SUICIDE;
 
                 if (!skipDisambiguation) {
+                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
+                    int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
                     int going_piece_count = 0;
                     boolean equal_file = false;
                     boolean equal_rank = false;
@@ -613,31 +605,33 @@ public class ConvertStringMoveUtils {
      * @throws IllegalMoveException if illegal move
      */
     private static TranslateResult parseSan(Chessboard chessboard, String san) {
-        int source_square = -1;
-        int target_square = -1;
-        int promotion_type = -1;
-
-        int expected_file = -1;
-        int expected_rank = -1;
+        // keep the original user-facing san string for exception messages
+        final String originalSan = san;
 
         boolean whiteTurn = chessboard.side == white;
 
-        // keep the original user-facing san string for exception messages
-        // (san below gets mutated/stripped for parsing purposes)
-        final String originalSan = san;
+        int sanEnd = san.length();
 
-        boolean isCapture = san.contains("x");
-        if(isCapture) san = san.replace("x", "");
-        san = san.replace("+", "").replace("#", "");
+        // remove +, # on end of san
+        while (sanEnd > 0 && (san.charAt(sanEnd - 1) == '+' || san.charAt(sanEnd - 1) == '#'))
+            sanEnd--;
 
-        // when crazy house
-        if (san.contains("@")) {
-            String[] parts = san.split("@");
+        // check the @ (drop move) exists, and x (capture move) exists
+        int atIdx = -1, xAt = -1;
+        for (int i = 0; i < sanEnd; i++) {
+            char c = san.charAt(i);
+            if (c == '@' && atIdx == -1) atIdx = i;
+            else if (c == 'x' && xAt == -1) xAt = i;
+        }
+
+        if (atIdx != -1) {
+            String core = (sanEnd == san.length()) ? san : san.substring(0, sanEnd);
+            String[] parts = core.split("@");
             if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", originalSan,
                     ConvertType.SAN, ConvertErrorType.DROP_MOVE);
 
             char pieceChar = parts[0].charAt(0);
-            target_square = BoardSquares.coordinates_to_square(parts[1]);
+            int target_square = BoardSquares.coordinates_to_square(parts[1]);
 
             Integer pieceTypeBoxed = char_to_encoded_piece.get(pieceChar);
             if (pieceTypeBoxed == null) {
@@ -655,30 +649,23 @@ public class ConvertStringMoveUtils {
             return new TranslateResult(parts[0] + "@" + parts[1], move_result);
         }
 
-        if(san.equals("O-O") || san.equals("O-O-O") || san.equals("0-0") || san.equals("0-0-0")){
-            boolean isKingSide = san.equals("O-O") || san.equals("0-0");
-
-            int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-            int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-            for (int count = 0; count < move_count; count++) {
-                int move = move_list[count];
-
-                if(!EncodeMove.getMoveCastling(move)) continue;
-
-                int source = EncodeMove.getMoveSource(move);
-                int target = EncodeMove.getMoveTarget(move);
-
-                boolean isMoveKingSide = target > source;
-
-                if(isKingSide == isMoveKingSide) return new TranslateResult(
-                        BoardSquares.square_to_coordinates[source]
-                                + BoardSquares.square_to_coordinates[target]
-                        , move);
-            }
-
-            throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));
+        // if O-O (or 0-0)
+        if (sanEnd == 3 && isODigit(san.charAt(0)) && san.charAt(1) == '-' && isODigit(san.charAt(2))) {
+            return resolveCastling(chessboard, true, originalSan);
         }
+
+        // if O-O-O (or 0-0-0)
+        if (sanEnd == 5 && isODigit(san.charAt(0)) && san.charAt(1) == '-' && isODigit(san.charAt(2))
+                && san.charAt(3) == '-' && isODigit(san.charAt(4))) {
+            return resolveCastling(chessboard, false, originalSan);
+        }
+
+        boolean isCapture = xAt != -1;
+
+        int target_square;
+        int expected_file = -1;
+        int expected_rank = -1;
+        int promotion_type = -1;
 
         int piece_type = switch (san.charAt(0)) {
             case 'N' -> whiteTurn ? N : n;
@@ -689,46 +676,56 @@ public class ConvertStringMoveUtils {
             default -> whiteTurn ? P : p;
         };
 
-        if(piece_type != P && piece_type != p) {
-            // Qae7
-            // Ne3c4
+        int cursor;
 
-            // ae7
-            // e3c4
-            san = san.substring(1);
+        // if piece type is not a pawn,
+        if (piece_type != P && piece_type != p) {
+            // starting cursor index is 1 because of piece type (K, Q, R, N, B)
+            cursor = 1;
 
-            if(san.length() == 3) {
-                boolean isFile = Character.isAlphabetic(san.charAt(0));
-                if(isFile) {
-                    expected_file = san.charAt(0) - 'a';
-                } else {
-                    expected_rank = san.charAt(0) - '1';
-                }
+            // calculate remaining char
+            int remaining = (sanEnd - cursor) - (isCapture ? 1 : 0);
 
-                san = san.substring(1);
-            } else if(san.length() == 4) {
-                expected_file = san.charAt(0) - 'a';
-                expected_rank = san.charAt(1) - '1';
+            // if the remaining char is 3, (e.g. N `bd2`)
+            if (remaining == 3) {
+                char c = san.charAt(cursor);
 
-                san = san.substring(2);
+                if (c >= 'a' && c <= 'h')
+                    expected_file = c - 'a';
+                else
+                    expected_rank = c - '1';
+
+                cursor++;
+            } else if (remaining == 4) {
+                // if the remaining char is 4, (e.g. Q `e4g4`)
+                expected_file = san.charAt(cursor) - 'a';
+                expected_rank = san.charAt(cursor + 1) - '1';
+                cursor += 2;
             }
 
-            target_square = BoardSquares.coordinates_to_square(san.substring(0,2));
+            // if capturing move and there is x on this cursor, skip
+            if (isCapture && cursor == xAt) cursor++;
+
+            target_square = BoardSquares.coordinates_to_square(san.charAt(cursor), san.charAt(cursor + 1));
+            cursor += 2;
         } else {
-            // exd8=Q
+            // pawn doesn't have piece type char so starting cursor is 0.
+            cursor = 0;
+
+            // if capture,
             if (isCapture) {
                 expected_file = san.charAt(0) - 'a';
-
-                san = san.substring(1);
+                cursor = 1;
+                // if there is x on this cursor, skip.
+                if (cursor == xAt) cursor++;
             }
-
-            // d8=Q
-            target_square = BoardSquares.coordinates_to_square(san.substring(0,2));
+            target_square = BoardSquares.coordinates_to_square(san.charAt(cursor), san.charAt(cursor + 1));
+            cursor += 2;
         }
 
-        // promotion
-        if(san.contains("=") && san.indexOf('=') + 1 < san.length())
-            promotion_type = switch (san.charAt(san.indexOf('=') + 1)) {
+        // if = char, it's promotion.
+        if (cursor < sanEnd && san.charAt(cursor) == '=') {
+            promotion_type = switch (san.charAt(cursor + 1)) {
                 case 'Q', 'q' -> Q;
                 case 'R', 'r' -> R;
                 case 'B', 'b' -> B;
@@ -739,12 +736,14 @@ public class ConvertStringMoveUtils {
                         ConvertType.SAN,
                         ConvertErrorType.PROMOTION_CHARACTER);
             };
+        }
 
         int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list);
 
         boolean result = false;
         int move_result = -1;
+        int source_square = -1;
 
         for (int count = 0; count < move_count; count++) {
             int move = move_list[count];
@@ -777,6 +776,39 @@ public class ConvertStringMoveUtils {
         return new TranslateResult(BoardSquares.square_to_coordinates[source_square]
                 + BoardSquares.square_to_coordinates[target_square]
                 + (promotion_type != -1 ? promotion_pieces[promotion_type] : ""), move_result);
+    }
+
+    /**
+     * For checking castling O-O digit
+     */
+    private static boolean isODigit(char c) {
+        return c == 'O' || c == '0';
+    }
+
+    /**
+     * Resolve castling san to lan
+     */
+    private static TranslateResult resolveCastling(Chessboard chessboard, boolean isKingSide, String originalSan) {
+        int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+
+        for (int count = 0; count < move_count; count++) {
+            int move = move_list[count];
+
+            if(!EncodeMove.getMoveCastling(move)) continue;
+
+            int source = EncodeMove.getMoveSource(move);
+            int target = EncodeMove.getMoveTarget(move);
+
+            boolean isMoveKingSide = target > source;
+
+            if(isKingSide == isMoveKingSide) return new TranslateResult(
+                    BoardSquares.square_to_coordinates[source]
+                            + BoardSquares.square_to_coordinates[target]
+                    , move);
+        }
+
+        throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));
     }
 
     /**
