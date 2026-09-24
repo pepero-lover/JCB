@@ -247,37 +247,7 @@ public class ConvertStringMoveUtils {
                         && chessboard.gameVariant != GameVariant.SUICIDE;
 
                 if (!skipDisambiguation) {
-                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-                    int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-                    int going_piece_count = 0;
-                    boolean equal_file = false;
-                    boolean equal_rank = false;
-
-                    for (int count = 0; count < move_count; count++) {
-                        int move = move_list[count];
-
-                        if (EncodeMove.getMovePiece(move) == type &&
-                                EncodeMove.getMoveTarget(move) == target_square) {
-                            going_piece_count++;
-                            int other_src = EncodeMove.getMoveSource(move);
-
-                            if (other_src != source_square) {
-                                if (other_src % 8 == source_file) equal_file = true;
-                                if (other_src / 8 == source_rank) equal_rank = true;
-                            }
-                        }
-                    }
-
-                    if (going_piece_count > 1) {
-                        if (!equal_file) {
-                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
-                        } else if (!equal_rank) {
-                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(1));
-                        } else {
-                            sb.append(BoardSquares.square_to_coordinates[source_square]);
-                        }
-                    }
+                    appendDisambiguation(chessboard, sb, type, target_square, source_square, source_file, source_rank);
                 }
 
                 // check if this move is capture
@@ -311,6 +281,45 @@ public class ConvertStringMoveUtils {
      *
      * @throws IllegalMoveException if move is illegal
      */
+    /**
+     * Appends SAN disambiguation (source file, source rank, or both) to {@code sb} when more than one
+     * piece of {@code type} could legally move to {@code target_square}. Uses the piece-type/target-square
+     * filtered {@link MoveGenerator#generateMoves(Chessboard, int[], boolean, int, int)} overload so only
+     * the relevant candidate moves are generated instead of the full legal move list.
+     */
+    private static void appendDisambiguation(Chessboard chessboard, StringBuilder sb, int type, int target_square,
+                                             int source_square, int source_file, int source_rank) {
+        int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list, false, type, target_square);
+
+        int going_piece_count = 0;
+        boolean equal_file = false;
+        boolean equal_rank = false;
+
+        for (int count = 0; count < move_count; count++) {
+            int move = move_list[count];
+
+            // piece type and target square are already guaranteed by the filtered generateMoves call
+            going_piece_count++;
+            int other_src = EncodeMove.getMoveSource(move);
+
+            if (other_src != source_square) {
+                if (other_src % 8 == source_file) equal_file = true;
+                if (other_src / 8 == source_rank) equal_rank = true;
+            }
+        }
+
+        if (going_piece_count > 1) {
+            if (!equal_file) {
+                sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
+            } else if (!equal_rank) {
+                sb.append(BoardSquares.square_to_coordinates[source_square].charAt(1));
+            } else {
+                sb.append(BoardSquares.square_to_coordinates[source_square]);
+            }
+        }
+    }
+
     private static TranslateResult parseLan(Chessboard chessboard, int encoded_move) {
         // when drop move (crazy house)
         if (EncodeMove.getMoveDrop(encoded_move)) {
@@ -375,37 +384,7 @@ public class ConvertStringMoveUtils {
                         && chessboard.gameVariant != GameVariant.SUICIDE;
 
                 if (!skipDisambiguation) {
-                    int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-                    int move_count = MoveGenerator.generateMoves(chessboard, move_list);
-
-                    int going_piece_count = 0;
-                    boolean equal_file = false;
-                    boolean equal_rank = false;
-
-                    for (int count = 0; count < move_count; count++) {
-                        int move = move_list[count];
-
-                        if (EncodeMove.getMovePiece(move) == type &&
-                                EncodeMove.getMoveTarget(move) == target_square) {
-                            going_piece_count++;
-                            int other_src = EncodeMove.getMoveSource(move);
-
-                            if (other_src != source_square) {
-                                if (other_src % 8 == source_file) equal_file = true;
-                                if (other_src / 8 == source_rank) equal_rank = true;
-                            }
-                        }
-                    }
-
-                    if (going_piece_count > 1) {
-                        if (!equal_file) {
-                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(0));
-                        } else if (!equal_rank) {
-                            sb.append(BoardSquares.square_to_coordinates[source_square].charAt(1));
-                        } else {
-                            sb.append(BoardSquares.square_to_coordinates[source_square]);
-                        }
-                    }
+                    appendDisambiguation(chessboard, sb, type, target_square, source_square, source_file, source_rank);
                 }
 
                 if (is_capture) {
@@ -739,7 +718,7 @@ public class ConvertStringMoveUtils {
         }
 
         int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
-        int move_count = MoveGenerator.generateMoves(chessboard, move_list);
+        int move_count = MoveGenerator.generateMoves(chessboard, move_list, false, piece_type, target_square);
 
         boolean result = false;
         int move_result = -1;
@@ -748,27 +727,25 @@ public class ConvertStringMoveUtils {
         for (int count = 0; count < move_count; count++) {
             int move = move_list[count];
 
-            if (EncodeMove.getMovePiece(move) == piece_type &&
-                    EncodeMove.getMoveTarget(move) == target_square) {
-                int source = EncodeMove.getMoveSource(move);
-                int promotion = EncodeMove.getMovePromoted(move);
-                promotion -= whiteTurn ? 0 : 6;
+            // piece type and target square are already guaranteed by the filtered generateMoves call
+            int source = EncodeMove.getMoveSource(move);
+            int promotion = EncodeMove.getMovePromoted(move);
+            promotion -= whiteTurn ? 0 : 6;
 
-                if(promotion_type != -1 && promotion != promotion_type) continue;
-                if(expected_file != -1 && source % 8 != expected_file) continue;
-                if(expected_rank != -1 && source / 8 != expected_rank) continue;
+            if(promotion_type != -1 && promotion != promotion_type) continue;
+            if(expected_file != -1 && source % 8 != expected_file) continue;
+            if(expected_rank != -1 && source / 8 != expected_rank) continue;
 
-                if(result) throw new ConvertMoveException("Available move count is more than 1! ( FEN : " +
-                        ChessboardUtils.getFen(chessboard) + " )",
-                        ConvertType.SAN,
-                        ConvertErrorType.AMBIGUITY_COULD_NOT_BE_RESOLVED);
+            if(result) throw new ConvertMoveException("Available move count is more than 1! ( FEN : " +
+                    ChessboardUtils.getFen(chessboard) + " )",
+                    ConvertType.SAN,
+                    ConvertErrorType.AMBIGUITY_COULD_NOT_BE_RESOLVED);
 
-                source_square = source;
-                target_square = EncodeMove.getMoveTarget(move);
+            source_square = source;
+            target_square = EncodeMove.getMoveTarget(move);
 
-                result = true;
-                move_result = move;
-            }
+            result = true;
+            move_result = move;
         }
 
         if(move_result == -1) throw new IllegalMoveException(originalSan, ChessboardUtils.getFen(chessboard));

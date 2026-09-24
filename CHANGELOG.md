@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ConvertStringMoveUtils.parseSan`, removed `substring` and changed moving pointer.
 - On `PGNLexer`, removed `Character.isDigit`, `Character.isWhitespace`, `isTerminator` and replaced to checking cached array.
 - On `PGNParser`, removed Patterns (like `CLK_PATTERN`, `TIMESTAMP_PATTERN`, ...) and replaced `extractAnnotations`.
+- On `MoveGenerator`, added `generateMoves(chessboard, moveArray, stopAtFirstMove,
+  pieceTypeFilter, targetSquareFilter)`, filtering target square, piece type for `ConvertStringMoveUtils` and reused this method 
+  on `generateMoves(chessboard, moveArray, stopAtFirstMove)`, `generateMoves(chessboard, moveArray)`.
 
 ## [1.13.0]
 

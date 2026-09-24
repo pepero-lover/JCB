@@ -745,7 +745,7 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray) {
-        return generateMoves(chessboard, moveArray, false);
+        return generateMoves(chessboard, moveArray, false, -1, -1);
     }
 
     /**
@@ -757,12 +757,31 @@ public class MoveGenerator {
      * @return move count
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove) {
+        return generateMoves(chessboard, moveArray, stopAtFirstMove, -1, -1);
+    }
+
+    /**
+     * Generate strictly legal moves, filtering piece type, target square for parsing san or lan
+     *
+     * @param chessboard chessboard
+     * @param moveArray move array
+     * @param stopAtFirstMove if any move found, stop and return (for hasLegalMoves-style methods)
+     * @param pieceTypeFilter -1 for no filter, otherwise only generate this piece type (as encoded in {@link EncodedPieces})
+     * @param targetSquareFilter -1 for no filter, otherwise only generate moves landing on this square
+     * @return move count
+     */
+    public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove,
+                                    int pieceTypeFilter, int targetSquareFilter) {
         switch (chessboard.gameVariant) {
             case GIVEAWAY:
-            case SUICIDE:
-                return generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
-            case ATOMIC:
-                return generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
+            case SUICIDE: {
+                int count = generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
+                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
+            }
+            case ATOMIC: {
+                int count = generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
+                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
+            }
             case RACING_KINGS:
                 if (ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
                     return 0;
@@ -770,7 +789,8 @@ public class MoveGenerator {
                 break;
             case HORDE:
                 if (chessboard.side == white) {
-                    return generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
+                    int count = generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
+                    return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
                 }
                 break;
             case THREE_CHECK:
@@ -800,6 +820,10 @@ public class MoveGenerator {
         boolean inCheck = (checkersInfo & (1 << 12)) != 0;
         boolean isDoubleCheck = (checkersInfo & (1 << 13)) != 0;
 
+        int myKingPiece = (side == white) ? K : k;
+        boolean kingMovesNeeded = (pieceTypeFilter == -1 || pieceTypeFilter == myKingPiece);
+        boolean nonKingLoopNeeded = (pieceTypeFilter == -1) || (pieceTypeFilter != myKingPiece);
+
         // avoiding check mask
         long checkMask = ~0L;
 
@@ -819,224 +843,260 @@ public class MoveGenerator {
         }
 
         // get king moves
-        long kingAttacks = Attacks.king_attacks[kingSq] & ~chessboard.occupancies[side];
-        long tempOccForKingMoves = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
-        while (kingAttacks != 0) {
-            int target_square = BitBoardUtils.getLS1BIndex(kingAttacks);
+        if (kingMovesNeeded) {
+            long kingAttacks = Attacks.king_attacks[kingSq] & ~chessboard.occupancies[side];
+            if (targetSquareFilter != -1) kingAttacks &= (1L << targetSquareFilter);
+            long tempOccForKingMoves = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
+            while (kingAttacks != 0) {
+                int target_square = BitBoardUtils.getLS1BIndex(kingAttacks);
 
-            // if racing kings, check move is not possible
-            if (isRacingKings && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, target_square,
-                    -1, oppKingSq, 0)) {
+                // if racing kings, check move is not possible
+                if (isRacingKings && wouldGiveCheck(chessboard, side, (side == white ? K : k), kingSq, target_square,
+                        -1, oppKingSq, 0)) {
+                    kingAttacks = BitBoardUtils.popBit(kingAttacks, target_square);
+                    continue;
+                }
+
+                // pop king pos on occupancy because
+
+                // let's assume this is the position
+                // - R - - - k - -
+                // - - - - - - - -
+
+                // and the expected is
+                // - R - - - k - -
+                // - - - - 1 1 1 -
+
+                // but if we don't pop the king square, the attack is blocked by king square so
+                // - R - - - k 1 -
+                // - - - - 1 1 1 -
+                // and this is not we wanted.
+
+                // long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
+
+                boolean isSafe = !isSquareAttackedWithOcc(chessboard, target_square, oppSide, tempOccForKingMoves);
+
+                if (isSafe) {
+                    boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], target_square);
+                    move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
+                            kingSq, target_square, (side == white ? K : k), 0, isCapture,
+                            false, false, false));
+                    if(stopAtFirstMove) return move_count;
+                }
                 kingAttacks = BitBoardUtils.popBit(kingAttacks, target_square);
-                continue;
             }
-
-            // pop king pos on occupancy because
-
-            // let's assume this is the position
-            // - R - - - k - -
-            // - - - - - - - -
-
-            // and the expected is
-            // - R - - - k - -
-            // - - - - 1 1 1 -
-
-            // but if we don't pop the king square, the attack is blocked by king square so
-            // - R - - - k 1 -
-            // - - - - 1 1 1 -
-            // and this is not we wanted.
-
-            // long tempOcc = BitBoardUtils.popBit(chessboard.occupancies[both], kingSq);
-
-            boolean isSafe = !isSquareAttackedWithOcc(chessboard, target_square, oppSide, tempOccForKingMoves);
-
-            if (isSafe) {
-                boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], target_square);
-                move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
-                        kingSq, target_square, (side == white ? K : k), 0, isCapture,
-                        false, false, false));
-                if(stopAtFirstMove) return move_count;
-            }
-            kingAttacks = BitBoardUtils.popBit(kingAttacks, target_square);
         }
 
         // if double check, the legal moves list is only king moves so return it
         if (isDoubleCheck) return move_count;
 
-        long pinnedPieces = getPinnedPiecesBitboard(chessboard, kingSq, side);
+        if (nonKingLoopNeeded) {
+            long pinnedPieces = getPinnedPiecesBitboard(chessboard, kingSq, side);
 
-        int start_piece = (side == white) ? P : p;
-        int end_piece = (side == white) ? Q : q;
+            int start_piece, end_piece;
+            if (pieceTypeFilter != -1) {
+                start_piece = end_piece = pieceTypeFilter;
+            } else {
+                start_piece = (side == white) ? P : p;
+                end_piece = (side == white) ? Q : q;
+            }
 
-        for (int piece = start_piece; piece <= end_piece; piece++) {
-            long bitboard = chessboard.bitboards[piece];
+            for (int piece = start_piece; piece <= end_piece; piece++) {
+                long bitboard = chessboard.bitboards[piece];
 
-            while (bitboard != 0) {
-                int source_square = BitBoardUtils.getLS1BIndex(bitboard);
+                while (bitboard != 0) {
+                    int source_square = BitBoardUtils.getLS1BIndex(bitboard);
 
-                // piece moves bitboard
-                long pieceMoves;
-                boolean isPawn = (piece == P || piece == p);
+                    // piece moves bitboard
+                    long pieceMoves;
+                    boolean isPawn = (piece == P || piece == p);
 
-                // get whether this piece is pinned
-                boolean isPinned = BitBoardUtils.getBit(pinnedPieces, source_square);
-                // if the piece is pinned, get legal moves by pin mask
-                long pinRay = isPinned ? RAY_LINE[kingSq][source_square] : ~0L;
+                    // get whether this piece is pinned
+                    boolean isPinned = BitBoardUtils.getBit(pinnedPieces, source_square);
+                    // if the piece is pinned, get legal moves by pin mask
+                    long pinRay = isPinned ? RAY_LINE[kingSq][source_square] : ~0L;
 
-                if (!isPawn) {
-                    // get piece moves
-                    pieceMoves = getPieceAttacks(chessboard, piece, side, source_square);
+                    if (!isPawn) {
+                        // get piece moves
+                        pieceMoves = getPieceAttacks(chessboard, piece, side, source_square);
 
 
-                    // remove my side's pieces
-                    pieceMoves &= ~chessboard.occupancies[side];
+                        // remove my side's pieces
+                        pieceMoves &= ~chessboard.occupancies[side];
 
-                    // mask pin
-                    pieceMoves &= pinRay;
+                        // mask pin
+                        pieceMoves &= pinRay;
 
-                    // mask check
-                    pieceMoves &= checkMask;
+                        // mask check
+                        pieceMoves &= checkMask;
 
-                    // add moves all
-                    while (pieceMoves != 0) {
-                        int target_square = BitBoardUtils.getLS1BIndex(pieceMoves);
+                        // narrow down to the requested target square, if any
+                        if (targetSquareFilter != -1) pieceMoves &= (1L << targetSquareFilter);
 
-                        // if racing kings, check move is not possible
-                        if (isRacingKings && wouldGiveCheck(chessboard, side, piece, source_square, target_square,
-                                -1, oppKingSq, 0)) {
-                            pieceMoves = BitBoardUtils.popBit(pieceMoves, target_square);
-                            continue;
-                        }
+                        // add moves all
+                        while (pieceMoves != 0) {
+                            int target_square = BitBoardUtils.getLS1BIndex(pieceMoves);
 
-                        boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], target_square);
-
-                        move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
-                                source_square, target_square, piece, 0, isCapture, false, false, false));
-
-                        if(stopAtFirstMove) return move_count;
-
-                        pieceMoves = BitBoardUtils.popBit(pieceMoves, target_square);
-                    }
-
-                } else {
-                    int pushDir = (side == white) ? 8 : -8;
-                    int pushSq = source_square + pushDir;
-
-                    if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
-                        if (BitBoardUtils.getBit(pinRay, pushSq) /*make sure target square is on pin ray (pin mask)*/ &&
-                                BitBoardUtils.getBit(checkMask, pushSq) /*make sure this move is avoiding check*/) {
                             // if racing kings, check move is not possible
-                            if (isRacingKings) {
-                                move_count = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,moveArray, move_count,
-                                        source_square, pushSq, piece, false, -1);
-                            } else {
-                                move_count = addPawnMoves(moveArray, move_count, source_square, pushSq, piece, false);
+                            if (isRacingKings && wouldGiveCheck(chessboard, side, piece, source_square, target_square,
+                                    -1, oppKingSq, 0)) {
+                                pieceMoves = BitBoardUtils.popBit(pieceMoves, target_square);
+                                continue;
                             }
-                            if (stopAtFirstMove && move_count > 0) return move_count;
+
+                            boolean isCapture = BitBoardUtils.getBit(chessboard.occupancies[oppSide], target_square);
+
+                            move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
+                                    source_square, target_square, piece, 0, isCapture, false, false, false));
+
+                            if(stopAtFirstMove) return move_count;
+
+                            pieceMoves = BitBoardUtils.popBit(pieceMoves, target_square);
                         }
 
-                        // when double push
-                        int doublePushSq = source_square + (pushDir * 2);
+                    } else {
+                        int pushDir = (side == white) ? 8 : -8;
+                        int pushSq = source_square + pushDir;
 
-                        // make sure double push pawn is on 2 rank
-                        boolean isStartRank = (side == white) ? (source_square >= a2 && source_square <= h2) : (source_square >= a7 && source_square <= h7);
-                        if (isStartRank &&
-                                !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
-                            if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
+                        if (!BitBoardUtils.getBit(chessboard.occupancies[both], pushSq)) {
+                            if ((targetSquareFilter == -1 || targetSquareFilter == pushSq) &&
+                                    BitBoardUtils.getBit(pinRay, pushSq) /*make sure target square is on pin ray (pin mask)*/ &&
+                                    BitBoardUtils.getBit(checkMask, pushSq) /*make sure this move is avoiding check*/) {
                                 // if racing kings, check move is not possible
                                 if (isRacingKings) {
-                                    if (!wouldGiveCheck(chessboard, side, piece, source_square, doublePushSq,
-                                            -1, oppKingSq, 0)) {
+                                    move_count = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,moveArray, move_count,
+                                            source_square, pushSq, piece, false, -1);
+                                } else {
+                                    move_count = addPawnMoves(moveArray, move_count, source_square, pushSq, piece, false);
+                                }
+                                if (stopAtFirstMove && move_count > 0) return move_count;
+                            }
+
+                            // when double push
+                            int doublePushSq = source_square + (pushDir * 2);
+
+                            // make sure double push pawn is on 2 rank
+                            boolean isStartRank = (side == white) ? (source_square >= a2 && source_square <= h2) : (source_square >= a7 && source_square <= h7);
+                            if ((targetSquareFilter == -1 || targetSquareFilter == doublePushSq) && isStartRank &&
+                                    !BitBoardUtils.getBit(chessboard.occupancies[both], doublePushSq) /*check middle square is empty*/) {
+                                if (BitBoardUtils.getBit(pinRay, doublePushSq) && BitBoardUtils.getBit(checkMask, doublePushSq)) {
+                                    // if racing kings, check move is not possible
+                                    if (isRacingKings) {
+                                        if (!wouldGiveCheck(chessboard, side, piece, source_square, doublePushSq,
+                                                -1, oppKingSq, 0)) {
+                                            move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
+                                                    source_square, doublePushSq, piece, 0, false, true,
+                                                    false, false));
+                                            if (stopAtFirstMove) return move_count;
+                                        }
+                                    } else {
                                         move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
                                                 source_square, doublePushSq, piece, 0, false, true,
                                                 false, false));
                                         if (stopAtFirstMove) return move_count;
                                     }
-                                } else {
-                                    move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
-                                            source_square, doublePushSq, piece, 0, false, true,
-                                            false, false));
-                                    if (stopAtFirstMove) return move_count;
                                 }
                             }
                         }
-                    }
 
-                    // pawn attacks
-                    long pawnAttacks = Attacks.pawn_attacks[side][source_square] & chessboard.occupancies[oppSide];
+                        // pawn attacks
+                        long pawnAttacks = Attacks.pawn_attacks[side][source_square] & chessboard.occupancies[oppSide];
 
-                    // mask pin
-                    pawnAttacks &= pinRay;
+                        // mask pin
+                        pawnAttacks &= pinRay;
 
-                    // mask check
-                    pawnAttacks &= checkMask;
+                        // mask check
+                        pawnAttacks &= checkMask;
 
-                    // add all pawn moves
-                    while (pawnAttacks != 0) {
-                        int target_square = BitBoardUtils.getLS1BIndex(pawnAttacks);
+                        // narrow down to the requested target square, if any
+                        if (targetSquareFilter != -1) pawnAttacks &= (1L << targetSquareFilter);
 
-                        if (isRacingKings) {
-                            move_count = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,
-                                    moveArray, move_count, source_square, target_square, piece, true, -1);
-                        } else {
-                            move_count = addPawnMoves(moveArray, move_count, source_square, target_square, piece, true);
+                        // add all pawn moves
+                        while (pawnAttacks != 0) {
+                            int target_square = BitBoardUtils.getLS1BIndex(pawnAttacks);
+
+                            if (isRacingKings) {
+                                move_count = addPawnMovesKingRaceSafe(chessboard, side, oppKingSq,
+                                        moveArray, move_count, source_square, target_square, piece, true, -1);
+                            } else {
+                                move_count = addPawnMoves(moveArray, move_count, source_square, target_square, piece, true);
+                            }
+                            if (stopAtFirstMove && move_count > 0) return move_count;
+
+                            pawnAttacks = BitBoardUtils.popBit(pawnAttacks, target_square);
                         }
-                        if (stopAtFirstMove && move_count > 0) return move_count;
 
-                        pawnAttacks = BitBoardUtils.popBit(pawnAttacks, target_square);
-                    }
+                        // if enpassant square is not 'no_sq'
+                        if (chessboard.enpassant != no_sq &&
+                                (targetSquareFilter == -1 || targetSquareFilter == chessboard.enpassant)) {
+                            // get enpassant attack
+                            long epAttacks = Attacks.pawn_attacks[side][source_square] & (1L << chessboard.enpassant);
+                            if (epAttacks != 0) {
+                                int target_square = BitBoardUtils.getLS1BIndex(epAttacks);
+                                // enpassant captured pawn square
+                                int capturedPawnSq = (side == white) ? target_square - 8 : target_square + 8;
 
-                    // if enpassant square is not 'no_sq'
-                    if (chessboard.enpassant != no_sq) {
-                        // get enpassant attack
-                        long epAttacks = Attacks.pawn_attacks[side][source_square] & (1L << chessboard.enpassant);
-                        if (epAttacks != 0) {
-                            int target_square = BitBoardUtils.getLS1BIndex(epAttacks);
-                            // enpassant captured pawn square
-                            int capturedPawnSq = (side == white) ? target_square - 8 : target_square + 8;
-
-                            // make sure avoiding check
-                            if (BitBoardUtils.getBit(checkMask, target_square)
-                                    || BitBoardUtils.getBit(checkMask, capturedPawnSq)) {
-                                // make sure it's not pinned and check enpassant safe
-                                if (BitBoardUtils.getBit(pinRay, target_square) &&
-                                        isEnPassantSafe(chessboard, kingSq, source_square, target_square, side)) {
-                                    // if racing kings, check move is not possible
-                                    if(isRacingKings) {
-                                        if (!wouldGiveCheck(chessboard, side, piece, source_square, target_square, capturedPawnSq,
-                                                oppKingSq, 0)) {
+                                // make sure avoiding check
+                                if (BitBoardUtils.getBit(checkMask, target_square)
+                                        || BitBoardUtils.getBit(checkMask, capturedPawnSq)) {
+                                    // make sure it's not pinned and check enpassant safe
+                                    if (BitBoardUtils.getBit(pinRay, target_square) &&
+                                            isEnPassantSafe(chessboard, kingSq, source_square, target_square, side)) {
+                                        // if racing kings, check move is not possible
+                                        if(isRacingKings) {
+                                            if (!wouldGiveCheck(chessboard, side, piece, source_square, target_square, capturedPawnSq,
+                                                    oppKingSq, 0)) {
+                                                move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
+                                                        source_square, target_square, piece, 0, true, false,
+                                                        true, false));
+                                                if (stopAtFirstMove) return move_count;
+                                            }
+                                        } else {
                                             move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
                                                     source_square, target_square, piece, 0, true, false,
                                                     true, false));
                                             if (stopAtFirstMove) return move_count;
                                         }
-                                    } else {
-                                        move_count = addMove(moveArray, move_count, EncodeMove.encodeMove(
-                                                source_square, target_square, piece, 0, true, false,
-                                                true, false));
-                                        if (stopAtFirstMove) return move_count;
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                bitboard &= (bitboard - 1);
+                    bitboard &= (bitboard - 1);
+                }
             }
         }
 
-        if (!inCheck) {
+        if (!inCheck && pieceTypeFilter == -1) {
             // generate castling moves
             move_count = generateCastlingMovesStrict(chessboard, moveArray, move_count, kingSq, side, stopAtFirstMove);
         }
 
-        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE && pieceTypeFilter == -1) {
             // generate crazy house drop moves
             move_count = generateDropMoves(chessboard, moveArray, move_count, checkMask, stopAtFirstMove);
         }
 
         return move_count;
+    }
+
+    /**
+     * Filter the given move array with piece type, target square
+     *
+     * @return the new move count after filtering
+     */
+    private static int filterMovesInPlace(int[] moveArray, int move_count, int pieceTypeFilter, int targetSquareFilter) {
+        if (pieceTypeFilter == -1 && targetSquareFilter == -1) return move_count;
+
+        int write = 0;
+        for (int i = 0; i < move_count; i++) {
+            int move = moveArray[i];
+            if (pieceTypeFilter != -1 && EncodeMove.getMovePiece(move) != pieceTypeFilter) continue;
+            if (targetSquareFilter != -1 && EncodeMove.getMoveTarget(move) != targetSquareFilter) continue;
+            moveArray[write++] = move;
+        }
+        return write;
     }
 
     /**
