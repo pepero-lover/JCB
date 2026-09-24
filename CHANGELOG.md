@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An unterminated `{` comment caused `PGNDatabaseIterator` to join the rest of the file in a single game;
   `[Event ` keyword always starts a new game. Braces following a `;` comment are ignored now.
 - Fixed `PGNDatabaseIterator.hasNext()` returning `true` even after `close()`.
+- On `Chessboard.copyFrom`, fixed crashing when the source chessboard's `MAX_SIZE` is lower than this chessboard's `MAX_SIZE`.
 
 ### Performance
 - On `ConvertStringMoveUtils`, changed promotion char type converting to `PROMOTION_SUFFIX` map at `parseSan`.

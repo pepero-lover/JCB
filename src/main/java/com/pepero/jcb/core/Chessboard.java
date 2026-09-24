@@ -257,29 +257,31 @@ public class Chessboard {
         this.king_side_rook_file = source.king_side_rook_file;
         this.queen_side_rook_file = source.queen_side_rook_file;
 
-        System.arraycopy(source.enpassant_history, 0, this.enpassant_history, 0, MAX_DEPTH);
-        System.arraycopy(source.castle_history, 0, this.castle_history, 0, MAX_DEPTH);
-        System.arraycopy(source.half_ply_history, 0, this.half_ply_history, 0, MAX_DEPTH);
-        System.arraycopy(source.hash_key_history, 0, this.hash_key_history, 0, MAX_DEPTH);
-        System.arraycopy(source.captured_piece_history, 0, this.captured_piece_history, 0, MAX_DEPTH);
+        int copyDepth = source.MAX_DEPTH;
+
+        System.arraycopy(source.enpassant_history, 0, this.enpassant_history, 0, copyDepth);
+        System.arraycopy(source.castle_history, 0, this.castle_history, 0, copyDepth);
+        System.arraycopy(source.half_ply_history, 0, this.half_ply_history, 0, copyDepth);
+        System.arraycopy(source.hash_key_history, 0, this.hash_key_history, 0, copyDepth);
+        System.arraycopy(source.captured_piece_history, 0, this.captured_piece_history, 0, copyDepth);
 
         // crazy house
         System.arraycopy(source.pocket, 0, this.pocket, 0, 12);
         this.promoted_pieces = source.promoted_pieces;
-        System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, MAX_DEPTH);
+        System.arraycopy(source.promoted_captured_history, 0, this.promoted_captured_history, 0, copyDepth);
 
         // 3 check
         System.arraycopy(source.check_count, 0, this.check_count, 0, 2);
 
-        System.arraycopy(source.check_count_history[white], 0, this.check_count_history[white], 0, MAX_DEPTH);
-        System.arraycopy(source.check_count_history[black], 0, this.check_count_history[black], 0, MAX_DEPTH);
+        System.arraycopy(source.check_count_history[white], 0, this.check_count_history[white], 0, copyDepth);
+        System.arraycopy(source.check_count_history[black], 0, this.check_count_history[black], 0, copyDepth);
 
         // atomic
-        for (int i = 0; i < MAX_DEPTH; i++) {
+        for (int i = 0; i < copyDepth; i++) {
             System.arraycopy(source.explosion_piece_history[i], 0, this.explosion_piece_history[i], 0, MAX_EXPLOSION_PER_PLY);
             System.arraycopy(source.explosion_square_history[i], 0, this.explosion_square_history[i], 0, MAX_EXPLOSION_PER_PLY);
         }
-        System.arraycopy(source.explosion_count_history, 0, this.explosion_count_history, 0, MAX_DEPTH);
+        System.arraycopy(source.explosion_count_history, 0, this.explosion_count_history, 0, copyDepth);
     }
 
     /**
