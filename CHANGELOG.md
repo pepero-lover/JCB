@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PGNDatabaseIterator` uses U+FFFD substitution when decoding fails instead of failing with `UncheckedIOException` and halting scanning.
 - `PGNDatabaseIterator.next()` now throws `UncheckedIOException` instead of `RuntimeException` on I/O error.
 - On every `en passant` or `enPassant` word, refactored to `enpassant`.
+- On `SyzygyAnalyzer`, fixed not mating the opponent's king but capturing piece because of the `dtz`. So fixed with adding the `mate` param on
+  `SyzygyMoveDTO`.
 
 ### Fixed
 - On `PGNExporter`, fixed calculating starting move number incorrectly because of dividing half on full move counter at fen.

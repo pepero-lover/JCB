@@ -11,9 +11,10 @@ import com.pepero.jcb.api.syzygy.SyzygyTablebase;
  * @param ourWdl our wdl (win draw loss) data
  * @param distance distance to zeroing (DTZ)
  * @param zeroing is this move zeroing
+ * @param mate is this move checkmating the opponent's king
  */
 public record SyzygyMoveDTO(
-        MoveInfo move, int ourWdl, int distance, boolean zeroing
+        MoveInfo move, int ourWdl, int distance, boolean zeroing, boolean mate
 ) {
     @Override
     public String toString() {

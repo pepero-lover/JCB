@@ -6,6 +6,7 @@ import com.pepero.jcb.api.exception.game.VariantNotMatchException;
 import com.pepero.jcb.api.exception.tablebase.TablebaseMissingFileException;
 import com.pepero.jcb.api.exception.tablebase.TablebaseUnsupportedMaterialException;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.constant.MoveCache;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
@@ -200,6 +201,7 @@ public class SyzygyAnalyzer {
 
             int childWdl = tablebase.getWdlData(board);
             int ourWdl = -childWdl;
+            boolean isMate = ourWdl > 0 && ChessboardUtils.isCheckmate(board);
             int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(board)));
 
             if (!zeroing && (halfMoveClock + distance > 100)) {
@@ -207,14 +209,17 @@ public class SyzygyAnalyzer {
                 else if (ourWdl == -2) ourWdl = -1;
             }
 
-            ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance, zeroing));
+            ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance, zeroing, isMate));
 
             MoveGenerator.unmakeMove(board, move);
         }
 
         ranked.sort((a, b) -> {
             if (a.ourWdl() != b.ourWdl()) return b.ourWdl() - a.ourWdl();
-            if (a.ourWdl() > 0) return a.distance() - b.distance();
+            if (a.ourWdl() > 0) {
+                if (a.mate() != b.mate()) return a.mate() ? -1 : 1;
+                return a.distance() - b.distance();
+            }
             if (a.ourWdl() < 0) return b.distance() - a.distance();
             return 0;
         });
