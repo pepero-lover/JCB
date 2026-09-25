@@ -115,10 +115,12 @@ public class ChessGame {
      * Game result variable <br>
      * The game result variable types can be found on {@link GameResult} <p>
      *
-     * This game result variable doesn't update when the result of this game is already finished. <br>
+     * This game result variable doesn't update when the result of this game is already finished on mainline. <br>
      * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game result doesn't change. but the
      * {@link #isCheckmate()} changes. <br>
-     * You can get this value on {@link ChessGame#getGameResult()}
+     * You can get this value on {@link ChessGame#getGameResult()}. <br>
+     * If you want to check the result on another node, use {@link ChessGame#getGameResultAt(long)}. <br>
+     * And using this method and if you undo, the function's result will be {@link GameResult#UNKNOWN}.
      */
     private GameResult gameResult = GameResult.UNKNOWN;
 
@@ -126,10 +128,12 @@ public class ChessGame {
      * Game over reason variable for checking why this game finished <br>
      * The game over reason types can be found on {@link GameOverReason} <p>
      *
-     * This game over reason variable doesn't update when the result of this game is already finished. <br>
+     * This game over reason variable doesn't update when the result of this game is already finished on mainline. <br>
      * Example : e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#, and if undo it, the game over reason doesn't change. but the
      * {@link #isCheckmate()} changes. <br>
-     * You can get this value on {@link #getGameOverReason()}
+     * You can get this value on {@link #getGameOverReason()}. <br>
+     * If you want to check the result on another node, use {@link ChessGame#getGameOverReasonAt(long)}. <br>
+     * And using this method and if you undo, the function's result will be {@link GameOverReason#NOTGAMEOVER}.
      */
     private GameOverReason gameOverReason = GameOverReason.NOTGAMEOVER;
 
