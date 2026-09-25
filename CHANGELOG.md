@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PGNDatabaseIterator(Path, Charset)` constructor for non-UTF-8 (e.g. Latin-1) databases.
 - On `MoveGenerator`, added generating pseudo legal moves method `generatePseudoLegalMoves`.
 - On `MoveGenerator`, added normalizing castling target when the game isn't chess 960 but the given target square is chess 960 style. (`normalizeCastleTarget`)
+- On `ChessboardUtils`, added `isInsufficientMaterial`.
 
 ### Changed
 - **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.
@@ -55,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessboardUtils`, added `splitFenFields`, and replaced on every dividing fen (`FENValidator`, `ChessboardUtils`)
 - On `FENValidator`, added pattern cache (`THREE_CHECK_TOKEN_PATTERN`, 
   `CASTLING_PATTERN_STANDARD`, `CASTLING_PATTERN_CHESS960`, `ENPASSANT_PATTERN`)
+- On `ChessGame.resultForReason` and `ChessGame.isGameOver`, removed using public methods locking `readLock` and used internal method
+  like methods on `ChessboardUtils`.
 
 ## [1.13.0]
 

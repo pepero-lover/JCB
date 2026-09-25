@@ -647,6 +647,55 @@ public class ChessboardUtils {
         return !isCheck(chessboard) && !hasLegalMoves(chessboard);
     }
 
+    /**
+     * Get whether this position is insufficient material draw
+     *
+     * @param chessboard chessboard
+     */
+    public static boolean isInsufficientMaterial(Chessboard chessboard) {
+        if (chessboard.gameVariant == GameVariant.GIVEAWAY
+                || chessboard.gameVariant == GameVariant.SUICIDE
+                || chessboard.gameVariant == GameVariant.ATOMIC
+                || chessboard.gameVariant == GameVariant.THREE_CHECK
+                || chessboard.gameVariant == GameVariant.KING_OF_THE_HILL
+                || chessboard.gameVariant == GameVariant.RACING_KINGS
+                || chessboard.gameVariant == GameVariant.HORDE) {
+            return false;
+        }
+
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
+            int totalPocketPieces = 0;
+            for (int piece = P; piece <= k; piece++) totalPocketPieces += chessboard.pocket[piece];
+            if (totalPocketPieces > 0) return false;
+        }
+
+        if(chessboard.bitboards[P] != 0 || chessboard.bitboards[p] != 0) return false;
+        if(chessboard.bitboards[R] != 0 || chessboard.bitboards[r] != 0) return false;
+        if(chessboard.bitboards[Q] != 0 || chessboard.bitboards[q] != 0) return false;
+
+        int white_knight = BitBoardUtils.countBits(chessboard.bitboards[N]);
+        int black_knight = BitBoardUtils.countBits(chessboard.bitboards[n]);
+
+        int white_bishop = BitBoardUtils.countBits(chessboard.bitboards[B]);
+        int black_bishop = BitBoardUtils.countBits(chessboard.bitboards[b]);
+
+        int white_minor = white_knight + white_bishop;
+        int black_minor = black_knight + black_bishop;
+
+        if (white_minor + black_minor <= 1) return true;
+
+        if (white_bishop == 1 && black_bishop == 1) {
+            long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
+
+            boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
+            boolean isBlackBishopOnLight = (chessboard.bitboards[b] & LIGHT_SQUARES) != 0;
+
+            return isWhiteBishopOnLight == isBlackBishopOnLight;
+        }
+
+        return false;
+    }
+
     public static final int WHITE_WON_VALUE = 0;
     public static final int BLACK_WON_VALUE = 1;
     public static final int DREW_VALUE = 2;

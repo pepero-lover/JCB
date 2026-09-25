@@ -12,17 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
-/**
- * Generates random-play games and saves them as SAN sequences,
- * for later use as a realistic benchmark corpus.
- */
 public class RandomGameGenerator {
     public static void main(String[] args) throws IOException {
         int gameCount = 2000;
         int maxPly = 80;
         Random random = new Random(1111);
 
-        boolean lanMode = false;
+        boolean lanMode = true;
 
         StringBuilder allGames = new StringBuilder();
 

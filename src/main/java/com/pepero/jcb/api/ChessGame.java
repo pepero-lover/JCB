@@ -2520,47 +2520,7 @@ public class ChessGame {
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
-            if (chessboard.gameVariant == GameVariant.GIVEAWAY
-                    || chessboard.gameVariant == GameVariant.SUICIDE
-                    || chessboard.gameVariant == GameVariant.ATOMIC
-                    || chessboard.gameVariant == GameVariant.THREE_CHECK
-                    || chessboard.gameVariant == GameVariant.KING_OF_THE_HILL
-                    || chessboard.gameVariant == GameVariant.RACING_KINGS
-                    || chessboard.gameVariant == GameVariant.HORDE) {
-                return false;
-            }
-
-            if (this.chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
-                int totalPocketPieces = 0;
-                for (int piece = P; piece <= k; piece++) totalPocketPieces += this.chessboard.pocket[piece];
-                if (totalPocketPieces > 0) return false;
-            }
-
-            if(chessboard.bitboards[P] != 0 || chessboard.bitboards[p] != 0) return false;
-            if(chessboard.bitboards[R] != 0 || chessboard.bitboards[r] != 0) return false;
-            if(chessboard.bitboards[Q] != 0 || chessboard.bitboards[q] != 0) return false;
-
-            int white_knight = BitBoardUtils.countBits(chessboard.bitboards[N]);
-            int black_knight = BitBoardUtils.countBits(chessboard.bitboards[n]);
-
-            int white_bishop = BitBoardUtils.countBits(chessboard.bitboards[B]);
-            int black_bishop = BitBoardUtils.countBits(chessboard.bitboards[b]);
-
-            int white_minor = white_knight + white_bishop;
-            int black_minor = black_knight + black_bishop;
-
-            if (white_minor + black_minor <= 1) return true;
-
-            if (white_bishop == 1 && black_bishop == 1) {
-                long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
-
-                boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
-                boolean isBlackBishopOnLight = (chessboard.bitboards[b] & LIGHT_SQUARES) != 0;
-
-                return isWhiteBishopOnLight == isBlackBishopOnLight;
-            }
-
-            return false;
+            return ChessboardUtils.isInsufficientMaterial(chessboard);
         } finally {
             readLock.unlock();
         }
@@ -2651,47 +2611,57 @@ public class ChessGame {
 
         try {
             if(chessboard.gameVariant == GameVariant.GIVEAWAY) {
-                if(isGiveawayOver()) return GameOverReason.GIVEAWAY;
+                if(ChessboardUtils.isGiveawayOver(chessboard))
+                    return GameOverReason.GIVEAWAY;
             }
             if(chessboard.gameVariant == GameVariant.SUICIDE) {
-                if(isSuicideOver()) return GameOverReason.SUICIDE;
+                if(ChessboardUtils.isSuicideOver(chessboard))
+                    return GameOverReason.SUICIDE;
             }
             if(chessboard.gameVariant == GameVariant.ATOMIC) {
-                if(isAtomicOver()) return GameOverReason.ATOMIC;
+                if(ChessboardUtils.isAtomicOver(chessboard))
+                    return GameOverReason.ATOMIC;
             }
             if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
-                if(isThreeChecked()) return GameOverReason.THREE_CHECK;
+                if(ChessboardUtils.isThreeCheck(chessboard))
+                    return GameOverReason.THREE_CHECK;
             }
             if(chessboard.gameVariant == GameVariant.KING_OF_THE_HILL) {
-                if(isKingGoneToHill()) return GameOverReason.KING_OF_THE_HILL;
+                if(ChessboardUtils.isKingGoneToHill(chessboard))
+                    return GameOverReason.KING_OF_THE_HILL;
             }
             if(chessboard.gameVariant == GameVariant.HORDE) {
-                if(isHordePiecesGone()) return GameOverReason.HORDE;
+                if(ChessboardUtils.isHordePiecesGone(chessboard))
+                    return GameOverReason.HORDE;
             }
             if(chessboard.gameVariant == GameVariant.RACING_KINGS) {
-                if(isKingRaceOver()) return GameOverReason.KING_RACE;
+                if(ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE)
+                    return GameOverReason.KING_RACE;
             }
 
             int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
 
             if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
-            if(isSeventyFiveMoves()) return GameOverReason.SEVENTYFIVE_MOVES;
+            if(chessboard.half_ply >= 150) return GameOverReason.SEVENTYFIVE_MOVES;
 
             if(chessboard.gameVariant != GameVariant.GIVEAWAY && chessboard.gameVariant != GameVariant.SUICIDE) {
-                boolean inCheck = isCheck();
+                boolean inCheck = ChessboardUtils.isCheck(chessboard);
 
                 if (inCheck) {
-                    if (isCheckmate()) return GameOverReason.CHECKMATE;
+                    if (ChessboardUtils.isCheckmate(chessboard))
+                        return GameOverReason.CHECKMATE;
                 } else {
-                    if (isStalemate()) return GameOverReason.STALEMATE;
+                    if (ChessboardUtils.isStaleMate(chessboard))
+                        return GameOverReason.STALEMATE;
                 }
             }
 
-            if(isInsufficientMaterial()) return GameOverReason.INSUFFICIENT_MATERIAL;
+            if(ChessboardUtils.isInsufficientMaterial(chessboard))
+                return GameOverReason.INSUFFICIENT_MATERIAL;
 
             if (includeClaimableDraws) {
                 if (repetitionCount >= 3) return GameOverReason.THREEFOLD_CLAIM;
-                if (canClaimFiftyMoves()) return GameOverReason.FIFTYMOVES_CLAIM;
+                if (chessboard.half_ply >= 100) return GameOverReason.FIFTYMOVES_CLAIM;
             }
 
             return GameOverReason.NOTGAMEOVER;
@@ -3812,8 +3782,9 @@ public class ChessGame {
         }
 
         return switch (reason) {
-            case CHECKMATE -> getTurn() ? GameResult.BLACK_WON : GameResult.WHITE_WON;
-            case THREE_CHECK -> getWhiteCheckedCount() >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
+            case CHECKMATE -> chessboard.side == white ?
+                    GameResult.BLACK_WON : GameResult.WHITE_WON;
+            case THREE_CHECK -> chessboard.check_count[white] >= 3 ? GameResult.BLACK_WON : GameResult.WHITE_WON;
             case KING_OF_THE_HILL -> (chessboard.bitboards[K] & BoardSquares.CENTER_SQUARES) != 0
                     ? GameResult.WHITE_WON : GameResult.BLACK_WON;
             case HORDE -> GameResult.BLACK_WON;
@@ -3824,7 +3795,7 @@ public class ChessGame {
                 else if(racingResult == ChessboardUtils.DREW_VALUE) yield GameResult.DRAW;
                 else yield GameResult.UNKNOWN;
             }
-            case GIVEAWAY -> getTurn() ? GameResult.WHITE_WON : GameResult.BLACK_WON;
+            case GIVEAWAY -> chessboard.side == white ? GameResult.WHITE_WON : GameResult.BLACK_WON;
             case SUICIDE -> {
                 int suicideResult = ChessboardUtils.getGameResultForSuicide(chessboard);
                 if(suicideResult == ChessboardUtils.WHITE_WON_VALUE) yield GameResult.WHITE_WON;
