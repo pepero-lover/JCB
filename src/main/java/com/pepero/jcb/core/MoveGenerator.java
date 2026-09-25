@@ -15,7 +15,7 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
 
 /**
  * Generate moves on given {@link Chessboard} position, make, unmake move, and distinguishing given move is legal move. <br>
- * The move generating logic is {@code fully-legal}, not {@code pseudo-legal}. <br>
+ * The move generating logic on {@link #generateMoves(Chessboard, int[])} is {@code fully-legal}, not {@code pseudo-legal}. <br>
  * So don't have to code like this,
  * <pre>
  * {@code
@@ -47,6 +47,9 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  *
  * }
  * </pre>
+ *
+ * And if you want to use the  <a href="https://chessprogramming.org/Pseudo-Legal_Move">pseudo-legal</a>
+ * generator, use {@link #generatePseudoLegalMoves(Chessboard, int[])}.
  */
 public class MoveGenerator {
     // pre calculated ray mask
