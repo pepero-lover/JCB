@@ -137,11 +137,12 @@ class PGNExporter {
         }
         sb.append("\n");
 
-        String[] spilt_startFEN = chessGame.getStartPositionFEN().split(" ");
+        String[] spilt_startFEN = chessGame.getStartPositionFEN().split("\\s+");
+        int startFullMove = spilt_startFEN.length > 5 ? Integer.parseInt(spilt_startFEN[5]) : 1;
 
         if (pgn.rootNode() != null && pgn.rootNode().children() != null && !pgn.rootNode().children().isEmpty()) {
             buildMoveText(pgn.rootNode().children(), sb, spilt_startFEN[1].equals("w"),
-                    Integer.parseInt(spilt_startFEN[5]), true, isPure);
+                    startFullMove, true, isPure);
         }
 
         sb.append(" ").append(getGameResultString(pgn.matchResult()));
