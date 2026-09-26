@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
+- On `MoveNode`, moved `ChessGame.getLCANode` to `MoveNode.getLCANode`.
 
 ### Fixed
 - On `PGNExporter`, fixed crashing when the given `ChessGame` is initialized with no half, full move fen.

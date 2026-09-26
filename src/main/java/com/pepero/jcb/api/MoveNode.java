@@ -131,6 +131,38 @@ class MoveNode {
         return lastNode;
     }
 
+
+    /**
+     * Get LCA (Lowest Common Ancestor) node.
+     */
+    public static MoveNode getLCANode(MoveNode a, MoveNode b) {
+        // equalize the depth of a and b
+
+        // if a's depth is deeper, let a goes to b's depth
+        // if b's depth is deeper, let b goes to a's depth
+
+        // when a's depth is deeper
+        while (a.depthOf() > b.depthOf()) {
+            // go to a's parent repetitively until 'a' reached b's depth
+            a = a.parent;
+        }
+
+        // when b's depth is deeper
+        while (b.depthOf() > a.depthOf()) {
+            // go to b's parent repetitively until 'b' reached a's depth
+            b = b.parent;
+        }
+
+        // and go upside repetitively until the 'a' and 'b' has met
+        while (a != b) {
+            a = a.parent;
+            b = b.parent;
+        }
+
+        // and the equalized position is LCA
+        return a;
+    }
+
     /**
      * Get the distance between this node and root node.
      */

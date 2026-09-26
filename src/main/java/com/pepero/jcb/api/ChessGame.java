@@ -1862,12 +1862,6 @@ public class ChessGame {
                     captured.put(PieceType.QUEEN, chessboard.pocket[q]);
                 }
             } else {
-                // Raw (initialCount - currentCount) breaks once a promotion has happened:
-                // a promoted-away pawn is not a capture, and a surviving promoted piece
-                // inflates that piece type's on-board count past its initial value
-                // (which the removeIf below then silently swallows as a negative).
-                // Tally promotions from the actual move history reaching this position
-                // and fold them into the diff so both sides come out correct.
                 int[] promotionCounts = new int[initialPieceCounts.length];
                 tallyPromotions(promotionCounts);
 
@@ -3560,37 +3554,6 @@ public class ChessGame {
     }
 
     /**
-     * Get LCA (Lowest Common Ancestor) node.
-     */
-    private MoveNode getLCANode(MoveNode a, MoveNode b) {
-        // equalize the depth of a and b
-
-        // if a's depth is deeper, let a goes to b's depth
-        // if b's depth is deeper, let b goes to a's depth
-
-        // when a's depth is deeper
-        while (a.depthOf() > b.depthOf()) {
-            // go to a's parent repetitively until 'a' reached b's depth
-            a = a.parent;
-        }
-
-        // when b's depth is deeper
-        while (b.depthOf() > a.depthOf()) {
-            // go to b's parent repetitively until 'b' reached a's depth
-            b = b.parent;
-        }
-
-        // and go upside repetitively until the 'a' and 'b' has met
-        while (a != b) {
-            a = a.parent;
-            b = b.parent;
-        }
-
-        // and the equalized position is LCA
-        return a;
-    }
-
-    /**
      * Result of {@link #internalJumpToNode(long)} for notifying listeners
      *
      * @param targetFen FEN of the position jumped to
@@ -3622,7 +3585,7 @@ public class ChessGame {
         }
 
         // get lca node
-        MoveNode lcaNode = getLCANode(currentNode, targetNode);
+        MoveNode lcaNode = MoveNode.getLCANode(currentNode, targetNode);
 
         // unmake until current node reached at lca
         while (currentNode != lcaNode) {
