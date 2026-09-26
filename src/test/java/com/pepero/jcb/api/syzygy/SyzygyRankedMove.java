@@ -13,7 +13,7 @@ public class SyzygyRankedMove {
         String fen = "8/2n5/2kb2Q1/8/3rN3/8/4K3/8 w - -";
         ChessGame chessGame = ChessGame.fromFEN(fen);
 
-        SyzygyTablebase tablebase = new SyzygyTablebase(Path.of("D:/syzygy"));
+        SyzygyTablebase tablebase = new SyzygyTablebase(Path.of("D:/tablebases/syzygy/"));
 
         List<SyzygyMoveDTO> syzygyRankedMoves = SyzygyAnalyzer.findRankedMoves(chessGame, tablebase);
 

@@ -13,7 +13,7 @@ import java.nio.file.Path;
 
 public class SyzygyBestMoveAtomic {
     public static void main(String[] args) throws IOException {
-        Path syzygyDir = Path.of("syzygy-atomic/");
+        Path syzygyDir = Path.of("D:/tablebases/syzygy-atomic/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.ATOMIC);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));

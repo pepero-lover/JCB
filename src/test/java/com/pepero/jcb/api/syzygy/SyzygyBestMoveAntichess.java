@@ -13,13 +13,13 @@ import java.nio.file.Path;
 
 public class SyzygyBestMoveAntichess {
     public static void main(String[] args) throws IOException {
-        Path syzygyDir = Path.of("syzygy-antichess/");
+        Path syzygyDir = Path.of("D:/tablebases/syzygy-antichess/");
         SyzygyTablebase tb = new SyzygyTablebase(syzygyDir, 5, GameVariant.SUICIDE);
 
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
-        ChessGame game = ChessGame.fromFEN("8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2", GameVariant.SUICIDE);
-        //ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
+        //ChessGame game = ChessGame.fromFEN("8/8/4k3/8/8/3K4/4N3/6N1 b - - 3 2", GameVariant.SUICIDE);
+        ChessGame game = ChessGame.fromFEN(bf.readLine(), GameVariant.SUICIDE);
         System.out.println("First WDL" + SyzygyAnalyzer.probeWdl(game, tb));
         System.out.println("First DTZ" + SyzygyAnalyzer.probeDtz(game, tb));
 
