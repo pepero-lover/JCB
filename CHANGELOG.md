@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.14.0]
+
+### Added
 - On `ChessGame`, added `getChildMoveInfos` getting current node's child node move infos.
 - On `ChessGame`, added `tryUnmakeMoveRaw`, `tryUnmakeMoveRaw`.
 - `PGNDatabaseIterator(Path, Charset)` constructor for non-UTF-8 (e.g. Latin-1) databases.
@@ -497,7 +507,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/pepero-lover/JCB/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/pepero-lover/JCB/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/pepero-lover/JCB/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/pepero-lover/JCB/compare/v1.11.0...v1.11.1

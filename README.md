@@ -1,7 +1,7 @@
 # JCB (Java Chess Board)
 ![Java](https://img.shields.io/badge/Java-21%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Size](https://img.shields.io/badge/Size-356KB-orange)
+![Size](https://img.shields.io/badge/Size-376KB-orange)
 [![](https://jitpack.io/v/pepero-lover/JCB.svg)](https://jitpack.io/#pepero-lover/JCB)
 
 [한국어](README.ko.md) | English
@@ -12,7 +12,7 @@
 ## About JCB
 * This project ports the original C code into Java in an object-oriented style, while keeping the procedural C-style approach for the internal move-generation logic to maximize efficiency.
 * At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
-* The built jar library is only **356KB** in size, yet implements the complete rules and framework for chess.
+* The built jar library is only **376KB** in size, yet implements the complete rules and framework for chess.
 * Core bitboard search performance is **60 MNPS (60 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
 * Includes a built-in Syzygy / Gaviota tablebase decoder.
 * This project has zero external library dependencies (except JUnit, used only for testing).
@@ -31,18 +31,18 @@
 - No external library dependencies
 
 ## Supported Chess Variants
-| Variant          | FEN | UCI Integration       |
-|------------------|-----|-----------------------|
-| Standard         | ✅   | ✅ (default UCI setup) |
-| Chess960         | ✅   | ✅ (`UCI_Chess960`)    |
-| Crazyhouse       | ✅   | ✅ (`UCI_Variant`)     |
-| Three-check      | ✅   | ✅ (`UCI_Variant`)     |
-| King of the Hill | ✅   | ✅ (`UCI_Variant`)     |
-| Horde            | ✅   | ✅ (`UCI_Variant`)     |
-| Atomic           | ✅   | ✅ (`UCI_Variant`)     |
-| Giveaway         | ✅   | ✅ (`UCI_Variant`)     |
-| Suicide          | ✅   | ✅ (`UCI_Variant`)     |
-| Racing Kings     | ✅   | ✅ (`UCI_Variant`)     |
+| Variant          | FEN | UCI Integration        |
+|------------------|-----|------------------------|
+| Standard         | ✅  | ✅ (default UCI setup) |
+| Chess960         | ✅  | ✅ (`UCI_Chess960`)    |
+| Crazyhouse       | ✅  | ✅ (`UCI_Variant`)     |
+| Three-check      | ✅  | ✅ (`UCI_Variant`)     |
+| King of the Hill | ✅  | ✅ (`UCI_Variant`)     |
+| Horde            | ✅  | ✅ (`UCI_Variant`)     |
+| Atomic           | ✅  | ✅ (`UCI_Variant`)     |
+| Giveaway         | ✅  | ✅ (`UCI_Variant`)     |
+| Suicide          | ✅  | ✅ (`UCI_Variant`)     |
+| Racing Kings     | ✅  | ✅ (`UCI_Variant`)     |
 
 ## Credits and References
 * The move generation methods and bitboard logic in this chess engine (nearly everything outside of `com.pepero.jcb.api`) were deeply inspired by a tutorial created by **Code Monkey King**.
@@ -67,7 +67,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle`.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.13.0'
+    implementation 'com.github.pepero-lover:JCB:v1.14.0'
 }
 ```
 
@@ -87,7 +87,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle.kts`.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.13.0")
+    implementation("com.github.pepero-lover:JCB:v1.14.0")
 }
 ```
 
@@ -106,7 +106,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.13.0</version>
+    <version>v1.14.0</version>
 </dependency>
 ```
 
@@ -575,10 +575,8 @@ Since `ConvertStringMoveUtils` is called heavily during PGN parsing, opening boo
 
 | Conversion           | Throughput                |
 |----------------------|---------------------------|
-| SAN &rarr; move data | 2,246,771 conversions/sec |
-| LAN &rarr; move data | 2,603,415 conversions/sec |
-
-> LAN conversion is faster because SAN parsing also has to resolve move ambiguity (e.g. disambiguating `Nbd2` from another knight) and determine whether to append `+`/`#`, on top of the move generation both conversions share.
+| SAN &rarr; move data | 4,694,884 conversions/sec |
+| LAN &rarr; move data | 4,710,466 conversions/sec |
 
 Reproduction code:
 [`PerftResultTest`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/perft/PerftResultTest.java)
