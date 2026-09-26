@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator`, added generating pseudo legal moves method `generatePseudoLegalMoves`.
 - On `MoveGenerator`, added normalizing castling target when the game isn't chess 960 but the given target square is chess 960 style. (`normalizeCastleTarget`)
 - On `ChessboardUtils`, added `isInsufficientMaterial`.
+- On `MoveGenerator`, `ChessGame`, added getting piece moves without occupancy, king safety checking method `getMovementPattern`.
+- On `EncodedPieces`, added distinguishing white/black pieces method `isWhitePiece`.
 
 ### Changed
 - **Breaking Change** : On `ChessGame.getMoveHistory`, changed name to `getPathToCurrentNode`.

@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -2663,5 +2664,13 @@ public class ChessGameTest {
         assertNotNull(chessGame.perft(1));
         assertNotNull(chessGame.perft(1, 1));
         assertNotNull(chessGame.perft(1, 1, true, true));
+    }
+
+    @Test
+    @DisplayName("getMovementPattern 이 잘 작동해야 한다")
+    void getMovementPattern() {
+        Set<Square> movement = ChessGame.getMovementPattern(Piece.WHITE_PAWN, Square.h2);
+        assertTrue(movement.contains(Square.h3));
+        assertTrue(movement.contains(Square.h4));
     }
 }

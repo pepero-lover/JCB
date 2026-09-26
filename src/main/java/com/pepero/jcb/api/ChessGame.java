@@ -2050,6 +2050,25 @@ public class ChessGame {
     }
 
     /**
+     * Get movement target square for piece. <br>
+     * This method doesn't calculate any occupancy. Used, For example, masking premoves.
+     *
+     * @return movement target squares
+     */
+    public static Set<Square> getMovementPattern(Piece piece, Square square) {
+        long movement = MoveGenerator.getMovementPattern(piece.getPieceType(), square.getIndex());
+        Set<Square> result = new HashSet<>();
+
+        while (movement != 0L) {
+            int target_square = BitBoardUtils.getLS1BIndex(movement);
+            result.add(Square.fromIndex(target_square));
+            movement = BitBoardUtils.popBit(movement, target_square);
+        }
+
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
      * Get legal moves on this chess game
      */
     public List<MoveInfo> getLegalMoves() {

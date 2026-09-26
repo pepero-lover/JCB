@@ -117,6 +117,35 @@ public class MoveGenerator {
     }
 
     /**
+     * Get movement target square mask for piece. <br>
+     * This method doesn't calculate any occupancy. Used, For example, masking premoves.
+     *
+     * @return movement mask bitboard
+     */
+    public static long getMovementPattern(int piece, int square) {
+        return switch (piece) {
+            case N, n -> Attacks.knight_attacks[square];
+            case B, b -> Attacks.getBishopAttacks(square, 0L);
+            case R, r -> Attacks.getRookAttacks(square, 0L);
+            case Q, q -> Attacks.getQueenAttacks(square, 0L);
+            case K, k -> Attacks.king_attacks[square];
+            case P, p -> {
+                boolean isWhite = EncodedPieces.isWhitePiece(piece);
+                long attacks = Attacks.pawn_attacks[isWhite ? white : black][square];
+                int pushDir = isWhite ? 8 : -8;
+                int pushSq = square + pushDir;
+                attacks |= (1L << pushSq);
+                boolean startRank = isWhite
+                        ? (square >= a2 && square <= h2)
+                        : (square >= a7 && square <= h7);
+                if (startRank) attacks |= (1L << (pushSq + pushDir));
+                yield attacks;
+            }
+            default -> 0L;
+        };
+    }
+
+    /**
      * Get pinned piece(s) bitboard
      *
      * @param chessboard chess board

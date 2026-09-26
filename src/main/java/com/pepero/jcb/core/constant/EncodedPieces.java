@@ -54,6 +54,15 @@ public class EncodedPieces {
         return pieceType;
     }
 
+    /**
+     * Get whether this piece type is white piece
+     *
+     * @param pieceType piece type constant
+     */
+    public static boolean isWhitePiece(int pieceType) {
+        return pieceType < 6;
+    }
+
     // convert char pieces to encoded constants
     public static final Map<Character, Integer> char_to_encoded_piece = new HashMap<>();
 
