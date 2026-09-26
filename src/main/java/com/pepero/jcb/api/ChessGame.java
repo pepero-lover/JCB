@@ -399,6 +399,8 @@ public class ChessGame {
 
         FENValidator.validateLogicalState(chessboard, gameVariant);
 
+        startPositionFEN = ChessboardUtils.getFen(chessboard);
+
         captureInitialPieceCounts();
         nodeCache.put(moveHistoryRoot.id, moveHistoryRoot);
 
@@ -4297,7 +4299,7 @@ public class ChessGame {
                 throw convertException;
             }
             FENValidator.validateLogicalState(this.chessboard, variantToLoad);
-            this.startPositionFEN = fenToLoad;
+            this.startPositionFEN = ChessboardUtils.getFen(this.chessboard);
             captureInitialPieceCounts();
 
             this.moveHistoryRoot = parsedData.rootNode();
