@@ -192,13 +192,7 @@ public class GaviotaAnalyzer {
             int move = moveArray[i];
 
             MoveGenerator.makeMove(board, move);
-
-            int childWdl = tablebase.probeWdl(board);
-            int ourWdl = -childWdl;
-            int distance = (ourWdl == 0) ? 0 : Math.abs(tablebase.probeDtm(board));
-
-            ranked.add(new GaviotaMoveDTO(new MoveInfo(move), ourWdl, distance));
-
+            ranked.add(scoreMove(board, tablebase, move));
             MoveGenerator.unmakeMove(board, move);
         }
 
@@ -230,6 +224,16 @@ public class GaviotaAnalyzer {
      */
     public static List<GaviotaMoveDTO> findRankedMoves(ChessGame game, GaviotaTablebase tablebase) {
         return findRankedMoves(game, tablebase, false);
+    }
+
+    /**
+     * Score a single move against this Gaviota tablebase.
+     */
+    static GaviotaMoveDTO scoreMove(Chessboard board, GaviotaTablebase tablebase, int move) {
+        int childWdl = tablebase.probeWdl(board);
+        int ourWdl = -childWdl;
+        int distance = (ourWdl == 0) ? 0 : Math.abs(tablebase.probeDtm(board));
+        return new GaviotaMoveDTO(new MoveInfo(move), ourWdl, distance);
     }
 
     private static void validateVariant(ChessGame game) {

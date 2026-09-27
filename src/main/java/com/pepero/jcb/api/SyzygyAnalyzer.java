@@ -38,7 +38,7 @@ public class SyzygyAnalyzer {
      *                      wdl probing might be inaccurate.
      * @return WDL result
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
      * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
@@ -58,8 +58,8 @@ public class SyzygyAnalyzer {
      * @param tablebase table base class
      * @return WDL result
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached by playing
@@ -82,7 +82,7 @@ public class SyzygyAnalyzer {
      *                      wdl probing might be inaccurate.
      * @return signed DTZ result
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
      * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
@@ -105,8 +105,8 @@ public class SyzygyAnalyzer {
      * @param tablebase table base class
      * @return signed DTZ result
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached by playing
@@ -126,7 +126,7 @@ public class SyzygyAnalyzer {
      *                      wdl probing might be inaccurate.
      * @return best move info
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
      * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
@@ -147,8 +147,8 @@ public class SyzygyAnalyzer {
      *
      * @return best move info
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached by playing
@@ -170,7 +170,7 @@ public class SyzygyAnalyzer {
      *
      * @return sorted moves list
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
      * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
@@ -198,19 +198,7 @@ public class SyzygyAnalyzer {
                     || EncodeMove.getMovePiece(move) == p;
 
             MoveGenerator.makeMove(board, move);
-
-            int childWdl = tablebase.getWdlData(board);
-            int ourWdl = -childWdl;
-            boolean isMate = ourWdl > 0 && ChessboardUtils.isCheckmate(board);
-            int distance = (ourWdl == 0) ? 0 : (zeroing ? 0 : Math.abs(tablebase.getDtzData(board)));
-
-            if (!zeroing && (halfMoveClock + distance > 100)) {
-                if (ourWdl == 2) ourWdl = 1;
-                else if (ourWdl == -2) ourWdl = -1;
-            }
-
-            ranked.add(new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance, zeroing, isMate));
-
+            ranked.add(scoreMove(board, tablebase, move, zeroing, halfMoveClock));
             MoveGenerator.unmakeMove(board, move);
         }
 
@@ -236,8 +224,8 @@ public class SyzygyAnalyzer {
      *
      * @return sorted moves list
      *
-     * @throws VariantNotMatchException if variant isn't standard chess or chess 960
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights
+     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
+     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
      *         or this position's piece count is more than this class's supporting piece count
      * @throws TablebaseMissingFileException if no table file covers this material
      *         (for the original position, or for a position reached by playing
@@ -245,6 +233,24 @@ public class SyzygyAnalyzer {
      */
     public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) throws IOException {
         return findRankedMoves(game, tablebase, false);
+    }
+
+    /**
+     * Score a single move against this Syzygy tablebase.
+     */
+    static SyzygyMoveDTO scoreMove(Chessboard board, SyzygyTablebase tablebase, int move,
+                                   boolean zeroing, int halfMoveClock) throws IOException {
+        int childWdl = tablebase.getWdlData(board);
+        int ourWdl = -childWdl;
+        boolean isMate = ourWdl > 0 && ChessboardUtils.isCheckmate(board);
+        int distance = Math.abs(tablebase.getDtzData(board));
+
+        if (!zeroing && (halfMoveClock + distance > 100)) {
+            if (ourWdl == 2) ourWdl = 1;
+            else if (ourWdl == -2) ourWdl = -1;
+        }
+
+        return new SyzygyMoveDTO(new MoveInfo(move), ourWdl, distance, zeroing, isMate);
     }
 
     private static void validateVariant(ChessGame game) {

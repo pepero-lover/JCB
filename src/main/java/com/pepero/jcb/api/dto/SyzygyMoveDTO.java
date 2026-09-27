@@ -5,7 +5,7 @@ import com.pepero.jcb.api.SyzygyAnalyzer;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 
 /**
- * Syzygy move dto for ranking move on {@link SyzygyAnalyzer#findBestMove(ChessGame, SyzygyTablebase)}
+ * Syzygy move dto for ranking move on {@link SyzygyAnalyzer#findRankedMoves(ChessGame, SyzygyTablebase)}
  *
  * @param move move info data
  * @param ourWdl our wdl (win draw loss) data

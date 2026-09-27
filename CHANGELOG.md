@@ -8,11 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added `CombinedAnalyzer`, using both syzygy and gaviota tablebase with using `CombinedMoveDTO`.
 
 ### Changed
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
 - On `MoveNode`, moved `ChessGame.getLCANode` to `MoveNode.getLCANode`.
+- On calculating `distance` (DTZ) on SyzygyAnalyzer, removed checking zeroing and showing dtz zero.
 
 ### Fixed
 - On `PGNExporter`, fixed crashing when the given `ChessGame` is initialized with no half, full move fen.
