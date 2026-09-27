@@ -344,8 +344,6 @@ public class ChessGameTest {
         String fen2 = chessGame.getFEN();
         long uuid2 = chessGame.getCurrentNodeId();
 
-        // e4 e5 Nf3 Nc6 (Nf6)
-
         chessGame.jumpToNode(uuid1);
         assertEquals(fen1, chessGame.getFEN());
 
@@ -393,12 +391,12 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.makeMoveLanAll("e2e4 e7e5 g1f3 b8c6");
 
-        chessGame.makeMoveLan("f1b5"); // mainline: Bb5
+        chessGame.makeMoveLan("f1b5");
         long bb5Id = chessGame.getCurrentNodeId();
         String bb5Fen = chessGame.getFEN();
 
         chessGame.unmakeMove();
-        chessGame.makeMoveLan("f1c4"); // variation: Bc4
+        chessGame.makeMoveLan("f1c4");
         long bc4Id = chessGame.getCurrentNodeId();
         String bc4Fen = chessGame.getFEN();
 
@@ -1854,7 +1852,7 @@ public class ChessGameTest {
     @DisplayName("makeMoveRaw(int) / unmakeMoveRaw(int): 인코딩된 수로 반영/원복이 가능해야 한다")
     void makeMoveRawAndUnmakeMoveRawWithEncodedMove() {
         ChessGame chessGame = ChessGame.startPosition();
-        int encodedMove = chessGame.getLegalMovesForSource(Square.e2).get(1).originEncodedData(); // e2e4
+        int encodedMove = chessGame.getLegalMovesForSource(Square.e2).get(1).originEncodedData();
 
         chessGame.makeMoveRaw(encodedMove);
         assertFalse(chessGame.isEmpty(Square.e4));
@@ -1867,7 +1865,7 @@ public class ChessGameTest {
     @DisplayName("makeMoveRaw(MoveInfo) / unmakeMoveRaw(MoveInfo): MoveInfo 로도 반영/원복이 가능해야 한다")
     void makeMoveRawAndUnmakeMoveRawWithMoveInfo() {
         ChessGame chessGame = ChessGame.startPosition();
-        MoveInfo moveInfo = chessGame.getLegalMovesForSource(Square.e2).get(1); // e2e4
+        MoveInfo moveInfo = chessGame.getLegalMovesForSource(Square.e2).get(1);
 
         chessGame.makeMoveRaw(moveInfo);
         assertFalse(chessGame.isEmpty(Square.e4));
@@ -1880,7 +1878,7 @@ public class ChessGameTest {
     @DisplayName("tryMakeMoveRaw(int): 합법수면 true 를 반환하고 반영되며, 불법수면 false 를 반환해야 한다")
     void tryMakeMoveRawWithEncodedMove() {
         ChessGame chessGame = ChessGame.startPosition();
-        int legalMove = chessGame.getLegalMovesForSource(Square.e2).get(1).originEncodedData(); // e2e4
+        int legalMove = chessGame.getLegalMovesForSource(Square.e2).get(1).originEncodedData();
 
         assertTrue(chessGame.tryMakeMoveRaw(legalMove));
         assertFalse(chessGame.isEmpty(Square.e4));
@@ -1892,7 +1890,7 @@ public class ChessGameTest {
     @DisplayName("tryMakeMoveRaw(MoveInfo): 합법수면 true, 불법수면 false 를 반환해야 한다")
     void tryMakeMoveRawWithMoveInfo() {
         ChessGame chessGame = ChessGame.startPosition();
-        MoveInfo legalMove = chessGame.getLegalMovesForSource(Square.e2).get(1); // e2e4
+        MoveInfo legalMove = chessGame.getLegalMovesForSource(Square.e2).get(1);
 
         assertTrue(chessGame.tryMakeMoveRaw(legalMove));
         assertFalse(chessGame.isEmpty(Square.e4));
@@ -2672,5 +2670,303 @@ public class ChessGameTest {
         Set<Square> movement = ChessGame.getMovementPattern(Piece.WHITE_PAWN, Square.h2);
         assertTrue(movement.contains(Square.h3));
         assertTrue(movement.contains(Square.h4));
+    }
+
+    @Test
+    @DisplayName("변형별 시작 FEN을 정확히 반환해야 한다")
+    void getStartingFen() {
+        assertEquals(START_FEN, ChessGame.getStartingFen(GameVariant.STANDARD));
+    }
+
+    @Test
+    @DisplayName("ply는 0에서 시작해서 매 수마다 1씩 늘어야 한다")
+    void getPly() {
+        ChessGame game = ChessGame.startPosition();
+        assertEquals(0, game.getPly());
+
+        game.makeMoveLan("e2e4");
+        assertEquals(1, game.getPly());
+
+        game.makeMoveLan("e7e5");
+        assertEquals(2, game.getPly());
+    }
+
+    @Test
+    @DisplayName("mainline 총 수는 undo 해도 줄어들지 않아야 한다 (현재 위치가 아니라 트리 전체 기준)")
+    void getTotalMainlineMoveCount() {
+        ChessGame game = ChessGame.startPosition();
+        assertEquals(0, game.getTotalMainlineMoveCount());
+
+        game.makeMoveLan("e2e4");
+        game.makeMoveLan("e7e5");
+        game.makeMoveLan("g1f3");
+        assertEquals(3, game.getTotalMainlineMoveCount());
+
+        game.unmakeMove();
+        assertEquals(2, game.getPathToCurrentNode().size(), "현재 위치까지의 경로는 줄어야 함");
+        assertEquals(3, game.getTotalMainlineMoveCount(), "mainline 총 길이는 그대로여야 함");
+    }
+
+    @Test
+    @DisplayName("같은 위치에서 서로 다른 수를 두면 variation으로 분리되어 children에 둘 다 남아야 한다")
+    void getChildNodeIdsAndMoveInfos() {
+        ChessGame game = ChessGame.startPosition();
+        game.makeMoveLan("e2e4");
+
+        assertTrue(game.getChildNodeIds().isEmpty());
+
+        game.makeMoveLan("e7e5");
+        game.unmakeMove();
+
+        assertEquals(1, game.getChildNodeIds().size());
+        assertEquals(1, game.getChildMoveInfos().size());
+        assertEquals(Square.e5, game.getChildMoveInfos().getFirst().targetSquare());
+
+        game.makeMoveLan("d7d5");
+        game.unmakeMove();
+
+        List<Long> childIds = game.getChildNodeIds();
+        List<MoveInfo> childMoves = game.getChildMoveInfos();
+        assertEquals(2, childIds.size());
+        assertEquals(2, childMoves.size());
+        assertEquals(Square.e5, childMoves.get(0).targetSquare());
+        assertEquals(Square.d5, childMoves.get(1).targetSquare());
+    }
+
+    @Test
+    @DisplayName("백 차례일 때 SAN 시퀀스에 수 번호가 '1. e4 e5 2. Nf3' 형태로 붙어야 한다")
+    void toNumberedSanWhiteToMove() {
+        ChessGame game = ChessGame.startPosition();
+        assertEquals("1. e4 e5 2. Nf3", game.toNumberedSan("e4 e5 Nf3"));
+    }
+
+    @Test
+    @DisplayName("흑 차례일 때 SAN 시퀀스에 '1... e5' 형태로 붙어야 한다")
+    void toNumberedSanBlackToMove() {
+        ChessGame game = ChessGame.startPosition();
+        game.makeMoveLan("e2e4");
+
+        assertEquals("1... e5 2. Nf3 Nc6", game.toNumberedSan("e5 Nf3 Nc6"));
+    }
+
+    @Test
+    @DisplayName("removeNumberFromSan은 toNumberedSan의 역변환이어야 한다 (round trip)")
+    void removeNumberFromSanRoundTrip() {
+        ChessGame game = ChessGame.startPosition();
+
+        String plain = "e4 e5 Nf3 Nc6";
+        String numbered = game.toNumberedSan(plain);
+        assertEquals(plain, game.removeNumberFromSan(numbered));
+
+        game.makeMoveLan("e2e4");
+        String plainBlack = "e5 Nf3 Nc6";
+        String numberedBlack = game.toNumberedSan(plainBlack);
+        assertEquals(plainBlack, game.removeNumberFromSan(numberedBlack));
+    }
+
+    @Test
+    @DisplayName("removeHeader는 지운 값을 반환하고, 없는 키는 null을 반환해야 한다")
+    void removeHeader() {
+        ChessGame game = ChessGame.startPosition();
+        game.setHeader("White", "Magnus");
+
+        assertEquals("Magnus", game.removeHeader("White"));
+        assertNull(game.getHeaders().get("White"));
+        assertNull(game.removeHeader("White"));
+        assertNull(game.removeHeader("NoSuchKey"));
+    }
+
+    @Test
+    @DisplayName("removeHeadersAll은 모든 헤더를 지워야 한다")
+    void removeHeadersAll() {
+        ChessGame game = ChessGame.startPosition();
+        game.setHeader("White", "Magnus");
+        game.setHeader("Black", "Hikaru");
+
+        game.removeHeadersAll();
+        assertTrue(game.getHeaders().isEmpty());
+    }
+
+    @Test
+    @DisplayName("truncateFuture는 현재 위치 이후의 모든 수(redo 가능한 것 포함)를 지워야 한다")
+    void truncateFuture() {
+        ChessGame game = ChessGame.startPosition();
+        game.makeMoveLan("e2e4");
+        game.makeMoveLan("e7e5");
+        game.unmakeMove();
+
+        assertEquals(1, game.getChildNodeIds().size());
+
+        game.truncateFuture();
+
+        assertTrue(game.getChildNodeIds().isEmpty());
+        assertFalse(game.tryRemakeMove());
+        assertEquals(1, game.getTotalMainlineMoveCount());
+    }
+
+    @Test
+    @DisplayName("makeMoveAll은 순차적으로 makeMove 하는 것과 동일한 결과를 내야 한다")
+    void makeMoveAll() {
+        ChessGame sequential = ChessGame.startPosition();
+        sequential.makeMoveLan("e2e4");
+        sequential.makeMoveLan("e7e5");
+        sequential.makeMoveLan("g1f3");
+        List<MoveInfo> moves = sequential.getPathToCurrentNode();
+
+        ChessGame batch = ChessGame.startPosition();
+        batch.makeMoveAll(moves);
+
+        assertEquals(sequential.getFEN(), batch.getFEN());
+        assertEquals(3, batch.getPly());
+    }
+
+    @Test
+    @DisplayName("makeMoveAll 중간에 불법수가 있으면 예외를 던지고 위치를 그대로 되돌려야 한다")
+    void makeMoveAllRollsBackOnIllegalMove() {
+        ChessGame game = ChessGame.startPosition();
+        MoveInfo e4 = game.getLegalMovesForSource(Square.e2).get(1);
+        String fenBefore = game.getFEN();
+
+        assertThrows(IllegalMoveException.class, () -> game.makeMoveAll(List.of(e4, e4)));
+
+        assertEquals(fenBefore, game.getFEN(), "실패 시 위치가 그대로여야 함");
+    }
+
+    @Test
+    @DisplayName("makeMoveAll에 null 리스트를 넘기면 NullPointerException이 발생해야 한다")
+    void makeMoveAllNullThrows() {
+        ChessGame game = ChessGame.startPosition();
+        assertThrows(NullPointerException.class, () -> game.makeMoveAll(null));
+    }
+
+    @Test
+    @DisplayName("tryMakeMove(encodedMove)는 합법수면 true, 불법수면 false여야 한다")
+    void tryMakeMoveEncoded() {
+        ChessGame game = ChessGame.startPosition();
+        int legalMove = game.getLegalMovesForSource(Square.e2).get(1).originEncodedData();
+
+        assertTrue(game.tryMakeMove(legalMove));
+        assertFalse(game.isEmpty(Square.e4));
+
+        assertFalse(game.tryMakeMove(legalMove));
+    }
+
+    @Test
+    @DisplayName("tryMakeMove(source, target, promotion)는 합법수면 true, 불법수면 false여야 한다")
+    void tryMakeMoveSquares() {
+        ChessGame game = ChessGame.startPosition();
+
+        assertTrue(game.tryMakeMove(Square.e2, Square.e4, PieceType.NONE));
+        assertFalse(game.tryMakeMove(Square.e2, Square.f3, PieceType.NONE));
+    }
+
+    @Test
+    @DisplayName("tryMakeMove(source, target)는 프로모션 없는 경우의 편의 오버로드여야 한다")
+    void tryMakeMoveSquaresNoPromotion() {
+        ChessGame game = ChessGame.startPosition();
+
+        assertTrue(game.tryMakeMove(Square.e2, Square.e4));
+        assertFalse(game.tryMakeMove(Square.a1, Square.a2));
+    }
+
+    @Test
+    @DisplayName("tryMakeMove(MoveInfo)는 합법수면 true, 불법수면 false여야 한다")
+    void tryMakeMoveInfo() {
+        ChessGame game = ChessGame.startPosition();
+        MoveInfo e4 = game.getLegalMovesForSource(Square.e2).get(1);
+
+        assertTrue(game.tryMakeMove(e4));
+        assertFalse(game.tryMakeMove(e4));
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveAll은 전부 합법이면 true, 중간에 불법수가 있으면 false + 롤백이어야 한다")
+    void tryMakeMoveAll() {
+        ChessGame ok = ChessGame.startPosition();
+        MoveInfo e4ForOk = ok.getLegalMovesForSource(Square.e2).get(1);
+        assertTrue(ok.tryMakeMoveAll(List.of(e4ForOk)));
+
+        ChessGame fails = ChessGame.startPosition();
+        MoveInfo e4 = fails.getLegalMovesForSource(Square.e2).get(1);
+        String fenBefore = fails.getFEN();
+
+        assertFalse(fails.tryMakeMoveAll(List.of(e4, e4)));
+        assertEquals(fenBefore, fails.getFEN());
+    }
+
+    @Test
+    @DisplayName("tryMakeMoveAll에 null 리스트를 넘기면 NullPointerException이 발생해야 한다")
+    void tryMakeMoveAllNullThrows() {
+        ChessGame game = ChessGame.startPosition();
+        assertThrows(NullPointerException.class, () -> game.tryMakeMoveAll(null));
+    }
+
+    @Test
+    @DisplayName("tryRemakeMove()는 redo할 게 있으면 true, 없으면 false여야 한다")
+    void tryRemakeMoveMainline() {
+        ChessGame game = ChessGame.startPosition();
+        assertFalse(game.tryRemakeMove());
+
+        game.makeMoveLan("e2e4");
+        game.unmakeMove();
+
+        assertTrue(game.tryRemakeMove());
+        assertFalse(game.isEmpty(Square.e4));
+        assertFalse(game.tryRemakeMove());
+    }
+
+    @Test
+    @DisplayName("tryRemakeMove(variationIndex)는 지정한 variation을 따라가야 한다")
+    void tryRemakeMoveVariationIndex() {
+        ChessGame game = ChessGame.startPosition();
+        game.makeMoveLan("e2e4");
+
+        game.makeMoveLan("e7e5");
+        game.unmakeMove();
+        game.makeMoveLan("d7d5");
+        game.unmakeMove();
+
+        assertTrue(game.tryRemakeMove(1));
+        assertFalse(game.isEmpty(Square.d5));
+
+        assertFalse(game.tryRemakeMove(5));
+    }
+
+    @Test
+    @DisplayName("tryUnmakeMove는 undo할 게 있으면 true, 없으면 false여야 한다")
+    void tryUnmakeMove() {
+        ChessGame game = ChessGame.startPosition();
+        assertFalse(game.tryUnmakeMove());
+
+        game.makeMoveLan("e2e4");
+        assertTrue(game.tryUnmakeMove());
+        assertEquals(START_FEN, game.getFEN());
+    }
+
+    @Test
+    @DisplayName("tryUnmakeMoveRaw(MoveInfo)는 히스토리를 건드리지 않고 보드만 되돌려야 한다")
+    void tryUnmakeMoveRawMoveInfo() {
+        ChessGame game = ChessGame.startPosition();
+        MoveInfo e4 = game.getLegalMovesForSource(Square.e2).get(1);
+
+        game.makeMoveRaw(e4);
+        assertFalse(game.isEmpty(Square.e4));
+        assertTrue(game.getPathToCurrentNode().isEmpty(), "raw make는 히스토리를 안 남겨야 함");
+
+        assertTrue(game.tryUnmakeMoveRaw(e4));
+        assertEquals(START_FEN, game.getFEN());
+    }
+
+    @Test
+    @DisplayName("tryUnmakeMoveRaw(encodedMove)는 실패 시(예: 애초에 안 뒀던 수) false를 반환해야 한다")
+    void tryUnmakeMoveRawEncoded() {
+        ChessGame game = ChessGame.startPosition();
+        int e4 = game.getLegalMovesForSource(Square.e2).get(1).originEncodedData();
+
+        game.makeMoveRaw(e4);
+        assertTrue(game.tryUnmakeMoveRaw(e4));
+        assertEquals(START_FEN, game.getFEN());
+
+        assertFalse(game.tryUnmakeMoveRaw(e4));
     }
 }
