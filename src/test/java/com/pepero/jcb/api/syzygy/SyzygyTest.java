@@ -57,9 +57,9 @@ public class SyzygyTest {
 
             int dtz = SyzygyAnalyzer.probeDtz(game, tb);
 
-//            game.printBoard();
-//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-//            System.out.println("DTZ : " + dtz);
+            game.printBoard();
+            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+            System.out.println("DTZ : " + dtz);
 
             boolean isZeroing = bestMove.capture() || bestMove.enpassant()
                     || bestMove.pieceType().getPieceTypeEnum() == PieceType.PAWN;

@@ -17,10 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
 - On `MoveNode`, moved `ChessGame.getLCANode` to `MoveNode.getLCANode`.
-- On calculating `distance` (DTZ) on SyzygyAnalyzer, removed checking zeroing and showing dtz zero.
+- On calculating `distance` (DTZ) on `SyzygyAnalyzer`, removed checking zeroing and showing dtz zero.
+- On sorting moves on `SyzygyAnalyzer`, added checking zeroing like if winning and zeroing, going upper.
 
 ### Fixed
 - On `PGNExporter`, fixed crashing when the given `ChessGame` is initialized with no half, full move fen.
+- On `GaviotaMoveDTO`, fixed `toString`, showing wrong string like `SyzygyMoveDTO{move=g1f3, ourWdl=1, distance=12}` to 
+  `g1f3, wdl = 1, distance to mate = 12`.
 
 ### Performance
 

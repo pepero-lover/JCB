@@ -206,9 +206,15 @@ public class SyzygyAnalyzer {
             if (a.ourWdl() != b.ourWdl()) return b.ourWdl() - a.ourWdl();
             if (a.ourWdl() > 0) {
                 if (a.mate() != b.mate()) return a.mate() ? -1 : 1;
+                if (a.zeroing() != b.zeroing()) return a.zeroing() ? -1 : 1;
                 return a.distance() - b.distance();
             }
-            if (a.ourWdl() < 0) return b.distance() - a.distance();
+            if (a.ourWdl() < 0) {
+                boolean aBad = a.zeroing();
+                boolean bBad = b.zeroing();
+                if (aBad != bBad) return aBad ? 1 : -1;
+                return b.distance() - a.distance();
+            }
             return 0;
         });
 

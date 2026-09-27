@@ -10,7 +10,7 @@ import java.util.List;
 
 public class SyzygyRankedMove {
     public static void main(String[] args) throws IOException {
-        String fen = "8/2n5/2kb2Q1/8/3rN3/8/4K3/8 w - -";
+        String fen = "8/8/8/4P3/1p6/4P3/1k6/3K4 b - - 0 1";
         ChessGame chessGame = ChessGame.fromFEN(fen);
 
         SyzygyTablebase tablebase = new SyzygyTablebase(Path.of("D:/tablebases/syzygy/"));

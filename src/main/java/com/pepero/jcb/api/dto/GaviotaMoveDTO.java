@@ -14,10 +14,8 @@ import com.pepero.jcb.api.gaviota.GaviotaTablebase;
 public record GaviotaMoveDTO(MoveInfo move, int ourWdl, int distance) {
     @Override
     public String toString() {
-        return "SyzygyMoveDTO{" +
-                "move=" + move +
-                ", ourWdl=" + ourWdl +
-                ", distance=" + distance +
-                '}';
+        return move.toLanString() +
+                ", wdl = " + ourWdl +
+                ", distance to mate = " + distance;
     }
 }

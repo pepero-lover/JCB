@@ -22,4 +22,12 @@ public record CombinedMoveDTO(
         boolean zeroing,
         boolean mate,
         Integer dtm
-) {}
+) {
+    @Override
+    public String toString() {
+        return move.toLanString() +
+                ", wdl = " + wdl +
+                ", distance to zero = " + dtz +
+                ((dtm != null) ? ", distance to mate = " + dtm : "");
+    }
+}
