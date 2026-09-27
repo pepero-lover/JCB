@@ -4,6 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.exception.convert.ConvertMoveException;
+import com.pepero.jcb.api.exception.game.IllegalMoveException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,31 +35,23 @@ public class CLIChess {
             String command = arg[0].toLowerCase();
 
             if(command.equals("u") || command.equals("undo")) { // if undo,
-                if(chessGame.canUndo()) {
-                    chessGame.unmakeMove();
-
-                    continue;
+                if(!chessGame.tryUnmakeMove()) {
+                    System.err.println("Could not undo move!");
+                    System.out.println();
                 }
-
-                System.err.println("Could not undo move!");
-                System.out.println();
 
                 continue;
             }
 
             if (command.equals("r") || command.equals("redo")) {
                 if (arg.length == 1) { // mainline redo
-                    if (chessGame.canRedo()) {
-                        chessGame.remakeMove();
-                    } else {
+                    if (!chessGame.tryRemakeMove()) {
                         System.err.println("Could not redo mainline move!");
                     }
                 } else { // variation redo
                     try {
                         int variationIndex = Integer.parseInt(arg[1]);
-                        if (chessGame.canRedo(variationIndex)) {
-                            chessGame.remakeMove(variationIndex);
-                        } else {
+                        if (!chessGame.tryRemakeMove(variationIndex)) {
                             System.err.println("Could not redo that variation index move!");
                         }
                     } catch (NumberFormatException e) {
@@ -83,11 +76,7 @@ public class CLIChess {
                     continue;
                 }
                 String san = arg[1];
-                try {
-                    // san move to MoveInfo class
-                    MoveInfo moveInfo = chessGame.sanToMoveData(san);
-                    chessGame.makeMove(moveInfo);
-                } catch (ConvertMoveException e) {
+                if(!chessGame.tryMakeMoveSan(san)) {
                     System.err.println("Could not parse the SAN move!");
                 }
                 continue;
@@ -98,17 +87,11 @@ public class CLIChess {
                     System.err.println("Please enter SAN move format!");
                     continue;
                 }
-                try {
-                    for(int i = 1; i < arg.length; i++) {
-                        String san = arg[i];
 
-                        // get San data to MoveInfo
-                        MoveInfo moveInfo = chessGame.sanToMoveData(san);
-                        chessGame.makeMove(moveInfo);
-                    }
-                } catch (ConvertMoveException e) {
+                if(!chessGame.tryMakeMoveSanAll(input.substring(6))) {
                     System.err.println("Could not parse the SAN move!");
                 }
+
                 continue;
             }
 
