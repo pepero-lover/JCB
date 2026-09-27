@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -51,12 +52,13 @@ public class EngineAnalysisExample {
 
             HashMap<Integer, EngineLine> pvLines = engineWrapper.getCurrentEngineLines();
             List<EngineLine> lines = new ArrayList<>(pvLines.values());
-            lines.sort((a, b) -> Integer.compare(a.pvNumber(), b.pvNumber()));
+            lines.sort(Comparator.comparingInt(EngineLine::pvNumber));
 
             for (EngineLine line : lines) {
                 String coloredSan = ConvertStringMoveUtils.toUnicodePieces(
                         chessGame.getTurn(), line.sanPv());
-                System.out.printf("[%d] (%s) %s%n", line.pvNumber(), line.score(), coloredSan);
+                System.out.printf("[%d] (%s) %s%n", line.pvNumber(), line.score(),
+                        ConvertStringMoveUtils.addMoveNumberToSanSequence(chessGame.getFullMove(), chessGame.getTurn(), coloredSan));
             }
 
             System.out.print("Select line number (or 'q' to quit): ");

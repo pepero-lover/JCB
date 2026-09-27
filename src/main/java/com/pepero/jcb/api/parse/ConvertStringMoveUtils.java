@@ -960,17 +960,18 @@ public class ConvertStringMoveUtils {
      * "e4 e5 Nf3" (white to move)  -> "1. e4 e5 2. Nf3" <br>
      * "e5 Nf3 Nc6" (black to move) -> "1... e5 2. Nf3 Nc6"
      *
-     * @param chessboard chessboard at the position where the PV starts (not mutated)
+     * @param fullMove full move (increases after black's move) at the position where the PV starts
+     * @param isWhiteTurn is the position where the PV starts white turn
      * @param sanSequence san move sequence separated by whitespace (like "e4 e5 Nf3")
      * @return numbered san sequence
      */
-    public static String addMoveNumberToSanSequence(Chessboard chessboard, String sanSequence) {
+    public static String addMoveNumberToSanSequence(int fullMove, boolean isWhiteTurn, String sanSequence) {
         if (sanSequence == null || sanSequence.trim().isEmpty()) return "";
 
         String[] sans = WHITESPACE.split(sanSequence.trim());
         StringBuilder sb = new StringBuilder();
 
-        int ply = chessboard.full_move;
+        int ply = (fullMove - 1) * 2 + (isWhiteTurn ? 0 : 1);
 
         for (int i = 0; i < sans.length; i++) {
             boolean white_to_move = ply % 2 == 0;
@@ -991,8 +992,23 @@ public class ConvertStringMoveUtils {
     }
 
     /**
+     * Add PGN-style move numbers to a SAN sequence, for displaying PV lines.
+     * <p>
+     * Examples :  <p>
+     * "e4 e5 Nf3" (white to move)  -> "1. e4 e5 2. Nf3" <br>
+     * "e5 Nf3 Nc6" (black to move) -> "1... e5 2. Nf3 Nc6"
+     *
+     * @param fullMovePly full move half-ply (increases every single move) at the position where the PV starts
+     * @param sanSequence san move sequence separated by whitespace (like "e4 e5 Nf3")
+     * @return numbered san sequence
+     */
+    public static String addMoveNumberToSanSequence(int fullMovePly, String sanSequence) {
+        return addMoveNumberToSanSequence(fullMovePly / 2 + 1, fullMovePly % 2 == 0, sanSequence);
+    }
+
+    /**
      * Remove PGN-style move numbers from a numbered SAN sequence (reverse of
-     * {@link #addMoveNumberToSanSequence(Chessboard, String)}).
+     * {@link #addMoveNumberToSanSequence(int, String)}).
      * <p>
      * Examples : <p>
      * "1. e4 e5 2. Nf3"  -> "e4 e5 Nf3"

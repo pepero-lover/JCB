@@ -2882,7 +2882,7 @@ public class ChessGame {
     public String toNumberedSan(String sanSequence) {
         readLock.lock();
         try {
-            return ConvertStringMoveUtils.addMoveNumberToSanSequence(this.chessboard, sanSequence);
+            return ConvertStringMoveUtils.addMoveNumberToSanSequence(this.chessboard.full_move, sanSequence);
         } finally {
             readLock.unlock();
         }

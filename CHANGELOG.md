@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `CombinedAnalyzer`, using both syzygy and gaviota tablebase with using `CombinedMoveDTO`.
 
 ### Changed
+- On `ConvertStringMoveUtils.addMoveNumberToSanSequence`, changed parameter `Chessboard` to full move, and white turn.
+  and also added `addMoveNumberToSanSequence(int fullMovePly, String sanSequence)`.
+- On `UCIEngineWrapper`, changed `EngineLine` returning raw san string instead of returning number added san. (1. e4 e5 2. Nf3 -> e4 e5 Nf3)
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
 - On `MoveNode`, moved `ChessGame.getLCANode` to `MoveNode.getLCANode`.
