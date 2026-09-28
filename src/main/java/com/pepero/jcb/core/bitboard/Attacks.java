@@ -418,17 +418,12 @@ public class Attacks {
 
     /**
      * Generates a specific occupancy bitboard configuration for a given index.
-     * * This function is a key component of the Magic Bitboards algorithm. It maps a
-     * subset of bits (the 'index') onto the corresponding squares defined by the
-     * 'attack_mask'. This allows the engine to iterate through all possible
-     * permutations of pieces blocking a slider's path.
      *
-     * @param index        The integer representing the specific permutation to generate
-     * (ranges from 0 to 2^bits_int_mask - 1).
-     * @param bitsIntMask The total number of set bits (relevant squares) in the attack_mask.
-     * @param attackMask   The bitboard mask containing the potential squares that can be
-     * occupied by other pieces.
-     * @return             A long bitboard representing the occupancy state for the given index.
+     * @param index integer representing the specific permutation to generate
+     * (ranges from 0 to 2^bits_int_mask - 1)
+     * @param bitsIntMask total number of bits in the attack_mask
+     * @param attackMask attack mask
+     * @return bitboard representing the occupancy state for the given index
      */
     public static long setOccupancy(int index, int bitsIntMask, long attackMask){
         // occupancy map
