@@ -120,7 +120,7 @@ public class Attacks {
     //  this doesn't need side because it doesn't matter white turn and black turn
     public static final long[] knight_attacks = new long[64];
 
-    //  knight attacks table [square]
+    //  king attacks table [square]
     //  this doesn't need side because it doesn't matter white turn and black turn
     public static final long[] king_attacks = new long[64];
 
@@ -417,25 +417,25 @@ public class Attacks {
     }
 
     /**
-     * Generates a specific occupancy bitboard configuration for a given index.
+     * Generate a specific occupancy bitboard configuration for a given index.
      *
      * @param index integer representing the specific permutation to generate
      * (ranges from 0 to 2^bits_int_mask - 1)
-     * @param bitsIntMask total number of bits in the attack_mask
-     * @param attackMask attack mask
+     * @param bits_in_mask total number of bits in the attack_mask
+     * @param attack_mask attack mask
      * @return bitboard representing the occupancy state for the given index
      */
-    public static long setOccupancy(int index, int bitsIntMask, long attackMask){
+    public static long setOccupancy(int index, int bits_in_mask, long attack_mask){
         // occupancy map
         long occupancy = 0L;
 
         // loop over the range of bits within attack mask
-        for(int count = 0; count < bitsIntMask; count++){
+        for(int count = 0; count < bits_in_mask; count++){
             // get LS1B index of attack mask
-            int square = BitBoardUtils.getLS1BIndex(attackMask);
+            int square = BitBoardUtils.getLS1BIndex(attack_mask);
 
             // pop LS1B in attack map
-            attackMask = BitBoardUtils.popBit(attackMask, square);
+            attack_mask = BitBoardUtils.popBit(attack_mask, square);
 
             // make sure occupancy is on board
             if((index & (1 << count)) != 0){

@@ -10,13 +10,13 @@ public class Random {
     // i love pepero
 
     // pseudo random number state
-    private static int state = 111111;
+    private static long state = 111111L;
 
     // state for MAGIC NUM
-    private static final int MAGIC_NUM_STATE = 111111;
+    private static final long MAGIC_NUM_STATE = 111111L;
 
     // state for HASHING
-    private static final int HASHING_STATE = 111111;
+    private static final long HASHING_STATE = 111111L;
 
     /**
      * Generate 32-bit pseudo legal numbers
@@ -28,20 +28,8 @@ public class Random {
      *
      * @return random 32bits number (int)
      */
-    public static int getRandom32BitsNumber(){
-        // get current states
-        int number = state;
-
-        // XOR shift algorithm
-        number ^= number << 13;
-        number ^= number >>> 17;
-        number ^= number << 5;
-
-        // update random number state
-        state = number;
-
-        // return random number
-        return number;
+    public static int getRandom32BitsNumber() {
+        return (int) (getRandom64BitsNumber() >>> 32);
     }
 
 
@@ -55,18 +43,11 @@ public class Random {
      *
      * @return random 64bits number (long)
      */
-    public static long getRandom64BitsNumber(){
-        // define 4 random numbers
-        long n1, n2, n3 ,n4;
-
-        // init random numbers slicing 16 bits from MS1B side
-        n1 = (long) getRandom32BitsNumber() & 0xFFFF;
-        n2 = (long) getRandom32BitsNumber() & 0xFFFF;
-        n3 = (long) getRandom32BitsNumber() & 0xFFFF;
-        n4 = (long) getRandom32BitsNumber() & 0xFFFF;
-
-        // return random number
-        return n1 | (n2 << 16) | (n3 << 32) | (n4 << 48);
+    public static long getRandom64BitsNumber() {
+        long z = (state += 0x9E3779B97F4A7C15L);
+        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
+        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
+        return z ^ (z >>> 31);
     }
 
     /**
