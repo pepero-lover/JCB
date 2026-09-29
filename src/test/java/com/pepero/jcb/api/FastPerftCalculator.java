@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicLongArray;
 
 public class FastPerftCalculator {
 
-    // ---- Transposition table
     public static class PerftTable {
         private final AtomicLongArray keys;
         private final AtomicLongArray data;
@@ -76,13 +75,15 @@ public class FastPerftCalculator {
     public static long perftHash(Chessboard board, int depth, PerftTable table, int[][] moveBuffers) {
         if (depth == 0) return 1L;
 
+        if (depth >= 2) {
+            long cached = table.probe(board.hash_key, depth);
+            if (cached >= 0) return cached;
+        }
+
         int[] moves = moveBuffers[depth];
         int count = MoveGenerator.generateMoves(board, moves);
 
         if (depth == 1) return count;
-
-        long cached = table.probe(board.hash_key, depth);
-        if (cached >= 0) return cached;
 
         long nodes = 0;
         for (int i = 0; i < count; i++) {
@@ -96,27 +97,45 @@ public class FastPerftCalculator {
         return nodes;
     }
 
-    private record Task(int m1, int m2) {}
+    private record Task(int[] moves) {}
 
-    public static long perftMt(Chessboard root, int depth, PerftTable table, int nthreads)
-            throws InterruptedException, ExecutionException {
-
-        List<Task> tasks = new ArrayList<>();
-        int[] buf1 = new int[MoveCache.MAX_MOVE_SIZE];
-        int c1 = MoveGenerator.generateMoves(root, buf1);
-
-        for (int i = 0; i < c1; i++) {
-            int m1 = buf1[i];
-            MoveGenerator.makeMove(root, m1);
-
-            int[] buf2 = new int[MoveCache.MAX_MOVE_SIZE];
-            int c2 = MoveGenerator.generateMoves(root, buf2);
-            for (int j = 0; j < c2; j++) tasks.add(new Task(m1, buf2[j]));
-
-            MoveGenerator.unmakeMove(root, m1);
+    private static void collectTasks(Chessboard board, int splitPly, int[] path, int pathLen,
+                                     int[][] buffers, List<Task> out) {
+        if (pathLen == splitPly) {
+            out.add(new Task(path.clone()));
+            return;
         }
 
+        int[] moves = buffers[pathLen];
+        int count = MoveGenerator.generateMoves(board, moves);
+
+        for (int i = 0; i < count; i++) {
+            int move = moves[i];
+            path[pathLen] = move;
+            MoveGenerator.makeMove(board, move);
+            collectTasks(board, splitPly, path, pathLen + 1, buffers, out);
+            MoveGenerator.unmakeMove(board, move);
+        }
+    }
+
+    public static List<Task> generateTasks(Chessboard root, int splitPly) {
+        List<Task> tasks = new ArrayList<>();
+        int[] path = new int[splitPly];
+        int[][] buffers = newMoveBuffers(splitPly);
+        collectTasks(root, splitPly, path, 0, buffers, tasks);
+        return tasks;
+    }
+
+    public static long perftMt(Chessboard root, int depth, int splitPly, PerftTable table, int nthreads)
+            throws InterruptedException, ExecutionException {
+
+        if (splitPly >= depth) {
+            throw new IllegalArgumentException("splitPly(" + splitPly + ")는 depth(" + depth + ")보다 작아야 합니다");
+        }
+
+        List<Task> tasks = generateTasks(root, splitPly);
         final int taskCount = tasks.size();
+
         AtomicInteger next = new AtomicInteger(0);
         AtomicInteger completed = new AtomicInteger(0);
         AtomicBoolean done = new AtomicBoolean(false);
@@ -142,6 +161,8 @@ public class FastPerftCalculator {
         });
         monitor.start();
 
+        int remainingDepth = depth - splitPly;
+
         for (int t = 0; t < nthreads; t++) {
             futures.add(pool.submit(() -> {
                 Chessboard b = new Chessboard(root);
@@ -149,12 +170,10 @@ public class FastPerftCalculator {
                 long local = 0;
                 int i;
                 while ((i = next.getAndIncrement()) < taskCount) {
-                    Task task = tasks.get(i);
-                    MoveGenerator.makeMove(b, task.m1());
-                    MoveGenerator.makeMove(b, task.m2());
-                    local += perftHash(b, depth - 2, table, buffers);
-                    MoveGenerator.unmakeMove(b, task.m2());
-                    MoveGenerator.unmakeMove(b, task.m1());
+                    int[] moves = tasks.get(i).moves();
+                    for (int m : moves) MoveGenerator.makeMove(b, m);
+                    local += perftHash(b, remainingDepth, table, buffers);
+                    for (int j = moves.length - 1; j >= 0; j--) MoveGenerator.unmakeMove(b, moves[j]);
                     completed.incrementAndGet();
                 }
                 return local;
@@ -175,15 +194,32 @@ public class FastPerftCalculator {
         return total;
     }
 
+    public static void warmup(int nthreads) throws InterruptedException, ExecutionException {
+        Chessboard warmBoard = new Chessboard(Chessboard.start_position);
+        PerftTable warmTable = new PerftTable(64);
+        for (int i = 0; i < 3; i++) {
+            perftMt(warmBoard, 6, 2, warmTable, nthreads);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
+        int nthreads = Runtime.getRuntime().availableProcessors() - 2;
+
+        System.out.println("maxMemory = " + Runtime.getRuntime().maxMemory() / (1L << 30) + " GB");
+
+        System.out.println("warming up...");
+        warmup(nthreads);
+        System.out.println("warmup done.\n");
+
         Chessboard board = new Chessboard(Chessboard.start_position);
         //Chessboard board = new Chessboard("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
 
         int depth = 10;
+        int splitPly = 3;
         PerftTable table = new PerftTable(16384);
 
         long start = System.nanoTime();
-        long nodes = perftMt(board, depth, table, Runtime.getRuntime().availableProcessors());
+        long nodes = perftMt(board, depth, splitPly, table, nthreads);
         long elapsed = System.nanoTime() - start;
 
         double sec = elapsed / 1e9;
