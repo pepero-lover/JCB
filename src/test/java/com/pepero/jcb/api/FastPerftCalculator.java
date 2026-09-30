@@ -4,6 +4,8 @@ import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.constant.MoveCache;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -12,39 +14,70 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLongArray;
 
 public class FastPerftCalculator {
-
     public static class PerftTable {
-        private final AtomicLongArray keys;
-        private final AtomicLongArray data;
+        private static final VarHandle A = MethodHandles.arrayElementVarHandle(long[].class);
+
+        private static final int SEG_BITS = 28;
+        private static final long SEG_LONGS = 1L << SEG_BITS;
+        private static final int SEG_MASK = (int) (SEG_LONGS - 1);
+
+        private final long[][] segs;
         private final long mask;
 
         public PerftTable(long sizeMb) {
-            long bytesPerEntry = 16;
-            long rawCount = (sizeMb * 1024 * 1024) / bytesPerEntry;
+            long rawCount = (sizeMb * 1024 * 1024) / 16;
             long count = Long.highestOneBit(rawCount);
-            this.keys = new AtomicLongArray((int) count);
-            this.data = new AtomicLongArray((int) count);
             this.mask = count - 1;
+
+            long totalLongs = count * 2;
+            int segCount = (int) Math.max(1, totalLongs / SEG_LONGS);
+            int segLen = (int) Math.min(totalLongs, SEG_LONGS);
+            this.segs = new long[segCount][];
+            for (int i = 0; i < segCount; i++) segs[i] = new long[segLen];
         }
 
         public long probe(long key, int depth) {
-            int idx = (int) (key & mask);
-            long d = data.get(idx);
-            long k = keys.get(idx);
-            if ((k ^ d) == key && (d & 0xFF) == depth) {
-                return d >>> 8;
-            }
+            long slot = ((key & mask) & ~1L) << 1;
+            long[] seg = segs[(int) (slot >>> SEG_BITS)];
+            int off = (int) slot & SEG_MASK;
+
+            long d0 = (long) A.getOpaque(seg, off + 1);
+            long k0 = (long) A.getOpaque(seg, off);
+            if ((k0 ^ d0) == key && (d0 & 0xFF) == depth) return d0 >>> 8;
+
+            long d1 = (long) A.getOpaque(seg, off + 3);
+            long k1 = (long) A.getOpaque(seg, off + 2);
+            if ((k1 ^ d1) == key && (d1 & 0xFF) == depth) return d1 >>> 8;
+
             return -1L;
         }
 
         public void store(long key, int depth, long nodes) {
-            int idx = (int) (key & mask);
+            long slot = ((key & mask) & ~1L) << 1;
+            long[] seg = segs[(int) (slot >>> SEG_BITS)];
+            int off = (int) slot & SEG_MASK;
+
             long d = (nodes << 8) | (depth & 0xFFL);
-            data.set(idx, d);
-            keys.set(idx, key ^ d);
+
+            long d0 = (long) A.getOpaque(seg, off + 1);
+            long k0 = (long) A.getOpaque(seg, off);
+            long d1 = (long) A.getOpaque(seg, off + 3);
+            long k1 = (long) A.getOpaque(seg, off + 2);
+
+            int pick;
+            if ((k0 ^ d0) == key && (d0 & 0xFF) == depth) pick = 0;
+            else if ((k1 ^ d1) == key && (d1 & 0xFF) == depth) pick = 1;
+            else {
+                int dep0 = (int) (d0 & 0xFF), dep1 = (int) (d1 & 0xFF);
+                if (dep0 != dep1) pick = dep0 < dep1 ? 0 : 1;
+                else pick = (int) (key >>> 63);
+            }
+
+            int o = off + (pick << 1);
+            A.setOpaque(seg, o + 1, d);
+            A.setOpaque(seg, o, key ^ d);
         }
     }
 
@@ -72,17 +105,19 @@ public class FastPerftCalculator {
         return nodes;
     }
 
+    private static final int MIN_TT_DEPTH = 2;
+
     public static long perftHash(Chessboard board, int depth, PerftTable table, int[][] moveBuffers) {
         if (depth == 0) return 1L;
 
-        if (depth >= 2) {
+        boolean useTt = depth >= MIN_TT_DEPTH;
+        if (useTt) {
             long cached = table.probe(board.hash_key, depth);
             if (cached >= 0) return cached;
         }
 
         int[] moves = moveBuffers[depth];
         int count = MoveGenerator.generateMoves(board, moves);
-
         if (depth == 1) return count;
 
         long nodes = 0;
@@ -93,11 +128,11 @@ public class FastPerftCalculator {
             MoveGenerator.unmakeMove(board, move);
         }
 
-        table.store(board.hash_key, depth, nodes);
+        if (useTt) table.store(board.hash_key, depth, nodes);
         return nodes;
     }
 
-    private record Task(int[] moves) {}
+    public record Task(int[] moves) {}
 
     private static void collectTasks(Chessboard board, int splitPly, int[] path, int pathLen,
                                      int[][] buffers, List<Task> out) {
@@ -203,7 +238,8 @@ public class FastPerftCalculator {
     }
 
     public static void main(String[] args) throws Exception {
-        int nthreads = Runtime.getRuntime().availableProcessors() - 2;
+        System.out.println("Processor : " + Runtime.getRuntime().availableProcessors());
+        int nthreads = 28;
 
         System.out.println("maxMemory = " + Runtime.getRuntime().maxMemory() / (1L << 30) + " GB");
 
