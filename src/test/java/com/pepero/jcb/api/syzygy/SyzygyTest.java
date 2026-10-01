@@ -6,6 +6,7 @@ import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.PieceType;
 import com.pepero.jcb.api.exception.game.IllegalMoveException;
+import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,6 +84,7 @@ public class SyzygyTest {
     @DisplayName("스탠다드 체스 Syzygy 검증")
     void syzygyStandard() throws IOException {
         List<String> testCases = List.of(
+                "7Q/3nk1P1/5b2/8/1r6/5K2/8/8 w - - 1 6",
                 "8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1",
                 "4k3/8/8/8/8/8/1BBB4/4K3 w - - 0 1",
                 "8/4B3/8/8/8/8/4B3/K1k5 b - - 0 1",

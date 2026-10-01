@@ -93,7 +93,7 @@ public final class GaviotaTablebase {
 
         if (!hasAnyTablebaseFile) {
             throw new TablebaseMissingFileException(
-                    "No .rtbw/.rtbz files found in tablebase directory: " + dir);
+                    "No .gtb.cp4 files found in tablebase directory: " + dir);
         }
     }
 
