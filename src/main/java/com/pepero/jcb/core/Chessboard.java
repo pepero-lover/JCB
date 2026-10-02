@@ -11,7 +11,10 @@ import static com.pepero.jcb.core.constant.BoardSquares.*;
 
 /**
  * Chess board class storing piece bitboards, side to move, occupancies, and more. <br>
- * Using bitboard logic (bit shifting, popBit, setBit, ...) for efficiency.
+ * Using bitboard logic (bit shifting, popBit, setBit, ...) for efficiency. <p>
+ *
+ * The logics like printing this chessboard, or getting fen, parsing fen (initializing with fen constructor is on this class.
+ * {@link #Chessboard(String fen)}), checking given chessboard is checkmate, etc. is on `{@link ChessboardUtils}`.
  */
 public class Chessboard {
     static {

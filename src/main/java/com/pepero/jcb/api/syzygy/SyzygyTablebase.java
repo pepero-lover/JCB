@@ -571,7 +571,7 @@ public class SyzygyTablebase {
             boolean symmetric
     ) {}
 
-    private int probeWdl(Chessboard board) throws IOException {
+    private int probeWdl(Chessboard board) {
         int[] moveArray = new int[MoveCache.MAX_MOVE_SIZE];
         int moveCount = MoveGenerator.generateMoves(board, moveArray);
 
@@ -636,7 +636,7 @@ public class SyzygyTablebase {
         return Math.max(bestWdl, tableWdl);
     }
 
-    private int probeWdlTable(Chessboard board) throws IOException {
+    private int probeWdlTable(Chessboard board) {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
         if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 2;
         if(boardPiece <= 1) return 2;
@@ -697,7 +697,7 @@ public class SyzygyTablebase {
      * @param board chess board
      * @return dtz result
      * */
-    private int probeDtz(Chessboard board) throws IOException {
+    private int probeDtz(Chessboard board) {
         int boardPiece = BitBoardUtils.countBits(board.occupancies[both]);
         if (variant != GameVariant.GIVEAWAY && variant != GameVariant.SUICIDE && boardPiece == 2) return 0;
         if(boardPiece <= 1) return 0;
@@ -819,7 +819,7 @@ public class SyzygyTablebase {
         return viaSearch;
     }
 
-    private Integer tryDirectDtz(Chessboard board, int wdlResult) throws IOException {
+    private Integer tryDirectDtz(Chessboard board, int wdlResult) {
         String materialName = buildMaterialString(board);
         DtzTable table = dtzCache.computeIfAbsent(materialName, this::loadDtzTable);
         SyzygyMaterial material = table.material();
@@ -869,7 +869,7 @@ public class SyzygyTablebase {
         return SyzygyDtzPostProcess.postProcess(table.header(), raw[0], raw[1], wdlResult, flags, mapEntry);
     }
 
-    private int probeDtzViaSearch(Chessboard board, int wdlResult) throws IOException {
+    private int probeDtzViaSearch(Chessboard board, int wdlResult) {
         // wdlResult on the 0~4 scale: 0=Loss,1=BlessedLoss,2=Draw,3=CursedWin,4=Win
         if (wdlResult == 2) {
             return 0; // drawn positions report DTZ 0
@@ -1145,7 +1145,7 @@ public class SyzygyTablebase {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public int getWdlData(Chessboard board) throws IOException {
+    public int getWdlData(Chessboard board) {
         try {
             int wdlRaw = probeWdl(board);
             int wdl = wdlRaw - 2;
@@ -1178,7 +1178,7 @@ public class SyzygyTablebase {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public int getDtzData(Chessboard board) throws IOException {
+    public int getDtzData(Chessboard board) {
         try {
             return probeDtz(board);
         } catch (TablebaseMissingFileException e) {

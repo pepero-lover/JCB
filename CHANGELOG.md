@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - On `Random`, changed logic to calculating fully 64 bits number (`long state`) instead of using `int state`.
 - On `MagicNumbers`, updated magic number because of changing `Random` logic
+- On `SyzygyTablebase`, removed `throws IOException` on
+  `probeWdl`, `probeWdlTable`, `probeDtz`, `tryDirectDtz`, `probeDtzViaSearch` methods.
 - On `ConvertStringMoveUtils.addMoveNumberToSanSequence`, changed parameter `Chessboard` to full move, and white turn.
   and also added `addMoveNumberToSanSequence(int fullMovePly, String sanSequence)`.
 - On `UCIEngineWrapper`, changed `EngineLine` returning raw san string instead of returning number added san. (1. e4 e5 2. Nf3 -> e4 e5 Nf3)
