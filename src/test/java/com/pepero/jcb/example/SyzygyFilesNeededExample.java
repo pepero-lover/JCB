@@ -28,8 +28,6 @@ public class SyzygyFilesNeededExample {
                 board
         ));
 
-        System.out.println(SyzygyTablebase.requiredMaterials(16).size());
-
         System.out.println("--------------------------");
         System.out.println("Showing exception message");
         System.out.println("--------------------------");
