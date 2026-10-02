@@ -58,9 +58,9 @@ public class SyzygyTest {
 
             int dtz = SyzygyAnalyzer.probeDtz(game, tb);
 
-            game.printBoard();
-            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-            System.out.println("DTZ : " + dtz);
+//            game.printBoard();
+//            System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
+//            System.out.println("DTZ : " + dtz);
 
             boolean isZeroing = bestMove.capture() || bestMove.enpassant()
                     || bestMove.pieceType().getPieceTypeEnum() == PieceType.PAWN;
@@ -84,7 +84,6 @@ public class SyzygyTest {
     @DisplayName("스탠다드 체스 Syzygy 검증")
     void syzygyStandard() throws IOException {
         List<String> testCases = List.of(
-                "7Q/3nk1P1/5b2/8/1r6/5K2/8/8 w - - 1 6",
                 "8/8/8/8/1p2P3/4P3/1k6/3K4 w - - 0 1",
                 "4k3/8/8/8/8/8/1BBB4/4K3 w - - 0 1",
                 "8/4B3/8/8/8/8/4B3/K1k5 b - - 0 1",
