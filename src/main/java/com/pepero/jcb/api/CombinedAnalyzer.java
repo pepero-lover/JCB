@@ -25,9 +25,15 @@ public class CombinedAnalyzer {
 
     /**
      * Get Sorted moves based on Syzygy/Gaviota tablebase (first is best move, last is worst move) <br>
-     * The order logic is under below. <br>
-     * If {@code the calculated DTM + current half move clock} is more than 100, uses dtz to sort data. <br>
-     * Otherwise, uses dtm to sort data.
+     * The order logic is the same as {@link SyzygyAnalyzer#findRankedMoves}, except for the final distance tie-break: <br>
+     * <ul>
+     *   <li>Higher WDL first.</li>
+     *   <li>Winning: checkmate first, then zeroing moves (capture / pawn move) first,
+     *       then the shorter distance first.</li>
+     *   <li>Losing: non-zeroing moves first (a zeroing move resets the 50-move clock and helps the defender),
+     *       then the longer distance first.</li>
+     *   <li>Distance is DTM when both moves have DTM data, otherwise DTZ.</li>
+     * </ul>
      * <p>
      * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}. <br>
      * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard, or total piece count
@@ -76,28 +82,14 @@ public class CombinedAnalyzer {
             MoveGenerator.unmakeMove(board, move);
         }
 
-        ranked.sort((a, b) -> {
-            if (a.wdl() != b.wdl()) return b.wdl() - a.wdl();
-
-            int da = (a.dtm() != null) ? a.dtm() : a.dtz();
-            int db = (b.dtm() != null) ? b.dtm() : b.dtz();
-
-            if (a.wdl() > 0) {
-                if (a.mate() != b.mate()) return a.mate() ? -1 : 1;
-                return da - db;
-            }
-            if (a.wdl() < 0) return db - da;
-            return 0;
-        });
+        ranked.sort(CombinedAnalyzer::compareMoves);
 
         return ranked;
     }
 
     /**
      * Get Sorted moves based on Syzygy/Gaviota tablebase (first is best move, last is worst move) <br>
-     * The order logic is under below. <br>
-     * If {@code the calculated DTM + current half move clock} is more than 100, uses dtz to sort data. <br>
-     * Otherwise, uses dtm to sort data.
+     * See {@link #findRankedMoves(ChessGame, SyzygyTablebase, GaviotaTablebase, boolean)} for the order logic.
      * <p>
      * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}. <br>
      * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard, or total piece count
@@ -115,6 +107,37 @@ public class CombinedAnalyzer {
     public static List<CombinedMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase syzygy,
                                                         GaviotaTablebase gaviota) throws IOException {
         return findRankedMoves(game, syzygy, gaviota, false);
+    }
+
+    /**
+     * Comparator used for sorting (best move first). <br>
+     * Mirrors the ordering in {@link SyzygyAnalyzer#findRankedMoves}.
+     */
+    private static int compareMoves(CombinedMoveDTO a, CombinedMoveDTO b) {
+        if (a.wdl() != b.wdl()) return b.wdl() - a.wdl();
+
+        if (a.wdl() > 0) {
+            if (a.mate() != b.mate()) return a.mate() ? -1 : 1;
+            if (a.zeroing() != b.zeroing()) return a.zeroing() ? -1 : 1;
+            return compareDistance(a, b);
+        }
+
+        if (a.wdl() < 0) {
+            if (a.zeroing() != b.zeroing()) return a.zeroing() ? 1 : -1;
+            return compareDistance(b, a);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Ascending distance comparison. <br>
+     * DTM is used only when both moves have it, otherwise falls back to DTZ,
+     * so that DTM and DTZ values are never compared against each other.
+     */
+    private static int compareDistance(CombinedMoveDTO a, CombinedMoveDTO b) {
+        if (a.dtm() != null && b.dtm() != null) return Integer.compare(a.dtm(), b.dtm());
+        return Integer.compare(a.dtz(), b.dtz());
     }
 
     /**

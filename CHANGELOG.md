@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `PGNExporter`, fixed crashing when the given `ChessGame` is initialized with no half, full move fen.
 - On `GaviotaMoveDTO`, fixed `toString`, showing wrong string like `SyzygyMoveDTO{move=g1f3, ourWdl=1, distance=12}` to 
   `g1f3, wdl = 1, distance to mate = 12`.
+- On `CombinedAnalyzer`, fixed not checking `zeroing` component on sorting.
 
 ### Performance
 
