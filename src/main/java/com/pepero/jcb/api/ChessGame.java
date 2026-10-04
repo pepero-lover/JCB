@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -4791,7 +4792,64 @@ public class ChessGame {
     }
 
     /**
-     * Get current chess board copy (snapshot)
+     * Read-only view handed to {@link #read(Function)}.
+     */
+    private final ChessGameReadView readView = new ReadViewImplement();
+
+    /**
+     * Run {@code action} while holding the read lock, so every getter called on the view
+     * observes the same position (no writer can interleave between them). <p>
+     *
+     * Do not call this game's write methods (makeMove, unmakeMove, etc.) from inside it &mdash; that would deadlock. <br>
+     * Don't keep the view after the action returns; outside the action each call locks separately again and is no longer atomic.
+     *
+     * @param action function reading from the view and returning the result
+     * @return whatever the action returns
+     */
+    public <T> T read(Function<ChessGameReadView, T> action) {
+        Objects.requireNonNull(action, "Action can not be null!");
+
+        readLock.lock();
+        try {
+            return action.apply(readView);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    private final class ReadViewImplement implements ChessGameReadView {
+        @Override public String getFEN() { return ChessGame.this.getFEN(); }
+        @Override public long getZobristHash() { return ChessGame.this.getZobristHash(); }
+        @Override public boolean isWhiteTurn() { return ChessGame.this.getTurn(); }
+        @Override public boolean isCheck() { return ChessGame.this.isCheck(); }
+        @Override public List<MoveInfo> getLegalMoves() { return ChessGame.this.getLegalMoves(); }
+        @Override public Map<Square, Piece> getBoardStateMap() { return ChessGame.this.getBoardStateMap(); }
+        @Override public int getPieceScore() { return ChessGame.this.getPieceScore(); }
+        @Override public int getPly() { return ChessGame.this.getPly(); }
+        @Override public int getHalfMove() { return ChessGame.this.getHalfMove(); }
+        @Override public int getFullMove() { return ChessGame.this.getFullMove(); }
+        @Override public boolean canUndo() { return ChessGame.this.canUndo(); }
+        @Override public boolean canRedo() { return ChessGame.this.canRedo(); }
+        @Override public long getCurrentNodeId() { return ChessGame.this.getCurrentNodeId(); }
+        @Override public boolean isCheckmate() { return ChessGame.this.isCheckmate(); }
+        @Override public boolean isStalemate() { return ChessGame.this.isStalemate(); }
+        @Override public boolean isInsufficientMaterial() { return ChessGame.this.isInsufficientMaterial(); }
+        @Override public CastlingRightsInfo getCastlingRights() { return ChessGame.this.getCastlingRights(); }
+        @Override public List<Square> getChecker() { return ChessGame.this.getChecker(); }
+        @Override public MoveInfo getCurrentMoveInfo() { return ChessGame.this.getCurrentMoveInfo(); }
+        @Override public GameVariant getGameVariant() { return ChessGame.this.getGameVariant(); }
+        @Override public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) { return ChessGame.this.getCapturedPieces(isWhite); }
+        @Override public List<MoveInfo> getLegalMovesForSource(Square source) { return ChessGame.this.getLegalMovesForSource(source); }
+        @Override public boolean isSquareAttacked(Square square, boolean side) { return ChessGame.this.isSquareAttacked(square, side); }
+        @Override public boolean canMakeMoveLan(String lan) { return ChessGame.this.canMakeMoveLan(lan); }
+        @Override public boolean canMakeMoveSan(String sanString) { return ChessGame.this.canMakeMoveSan(sanString); }
+        @Override public boolean canMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType)
+        { return ChessGame.this.canMakeMove(sourceSquare, targetSquare, promotionType); }
+    }
+
+    /**
+     * Get current chess board copy (snapshot) <br>
+     * This returns just a {@link Chessboard} class used on core logic
      */
     public Chessboard getBoardSnapshot() {
         readLock.lock();
