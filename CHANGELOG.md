@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `CombinedAnalyzer`, using both syzygy and gaviota tablebase with using `CombinedMoveDTO`.
 - On `SyzygyTablebase`, added checking max pieces count on given syzygy directory, and checking required piece sets.
-- On `ChessGame`, added `read(Function<ChessGameReadView, T>)` for atomic, lock-held reads across multiple getters.
+- On `ChessGame`, added `read(Function<ChessGameReadView, T>)` / `read(Consumer<ChessGameReadView>)`
+  for atomic, lock-held reads across multiple getters, and `write(Function<ChessGame, T>)` /
+  `write(Consumer<ChessGame>)` for atomic, lock-held check-then-act sequences
+  (e.g. `if (canUndo()) unmakeMove();`) across multiple calls.
 
 ### Changed
 - On `Random`, changed logic to calculating fully 64 bits number (`long state`) instead of using `int state`.

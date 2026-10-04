@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -4817,6 +4818,24 @@ public class ChessGame {
         }
     }
 
+    /**
+     * Run {@code action} while holding the read lock, so every call inside it
+     * observes the same position (no writer can interleave between them). <p>
+     *
+     * Do not call this game's write methods (makeMove, unmakeMove, etc.) from inside it &mdash; that would deadlock. <br>
+     * Don't keep the view after the action returns; outside the action each call locks separately again and is no longer atomic.
+     *
+     * @param action consumer reading from the view
+     */
+    public void read(Consumer<ChessGameReadView> action) {
+        Objects.requireNonNull(action, "Action can not be null!");
+
+        read(view -> {
+            action.accept(view);
+            return null;
+        });
+    }
+
     private final class ReadViewImplement implements ChessGameReadView {
         @Override public String getFEN() { return ChessGame.this.getFEN(); }
         @Override public long getZobristHash() { return ChessGame.this.getZobristHash(); }
@@ -4845,6 +4864,49 @@ public class ChessGame {
         @Override public boolean canMakeMoveSan(String sanString) { return ChessGame.this.canMakeMoveSan(sanString); }
         @Override public boolean canMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType)
         { return ChessGame.this.canMakeMove(sourceSquare, targetSquare, promotionType); }
+    }
+
+    /**
+     * Run {@code action} while holding the write lock, so a check-then-act sequence
+     * (e.g. {@code if (canUndo()) unmakeMove();}) executes atomically with no other
+     * thread's read or write interleaving. <p>
+     *
+     * Unlike {@link #read}, calling this game's read methods from inside {@code action}
+     * is safe (write-to-read lock downgrading is supported), and calling other write
+     * methods is also safe (the write lock is reentrant on the same thread).
+     *
+     * @param action function operating on this game and returning the result
+     * @return whatever the action returns
+     */
+    public <T> T write(Function<ChessGame, T> action) {
+        Objects.requireNonNull(action, "Action can not be null!");
+
+        writeLock.lock();
+        try {
+            return action.apply(this);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Run {@code action} while holding the write lock, so a check-then-act sequence
+     * (e.g. {@code if (canUndo()) unmakeMove();}) executes atomically with no other
+     * thread's read or write interleaving. <p>
+     *
+     * Unlike {@link #read}, calling this game's read methods from inside {@code action}
+     * is safe (write-to-read lock downgrading is supported), and calling other write
+     * methods is also safe (the write lock is reentrant on the same thread).
+     *
+     * @param action consumer operating on this game
+     */
+    public void write(Consumer<ChessGame> action) {
+        Objects.requireNonNull(action, "Action can not be null!");
+
+        write(game -> {
+            action.accept(game);
+            return null;
+        });
     }
 
     /**

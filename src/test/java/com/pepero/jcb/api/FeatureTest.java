@@ -1,5 +1,7 @@
 package com.pepero.jcb.api;
 
+import java.util.function.Function;
+
 public class FeatureTest {
     public static void main(String[] args) {
         ChessGame game = ChessGame.startPosition();
@@ -17,6 +19,7 @@ public class FeatureTest {
             }
         }
 
-        game.read(v -> new Snapshot(v.getFEN(), v.getZobristHash(), v.getLegalMoves().size()));
+        Snapshot snapshot = game.read((Function<ChessGameReadView, Snapshot>) v ->
+                new Snapshot(v.getFEN(), v.getZobristHash(), v.getLegalMoves().size()));
     }
 }
