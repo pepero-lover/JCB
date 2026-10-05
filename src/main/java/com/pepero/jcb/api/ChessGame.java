@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -750,15 +751,13 @@ public class ChessGame {
     public void makeMoveLan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
-            outcome = internalMakeMove(encodedMove, lan);
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
+            MoveOutcome outcome = internalMakeMove(encodedMove, lan);
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -773,18 +772,14 @@ public class ChessGame {
     public String makeMoveLanReturningSan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
-        MoveOutcome outcome;
-        String san;
-        writeLock.lock();
-        try {
+        return doWrite(() -> {
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(chessboard, lan);
-            san = ConvertStringMoveUtils.toSanString(chessboard, encodedMove);
-            outcome = internalMakeMoveValidated(encodedMove);
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
-        return san;
+            String san = ConvertStringMoveUtils.toSanString(chessboard, encodedMove);
+            MoveOutcome outcome = internalMakeMoveValidated(encodedMove);
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return san;
+        });
     }
 
     /**
@@ -819,16 +814,14 @@ public class ChessGame {
     public void makeMoveSan(String sanString) {
         if (sanString == null) throw new NullPointerException("San data can not be null!");
 
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             String lan = ConvertStringMoveUtils.toLanString(this.chessboard, sanString);
             int encodedMove = ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan);
-            outcome = internalMakeMove(encodedMove, lan);
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
+            MoveOutcome outcome = internalMakeMove(encodedMove, lan);
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -842,14 +835,12 @@ public class ChessGame {
      * @throws ConvertMoveException if move data is not correct
      */
     public void makeMove(int encodedMove) {
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
-            outcome = internalMakeMove(encodedMove, null);
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
+        doWrite(() -> {
+            MoveOutcome outcome = internalMakeMove(encodedMove, null);
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -866,9 +857,7 @@ public class ChessGame {
     public void makeMoveAll(List<MoveInfo> moveInfos) {
         if (moveInfos == null) throw new NullPointerException("Move info list can not be null!");
 
-        List<MoveOutcome> outcomes;
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             String moveSequenceString = moveInfos.stream()
                     .map(MoveInfo::toLanString)
                     .collect(Collectors.joining(" "));
@@ -890,17 +879,14 @@ public class ChessGame {
                 encodedMoves[i] = encodedMove;
             }
 
-            outcomes = new ArrayList<>(encodedMoves.length);
+            List<MoveOutcome> outcomes = new ArrayList<>(encodedMoves.length);
             for (int encodedMove : encodedMoves) {
                 outcomes.add(internalMakeMoveValidated(encodedMove));
             }
-        } finally {
-            writeLock.unlock();
-        }
 
-        for (MoveOutcome outcome : outcomes) {
-            dispatchMoveNotifications(outcome);
-        }
+            queueNotification(() -> outcomes.forEach(this::dispatchMoveNotifications));
+            return null;
+        });
     }
 
     /**
@@ -918,11 +904,9 @@ public class ChessGame {
     public void makeMoveSanAll(String sanString) {
         if(sanString == null) throw new NullPointerException("San string can not be null!");
 
-        List<MoveOutcome> outcomes;
-        writeLock.lock();
-        try {
-            sanString = sanString.trim();
-            String[] sanStrings = sanString.isEmpty() ? new String[0] : sanString.split("\\s+");
+        doWrite(() -> {
+            final String sanSequence = sanString.trim();
+            String[] sanStrings = sanSequence.isEmpty() ? new String[0] : sanSequence.split("\\s+");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
             int[] encodedMoves = new int[sanStrings.length];
@@ -936,23 +920,20 @@ public class ChessGame {
                     MoveGenerator.makeMove(tempChessboard, encodedMove);
                     encodedMoves[i] = encodedMove;
                 } catch (IllegalMoveException e) {
-                    throw e.withSequenceContext(i, sanString).withPly(tempChessboard.ply);
+                    throw e.withSequenceContext(i, sanSequence).withPly(tempChessboard.ply);
                 } catch (ConvertMoveException e) {
-                    throw e.withSequenceContext(i, sanString).withPly(tempChessboard.ply);
+                    throw e.withSequenceContext(i, sanSequence).withPly(tempChessboard.ply);
                 }
             }
 
-            outcomes = new ArrayList<>(encodedMoves.length);
+            List<MoveOutcome> outcomes = new ArrayList<>(encodedMoves.length);
             for (int encodedMove : encodedMoves) {
                 outcomes.add(internalMakeMoveValidated(encodedMove));
             }
-        } finally {
-            writeLock.unlock();
-        }
 
-        for (MoveOutcome outcome : outcomes) {
-            dispatchMoveNotifications(outcome);
-        }
+            queueNotification(() -> outcomes.forEach(this::dispatchMoveNotifications));
+            return null;
+        });
     }
 
     /**
@@ -970,11 +951,9 @@ public class ChessGame {
     public void makeMoveLanAll(String lanString) {
         if(lanString == null) throw new NullPointerException("Lan string can not be null!");
 
-        List<MoveOutcome> outcomes;
-        writeLock.lock();
-        try {
-            lanString = lanString.trim();
-            String[] lanStrings = lanString.isEmpty() ? new String[0] : lanString.split("\\s+");
+        doWrite(() -> {
+            final String lanSequence = lanString.trim();
+            String[] lanStrings = lanSequence.isEmpty() ? new String[0] : lanSequence.split("\\s+");
 
             Chessboard tempChessboard = new Chessboard(this.chessboard);
             int[] encodedMoves = new int[lanStrings.length];
@@ -988,23 +967,20 @@ public class ChessGame {
                     MoveGenerator.makeMove(tempChessboard, encodedMove);
                     encodedMoves[i] = encodedMove;
                 } catch (IllegalMoveException e) {
-                    throw e.withSequenceContext(i, lanString).withPly(tempChessboard.ply);
+                    throw e.withSequenceContext(i, lanSequence).withPly(tempChessboard.ply);
                 } catch (ConvertMoveException e) {
-                    throw e.withSequenceContext(i, lanString).withPly(tempChessboard.ply);
+                    throw e.withSequenceContext(i, lanSequence).withPly(tempChessboard.ply);
                 }
             }
 
-            outcomes = new ArrayList<>(encodedMoves.length);
+            List<MoveOutcome> outcomes = new ArrayList<>(encodedMoves.length);
             for (int encodedMove : encodedMoves) {
                 outcomes.add(internalMakeMoveValidated(encodedMove));
             }
-        } finally {
-            writeLock.unlock();
-        }
 
-        for (MoveOutcome outcome : outcomes) {
-            dispatchMoveNotifications(outcome);
-        }
+            queueNotification(() -> outcomes.forEach(this::dispatchMoveNotifications));
+            return null;
+        });
     }
 
     /**
@@ -1247,9 +1223,7 @@ public class ChessGame {
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
         Objects.requireNonNull(promotionType, "The promotion type can not be null!");
 
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             boolean isAntichessLike = this.chessboard.gameVariant == GameVariant.GIVEAWAY
                     || this.chessboard.gameVariant == GameVariant.SUICIDE;
 
@@ -1264,11 +1238,11 @@ public class ChessGame {
             encodedMove = ConvertStringMoveUtils.parseMoveDataToEncodedMove(
                     this.chessboard, sourceSquare.getIndex(), targetSquare.getIndex(), promotionType.getPieceType()
             );
-            outcome = internalMakeMoveValidated(encodedMove);
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
+            MoveOutcome outcome = internalMakeMoveValidated(encodedMove);
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -1292,14 +1266,12 @@ public class ChessGame {
      * @throws IllegalMoveException if move is illegal move
      */
     public void makeMove(MoveInfo moveInfo) {
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
-            outcome = internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
-        } finally {
-            writeLock.unlock();
-        }
-        dispatchMoveNotifications(outcome);
+        doWrite(() -> {
+            MoveOutcome outcome = internalMakeMove(moveInfo.originEncodedData(), moveInfo.toLanString());
+
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -1621,18 +1593,12 @@ public class ChessGame {
      * @throws EmptyUndoRedoException if move history is empty and unmake move
      */
     public MoveInfo unmakeMove() {
-        UndoRedoOutcome outcome;
+        return doWrite(() -> {
+            UndoRedoOutcome outcome = internalUnmakeMove();
 
-        writeLock.lock();
-        try {
-            outcome = internalUnmakeMove();
-        } finally {
-            writeLock.unlock();
-        }
-
-        dispatchUndoNotifications(outcome);
-
-        return outcome.moveInfo();
+            queueNotification(() -> dispatchUndoNotifications(outcome));
+            return outcome.moveInfo();
+        });
     }
 
     /**
@@ -1663,18 +1629,12 @@ public class ChessGame {
      * @throws EmptyUndoRedoException if redo history is empty and remake move
      */
     public MoveInfo remakeMove(int variationIndex) {
-        UndoRedoOutcome outcome;
+        return doWrite(() -> {
+            UndoRedoOutcome outcome = internalRemakeMove(variationIndex);
 
-        writeLock.lock();
-        try {
-            outcome = internalRemakeMove(variationIndex);
-        } finally {
-            writeLock.unlock();
-        }
-
-        dispatchRedoNotifications(outcome);
-
-        return outcome.moveInfo();
+            queueNotification(() -> dispatchRedoNotifications(outcome));
+            return outcome.moveInfo();
+        });
     }
 
     /**
@@ -1792,9 +1752,7 @@ public class ChessGame {
         Objects.requireNonNull(pieceType, "Piece type cannot be null!");
         Objects.requireNonNull(targetSquare, "Target square cannot be null!");
 
-        MoveOutcome outcome;
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             int encodedMove = MoveGenerator.isLegalDrop(this.chessboard, targetSquare.getIndex(), pieceType.getPieceType());
 
             if (encodedMove == ILLEGAL_MOVE) {
@@ -1803,12 +1761,11 @@ public class ChessGame {
                         ChessboardUtils.getFen(this.chessboard) + ")");
             }
 
-            outcome = internalMakeMove(encodedMove, new MoveInfo(encodedMove).toLanString());
-        } finally {
-            writeLock.unlock();
-        }
+            MoveOutcome outcome = internalMakeMove(encodedMove, new MoveInfo(encodedMove).toLanString());
 
-        dispatchMoveNotifications(outcome);
+            queueNotification(() -> dispatchMoveNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -3068,13 +3025,10 @@ public class ChessGame {
     private void forceEndGame(GameResult result, GameOverReason reason) {
         validateForcedResult(result, reason);
 
-        boolean alreadyOver;
-
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             MoveNode tipNode = getLastMainlineNode(this.moveHistoryRoot);
 
-            alreadyOver = evaluateGameStateForNotificationAt(tipNode).gameOverReason()
+            boolean alreadyOver = evaluateGameStateForNotificationAt(tipNode).gameOverReason()
                     != GameOverReason.NOTGAMEOVER;
 
             if (!alreadyOver) {
@@ -3085,16 +3039,17 @@ public class ChessGame {
                 tipNode.terminalResult = result;
                 tipNode.terminalReason = reason;
             }
-        } finally {
-            writeLock.unlock();
-        }
 
-        if (alreadyOver) {
-            throw new IllegalStateException("This game is already finished!");
-        }
+            if (alreadyOver) {
+                throw new IllegalStateException("This game is already finished!");
+            }
 
-        notifyStateChecked(result, reason);
-        notifyGameOver(result, reason);
+            queueNotification(() -> {
+                notifyStateChecked(result, reason);
+                notifyGameOver(result, reason);
+            });
+            return null;
+        });
     }
 
 
@@ -3150,26 +3105,28 @@ public class ChessGame {
     private record ResultAndReason(GameResult result, GameOverReason reason) {}
 
     /**
+     * Node and its game-over evaluation, returned together out of a write action
+     */
+    private record NodeAndOutcome(MoveNode node, GameOverCheckOutcome outcome) {}
+
+    /**
      * Get game result and reason at this node
      */
     private ResultAndReason getGameResultAndReasonAt(Long nodeId, boolean includeClaimableDraws, boolean notifyIfNewlyOver) {
-        GameOverCheckOutcome outcome;
-        MoveNode targetNode;
-
-        writeLock.lock();
-        try {
-            targetNode = (nodeId != null) ? nodeCache.get(nodeId) : getLastMainlineNode(this.moveHistoryRoot);
-            if (targetNode == null) throw new MoveNotFoundException("Could not find the node to evaluate! (Node ID : " +
+        NodeAndOutcome evaluated = doWrite(() -> {
+            MoveNode node = (nodeId != null) ? nodeCache.get(nodeId) : getLastMainlineNode(this.moveHistoryRoot);
+            if (node == null) throw new MoveNotFoundException("Could not find the node to evaluate! (Node ID : " +
                     (nodeId != null ? nodeId : "last mainline node") + ")");
 
-            outcome = evaluateGameStateForNotificationAt(targetNode);
-        } finally {
-            writeLock.unlock();
-        }
+            GameOverCheckOutcome evalOutcome = evaluateGameStateForNotificationAt(node);
 
-        if (notifyIfNewlyOver && outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+            if (notifyIfNewlyOver && evalOutcome.newlyOver()) {
+                queueNotification(() -> notifyGameOver(evalOutcome.gameResult(), evalOutcome.gameOverReason()));
+            }
+            return new NodeAndOutcome(node, evalOutcome);
+        });
+        MoveNode targetNode = evaluated.node();
+        GameOverCheckOutcome outcome = evaluated.outcome();
 
         if (!includeClaimableDraws || outcome.gameResult() != GameResult.UNKNOWN) {
             return new ResultAndReason(outcome.gameResult(), outcome.gameOverReason());
@@ -3416,11 +3373,7 @@ public class ChessGame {
      * @throws HistoryTreeException when node to remove is root node
      */
     public void deleteVariation(long nodeId) {
-        JumpOutcome jumpOutcome = null;
-        GameOverCheckOutcome outcome;
-
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             MoveNode targetNode = nodeCache.get(nodeId);
             if (targetNode == null) throw new MoveNotFoundException("Could not find the node to delete! (Node ID : " + nodeId + ")");
             if (targetNode == moveHistoryRoot) throw new HistoryTreeException("Cannot delete the root node!");
@@ -3437,28 +3390,32 @@ public class ChessGame {
                 temp = temp.parent;
             }
 
+            final JumpOutcome jumpOutcome;
             if (isCurrentNodeDeleting) {
                 jumpOutcome = internalJumpToNode(parent.id);
+            } else {
+                jumpOutcome = null;
             }
 
             parent.children.remove(targetNode);
 
             removeNodeFromCache(targetNode);
 
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
-        } finally {
-            writeLock.unlock();
-        }
+            GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
-        if (jumpOutcome != null) {
-            dispatchJumpNotifications(jumpOutcome);
-        }
+            queueNotification(() -> {
+                if (jumpOutcome != null) {
+                    dispatchJumpNotifications(jumpOutcome);
+                }
 
-        notifyHistoryChanged();
-        notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+                notifyHistoryChanged();
+                notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
+                if (outcome.newlyOver()) {
+                    notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
+                }
+            });
+            return null;
+        });
     }
 
     /**
@@ -3472,14 +3429,10 @@ public class ChessGame {
      * @param nodeId node to promote
      */
     public void promoteVariationLocal(long nodeId) {
-        boolean shouldNotifyHistory = false;
-        GameOverCheckOutcome outcome = null;
-
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             MoveNode targetNode = nodeCache.get(nodeId);
             if (targetNode == null) throw new MoveNotFoundException("Could not find the node to promote! (Node ID : " + nodeId + ")");
-            if (targetNode == moveHistoryRoot || targetNode.parent == null) return;
+            if (targetNode == moveHistoryRoot || targetNode.parent == null) return null;
 
             MoveNode parent = targetNode.parent;
             int currentIndex = parent.children.indexOf(targetNode);
@@ -3488,21 +3441,19 @@ public class ChessGame {
                 parent.children.remove(currentIndex);
                 parent.children.addFirst(targetNode);
 
-                outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+                GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
-                shouldNotifyHistory = true;
+                queueNotification(() -> {
+                    notifyHistoryChanged();
+                    notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
+                    if (outcome.newlyOver()) {
+                        notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
+                    }
+                });
             }
-        } finally {
-            writeLock.unlock();
-        }
 
-        if (shouldNotifyHistory) notifyHistoryChanged();
-        if(outcome != null) {
-            notifyStateChecked(outcome.gameResult(), outcome.gameOverReason());
-            if(outcome.newlyOver()) {
-                notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-            }
-        }
+            return null;
+        });
     }
 
     /**
@@ -3642,16 +3593,12 @@ public class ChessGame {
      * @param nodeId node id
      */
     public void jumpToNode(long nodeId) {
-        JumpOutcome outcome;
+        doWrite(() -> {
+            JumpOutcome outcome = internalJumpToNode(nodeId);
 
-        writeLock.lock();
-        try {
-            outcome = internalJumpToNode(nodeId);
-        } finally {
-            writeLock.unlock();
-        }
-
-        dispatchJumpNotifications(outcome);
+            queueNotification(() -> dispatchJumpNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -3668,10 +3615,7 @@ public class ChessGame {
     public void jumpToMainlinePly(int targetPly) {
         if (targetPly < 0) throw new IllegalArgumentException("Target ply can not be negative! (Given : " + targetPly + ")");
 
-        JumpOutcome outcome;
-
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             if (currentNode == null)
                 throw new IllegalStateException("currentNode is unexpectedly null! This is likely a bug in ChessGame's internal state.");
 
@@ -3684,12 +3628,11 @@ public class ChessGame {
                 targetNode = targetNode.children.getFirst();
             }
 
-            outcome = internalJumpToNode(targetNode.id);
-        } finally {
-            writeLock.unlock();
-        }
+            JumpOutcome outcome = internalJumpToNode(targetNode.id);
 
-        dispatchJumpNotifications(outcome);
+            queueNotification(() -> dispatchJumpNotifications(outcome));
+            return null;
+        });
     }
 
     /**
@@ -4238,12 +4181,7 @@ public class ChessGame {
      * @throws FENConvertException if the PGN's start FEN is invalid or fails to parse
      */
     public void loadPGN(String pgnString, int maxNodesCount) {
-        GameResult resultToNotify;
-        GameOverReason reasonToNotify;
-        String fenToNotify;
-
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             PGNParsedData parsedData = PGNParser.parse(pgnString, maxNodesCount, this.nodeCounter);
 
             String fenToLoad = parsedData.startFEN();
@@ -4279,19 +4217,20 @@ public class ChessGame {
             this.gameResult = parsedData.gameResult();
             this.gameOverReason = parsedData.gameOverReason();
 
-            resultToNotify = this.gameResult;
-            reasonToNotify = this.gameOverReason;
-            fenToNotify = ChessboardUtils.getFen(this.chessboard);
-        } finally {
-            writeLock.unlock();
-        }
+            GameResult resultToNotify = this.gameResult;
+            GameOverReason reasonToNotify = this.gameOverReason;
+            String fenToNotify = ChessboardUtils.getFen(this.chessboard);
 
-        notifyHistoryChanged();
-        notifyPositionJumped(fenToNotify);
-        notifyStateChecked(resultToNotify, reasonToNotify);
-        if (resultToNotify != GameResult.UNKNOWN) {
-            notifyGameOver(resultToNotify, reasonToNotify);
-        }
+            queueNotification(() -> {
+                notifyHistoryChanged();
+                notifyPositionJumped(fenToNotify);
+                notifyStateChecked(resultToNotify, reasonToNotify);
+                if (resultToNotify != GameResult.UNKNOWN) {
+                    notifyGameOver(resultToNotify, reasonToNotify);
+                }
+            });
+            return null;
+        });
     }
 
     /**
@@ -4342,27 +4281,21 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPGN(int maxNodes) {
-        GameOverCheckOutcome outcome;
-        String pgn;
-
-        writeLock.lock();
-        try {
+        return doWrite(() -> {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+            GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
-            pgn = PGNExporter.export(this,
+            String pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), outcome.gameResult(), moveHistoryRoot, maxNodes), false);
-        } finally {
-            writeLock.unlock();
-        }
 
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+            if (outcome.newlyOver()) {
+                queueNotification(() -> notifyGameOver(outcome.gameResult(), outcome.gameOverReason()));
+            }
 
-        return pgn;
+            return pgn;
+        });
     }
 
     /**
@@ -4393,14 +4326,10 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than maxNodes
      */
     public String getMainlinePGN(int maxNodes) {
-        GameOverCheckOutcome outcome;
-        String pgn;
-
-        writeLock.lock();
-        try {
+        return doWrite(() -> {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+            GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -4427,16 +4356,14 @@ public class ChessGame {
             }
 
             sb.append(PGNExporter.getGameResultString(outcome.gameResult()));
-            pgn = sb.toString().trim();
-        } finally {
-            writeLock.unlock();
-        }
+            String pgn = sb.toString().trim();
 
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+            if (outcome.newlyOver()) {
+                queueNotification(() -> notifyGameOver(outcome.gameResult(), outcome.gameOverReason()));
+            }
 
-        return pgn;
+            return pgn;
+        });
     }
 
     /**
@@ -4450,27 +4377,21 @@ public class ChessGame {
      * @throws NodesOverflowException if move count is more than <b>maxNodes</b>
      */
     public String getPurePGN(int maxNodes) {
-        GameOverCheckOutcome outcome;
-        String pgn;
-
-        writeLock.lock();
-        try {
+        return doWrite(() -> {
             if (this.headers.isEmpty()) setDefaultHeaders();
 
-            outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
+            GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
-            pgn = PGNExporter.export(this,
+            String pgn = PGNExporter.export(this,
                     PGNExporter.createPGNGame(headers, startPositionFEN, getGameVariant(),
                             isChess960(), outcome.gameResult(), moveHistoryRoot, maxNodes), true);
-        } finally {
-            writeLock.unlock();
-        }
 
-        if (outcome.newlyOver()) {
-            notifyGameOver(outcome.gameResult(), outcome.gameOverReason());
-        }
+            if (outcome.newlyOver()) {
+                queueNotification(() -> notifyGameOver(outcome.gameResult(), outcome.gameOverReason()));
+            }
 
-        return pgn;
+            return pgn;
+        });
     }
 
     /**
@@ -4867,6 +4788,52 @@ public class ChessGame {
     }
 
     /**
+     * Notifications queued by the currently-held write lock, flushed once it's fully released.
+     * <p>Only accessed while holding the write lock.
+     */
+    private final List<Runnable> pendingNotifications = new ArrayList<>();
+
+    /**
+     * Queue {@code notification} to run once the outermost write-lock holder on this thread
+     * releases the lock, instead of running it immediately. Used inside {@link #doWrite} bodies
+     * so that nested write calls (e.g. {@code makeMove()} called from inside {@link #write})
+     * never fire listener callbacks while the write lock is still held.
+     *
+     * @param notification the notification to run later
+     */
+    private void queueNotification(Runnable notification) {
+        pendingNotifications.add(notification);
+    }
+
+    /**
+     * Run {@code body} while holding the write lock, then dispatch any notifications queued
+     * via {@link #queueNotification} only once the lock is fully released. <br>
+     * <p>If {@code body} throws, notifications queued so far are discarded (nothing is dispatched).
+     *
+     * @param body the write action; queues notifications via {@link #queueNotification} instead of calling them directly
+     * @return whatever {@code body} returns
+     */
+    private <T> T doWrite(Supplier<T> body) {
+        boolean outermost = lock.getWriteHoldCount() == 0;
+        T result;
+        List<Runnable> toRun = null;
+
+        writeLock.lock();
+        try {
+            result = body.get();
+            if (outermost) {
+                toRun = new ArrayList<>(pendingNotifications);
+            }
+        } finally {
+            if (outermost) pendingNotifications.clear();
+            writeLock.unlock();
+        }
+
+        if (toRun != null) toRun.forEach(Runnable::run);
+        return result;
+    }
+
+    /**
      * Run {@code action} while holding the write lock, so a check-then-act sequence
      * (e.g. {@code if (canUndo()) unmakeMove();}) executes atomically with no other
      * thread's read or write interleaving. <p>
@@ -4881,12 +4848,7 @@ public class ChessGame {
     public <T> T write(Function<ChessGame, T> action) {
         Objects.requireNonNull(action, "Action can not be null!");
 
-        writeLock.lock();
-        try {
-            return action.apply(this);
-        } finally {
-            writeLock.unlock();
-        }
+        return doWrite(() -> action.apply(this));
     }
 
     /**

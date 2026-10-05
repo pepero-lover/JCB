@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `probeWdl`, `probeWdlTable`, `probeDtz`, `tryDirectDtz`, `probeDtzViaSearch` methods.
 - On `ConvertStringMoveUtils.addMoveNumberToSanSequence`, changed parameter `Chessboard` to full move, and white turn.
   and also added `addMoveNumberToSanSequence(int fullMovePly, String sanSequence)`.
+- On `ChessGame`, changed listener notifications (move made, jumped, game over, etc.) to be queued and dispatched
+  only after the outermost write lock is fully released, so listeners are never called while the write lock is held,
+  even when write methods are nested (e.g. `makeMove()` inside `write()`).
 - On `UCIEngineWrapper`, changed `EngineLine` returning raw san string instead of returning number added san. (1. e4 e5 2. Nf3 -> e4 e5 Nf3)
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
