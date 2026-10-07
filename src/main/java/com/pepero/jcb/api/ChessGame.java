@@ -621,6 +621,7 @@ public class ChessGame implements ChessGameReadView{
      * @param dialect FEN dialect (affects 3-check variant output format)
      * @return fen
      */
+    @Override
     public String getFEN(FENDialect dialect) {
         readLock.lock();
         try {
@@ -1208,6 +1209,7 @@ public class ChessGame implements ChessGameReadView{
      * @param sourceSquare Source square
      * @param targetSquare Target square
      */
+    @Override
     public boolean canMakeMove(Square sourceSquare, Square targetSquare) {
         return canMakeMove(sourceSquare, targetSquare, PieceType.NONE);
     }
@@ -1684,6 +1686,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws IllegalStateException if current node (move) not found
      */
+    @Override
     public boolean canRedo(int variationIndex) {
         readLock.lock();
         try {
@@ -1701,6 +1704,7 @@ public class ChessGame implements ChessGameReadView{
      * <b>e2e4 e7e5 g1f3 ( b1c3 &lt;- pointer ) b8c6 ) g8f6</b> <br>
      * result: <b>e2e4 e7e5 b1c3</b>
      */
+    @Override
     public List<MoveInfo> getPathToCurrentNode() {
         readLock.lock();
         try {
@@ -1736,6 +1740,7 @@ public class ChessGame implements ChessGameReadView{
      * @param pieceType dropping piece type
      * @param target target square
      */
+    @Override
     public boolean canDropPiece(PieceType pieceType, Square target) {
         Objects.requireNonNull(pieceType, "Piece type cannot be null!");
         Objects.requireNonNull(target, "Target square cannot be null!");
@@ -1781,6 +1786,7 @@ public class ChessGame implements ChessGameReadView{
      * @param source source square
      * @param target target square
      */
+    @Override
     public boolean shouldPromotion(Square source, Square target) {
         readLock.lock();
         try {
@@ -2002,6 +2008,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @param square square
      */
+    @Override
     public Piece getPieceOnSquare(Square square){
         readLock.lock();
         try {
@@ -2086,6 +2093,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @return generated move
      */
+    @Override
     public List<MoveInfo> getLegalMovesForTarget(Square target) {
         Objects.requireNonNull(target, "Target Square is null!");
 
@@ -2134,6 +2142,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @param square square
      */
+    @Override
     public boolean isEmpty(Square square) {
         readLock.lock();
         try {
@@ -2550,6 +2559,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get whether this position can be claimed draw
      */
+    @Override
     public boolean canClaimDraw() {
         readLock.lock();
 
@@ -2580,6 +2590,7 @@ public class ChessGame implements ChessGameReadView{
      * Get claimable draw reason <br>
      * like 50 moves draw claim, threefold draw claim
      */
+    @Override
     public GameOverReason getClaimableDrawReason() {
         readLock.lock();
 
@@ -2600,6 +2611,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
+    @Override
     public GameOverReason isGameOver(boolean includeClaimableDraws) {
         readLock.lock();
 
@@ -2672,6 +2684,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @return game over reason (if not, return GameOverReason.NOTGAMEOVER)
      */
+    @Override
     public GameOverReason isGameOver() {
         return isGameOver(true);
     }
@@ -2685,6 +2698,7 @@ public class ChessGame implements ChessGameReadView{
      * @throws ConvertMoveException when converting move failed
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public String toSan(String lanMove){
         if(lanMove == null) throw new NullPointerException("Lan data can not be null!");
 
@@ -2705,6 +2719,7 @@ public class ChessGame implements ChessGameReadView{
      * @throws ConvertMoveException if converting move failed
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public String toSan(List<MoveInfo> moveData){
         readLock.lock();
         try {
@@ -2727,6 +2742,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public String toSan(MoveInfo moveData){
         if(moveData == null) throw new NullPointerException("Move data can not be null!");
 
@@ -2751,6 +2767,7 @@ public class ChessGame implements ChessGameReadView{
      * @throws ConvertMoveException if converting move failed
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public String toSan(int[] encodedMoves) {
         readLock.lock();
         try {
@@ -2772,6 +2789,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public String toSan(int encodedMove){
         readLock.lock();
         try {
@@ -2790,6 +2808,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws ConvertMoveException if converting move failed
      */
+    @Override
     public String toLanString(String san) {
         if(san == null) throw new NullPointerException("San data can not be null!");
 
@@ -2810,6 +2829,7 @@ public class ChessGame implements ChessGameReadView{
      * @throws ConvertMoveException if converting move failed
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public MoveInfo sanToMoveData(String san) {
         if(san == null) throw new NullPointerException("San data can not be null!");
 
@@ -2832,6 +2852,7 @@ public class ChessGame implements ChessGameReadView{
      * @throws ConvertMoveException if converting move failed
      * @throws IllegalMoveException if move is illegal
      */
+    @Override
     public MoveInfo lanToMoveData(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
@@ -2873,13 +2894,8 @@ public class ChessGame implements ChessGameReadView{
      *
      * @return plain san sequence with move numbers stripped
      */
-    public String removeNumberFromSan(String numberedSanSequence) {
-        readLock.lock();
-        try {
-            return ConvertStringMoveUtils.removeMoveNumberFromSanSequence(numberedSanSequence);
-        } finally {
-            readLock.unlock();
-        }
+    public static String removeNumberFromSan(String numberedSanSequence) {
+        return ConvertStringMoveUtils.removeMoveNumberFromSanSequence(numberedSanSequence);
     }
 
     /**
@@ -2890,6 +2906,7 @@ public class ChessGame implements ChessGameReadView{
      * @return checked count for each white/black
      * @throws VariantNotMatchException if variant isn't three check
      */
+    @Override
     public int[] getCheckCount() {
         readLock.lock();
         try {
@@ -2907,6 +2924,7 @@ public class ChessGame implements ChessGameReadView{
      * @return checked count for white
      * @throws VariantNotMatchException if variant isn't three check
      */
+    @Override
     public int getWhiteCheckedCount() {
         readLock.lock();
         try {
@@ -2924,6 +2942,7 @@ public class ChessGame implements ChessGameReadView{
      * @return checked count for black
      * @throws VariantNotMatchException if variant isn't three check
      */
+    @Override
     public int getBlackCheckedCount() {
         readLock.lock();
         try {
@@ -3476,6 +3495,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get node IDs of all children of the current node.
      */
+    @Override
     public List<Long> getChildNodeIds() {
         readLock.lock();
         try {
@@ -3488,6 +3508,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get node move infos of all children of the current node.
      */
+    @Override
     public List<MoveInfo> getChildMoveInfos() {
         readLock.lock();
         try {
@@ -3699,6 +3720,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @return header map (String, value)
      */
+    @Override
     public LinkedHashMap<String, String> getHeaders() {
         readLock.lock();
         try {
@@ -4257,6 +4279,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws NodesOverflowException if move count is too large
      */
+    @Override
     public MoveNodeDTO getRootNode() {
         readLock.lock();
         try {
@@ -4277,6 +4300,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws NodesOverflowException if move count is more than maxNodesCount
      */
+    @Override
     public MoveNodeDTO getRootNode(int maxNodesCount) {
         readLock.lock();
         try {
@@ -4503,6 +4527,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws NodesOverflowException if move count is too large (you can adjust by {@link #getMainlineData(int)})
      */
+    @Override
     public List<MoveDataDTO> getMainlineData() {
         return getMainlineData(MAX_PGN_NODE_COUNT);
     }
@@ -4519,6 +4544,7 @@ public class ChessGame implements ChessGameReadView{
      *
      * @throws NodesOverflowException if size is bigger than this max nodes
      */
+    @Override
     public List<MoveDataDTO> getMainlineData(int maxNodes) {
         List<MoveDataDTO> result = new ArrayList<>();
 
@@ -4566,6 +4592,7 @@ public class ChessGame implements ChessGameReadView{
      * Get game start position fen <br>
      * if this ChessGame generated with {@link #fromFEN(String)} methods, the result is the reset fen string
      */
+    @Override
     public String getStartPositionFEN() {
         readLock.lock();
         try {
@@ -4578,6 +4605,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get whether this ChessGame is chess960
      */
+    @Override
     public boolean isChess960() {
         readLock.lock();
         try {
@@ -4698,6 +4726,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get this position's polyglot hash
      */
+    @Override
     public long getPolyglotHash() {
         readLock.lock();
         try {
@@ -4863,6 +4892,7 @@ public class ChessGame implements ChessGameReadView{
      * Get current chess board copy (snapshot) <br>
      * This returns just a {@link Chessboard} class used on core logic
      */
+    @Override
     public Chessboard getBoardSnapshot() {
         readLock.lock();
         try {
@@ -4875,6 +4905,7 @@ public class ChessGame implements ChessGameReadView{
     /**
      * Get this board to ascii
      */
+    @Override
     public String toAscii() {
         readLock.lock();
         try {
