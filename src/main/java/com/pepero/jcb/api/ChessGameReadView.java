@@ -17,7 +17,7 @@ public interface ChessGameReadView {
 
     long getZobristHash();
 
-    boolean isWhiteTurn();
+    boolean getTurn();
 
     boolean isCheck();
 

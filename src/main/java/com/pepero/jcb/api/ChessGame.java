@@ -51,7 +51,7 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * {@code if (game.canUndo()) game.unmakeMove();}) are not atomic across calls &mdash;
  * synchronize externally if you need that.
  */
-public class ChessGame {
+public class ChessGame implements ChessGameReadView{
     // start position constant
     public static final String START_POSITION = Chessboard.start_position;
 
@@ -600,6 +600,7 @@ public class ChessGame {
      *
      * @return fen (lichess dialect) if you want to change dialect, go to {@link #getFEN(FENDialect)}
      */
+    @Override
     public String getFEN() {
         readLock.lock();
         try {
@@ -725,6 +726,7 @@ public class ChessGame {
      *
      * @param lan move like "e2e4", "e7e5" (LAN (or UCI) move string)
      */
+    @Override
     public boolean canMakeMoveLan(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
@@ -788,6 +790,7 @@ public class ChessGame {
      *
      * @param sanString san string like "e4", "Nf3"
      */
+    @Override
     public boolean canMakeMoveSan(String sanString) {
         if (sanString == null) throw new NullPointerException("San data can not be null!");
 
@@ -1170,6 +1173,7 @@ public class ChessGame {
      * @param targetSquare Target square
      * @param promotionType Promotion type like queen, rook, bishop and knight ({@link PieceType#QUEEN}, {@link PieceType#ROOK} ... )
      */
+    @Override
     public boolean canMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType) {
         Objects.requireNonNull(sourceSquare, "The source square can not be null!");
         Objects.requireNonNull(targetSquare, "The target square can not be null!");
@@ -1642,6 +1646,7 @@ public class ChessGame {
      *
      * @return whether this position can undo
      */
+    @Override
     public boolean canUndo() {
         readLock.lock();
         try {
@@ -1658,6 +1663,7 @@ public class ChessGame {
      *
      * @throws IllegalStateException if current node (move) not found
      */
+    @Override
     public boolean canRedo() {
         readLock.lock();
         try {
@@ -1714,6 +1720,7 @@ public class ChessGame {
     /**
      * Get white turn
      */
+    @Override
     public boolean getTurn() {
         readLock.lock();
         try {
@@ -1802,6 +1809,7 @@ public class ChessGame {
      *
      * @param isWhite if white, returns black captured piece. if black, returns white captured piece.
      */
+    @Override
     public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) {
         readLock.lock();
         try {
@@ -1920,6 +1928,7 @@ public class ChessGame {
     /**
      * Get piece score (For GUI showing / material comparison)
      */
+    @Override
     public int getPieceScore() {
         readLock.lock();
         try {
@@ -2026,6 +2035,7 @@ public class ChessGame {
     /**
      * Get legal moves on this chess game
      */
+    @Override
     public List<MoveInfo> getLegalMoves() {
         readLock.lock();
         try {
@@ -2048,6 +2058,7 @@ public class ChessGame {
      * <p>
      * Example : chessboard = start pos, source = e2, returns e2e3, e2e4
      */
+    @Override
     public List<MoveInfo> getLegalMovesForSource(Square source) {
         Objects.requireNonNull(source, "Source Square is null!");
 
@@ -2099,6 +2110,7 @@ public class ChessGame {
      * Get board state Map(square)(piece) <br>
      * If the square is empty, doesn't contain on Map.
      */
+    @Override
     public Map<Square, Piece> getBoardStateMap() {
         readLock.lock();
         try {
@@ -2218,6 +2230,7 @@ public class ChessGame {
     /**
      * Get castling rights info
      */
+    @Override
     public CastlingRightsInfo getCastlingRights() {
         readLock.lock();
         try {
@@ -2235,6 +2248,7 @@ public class ChessGame {
     /**
      * Get whether the king is under attack
      */
+    @Override
     public boolean isCheck() {
         readLock.lock();
         try {
@@ -2248,6 +2262,7 @@ public class ChessGame {
      * Get checking piece (king attacker) <br>
      * The max size of this return list is 2.
      */
+    @Override
     public List<Square> getChecker() {
         readLock.lock();
         try {
@@ -2303,6 +2318,7 @@ public class ChessGame {
      * @param side attacking side (if true, white is attacking, black otherwise)
      * @return true if square is attacked, false otherwise
      */
+    @Override
     public boolean isSquareAttacked(Square square, boolean side) {
         Objects.requireNonNull(square, "Square cannot be null!");
         readLock.lock();
@@ -2316,6 +2332,7 @@ public class ChessGame {
     /**
      * Get whether this position is checkmate
      */
+    @Override
     public boolean isCheckmate() {
         readLock.lock();
         try {
@@ -2328,6 +2345,7 @@ public class ChessGame {
     /**
      * Get whether this position is stalemate
      */
+    @Override
     public boolean isStalemate() {
         readLock.lock();
         try {
@@ -2495,6 +2513,7 @@ public class ChessGame {
     /**
      * Get whether this position is insufficient material
      */
+    @Override
     public boolean isInsufficientMaterial() {
         readLock.lock();
         try {
@@ -2919,6 +2938,7 @@ public class ChessGame {
     /**
      * Get 'full move' on this ChessGame
      */
+    @Override
     public int getFullMove() {
         readLock.lock();
         try {
@@ -2931,6 +2951,7 @@ public class ChessGame {
     /**
      * Get 'half move' on this ChessGame
      */
+    @Override
     public int getHalfMove() {
         readLock.lock();
         try {
@@ -2946,6 +2967,7 @@ public class ChessGame {
      *
      * @return current ply count
      */
+    @Override
     public int getPly() {
         readLock.lock();
         try {
@@ -3478,6 +3500,7 @@ public class ChessGame {
     /**
      * Get current node's long id
      */
+    @Override
     public long getCurrentNodeId() {
         readLock.lock();
         try {
@@ -3491,6 +3514,7 @@ public class ChessGame {
      * Get current move info. <br>
      * If current node is root node, returns null.
      */
+    @Override
     public MoveInfo getCurrentMoveInfo() {
         readLock.lock();
         try {
@@ -4566,6 +4590,7 @@ public class ChessGame {
     /**
      * Get game variant
      */
+    @Override
     public GameVariant getGameVariant() {
         readLock.lock();
         try {
@@ -4687,6 +4712,7 @@ public class ChessGame {
      *
      * @return internal Zobrist hash of the current position
      */
+    @Override
     public long getZobristHash() {
         readLock.lock();
         try {
@@ -4709,15 +4735,11 @@ public class ChessGame {
     }
 
     /**
-     * Read-only view handed to {@link #read(Function)}.
-     */
-    private final ChessGameReadView readView = new ReadViewImplement();
-
-    /**
      * Run {@code action} while holding the read lock, so every getter called on the view
      * observes the same position (no writer can interleave between them). <p>
      *
-     * Do not call this game's write methods (makeMove, unmakeMove, etc.) from inside it &mdash; that would deadlock. <br>
+     * Do not cast it back to {@link ChessGame} to call write methods (makeMove, unmakeMove, etc.),
+     * and do not call them on this game from inside the action. That would cause deadlock. <br>
      * Don't keep the view after the action returns; outside the action each call locks separately again and is no longer atomic.
      *
      * @param action function reading from the view and returning the result
@@ -4728,7 +4750,7 @@ public class ChessGame {
 
         readLock.lock();
         try {
-            return action.apply(readView);
+            return action.apply(this);
         } finally {
             readLock.unlock();
         }
@@ -4738,7 +4760,8 @@ public class ChessGame {
      * Run {@code action} while holding the read lock, so every call inside it
      * observes the same position (no writer can interleave between them). <p>
      *
-     * Do not call this game's write methods (makeMove, unmakeMove, etc.) from inside it &mdash; that would deadlock. <br>
+     * Do not cast it back to {@link ChessGame} to call write methods (makeMove, unmakeMove, etc.),
+     * and do not call them on this game from inside the action. That would cause deadlock. <br>
      * Don't keep the view after the action returns; outside the action each call locks separately again and is no longer atomic.
      *
      * @param action consumer reading from the view
@@ -4750,36 +4773,6 @@ public class ChessGame {
             action.accept(view);
             return null;
         });
-    }
-
-    private final class ReadViewImplement implements ChessGameReadView {
-        @Override public String getFEN() { return ChessGame.this.getFEN(); }
-        @Override public long getZobristHash() { return ChessGame.this.getZobristHash(); }
-        @Override public boolean isWhiteTurn() { return ChessGame.this.getTurn(); }
-        @Override public boolean isCheck() { return ChessGame.this.isCheck(); }
-        @Override public List<MoveInfo> getLegalMoves() { return ChessGame.this.getLegalMoves(); }
-        @Override public Map<Square, Piece> getBoardStateMap() { return ChessGame.this.getBoardStateMap(); }
-        @Override public int getPieceScore() { return ChessGame.this.getPieceScore(); }
-        @Override public int getPly() { return ChessGame.this.getPly(); }
-        @Override public int getHalfMove() { return ChessGame.this.getHalfMove(); }
-        @Override public int getFullMove() { return ChessGame.this.getFullMove(); }
-        @Override public boolean canUndo() { return ChessGame.this.canUndo(); }
-        @Override public boolean canRedo() { return ChessGame.this.canRedo(); }
-        @Override public long getCurrentNodeId() { return ChessGame.this.getCurrentNodeId(); }
-        @Override public boolean isCheckmate() { return ChessGame.this.isCheckmate(); }
-        @Override public boolean isStalemate() { return ChessGame.this.isStalemate(); }
-        @Override public boolean isInsufficientMaterial() { return ChessGame.this.isInsufficientMaterial(); }
-        @Override public CastlingRightsInfo getCastlingRights() { return ChessGame.this.getCastlingRights(); }
-        @Override public List<Square> getChecker() { return ChessGame.this.getChecker(); }
-        @Override public MoveInfo getCurrentMoveInfo() { return ChessGame.this.getCurrentMoveInfo(); }
-        @Override public GameVariant getGameVariant() { return ChessGame.this.getGameVariant(); }
-        @Override public Map<PieceType, Integer> getCapturedPieces(boolean isWhite) { return ChessGame.this.getCapturedPieces(isWhite); }
-        @Override public List<MoveInfo> getLegalMovesForSource(Square source) { return ChessGame.this.getLegalMovesForSource(source); }
-        @Override public boolean isSquareAttacked(Square square, boolean side) { return ChessGame.this.isSquareAttacked(square, side); }
-        @Override public boolean canMakeMoveLan(String lan) { return ChessGame.this.canMakeMoveLan(lan); }
-        @Override public boolean canMakeMoveSan(String sanString) { return ChessGame.this.canMakeMoveSan(sanString); }
-        @Override public boolean canMakeMove(Square sourceSquare, Square targetSquare, PieceType promotionType)
-        { return ChessGame.this.canMakeMove(sourceSquare, targetSquare, promotionType); }
     }
 
     /**
