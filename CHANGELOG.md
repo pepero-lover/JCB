@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `g1f3, wdl = 1, distance to mate = 12`.
 
 ### Performance
+- On `ChessGame.printHistory(PrintStream out, boolean showNodeId)`, `printHistory(int maxNodeSize, PrintStream out, boolean showNodeId)`,
+  changed read locking `getRootNode` section only, instead of fully locking.
 
 ## [1.14.0]
 

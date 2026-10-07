@@ -4945,6 +4945,7 @@ public class ChessGame implements ChessGameReadView{
     private void printHistory(MoveNodeDTO rootNode, int depth, PrintStream out, boolean showNodeId, long currentId) {
         record Frame(MoveNodeDTO node, int depth) {}
 
+        final long rootId = rootNode.id();
         Deque<Frame> stack = new ArrayDeque<>();
         stack.push(new Frame(rootNode, depth));
 
@@ -4961,7 +4962,7 @@ public class ChessGame implements ChessGameReadView{
             String idTag = showNodeId ? " [#" + node.id() + "]" : "";
 
             // if the node is root, add "ROOT"
-            if (node.id() == this.moveHistoryRoot.id) {
+            if (node.id() == rootId) {
                 out.println("ROOT " + (idTag + pointer).trim());
             } else {
                 String prefix = (nodeDepth > 0) ? "- " : "";
@@ -5022,12 +5023,19 @@ public class ChessGame implements ChessGameReadView{
     public void printHistory(PrintStream out, boolean showNodeId) {
         Objects.requireNonNull(out, "PrintStream can not be null!");
 
+        MoveNodeDTO root;
+        long currentId;
+
+        // snapshot under the read lock, print outside of it
         readLock.lock();
         try {
-            printHistory(getRootNode(), 0, out, showNodeId, this.currentNode.id);
+            root = getRootNode();
+            currentId = this.currentNode.id;
         } finally {
             readLock.unlock();
         }
+
+        printHistory(root, 0, out, showNodeId, currentId);
     }
 
     /**
@@ -5075,12 +5083,19 @@ public class ChessGame implements ChessGameReadView{
     public void printHistory(int maxNodeSize, PrintStream out, boolean showNodeId) {
         Objects.requireNonNull(out, "PrintStream can not be null!");
 
+        MoveNodeDTO root;
+        long currentId;
+
+        // snapshot under the read lock, print outside of it
         readLock.lock();
         try {
-            printHistory(getRootNode(maxNodeSize), 0, out, showNodeId, this.currentNode.id);
+            root = getRootNode(maxNodeSize);
+            currentId = this.currentNode.id;
         } finally {
             readLock.unlock();
         }
+
+        printHistory(root, 0, out, showNodeId, currentId);
     }
 
     /**
