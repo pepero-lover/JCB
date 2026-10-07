@@ -2547,17 +2547,14 @@ public class ChessGame {
      * @return if successfully claimed draw and end this game, true. otherwise, false
      */
     public boolean claimDraw() {
-        writeLock.lock();
-        try {
+        return doWrite(() -> {
             GameOverReason reason = getClaimableDrawReason();
             if (reason == GameOverReason.NOTGAMEOVER) {
                 return false;
             }
             forceEndGame(GameResult.DRAW, reason);
             return true;
-        } finally {
-            writeLock.unlock();
-        }
+        });
     }
 
     /**
@@ -3350,17 +3347,15 @@ public class ChessGame {
      * Delete all moves after the current position
      */
     public void truncateFuture() {
-        writeLock.lock();
-        try {
+        doWrite(() -> {
             for (Long childId : getChildNodeIds()) {
                 deleteVariation(childId);
             }
             currentNode.terminalResult = null;
             currentNode.terminalReason = null;
             currentNode.isStateEvaluated = false;
-        } finally {
-            writeLock.unlock();
-        }
+            return null;
+        });
     }
 
     /**
