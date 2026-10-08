@@ -532,10 +532,16 @@ public class UCIEngineWrapper implements AutoCloseable {
     }
 
     /**
-     * Same as before, but with a bounded wait instead of an
-     * unconditional get() that can hang forever if the engine dies or
-     * never returns a bestmove.
+     * Start analysis and get best move lan string synchronized <br>
+     * Could throw exception when the bestmove finding time is more than {@link #DEFAULT_SYNC_TIMEOUT_SEC} (120 sec) <br>
+     * To change max bestmove time sec, use {@link #startAnalysisSync(ChessGame, int, long, long, long, long, int, long)}.
      *
+     * @param depthLimit depth limit (ignored when negative)
+     * @param wtimeMs white time ms (ignored when negative)
+     * @param btimeMs black time ms (ignored when negative)
+     * @param wincMs white time increment ms (ignored when negative)
+     * @param bincMs black time increment ms (ignored when negative)
+     * @param multiPv multi pv count
      * @return the engine's bestmove together with all pv lines at that point
      */
     public AnalysisResult startAnalysisSync(ChessGame chessGame, int depthLimit,
@@ -548,11 +554,11 @@ public class UCIEngineWrapper implements AutoCloseable {
     /**
      * Start analysis and get best move lan string synchronized
      *
-     * @param depthLimit depth limit
-     * @param wtimeMs white time ms
-     * @param btimeMs black time ms
-     * @param wincMs white time increment ms
-     * @param bincMs black time increment ms
+     * @param depthLimit depth limit (ignored when negative)
+     * @param wtimeMs white time ms (ignored when negative)
+     * @param btimeMs black time ms (ignored when negative)
+     * @param wincMs white time increment ms (ignored when negative)
+     * @param bincMs black time increment ms (ignored when negative)
      * @param multiPv multi pv count
      * @param timeoutSeconds best move synchronize timeout seconds
      * @return the engine's bestmove together with all pv lines at that point

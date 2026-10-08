@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.uci.AnalysisResult;
 import com.pepero.jcb.api.uci.EngineAnalysisListener;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
@@ -34,6 +35,17 @@ public class EngineAnalyzeTest {
         System.out.println("Engine Name : " + engineWrapper.getEngineName());
         System.out.println();
 
+        AnalysisResult result =
+                engineWrapper.startAnalysisSync(
+                        chessGame,
+                        20,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        1
+                );
+        System.out.println(result.bestMove());
         engineWrapper.startAnalysis(chessGame, 255, 5);
     }
 }
