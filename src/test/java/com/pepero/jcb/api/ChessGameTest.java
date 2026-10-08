@@ -7,7 +7,7 @@ import com.pepero.jcb.api.dto.MoveDataDTO;
 import com.pepero.jcb.api.dto.MoveInfo;
 import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.exception.engine.ClockException;
+import com.pepero.jcb.api.exception.game.ClockException;
 import com.pepero.jcb.api.exception.game.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
 import com.pepero.jcb.api.perft.PerftResult;

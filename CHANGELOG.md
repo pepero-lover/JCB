@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. `if (canUndo()) unmakeMove();`) across multiple calls.
 
 ### Changed
+- **Breaking change**, on `ClockException`, moved `api/exception/engine/` to `api/exception/game` package.
 - On `Random`, changed logic to calculating fully 64 bits number (`long state`) instead of using `int state`.
 - On `MagicNumbers`, updated magic number because of changing `Random` logic
 - On `SyzygyTablebase`, removed `throws IOException` on

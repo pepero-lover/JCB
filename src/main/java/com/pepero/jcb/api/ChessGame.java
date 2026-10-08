@@ -3,7 +3,7 @@ package com.pepero.jcb.api;
 import com.pepero.jcb.api.book.PolyglotHashUtils;
 import com.pepero.jcb.api.dto.*;
 import com.pepero.jcb.api.enums.*;
-import com.pepero.jcb.api.exception.engine.ClockException;
+import com.pepero.jcb.api.exception.game.ClockException;
 import com.pepero.jcb.api.exception.convert.ConvertMoveException;
 import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.game.*;
