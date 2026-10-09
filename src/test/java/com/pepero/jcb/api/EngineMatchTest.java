@@ -25,7 +25,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(10000, 0)
+                    EngineLimit.time(10_000, 0)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -35,7 +35,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(10000, 0)
+                    EngineLimit.time(10_000, 0)
             );
 
             MatchConfig config = new MatchConfig.Builder()

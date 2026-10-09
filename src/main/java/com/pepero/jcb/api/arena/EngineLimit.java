@@ -1,18 +1,23 @@
 package com.pepero.jcb.api.arena;
 
 public record EngineLimit(int depthLimit, long timeControlMs, long incrementMs) {
-        public boolean hasTimeLimit() {
-            return timeControlMs > 0;
-        }
-        public boolean hasDepthLimit() {
-            return depthLimit > 0;
-        }
 
-    public EngineLimit(long timeControlMs, long incrementMs) {
-        this(-1, timeControlMs, incrementMs);
+    public static EngineLimit depth(int depthLimit) {
+        return new EngineLimit(depthLimit, -1, -1);
     }
 
-    public EngineLimit(int depthLimit) {
-        this(depthLimit, -1, -1);
+    public static EngineLimit time(long timeControlMs, long incrementMs) {
+        return new EngineLimit(-1, timeControlMs, incrementMs);
     }
+
+    public EngineLimit withDepth(int depthLimit) {
+        return new EngineLimit(depthLimit, timeControlMs, incrementMs);
+    }
+
+    public EngineLimit withTime(long timeControlMs, long incrementMs) {
+        return new EngineLimit(depthLimit, timeControlMs, incrementMs);
+    }
+
+    public boolean hasTimeLimit() { return timeControlMs > 0; }
+    public boolean hasDepthLimit() { return depthLimit > 0; }
 }

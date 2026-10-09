@@ -25,9 +25,9 @@ public class EngineArenaExample {
                     List.of(), // Engine args
                     EngineConfig.Protocol.UCI, // Protocol type
                     Map.of(), // Option settings
-                    new EngineLimit(10) // Engine limits (time control and depth settings)
+                    EngineLimit.depth(10) // Engine limits (time control and depth settings)
                     // Here we only use a depth of 10, but if you want a time control instead,
-                    // you could use new EngineLimit(10_000, 300) for a 10+0.3 setup
+                    // you could use EngineLimit.time(10_000, 300) for a 10+0.3 setup
                     // (10000 ms base time, 300 ms Fischer increment).
             );
 
@@ -39,7 +39,7 @@ public class EngineArenaExample {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    new EngineLimit(10)
+                    EngineLimit.depth(10)
             );
 
             // Create the match configuration.

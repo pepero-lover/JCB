@@ -9,6 +9,7 @@ import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.api.exception.engine.EngineArenaException;
 import com.pepero.jcb.api.uci.AnalysisResult;
 import com.pepero.jcb.api.uci.EngineLine;
+import com.pepero.jcb.api.uci.SearchLimit;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.chess960.Chess960Utils;
@@ -22,6 +23,8 @@ public class EngineArena {
     private final UCIEngineFactory factory;
 
     private int[] chess960Position = new int[960];
+
+    private static final long NO_CLOCK_TIMEOUT_SEC = 600;
 
     public interface ArenaListener {
         void onMovePlayed(MoveEvent event);
@@ -245,15 +248,19 @@ public class EngineArena {
 
                 long startTime = System.currentTimeMillis();
 
-                AnalysisResult engineAnalysisResult = currentEngine.startAnalysisSync(chessGame,
-                        currentLimit.depthLimit(),
-                        clock.getWhiteTimeMs(),
-                        clock.getBlackTimeMs(),
-                        clock.getWhiteIncMs(),
-                        clock.getBlackIncMs(),
-                        1,
-                        whiteTurn ? clock.getWhiteTimeMs() / 1000 + 1 : clock.getBlackTimeMs() / 1000 + 1
-                );
+                SearchLimit limits = SearchLimit.depth(currentLimit.depthLimit());
+                if (currentLimit.hasTimeLimit()) {
+                    limits = limits.withClock(
+                            clock.getWhiteTimeMs(), clock.getBlackTimeMs(),
+                            clock.getWhiteIncMs(), clock.getBlackIncMs());
+                }
+
+                long timeoutSec = currentLimit.hasTimeLimit()
+                        ? (whiteTurn ? clock.getWhiteTimeMs() : clock.getBlackTimeMs()) / 1000 + 1
+                        : NO_CLOCK_TIMEOUT_SEC;
+
+                AnalysisResult analysisResult =
+                        currentEngine.analyzeSync(chessGame, limits, timeoutSec);
 
                 long stopTime = System.currentTimeMillis();
 
@@ -349,8 +356,8 @@ public class EngineArena {
                     }
                 }
 
-                if(engineAnalysisResult != null) {
-                    String san = chessGame.makeMoveLanReturningSan(engineAnalysisResult.bestMove());
+                if(analysisResult != null) {
+                    String san = chessGame.makeMoveLanReturningSan(analysisResult.bestMove());
 
                     EngineLine currentEngineLine = currentEngine.getCurrentFirstEngineLine();
                     if(currentEngineLine != null) {
@@ -371,7 +378,7 @@ public class EngineArena {
                     if(listener != null) {
                         listener.onMovePlayed(new MoveEvent(
                                 chessGame.getFEN(),
-                                engineAnalysisResult.bestMove(),
+                                analysisResult.bestMove(),
                                 san,
                                 roundNumber,
                                 chessGame.getTurn(),

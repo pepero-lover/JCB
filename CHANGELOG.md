@@ -16,7 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. `if (canUndo()) unmakeMove();`) across multiple calls.
 
 ### Changed
-- **Breaking change**, on `ClockException`, moved `api/exception/engine/` to `api/exception/game` package.
+- On `ClockException`, moved `api/exception/engine/` to `api/exception/game` package.
+- On `UCIEngineWrapper.startAnalysisSync`, renamed to `analysisSync` and removed parameter like `depth`, `wtime`, `btime` etc. and
+  changed to `SearchLimit`.
+- On `EngineLimit`, changed using static methods like `depth`, `clock`, `withDepth` instead of constructors.
 - On `Random`, changed logic to calculating fully 64 bits number (`long state`) instead of using `int state`.
 - On `MagicNumbers`, updated magic number because of changing `Random` logic
 - On `SyzygyTablebase`, removed `throws IOException` on
@@ -26,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessGame`, changed listener notifications (move made, jumped, game over, etc.) to be queued and dispatched
   only after the outermost write lock is fully released, so listeners are never called while the write lock is held,
   even when write methods are nested (e.g. `makeMove()` inside `write()`).
+- On `UCIEngineWrapper`, changed close JVM even the `close()` method wasn't called. (daemon)
+- On `UCIEngineWrapper`, changed calling `close` when the exception occurred on constructing.
 - On `UCIEngineWrapper`, changed `EngineLine` returning raw san string instead of returning number added san. (1. e4 e5 2. Nf3 -> e4 e5 Nf3)
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
@@ -35,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - On `PGNExporter`, fixed crashing when the given `ChessGame` is initialized with no half, full move fen.
+- On `UCIEngineWrapper`, fixed calling `onEngineCrashed` listener when `close()` method.
+- On `UCIEngineWrapper`, fixed the parsing thread dying silently on a single bad line or a throwing listener.
+  And a bare `bestmove` without a move is now reported as `(none)`.
+- On `UCIEngineWrapper`, fixed `close()` hanging forever when the engine ignores `quit`.
 - On `GaviotaMoveDTO`, fixed `toString`, showing wrong string like `SyzygyMoveDTO{move=g1f3, ourWdl=1, distance=12}` to 
   `g1f3, wdl = 1, distance to mate = 12`.
 

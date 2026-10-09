@@ -1,10 +1,6 @@
 package com.pepero.jcb.api;
 
-import com.pepero.jcb.api.uci.AnalysisResult;
-import com.pepero.jcb.api.uci.EngineAnalysisListener;
-import com.pepero.jcb.api.uci.EngineLine;
-import com.pepero.jcb.api.uci.UCIEngineWrapper;
-import com.pepero.jcb.core.GameVariant;
+import com.pepero.jcb.api.uci.*;
 
 import java.io.File;
 import java.util.List;
@@ -16,7 +12,7 @@ public class EngineAnalyzeTest {
         );
 
         UCIEngineWrapper engineWrapper = new UCIEngineWrapper(new ProcessBuilder(
-                new File("engine/stockfish-19.exe").getAbsolutePath()
+                new File("engine/stockfish-19").getAbsolutePath()
         ), 100, new EngineAnalysisListener() {
             @Override
             public void onAnalysisBundled(List<EngineLine> bundledLines) {
@@ -36,16 +32,10 @@ public class EngineAnalyzeTest {
         System.out.println();
 
         AnalysisResult result =
-                engineWrapper.startAnalysisSync(
-                        chessGame,
-                        20,
-                        -1,
-                        -1,
-                        -1,
-                        -1,
-                        1
-                );
+                engineWrapper.analyzeSync(chessGame,
+                        SearchLimit.depth(24));
         System.out.println(result.bestMove());
         engineWrapper.startAnalysis(chessGame, 255, 5);
+        Thread.sleep(10000);
     }
 }
