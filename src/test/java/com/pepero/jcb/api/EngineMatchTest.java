@@ -2,6 +2,8 @@ package com.pepero.jcb.api;
 
 import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.arena.MatchResult;
+import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.GameVariant;
 
 import java.io.File;
@@ -25,7 +27,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    EngineLimit.time(10_000, 0)
+                    EngineLimit.time(180_000, 2_000)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -35,7 +37,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    EngineLimit.time(10_000, 0)
+                    EngineLimit.time(180_000, 2_000)
             );
 
             MatchConfig config = new MatchConfig.Builder()
@@ -76,6 +78,19 @@ public class EngineMatchTest {
             CountDownLatch doneLatch = new CountDownLatch(1);
 
             ArenaRunner runner = new ArenaRunner(config);
+
+            runner.setArenaListener(new EngineArena.ArenaListener() {
+                @Override
+                public void onMovePlayed(MoveEvent event) {
+                    ChessboardUtils.printChessBoard(new Chessboard(event.fen()));
+                }
+
+                @Override
+                public void onMatchFinished(MatchFinishedEvent event) {
+
+                }
+            });
+
             Thread runnerThread = new Thread(() -> runner.run(new ArenaRunner.RunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {

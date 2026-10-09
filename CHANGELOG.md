@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `CombinedAnalyzer`, using both syzygy and gaviota tablebase with using `CombinedMoveDTO`.
 - On `SyzygyTablebase`, added checking max pieces count on given syzygy directory, and checking required piece sets.
+- Added `SearchLimits` (depth, movetime, nodes, clock, MultiPV) which can be combined and is
+  used by `UCIEngineWrapper.startAnalysis` and `analysisSync`.
 - On `ChessGame`, added `read(Function<ChessGameReadView, T>)` / `read(Consumer<ChessGameReadView>)`
   for atomic, lock-held reads across multiple getters, and `write(Function<ChessGame, T>)` /
   `write(Consumer<ChessGame>)` for atomic, lock-held check-then-act sequences
@@ -32,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `UCIEngineWrapper`, changed close JVM even the `close()` method wasn't called. (daemon)
 - On `UCIEngineWrapper`, changed calling `close` when the exception occurred on constructing.
 - On `UCIEngineWrapper`, changed `EngineLine` returning raw san string instead of returning number added san. (1. e4 e5 2. Nf3 -> e4 e5 Nf3)
+- On `UCIEngineWrapper.analysisSync`, now throws `IllegalArgumentException` when the given `SearchLimits`
+  has no stopping condition, instead of waiting until the timeout.
 - On creating `ChessGame` with fen string, changed initializing `startPositionFEN` with recalculating the given fen, instead of
   just using original fen.
 - On `MoveNode`, moved `ChessGame.getLCANode` to `MoveNode.getLCANode`.
