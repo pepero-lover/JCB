@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `SyzygyTablebase`, added checking max pieces count on given syzygy directory, and checking required piece sets.
 - Added `SearchLimits` (depth, movetime, nodes, clock, MultiPV) which can be combined and is
   used by `UCIEngineWrapper.startAnalysis` and `analysisSync`.
+- On `ChessboardUtils`, added `toStringChessboard(String fen)`, `printChessBoard(String fen)`, using only fen string to print
+  chess board or get ascii board string data.
 - On `ChessGame`, added `read(Function<ChessGameReadView, T>)` / `read(Consumer<ChessGameReadView>)`
   for atomic, lock-held reads across multiple getters, and `write(Function<ChessGame, T>)` /
   `write(Consumer<ChessGame>)` for atomic, lock-held check-then-act sequences

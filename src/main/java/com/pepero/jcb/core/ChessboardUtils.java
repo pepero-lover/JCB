@@ -342,7 +342,7 @@ public class ChessboardUtils {
 
         if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             String pocketStr =
-                            "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
+                    "Q".repeat(Math.max(0, chessboard.pocket[Q])) +
                             "R".repeat(Math.max(0, chessboard.pocket[R])) +
                             "B".repeat(Math.max(0, chessboard.pocket[B])) +
                             "N".repeat(Math.max(0, chessboard.pocket[N])) +
@@ -943,12 +943,21 @@ public class ChessboardUtils {
                 BoardSquares.square_to_coordinates[chessboard.enpassant] : "no").append("\n");
 
         // print castling rights
-        sb.append("      Castling:  ")
-                .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')
-                .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
-                .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
-                .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-')
-                .append("\n");
+        sb.append("      Castling:  ");
+        int allCastlingRights = CastlingRights.WK | CastlingRights.WQ | CastlingRights.BK | CastlingRights.BQ;
+        if (chessboard.isChess960 && (chessboard.castle & allCastlingRights) != 0) {
+            if ((chessboard.castle & CastlingRights.WK) != 0) sb.append((char) ('A' + chessboard.king_side_rook_file));
+            if ((chessboard.castle & CastlingRights.WQ) != 0) sb.append((char) ('A' + chessboard.queen_side_rook_file));
+            if ((chessboard.castle & CastlingRights.BK) != 0) sb.append((char) ('a' + chessboard.king_side_rook_file));
+            if ((chessboard.castle & CastlingRights.BQ) != 0) sb.append((char) ('a' + chessboard.queen_side_rook_file));
+        } else {
+            sb
+                    .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')
+                    .append(((chessboard.castle & CastlingRights.WQ) != 0) ? 'Q' : '-')
+                    .append(((chessboard.castle & CastlingRights.BK) != 0) ? 'k' : '-')
+                    .append(((chessboard.castle & CastlingRights.BQ) != 0) ? 'q' : '-');
+        }
+        sb.append("\n");
 
         if(chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
             sb
@@ -968,6 +977,122 @@ public class ChessboardUtils {
 
         sb.append("      FEN : ")
                 .append(getFen(chessboard));
+
+        return sb.toString();
+    }
+
+    /**
+     * Print the ascii board built from only a FEN string.
+     */
+    public static void printChessBoard(String fen) {
+        System.out.println(toStringChessboard(fen));
+    }
+
+    /**
+     * Get chess board ascii string from only a FEN string.
+     *
+     * @param fen FEN string
+     * @return chess board ascii string
+     */
+    public static String toStringChessboard(String fen) {
+        String[] fields = splitFenFields(fen);
+        String boardPart = fields[0];
+
+        // pocket parsing
+        String pocket = null;
+        int pocketStart = boardPart.indexOf('[');
+        if (pocketStart != -1) {
+            int pocketEnd = boardPart.indexOf(']');
+            if (pocketEnd > pocketStart) {
+                String pocketStr = boardPart.substring(pocketStart + 1, pocketEnd);
+                StringBuilder sortedPocket = new StringBuilder();
+                for (char pocketPiece : "QRBNPqrbnp".toCharArray()) {
+                    for (int i = 0; i < pocketStr.length(); i++) {
+                        if (pocketStr.charAt(i) == pocketPiece) sortedPocket.append(pocketPiece);
+                    }
+                }
+                pocket = sortedPocket.toString();
+            }
+            // remove pocket on board part
+            boardPart = boardPart.substring(0, pocketStart);
+        }
+
+        // storing board char data
+        char[] board = new char[64];
+        Arrays.fill(board, '.');
+
+        int rank = 0;
+        int file = 0;
+        for (int i = 0; i < boardPart.length(); i++) {
+            char fenChar = boardPart.charAt(i);
+
+            if (fenChar == '/') {
+                rank++;
+                file = 0;
+            } else if (fenChar >= '1' && fenChar <= '8') {
+                file += fenChar - '0';
+            } else if ("pnbrqkPNBRQK".indexOf(fenChar) != -1) {
+                if (rank < 8 && file < 8) {
+                    board[rank * 8 + file] = fenChar;
+                }
+                file++;
+            }
+        }
+
+        // castling
+        String castlingField = fields.length > 2 ? fields[2] : "-";
+        boolean fileLetterCastling = false;
+        for (int i = 0; i < castlingField.length(); i++) {
+            char castlingChar = castlingField.charAt(i);
+            if ((castlingChar >= 'A' && castlingChar <= 'H') || (castlingChar >= 'a' && castlingChar <= 'h')) {
+                fileLetterCastling = true;
+                break;
+            }
+        }
+
+        String castling = fileLetterCastling ? castlingField : new StringBuilder(4)
+                .append(castlingField.indexOf('K') != -1 ? 'K' : '-')
+                .append(castlingField.indexOf('Q') != -1 ? 'Q' : '-')
+                .append(castlingField.indexOf('k') != -1 ? 'k' : '-')
+                .append(castlingField.indexOf('q') != -1 ? 'q' : '-')
+                .toString();
+
+        StringBuilder sb = new StringBuilder(256);
+
+        sb.append('\n');
+
+        // loop over board ranks
+        for (int printRank = 0; printRank < 8; printRank++) {
+            // append ranks
+            sb.append("  ").append(8 - printRank).append("  ");
+
+            // loop over board files
+            for (int printFile = 0; printFile < 8; printFile++) {
+                sb.append(" ").append(board[printRank * 8 + printFile]);
+            }
+            // print new line every rank
+            sb.append('\n');
+        }
+
+        // print board files
+        sb.append("\n      a b c d e f g h \n\n");
+
+        // print side to move
+        sb.append("      Side:     ").append(fields.length > 1 && fields[1].equals("b") ? "black" : "white").append("\n");
+
+        // print enpassant square
+        sb.append("      Enpassant:   ")
+                .append(fields.length > 3 && !fields[3].equals("-") ? fields[3] : "no").append("\n");
+
+        // print castling rights
+        sb.append("      Castling:  ").append(castling).append("\n");
+
+        if (pocket != null) {
+            sb.append("      Pocket:  [").append(pocket).append("]\n");
+        }
+
+        sb.append("      FEN : ")
+                .append(String.join(" ", fields));
 
         return sb.toString();
     }
