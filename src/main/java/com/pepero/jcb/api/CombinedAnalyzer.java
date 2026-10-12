@@ -35,25 +35,18 @@ public class CombinedAnalyzer {
      *   <li>Distance is DTM when both moves have DTM data, otherwise DTZ.</li>
      * </ul>
      * <p>
-     * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}. <br>
-     * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard, or total piece count
-     * is more than 5.
+     * WDL scale is -2~2. <br>
+     * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard,
+     * or the total piece count is more than 5.
      *
      * @param containCastle do not throw exception when game has castling rights <br>
      *                      Warning : if you enable this, the position that contained castling rights
      *                      wdl probing might be inaccurate.
      * @return sorted move list
      *
-     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
-     *         or this position's piece count is more than this class's supporting piece count
-     * @throws TablebaseMissingFileException if no table file covers this material
-     *         (for the original position, or for a position reached by playing
-     *         a capture or promotion from it during probing)
      */
     public static List<CombinedMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase syzygy,
-                                                        GaviotaTablebase gaviota, boolean containCastle)
-            throws IOException {
+                                                        GaviotaTablebase gaviota, boolean containCastle) {
         validateVariant(game);
         if (!containCastle) validateCastling(game);
 
@@ -89,23 +82,25 @@ public class CombinedAnalyzer {
 
     /**
      * Get Sorted moves based on Syzygy/Gaviota tablebase (first is best move, last is worst move) <br>
-     * See {@link #findRankedMoves(ChessGame, SyzygyTablebase, GaviotaTablebase, boolean)} for the order logic.
+     * The order logic is the same as {@link SyzygyAnalyzer#findRankedMoves}, except for the final distance tie-break: <br>
+     * <ul>
+     *   <li>Higher WDL first.</li>
+     *   <li>Winning: checkmate first, then zeroing moves (capture / pawn move) first,
+     *       then the shorter distance first.</li>
+     *   <li>Losing: non-zeroing moves first (a zeroing move resets the 50-move clock and helps the defender),
+     *       then the longer distance first.</li>
+     *   <li>Distance is DTM when both moves have DTM data, otherwise DTZ.</li>
+     * </ul>
      * <p>
-     * WDL scale used here is -2~2 (Loss..Win), matching {@link SyzygyTablebase#getWdlData}. <br>
-     * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard, or total piece count
-     * is more than 5.
+     * WDL scale is -2~2. <br>
+     * DTZ data is always contained, but the DTM data isn't contained when the game variant is not standard,
+     * or the total piece count is more than 5.
      *
      * @return sorted move list
      *
-     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
-     *         or this position's piece count is more than this class's supporting piece count
-     * @throws TablebaseMissingFileException if no table file covers this material
-     *         (for the original position, or for a position reached by playing
-     *         a capture or promotion from it during probing)
      */
     public static List<CombinedMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase syzygy,
-                                                        GaviotaTablebase gaviota) throws IOException {
+                                                        GaviotaTablebase gaviota) {
         return findRankedMoves(game, syzygy, gaviota, false);
     }
 

@@ -2129,7 +2129,7 @@ public class ChessGameTest {
         ChessGame chessGame = ChessGame.startPosition();
         chessGame.resign(true);
 
-        assertThrows(IllegalStateException.class, () -> chessGame.agreeDraw());
+        assertThrows(IllegalStateException.class, chessGame::agreeDraw);
     }
 
     @Test
@@ -2156,7 +2156,7 @@ public class ChessGameTest {
     void getCurrentMoveInfo() {
         ChessGame chessGame = ChessGame.startPosition();
 
-        assertEquals(null, chessGame.getCurrentMoveInfo());
+        assertNull(chessGame.getCurrentMoveInfo());
 
         chessGame.makeMoveLan("e2e4");
         assertEquals("e2e4", chessGame.getCurrentMoveInfo().toLanString());
@@ -2756,12 +2756,12 @@ public class ChessGameTest {
 
         String plain = "e4 e5 Nf3 Nc6";
         String numbered = game.toNumberedSan(plain);
-        assertEquals(plain, game.removeNumberFromSan(numbered));
+        assertEquals(plain, ChessGame.removeNumberFromSan(numbered));
 
         game.makeMoveLan("e2e4");
         String plainBlack = "e5 Nf3 Nc6";
         String numberedBlack = game.toNumberedSan(plainBlack);
-        assertEquals(plainBlack, game.removeNumberFromSan(numberedBlack));
+        assertEquals(plainBlack, ChessGame.removeNumberFromSan(numberedBlack));
     }
 
     @Test

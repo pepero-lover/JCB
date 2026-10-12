@@ -67,7 +67,7 @@ public class EngineMatchTest {
 //                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
 //                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 //                            ))
-                    .totalGames(10)
+                    .totalGames(100)
                     .concurrency(4)
                     //.variant(GameVariant.SUICIDE)
                     .showClk(true)

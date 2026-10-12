@@ -45,7 +45,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) {
         validateVariant(game);
         if(!containCastle) validateCastling(game);
         return tablebase.getWdlData(game.getBoardSnapshot());
@@ -65,7 +65,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static int probeWdl(ChessGame game, SyzygyTablebase tablebase) {
         return probeWdl(game, tablebase, false);
     }
 
@@ -89,7 +89,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static int probeDtz(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+    public static int probeDtz(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) {
         validateVariant(game);
         if(!containCastle) validateCastling(game);
         return tablebase.getDtzData(game.getBoardSnapshot());
@@ -112,7 +112,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static int probeDtz(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static int probeDtz(ChessGame game, SyzygyTablebase tablebase) {
         return probeDtz(game, tablebase, false);
     }
 
@@ -133,7 +133,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+    public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) {
         List<SyzygyMoveDTO> bestMoves = findRankedMoves(game, tablebase, containCastle);
         if (bestMoves.isEmpty()) return null;
         return bestMoves.getFirst().move();
@@ -154,7 +154,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static MoveInfo findBestMove(ChessGame game, SyzygyTablebase tablebase) {
         return findBestMove(game, tablebase, false);
     }
 
@@ -170,14 +170,8 @@ public class SyzygyAnalyzer {
      *
      * @return sorted moves list
      *
-     * @throws VariantNotMatchException if variant isn't standard chess, chess 960, suicide, giveaway, atomic
-     * @throws TablebaseUnsupportedMaterialException if the position has castling rights (ignored when the 'containCastle' variable disabled)
-     *         or this position's piece count is more than this class's supporting piece count
-     * @throws TablebaseMissingFileException if no table file covers this material
-     *         (for the original position, or for a position reached by playing
-     *         a capture or promotion from it during probing)
      */
-    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) throws IOException {
+    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase, boolean containCastle) {
         validateVariant(game);
         if(!containCastle) validateCastling(game);
 
@@ -237,7 +231,7 @@ public class SyzygyAnalyzer {
      *         (for the original position, or for a position reached by playing
      *         a capture or promotion from it during probing)
      */
-    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) throws IOException {
+    public static List<SyzygyMoveDTO> findRankedMoves(ChessGame game, SyzygyTablebase tablebase) {
         return findRankedMoves(game, tablebase, false);
     }
 
@@ -245,7 +239,7 @@ public class SyzygyAnalyzer {
      * Score a single move against this Syzygy tablebase.
      */
     static SyzygyMoveDTO scoreMove(Chessboard board, SyzygyTablebase tablebase, int move,
-                                   boolean zeroing, int halfMoveClock) throws IOException {
+                                   boolean zeroing, int halfMoveClock) {
         int childWdl = tablebase.getWdlData(board);
         int ourWdl = -childWdl;
         boolean isMate = ourWdl > 0 && ChessboardUtils.isCheckmate(board);

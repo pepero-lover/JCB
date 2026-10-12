@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MagicNumbers`, updated magic number because of changing `Random` logic
 - On `SyzygyTablebase`, removed `throws IOException` on
   `probeWdl`, `probeWdlTable`, `probeDtz`, `tryDirectDtz`, `probeDtzViaSearch` methods.
+- On `SyzygyAnalyzer`, removed `throws IOException` on its methods.
 - On `ConvertStringMoveUtils.addMoveNumberToSanSequence`, changed parameter `Chessboard` to full move, and white turn.
   and also added `addMoveNumberToSanSequence(int fullMovePly, String sanSequence)`.
 - On `ChessGame`, changed listener notifications (move made, jumped, game over, etc.) to be queued and dispatched
