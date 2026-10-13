@@ -310,7 +310,7 @@ import java.nio.file.Path;
 
 public class SyzygyExample {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         // 테이블베이스 폴더를 가져옵니다.
         Path syzygyDir = Path.of("syzygy/");
         // 테이블베이스를 로드합니다.

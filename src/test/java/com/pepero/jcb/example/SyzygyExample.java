@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 public class SyzygyExample {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         // Get the tablebase directory.
         Path syzygyDir = Path.of("syzygy/");
         // Load the tablebase.
