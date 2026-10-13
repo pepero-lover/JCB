@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `UCIEngineWrapper`, fixed calling `onEngineCrashed` listener when `close()` method.
 - On `UCIEngineWrapper`, fixed the parsing thread dying silently on a single bad line or a throwing listener.
   And a bare `bestmove` without a move is now reported as `(none)`.
+- On `Chessboard`, changed the order of initializing variables at `Chessboard(String, boolean, GameVariant)`, 
+  initializing `gameVariant`, `isChess960` first.
 - On `UCIEngineWrapper`, fixed `close()` hanging forever when the engine ignores `quit`.
 - On `GaviotaMoveDTO`, fixed `toString`, showing wrong string like `SyzygyMoveDTO{move=g1f3, ourWdl=1, distance=12}` to 
   `g1f3, wdl = 1, distance to mate = 12`.

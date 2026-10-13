@@ -157,10 +157,10 @@ public class Chessboard {
     }
 
     public Chessboard(String fen, boolean isChess960, GameVariant gameVariant) {
-        ChessboardUtils.parseFen(this, fen);
-
         this.isChess960 = isChess960;
         this.gameVariant = gameVariant;
+
+        ChessboardUtils.parseFen(this, fen);
     }
 
     public Chessboard(Chessboard source) {

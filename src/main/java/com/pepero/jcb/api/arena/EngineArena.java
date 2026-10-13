@@ -14,7 +14,6 @@ import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import com.pepero.jcb.core.ChessboardUtils;
 import com.pepero.jcb.core.chess960.Chess960Utils;
 
-import java.io.IOException;
 import java.util.*;
 
 public class EngineArena {
@@ -391,8 +390,6 @@ public class EngineArena {
                     throw new EngineArenaException("Best move not found!");
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
 
         chessGame.claimDraw();
