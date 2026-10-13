@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.15.0]
+
+### Added
 - Added `CombinedAnalyzer`, using both syzygy and gaviota tablebase with using `CombinedMoveDTO`.
 - On `SyzygyTablebase`, added checking max pieces count on given syzygy directory, and checking required piece sets.
 - Added `SearchLimits` (depth, movetime, nodes, clock, MultiPV) which can be combined and is
@@ -552,7 +562,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/pepero-lover/JCB/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/pepero-lover/JCB/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/pepero-lover/JCB/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/pepero-lover/JCB/compare/v1.11.1...v1.12.0

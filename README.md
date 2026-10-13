@@ -67,7 +67,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle`.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.14.0'
+    implementation 'com.github.pepero-lover:JCB:v1.15.0'
 }
 ```
 
@@ -87,7 +87,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle.kts`.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.14.0")
+    implementation("com.github.pepero-lover:JCB:v1.15.0")
 }
 ```
 
@@ -106,7 +106,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pepero-lover</groupId>
     <artifactId>JCB</artifactId>
-    <version>v1.14.0</version>
+    <version>v1.15.0</version>
 </dependency>
 ```
 
