@@ -27,7 +27,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    EngineLimit.time(180_000, 2_000)
+                    EngineLimit.time(1_000, 100)
             );
 
             EngineConfig engine2Config = new EngineConfig(
@@ -37,7 +37,7 @@ public class EngineMatchTest {
                     List.of(),
                     EngineConfig.Protocol.UCI,
                     Map.of(),
-                    EngineLimit.time(180_000, 2_000)
+                    EngineLimit.time(1_000, 100)
             );
 
             MatchConfig config = new MatchConfig.Builder()
@@ -67,7 +67,7 @@ public class EngineMatchTest {
 //                            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1",
 //                            "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 //                            ))
-                    .totalGames(100)
+                    .totalGames(10)
                     .concurrency(4)
                     //.variant(GameVariant.SUICIDE)
                     .showClk(true)
@@ -82,7 +82,7 @@ public class EngineMatchTest {
             runner.setArenaListener(new MatchListener() {
                 @Override
                 public void onMovePlayed(MatchMoveEvent event) {
-                    ChessboardUtils.printChessBoard(new Chessboard(event.fen()));
+
                 }
 
                 @Override

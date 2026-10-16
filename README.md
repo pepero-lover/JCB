@@ -25,7 +25,7 @@
 - Syzygy tablebase probing (WDL / DTZ) and supports Standard, Atomic, Giveaway, Suicide chess variants
 - Gaviota tablebase probing (WDL / DTM)
 - PGN parsing, export, variation tree, and memory-efficient streaming for multi-gigabyte databases (`PGNDatabaseIterator`)
-- Engine matches (EngineArena)
+- Engine matches (`MatchRunner`)
 - Opening books: build a Polyglot (`.bin`) book from PGN games, and read Polyglot / EPD (`.epd`) / PGN (`.pgn`) opening books
 - Perft (single/multi-threaded)
 - No external library dependencies
@@ -56,18 +56,18 @@
 1. Add the following to your `settings.gradle`.
 ```groovy
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+  }
 }
 ```
 
 2. Add the dependency to your `build.gradle`.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.15.0'
+  implementation 'com.github.pepero-lover:JCB:v1.15.0'
 }
 ```
 
@@ -76,18 +76,18 @@ dependencies {
 1. Add the following to your `settings.gradle.kts`.
 ```kotlin
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+  }
 }
 ```
 
 2. Add the dependency to your `build.gradle.kts`.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.15.0")
+  implementation("com.github.pepero-lover:JCB:v1.15.0")
 }
 ```
 
@@ -95,26 +95,28 @@ dependencies {
 1. Add the following to your `pom.xml`.
 ```xml
 <repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
 </repositories>
 ```
 2. Add the dependency.
 ```xml
 <dependency>
-    <groupId>com.github.pepero-lover</groupId>
-    <artifactId>JCB</artifactId>
-    <version>v1.15.0</version>
+  <groupId>com.github.pepero-lover</groupId>
+  <artifactId>JCB</artifactId>
+  <version>v1.15.0</version>
 </dependency>
 ```
 
 ## Usage Examples
 
-> More runnable examples, including a minimal engine skeleton (`SimpleEngine`), are available under [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) in the repository.
+> All runnable examples are available under [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) in the repository, including a minimal UCI engine skeleton (`SimpleEngine`).
 
 ### 1. Basic Gameplay
+_Full source: [`MainExample`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/MainExample.java)_
+
 This is the most standard way to create a chess game and make moves in sequence, whether from the console or from user input (using LAN format).
 
 ```java
@@ -149,393 +151,25 @@ public class MainExample {
 }
 ```
 
-### 2. Move Hints for Chess GUI Developers
-
-An example implementation for when a user clicks on a piece on the chessboard, showing which squares the piece can move to along with score calculation.
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.enums.Square;
-import java.util.List;
-
-public class GUIExample {
-    public static void main(String[] args) {
-        ChessGame chessGame = ChessGame.startPosition();
-
-        // Assume the user clicked on the white pawn on e2.
-        Square clickedSquare = Square.e2;
-
-        // Get all legal moves for the piece on e2.
-        List<MoveInfo> legalMoves = chessGame.getLegalMovesForSource(clickedSquare);
-
-        System.out.println("List of moves available for the piece on e2 (LAN)");
-        for (MoveInfo move : legalMoves) {
-            System.out.println("- " + move.toString());
-        }
-
-        // Check the current piece score (positive: White is ahead / negative: Black is ahead)
-        System.out.println("Current piece score (from White's perspective): " + chessGame.getPieceScore());
-    }
-}
-```
-
-### 3. Game-Over Conditions and State Checks
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.enums.GameOverReason;
-
-public class GameStateExample {
-    public static void main(String[] args) {
-        // A game can be started from a FEN string.
-        // Example: a position right before checkmate
-        String scholarMateFen = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4";
-        ChessGame game = ChessGame.fromFEN(scholarMateFen);
-
-        // Assume White delivers checkmate.
-        game.makeMoveLan("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
-
-        // Check whether the game has ended
-        GameOverReason reason = game.isGameOver();
-        if (reason != GameOverReason.NOTGAMEOVER) {
-            System.out.println("Game over! Reason: " + reason);
-        }
-
-        // Individual state checks are also available.
-        System.out.println("Is it checkmate? : " + game.isCheckmate());
-        System.out.println("Is it check? : " + game.isCheck());
-    }
-}
-```
-
-### 4. Engine vs. Engine Matches
-
-```java
-import com.pepero.jcb.api.arena.*;
-import com.pepero.jcb.api.arena.MatchResult;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
-public class EngineExample {
-    public static void main(String[] args) {
-        // Specify the executable paths for the engines.
-        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-
-        // Specify the engines' working directory.
-        String folder = new File("engine/").getAbsolutePath();
-
-        try {
-            // Create the configuration for Engine 1.
-            EngineConfig engine1Config = new EngineConfig(
-                    "Stockfish 18", // Display name of the engine
-                    engine1Path, // Engine executable path
-                    folder, // Working directory
-                    List.of(), // Engine args
-                    EngineConfig.Protocol.UCI, // Protocol type
-                    Map.of(), // Option settings
-                    new EngineLimit(10) // Engine limits (time control and depth settings)
-                    // Here we only use a depth of 10, but if you want a time control instead,
-                    // you could use new EngineLimit(10_000, 300) for a 10+0.3 setup
-                    // (10000 ms base time, 300 ms Fischer increment).
-            );
-
-            // Create the configuration for Engine 2.
-            EngineConfig engine2Config = new EngineConfig(
-                    "Stockfish 18",
-                    engine2Path,
-                    folder,
-                    List.of(),
-                    EngineConfig.Protocol.UCI,
-                    Map.of(),
-                    new EngineLimit(10)
-            );
-
-            // Create the match configuration.
-            MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin") // You can set an opening book.
-                    .repeatOpening(true) // Play each opening twice, swapping colors.
-                    .totalGames(10) // Total number of games to play
-                    .concurrency(1) // Number of threads to use (only 1 here)
-                    .engine1Config(engine1Config) // Pull in Engine 1's configuration
-                    .engine2Config(engine2Config) // Pull in Engine 2's configuration
-                    .build();
-
-            // Create the match runner class.
-            ArenaRunner arena = new ArenaRunner(config);
-
-            // Start the arena match.
-            // As a listener, we'll export the PGN whenever a game finishes.
-            MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
-                @Override
-                public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
-                    System.out.println("Round " + roundNumber);
-                    System.out.println("RESULT : " + result.result() + "(" + result.engineWinner() + ")");
-                    System.out.println("PGN : ");
-                    System.out.println(result.pgn());
-                    System.out.println();
-                }
-
-                @Override
-                public void onGameFailed(int roundNumber, Throwable cause) {
-                    ArenaRunner.RunnerListener.super.onGameFailed(roundNumber, cause);
-
-                    // When the game failed, print log.
-                    cause.printStackTrace();
-                }
-            });
-
-            System.out.println("Engine 1 WDL");
-            System.out.println("WIN  :  " + statistics.getEngine1Wins());
-            System.out.println("DRAW :  " + statistics.getDraws());
-            System.out.println("LOSE :  " + statistics.getEngine2Wins());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-}
-```
-### 5. Using Syzygy Tablebases
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.SyzygyAnalyzer;
-import com.pepero.jcb.api.syzygy.SyzygyTablebase;
-import com.pepero.jcb.api.dto.SyzygyMoveDTO;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class SyzygyExample {
-
-    public static void main(String[] args) {
-        // Get the tablebase directory.
-        Path syzygyDir = Path.of("syzygy/");
-        // Load the tablebase.
-        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
-
-        // Example position
-        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
-
-        game.printBoard();
-
-        // Show the WDL and DTZ results.
-
-        // WDL values range from -2 to 2 (from the side to move's perspective).
-        //  2 : a win with perfect play
-        //  1 : a win, but drawn under the 50-move rule
-        //  0 : a draw
-        // -1 : a loss, but drawn under the 50-move rule
-        // -2 : a loss with perfect play
-
-        // DTZ tells you how many moves remain until a pawn move or capture.
-        // If this position is lost (If wdl is negative), DTZ is negative.
-
-        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
-        System.out.println();
-
-        // You can also find the best move in the current position.
-        System.out.println("Syzygy best move : " + SyzygyAnalyzer.findBestMove(game, tb));
-        System.out.println();
-
-        // There's also a method that shows the WDL/DTZ results for every available move.
-        for(SyzygyMoveDTO move : SyzygyAnalyzer.findRankedMoves(game, tb)) {
-            System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
-        }
-    }
-}
-```
-### 6. Using Gaviota Tablebases
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.GaviotaAnalyzer;
-import com.pepero.jcb.api.gaviota.GaviotaTablebase;
-import com.pepero.jcb.api.dto.GaviotaMoveDTO;
-
-import java.nio.file.Path;
-
-public class GaviotaExample {
-
-    public static void main(String[] args) {
-        // Get the tablebase directory.
-        Path gaviotaDir = Path.of("gaviota/");
-        // Load the tablebase.
-        GaviotaTablebase tb = new GaviotaTablebase(gaviotaDir);
-
-        // Example position
-        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
-
-        game.printBoard();
-
-        // Show the WDL and DTM results.
-
-        // WDL values range from -1 to 1 (from the side to move's perspective).
-        //  1 : a win
-        //  0 : a draw
-        // -1 : a loss
-
-        // DTM tells you the distance to mate, in half-moves.
-        // If this position is lost (if wdl is negative), DTM is negative too.
-
-        System.out.println("WDL : " + GaviotaAnalyzer.probeWdl(game, tb));
-        System.out.println("DTM : " + GaviotaAnalyzer.probeDtm(game, tb));
-        System.out.println();
-
-        // You can also find the best move in the current position.
-        System.out.println("Gaviota best move : " + GaviotaAnalyzer.findBestMove(game, tb));
-        System.out.println();
-
-        // There's also a method that shows the WDL/DTM results for every available move.
-        for (GaviotaMoveDTO move : GaviotaAnalyzer.findRankedMoves(game, tb)) {
-            System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTM" + move.distance());
-        }
-    }
-}
-```
-
-### 7. Using Perft
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.perft.PerftDriver;
-import com.pepero.jcb.core.Chessboard;
-
-public class PerftExample {
-    public static void main(String[] args) {
-        String fen = ChessGame.START_POSITION;
-
-        ChessGame chessGame = ChessGame.fromFEN(fen);
-
-        System.out.println("--------------------");
-        System.out.println("Perft API 1 threads");
-        System.out.println("--------------------");
-
-        // Run Perft and store the result.
-
-        // As noted in the Javadoc, perft(int depth) is single-threaded and includes JVM warmup.
-        chessGame.perft(5);
-
-        // Now let's see the result with 4 threads.
-        System.out.println();
-        System.out.println("--------------------");
-        System.out.println("Perft API 4 threads");
-        System.out.println("--------------------");
-
-        chessGame.perft(
-                6, // Perft depth
-                4 // Number of threads to use
-        );
-
-        // Now let's run Perft using Chessboard instead.
-        Chessboard chessboard = new Chessboard(fen);
-
-        System.out.println();
-        System.out.println("-------------------------");
-        System.out.println("Perft Bitboard 1 threads");
-        System.out.println("-------------------------");
-
-        PerftDriver.perftBitboardTest(
-                chessboard,
-                6, // Perft depth
-                1, // Number of threads to use
-                false, // Whether to suppress the test result and output
-                false // Whether to use bulk counting
-        );
-
-        System.out.println();
-        System.out.println("-------------------------");
-        System.out.println("Perft Bitboard 4 threads");
-        System.out.println("-------------------------");
-
-        PerftDriver.perftBitboardTest(
-                chessboard,
-                7, // Perft depth
-                4, // Number of threads to use
-                false, // Whether to suppress the test result and output
-                false // Whether to use bulk counting
-        );
-    }
-}
-```
-
-### 8. Building and Using Opening Books
-
-JCB can build a Polyglot opening book (`.bin`) directly from a multi-game PGN file, and use either a Polyglot (`.bin`) or an EPD (`.epd`) file as an opening book for engine matches.
-
-**Building a `.bin` book from PGN games:**
-
-```java
-import com.pepero.jcb.api.book.PolyglotBookBuilder;
-
-import java.io.IOException;
-
-public class PGNtoPolyglotConvertExample {
-    public static void main(String[] args) throws IOException {
-        String inputPgn = "games.pgn";
-        String outputBin = "opening.bin";
-        int maxPly = 30; // 15 moves
-
-        PolyglotBookBuilder.build(inputPgn, outputBin, maxPly);
-
-        System.out.println("Opening book built successfully: " + outputBin);
-    }
-}
-```
-
-**Using an opening book in `MatchConfig`:**
-
-`openingBook(String)` auto-detects the opening book type from the file extension:
+### More Examples
+
+Browse the full source in the [`example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) folder.
+
+| Example                            | What it shows                                                               | Key classes                                  |
+|------------------------------------|-----------------------------------------------------------------------------|----------------------------------------------|
+| [Move hints for chess GUIs](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GUIExample.java) | Show the squares a clicked piece can move to, with score calculation        | `ChessGame`, `MoveInfo`, `Square`            |
+| [Game-over conditions](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GameStateExample.java) | Detect checkmate, stalemate, draws and other state checks                   | `ChessGame`, `GameOverReason`                |
+| [Engine vs. Engine matches](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/EngineExample.java) | Run UCI engine matches with concurrency, adjudication, and PGN output       | `MatchRunner`, `MatchConfig`, `EngineConfig` |
+| [Syzygy tablebases](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SyzygyExample.java) | Probe WDL / DTZ and rank moves from a Syzygy tablebase                      | `SyzygyTablebase`, `SyzygyAnalyzer`          |
+| [Gaviota tablebases](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GaviotaExample.java) | Probe WDL / DTM and rank moves from a Gaviota tablebase                     | `GaviotaTablebase`, `GaviotaAnalyzer`        |
+| [Perft](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PerftExample.java) | Single / multi-threaded perft with `ChessGame` and `Chessboard`             | `PerftDriver`, `Chessboard`                  |
+| [Opening books](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNtoPolyglotConvertExample.java) | Build a Polyglot `.bin` book from PGN games and use books in engine matches | `PolyglotBookBuilder`, `MatchConfig`         |
+| [Streaming large PGN databases](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNStreamExample.java) | Iterate multi-gigabyte PGN files game by game without loading them at once  | `PGNDatabaseIterator`, `PGNGameStub`         |
+
+`MatchConfig.Builder.openingBook(Path)` auto-detects the opening book type from the file extension:
 - `.bin` &rarr; a Polyglot opening book, queried move by move during the game
 - `.epd` &rarr; an EPD opening book, a list of positions where one is picked as the game's starting position
 - `.pgn` &rarr; a PGN opening book, pick random of pgn games and plays it up to a user-defined maximum move count
-
-```java
-MatchConfig config = new MatchConfig.Builder()
-        .openingBook("engine/opening.bin") // or "engine/opening.epd", "engine/opening.pgn"
-        .repeatOpening(true) // play each opening twice, swapping colors
-        // If you are using the pgn opening book, you can adjust max ply value by ".maxPly(20)". (default : 16)
-        .totalGames(10)
-        .concurrency(1)
-        .engine1Config(engine1Config)
-        .engine2Config(engine2Config)
-        .build();
-```
-
-### 9. Streaming Large PGN Databases
-
-For multi-gigabyte PGN files, `PGNDatabaseIterator`
-allows you to stream games line-by-line without loading the entire file into memory.
-Headers are accessible immediately, and the movetext is lazily parsed only when calling `toChessGame()`.
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.pgn.PGNDatabaseIterator;
-import com.pepero.jcb.api.pgn.PGNGameStub;
-
-import java.nio.file.Path;
-
-public class PGNStreamExample {
-    public static void main(String[] args) {
-        // Stream games out of multi-gigabyte PGN files with minimal memory usage
-        try (PGNDatabaseIterator iterator = new PGNDatabaseIterator(Path.of("large_database.pgn"))) {
-            while (iterator.hasNext()) {
-                PGNGameStub stub = iterator.next();
-
-                // Access headers without parsing full movetext
-                System.out.println("White: " + stub.headers().get("White"));
-                System.out.println("Black: " + stub.headers().get("Black"));
-
-                // Lazily parse movetext into a ChessGame instance when needed
-                ChessGame game = stub.toChessGame();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
-```
 
 ## Performance
 JCB provides two levels of API.

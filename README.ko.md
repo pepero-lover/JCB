@@ -26,7 +26,7 @@
 - Syzygy tablebase 프로빙 (WDL / DTZ) 그리고 Standard, Atomic, Giveaway, Suicide 변형 지원
 - Gaviota tablebase 프로빙 (WDL / DTM)
 - PGN 파싱, export, variation tree, 수 GB급 대용량 PGN 데이터베이스 스트리밍 지원 (`PGNDatabaseIterator`)
-- 엔진 대전 (EngineArena)
+- 엔진 대전 (`MatchRunner`)
 - 오프닝북: PGN 게임들을 Polyglot(`.bin`) 북으로 빌드, Polyglot / EPD(.epd) / PGN(.pgn) 오프닝북 읽기 지원
 - Perft (싱글/멀티스레드)
 - 외부 라이브러리 의존성 없음
@@ -57,18 +57,18 @@
 1. settings.gradle 에 이 코드를 삽입하세요.
 ```groovy
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+  }
 }
 ```
 
 2. 의존성을 build.gradle 에 추가하세요.
 ```groovy
 dependencies {
-    implementation 'com.github.pepero-lover:JCB:v1.15.0'
+  implementation 'com.github.pepero-lover:JCB:v1.15.0'
 }
 ```
 
@@ -77,18 +77,18 @@ dependencies {
 1. settings.gradle.kts 에 이 코드를 삽입하세요.
 ```kotlin
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+  }
 }
 ```
 
 2. 의존성을 build.gradle.kts 에 추가하세요.
 ```kotlin
 dependencies {
-    implementation("com.github.pepero-lover:JCB:v1.15.0")
+  implementation("com.github.pepero-lover:JCB:v1.15.0")
 }
 ```
 
@@ -96,26 +96,28 @@ dependencies {
 1. pom.xml 에 이 코드를 삽입하세요.
 ```xml
 <repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
 </repositories>
 ```
 2. 의존성을 추가하세요.
 ```xml
 <dependency>
-    <groupId>com.github.pepero-lover</groupId>
-    <artifactId>JCB</artifactId>
-    <version>v1.15.0</version>
+  <groupId>com.github.pepero-lover</groupId>
+  <artifactId>JCB</artifactId>
+  <version>v1.15.0</version>
 </dependency>
 ```
 
 ## 사용 예시
 
-> 간단한 UCI 엔진 뼈대 예제(`SimpleEngine`)를 포함한 더 많은 실행 가능한 예제 코드는 저장소의 [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) 경로에서 확인하실 수 있습니다.
+> 간단한 UCI 엔진 뼈대 예제(`SimpleEngine`)를 포함한 모든 실행 가능한 예제 코드는 저장소의 [`src/test/java/com/pepero/jcb/example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) 경로에서 확인하실 수 있습니다.
 
 ### 1. 가장 기본적인 게임 플레이
+_전체 소스: [`MainExample`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/MainExample.java)_
+
 체스 게임을 생성하고, 콘솔이나 입력값을 받아 차례대로 수를 두는 가장 표준적인 방법입니다. (LAN 포멧 사용)
 
 ```java
@@ -150,392 +152,25 @@ public class MainExample {
 }
 ```
 
-### 2. 체스 GUI 개발자를 위한 힌트 기능
-
-사용자가 체스판의 기물을 마우스로 클릭했을 때, 갈 수 있는 기물의 칸 표시와 점수 계산을 구현하는 예시입니다.
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.dto.MoveInfo;
-import com.pepero.jcb.api.enums.Square;
-import java.util.List;
-
-public class GUIExample {
-    public static void main(String[] args) {
-        ChessGame chessGame = ChessGame.startPosition();
-
-        // 사용자가 e2 칸에 있는 백 폰을 클릭했다고 가정합니다.
-        Square clickedSquare = Square.e2;
-
-        // e2 기물이 이동 할 수 있는 모든 수를 가져옵니다.
-        List<MoveInfo> legalMoves = chessGame.getLegalMovesForSource(clickedSquare);
-
-        System.out.println("e2 기물이 갈 수 있는 수 목록 ( LAN )");
-        for (MoveInfo move : legalMoves) {
-            System.out.println("- " + move.toString());
-        }
-
-        // 현재 체스판의 기물 점수 확인 (백 유리: 양수 / 흑 유리: 음수)
-        System.out.println("현재 백 기준 기물 점수: " + chessGame.getPieceScore());
-    }
-}
-```
-
-### 3. 게임 종료 조건 및 상태 체크
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.enums.GameOverReason;
-
-public class GameStateExample {
-    public static void main(String[] args) {
-        // FEN 스트링으로 게임을 시작할 수 있습니다.
-        // 예: 체크메이트 직전 상태의 FEN
-        String scholarMateFen = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4";
-        ChessGame game = ChessGame.fromFEN(scholarMateFen);
-
-        // 백이 체크메이트 하는 상황을 가정합니다.
-        game.makeMoveLan("h5f7"); // e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#
-
-        // 게임 종료 여부 판단
-        GameOverReason reason = game.isGameOver();
-        if (reason != GameOverReason.NOTGAMEOVER) {
-            System.out.println("게임 종료! 사유: " + reason);
-        }
-
-        // 개별 상태 체크도 가능 합니다.
-        System.out.println("체크메이트 상태인가? : " + game.isCheckmate());
-        System.out.println("체크 상태인가? : " + game.isCheck());
-    }
-}
-```
-
-### 4. 엔진끼리 대결하기
-
-```java
-import com.pepero.jcb.api.arena.*;
-import com.pepero.jcb.api.arena.MatchResult;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
-public class EngineExample {
-    public static void main(String[] args) {
-        // 엔진들의 실행 경로를 지정합니다.
-        String engine1Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish-18.exe").getAbsolutePath();
-
-        // 엔진의 작업 폴더를 지정합니다.
-        String folder = new File("engine/").getAbsolutePath();
-
-        try {
-            // 엔진 1의 설정을 생성합니다.
-            EngineConfig engine1Config = new EngineConfig(
-                    "Stockfish 18", // 엔진 표시용 이름
-                    engine1Path, // 엔진 실행 경로
-                    folder, // 작업 폴더
-                    List.of(), // 엔진의 args 설정
-                    EngineConfig.Protocol.UCI, // 프로토콜 종류
-                    Map.of(), // 옵션 설정
-                    new EngineLimit(10) // 엔진의 제한사항 (타임 컨트롤 및 depth 설정)
-                    // 지금에서는 10 depth 만 하지만 만약 시간 제한을 두고 하고 싶다면
-                    // new EngineLimit(10_000, 300) 으로 한다면 10000 밀리초 에 피셔 300 밀리초로 10+0.3 초 로 설정 할 수 있습니다.
-            );
-
-            // 엔진 2의 설정을 생성합니다.
-            EngineConfig engine2Config = new EngineConfig(
-                    "Stockfish 18",
-                    engine2Path,
-                    folder,
-                    List.of(),
-                    EngineConfig.Protocol.UCI,
-                    Map.of(),
-                    new EngineLimit(10)
-            );
-
-            // 매치의 설정을 생성합니다.
-            MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin") // 오프닝 북을 설정할 수 있습니다.
-                    .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
-                    .totalGames(10) // 총 진행할 게임 수
-                    .concurrency(1) // 사용할 스레드 수 (지금은 1개만 설정했습니다.)
-                    .engine1Config(engine1Config) // 엔진 1의 설정을 가져옵니다.
-                    .engine2Config(engine2Config) // 엔진 2의 설정을 가져옵니다.
-                    .build();
-
-            // 매치 진행 클래스를 생성합니다.
-            ArenaRunner arena = new ArenaRunner(config);
-
-            // 아레나 매치를 시작합니다.
-            // 리스너로 게임이 끝났을 때 PGN 을 내보내도록 해보겠습니다.
-            MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
-                @Override
-                public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
-                    System.out.println("Round " + roundNumber);
-                    System.out.println("RESULT : " + result.result() + "(" + result.engineWinner() + ")");
-                    System.out.println("PGN : ");
-                    System.out.println(result.pgn());
-                    System.out.println();
-                }
-
-                @Override
-                public void onGameFailed(int roundNumber, Throwable cause) {
-                    ArenaRunner.RunnerListener.super.onGameFailed(roundNumber, cause);
-
-                    // 만약 게임이 실패한다면 로그를 띄우도록 해보겠습니다.
-                    cause.printStackTrace();
-                }
-            });
-
-            System.out.println("Engine 1 WDL");
-            System.out.println("WIN  :  " + statistics.getEngine1Wins());
-            System.out.println("DRAW :  " + statistics.getDraws());
-            System.out.println("LOSE :  " + statistics.getEngine2Wins());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-}
-```
-### 5. Syzygy 테이블베이스 사용하기
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.SyzygyAnalyzer;
-import com.pepero.jcb.api.syzygy.SyzygyTablebase;
-import com.pepero.jcb.api.dto.SyzygyMoveDTO;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class SyzygyExample {
-
-    public static void main(String[] args) {
-        // 테이블베이스 폴더를 가져옵니다.
-        Path syzygyDir = Path.of("syzygy/");
-        // 테이블베이스를 로드합니다.
-        SyzygyTablebase tb = new SyzygyTablebase(syzygyDir);
-
-        // 예시 포지션
-        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
-
-        game.printBoard();
-
-        // WDL, DTZ 결과를 보입니다.
-
-        // WDL 데이터는 -2 ~ 2의 범위를 가집니다. (두는 쪽 기준)
-        //  2 : 완벽하게 플레이할 경우 승리함
-        //  1 : 승리하지만 50수 규칙에 의해 무승부가 됨
-        //  0 : 무승부
-        // -1 : 패배하지만 50수 규칙에 의해 무승부가 됨
-        // -2 : 완벽하게 플레이해도 패배함
-
-        // DTZ 는 폰이나 기물을 잡기까지 얼마나 수가 남았는지를 알려줍니다.
-        // 지고 있을 때는 음수로 보여줍니다.
-
-        System.out.println("WDL : " + SyzygyAnalyzer.probeWdl(game, tb));
-        System.out.println("DTZ : " + SyzygyAnalyzer.probeDtz(game, tb));
-        System.out.println();
-
-        // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
-        System.out.println("Syzygy best move : " + SyzygyAnalyzer.findBestMove(game, tb));
-        System.out.println();
-
-        // 가능한 수들의 WDL DTZ 결과를 전부 보여주는 메서드도 있습니다.
-        for(SyzygyMoveDTO move : SyzygyAnalyzer.findRankedMoves(game, tb)) {
-            System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTZ" + move.distance());
-        }
-    }
-}
-```
-
-### 6. Gaviota 테이블베이스 사용하기
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.GaviotaAnalyzer;
-import com.pepero.jcb.api.gaviota.GaviotaTablebase;
-import com.pepero.jcb.api.dto.GaviotaMoveDTO;
-
-import java.nio.file.Path;
-
-public class GaviotaExample {
-
-    public static void main(String[] args) {
-        // 테이블베이스 폴더를 가져옵니다.
-        Path gaviotaDir = Path.of("gaviota/");
-        // 테이블베이스를 로드합니다.
-        GaviotaTablebase tb = new GaviotaTablebase(gaviotaDir);
-
-        // 예시 포지션
-        ChessGame game = ChessGame.fromFEN("8/8/4r3/3k4/8/8/2Q5/7K w - - 0 1");
-
-        game.printBoard();
-
-        // WDL, DTM 결과를 보입니다.
-
-        // WDL 데이터는 -1 ~ 1의 범위를 가집니다. (두는 쪽 기준)
-        //  1 : 승리
-        //  0 : 무승부
-        // -1 : 패배
-
-        // DTM 은 메이트까지 남은 하프무브 수를 알려줍니다.
-        // 지고 있을 때는 (wdl 이 음수일 때) DTM 도 음수로 나옵니다.
-
-        System.out.println("WDL : " + GaviotaAnalyzer.probeWdl(game, tb));
-        System.out.println("DTM : " + GaviotaAnalyzer.probeDtm(game, tb));
-        System.out.println();
-
-        // 현재 포지션에서의 최선의 수를 찾을 수도 있습니다.
-        System.out.println("Gaviota best move : " + GaviotaAnalyzer.findBestMove(game, tb));
-        System.out.println();
-
-        // 가능한 수들의 WDL DTM 결과를 전부 보여주는 메서드도 있습니다.
-        for (GaviotaMoveDTO move : GaviotaAnalyzer.findRankedMoves(game, tb)) {
-            System.out.println(move.move() + "  WDL" + move.ourWdl() + "  DTM" + move.distance());
-        }
-    }
-}
-```
-
-### 7. Perft 사용하기
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.perft.PerftDriver;
-import com.pepero.jcb.core.Chessboard;
-
-public class PerftExample {
-    public static void main(String[] args) {
-        String fen = ChessGame.START_POSITION;
-
-        ChessGame chessGame = ChessGame.fromFEN(fen);
-
-        System.out.println("--------------------");
-        System.out.println("Perft API 1 threads");
-        System.out.println("--------------------");
-
-        // Perft 를 실행하고 결과를 저장합니다.
-
-        // Javadoc 설명에도 나와 있듯이, perft(int depth) 는 싱글 스레드, JVM warmup 을 적용한 결과입니다.
-        chessGame.perft(5);
-
-        // 이번에는 스레드를 4개로 했을 때의 결과를 출력해보겠습니다.
-        System.out.println();
-        System.out.println("--------------------");
-        System.out.println("Perft API 4 threads");
-        System.out.println("--------------------");
-
-        chessGame.perft(
-                6, // perft 깊이
-                4 // 사용할 스레드 수
-        );
-
-        // 이제는 Chessboard 기준으로 Perft 를 진행해보겠습니다.
-        Chessboard chessboard = new Chessboard(fen);
-
-        System.out.println();
-        System.out.println("-------------------------");
-        System.out.println("Perft Bitboard 1 threads");
-        System.out.println("-------------------------");
-
-        PerftDriver.perftBitboardTest(
-                chessboard,
-                6, // perft 깊이
-                1, // 사용할 스레드 수
-                false, // 테스트 결과 및 출력을 하지 않을 것인지
-                false // 벌크 카운팅을 할 것인지
-        );
-
-        System.out.println();
-        System.out.println("-------------------------");
-        System.out.println("Perft Bitboard 4 threads");
-        System.out.println("-------------------------");
-
-        PerftDriver.perftBitboardTest(
-                chessboard,
-                7, // perft 깊이
-                4, // 사용할 스레드 수
-                false, // 테스트 결과 및 출력을 하지 않을 것인지
-                false // 벌크 카운팅을 할 것인지
-        );
-    }
-}
-```
-
-### 8. 오프닝북 빌드하기 & 사용하기
-
-JCB는 여러 게임이 들어있는 PGN 파일로부터 Polyglot 오프닝북(`.bin`)을 바로 빌드할 수 있고, 엔진 대전 시 Polyglot(`.bin`) 또는 EPD(`.epd`) 파일을 오프닝북으로 사용할 수 있습니다.
-
-**PGN 게임들로 `.bin` 북 빌드하기:**
-
-```java
-import com.pepero.jcb.api.book.PolyglotBookBuilder;
-
-import java.io.IOException;
-
-public class PGNtoPolyglotConvertExample {
-    public static void main(String[] args) throws IOException {
-        String inputPgn = "games.pgn";
-        String outputBin = "opening.bin";
-        int maxPly = 30; // 15수
-
-        PolyglotBookBuilder.build(inputPgn, outputBin, maxPly);
-
-        System.out.println("Opening book built successfully: " + outputBin);
-    }
-}
-```
-
-**`MatchConfig`에서 오프닝북 사용하기:**
-
-`openingBook(String)`은 파일 확장자를 보고 자동으로 오프닝북 종류를 인식합니다.
+### 더 많은 예제
+
+전체 소스는 [`example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) 폴더에서 확인하실 수 있습니다.
+
+| 예제                                                                                                                                         | 내용                                                              | 주요 클래스                                  |
+|----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|----------------------------------------------|
+| [체스 GUI 힌트 기능](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GUIExample.java)                     | 기물을 클릭했을 때 갈 수 있는 칸 표시와 점수 계산                 | `ChessGame`, `MoveInfo`, `Square`            |
+| [게임 종료 조건 및 상태 체크](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GameStateExample.java)      | 체크메이트, 스테일메이트, 무승부 등 상태 확인                     | `ChessGame`, `GameOverReason`                |
+| [엔진끼리 대결하기](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/EngineExample.java)                   | 동시 실행, 판정 규칙, PGN 출력을 포함한 UCI 엔진 대전             | `MatchRunner`, `MatchConfig`, `EngineConfig` |
+| [Syzygy 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SyzygyExample.java)                 | Syzygy 테이블베이스로 WDL / DTZ 조회와 수 평가                    | `SyzygyTablebase`, `SyzygyAnalyzer`          |
+| [Gaviota 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GaviotaExample.java)               | Gaviota 테이블베이스로 WDL / DTM 조회와 수 평가                   | `GaviotaTablebase`, `GaviotaAnalyzer`        |
+| [Perft](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PerftExample.java)                                | `ChessGame`, `Chessboard` 기준 싱글/멀티스레드 Perft              | `PerftDriver`, `Chessboard`                  |
+| [오프닝북](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNtoPolyglotConvertExample.java)              | PGN 게임들로 Polyglot `.bin` 북 빌드, 엔진 대전에서 오프닝북 사용 | `PolyglotBookBuilder`, `MatchConfig`         |
+| [대용량 PGN 데이터베이스 스트리밍](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNStreamExample.java) | 수 GB 단위 PGN 파일을 한 번에 올리지 않고 게임 단위로 순회        | `PGNDatabaseIterator`, `PGNGameStub`         |
+
+`MatchConfig.Builder.openingBook(Path)`는 파일 확장자를 보고 자동으로 오프닝북 종류를 인식합니다.
 - `.bin` &rarr; Polyglot 오프닝북, 게임 진행 중 매 수마다 조회
 - `.epd` &rarr; EPD 오프닝북, 포지션 목록 중 하나를 골라 게임 시작 포지션으로 사용
 - `.pgn` &rarr; PGN 오프닝북, PGN 중 랜덤으로 골라 사용자가 설정한 최대 수 길이만큼 재생 후 시작
-
-```java
-MatchConfig config = new MatchConfig.Builder()
-        .openingBook("engine/opening.bin") // 또는 "engine/opening.epd", "engine/opening.pgn"
-        .repeatOpening(true) // 오프닝을 백흑 바꿔서 똑같이 둡니다.
-        // 만약 pgn 을 사용하고 있다면, ".maxPly(20)" 으로 최대 수 길이를 설정 할 수 있습니다. (기본값 : 16)
-        .totalGames(10)
-        .concurrency(1)
-        .engine1Config(engine1Config)
-        .engine2Config(engine2Config)
-        .build();
-```
-
-### 9. 대용량 PGN 데이터베이스 스트리밍
-
-수 GB 단위의 대용량 PGN 파일도 `PGNDatabaseIterator`를 통해 전체 파일을 메모리에 올리지 않고 게임 단위로 스트리밍할 수 있습니다. 헤더 정보는 즉시 조회할 수 있으며, 기보는 `toChessGame()`을 호출할 때 Lazy Parsing 됩니다.
-
-```java
-import com.pepero.jcb.api.ChessGame;
-import com.pepero.jcb.api.pgn.PGNDatabaseIterator;
-import com.pepero.jcb.api.pgn.PGNGameStub;
-
-import java.nio.file.Path;
-
-public class PGNStreamExample {
-    public static void main(String[] args) {
-        // 메모리 부담 없이 수 GB급 PGN 파일을 스트리밍 방식으로 순회합니다.
-        try (PGNDatabaseIterator iterator = new PGNDatabaseIterator(Path.of("large_database.pgn"))) {
-            while (iterator.hasNext()) {
-                PGNGameStub stub = iterator.next();
-
-                // 기보 전체를 파싱하지 않고 헤더 데이터만 즉시 확인 가능합니다.
-                System.out.println("White: " + stub.headers().get("White"));
-                System.out.println("Black: " + stub.headers().get("Black"));
-
-                // 필요한 시점에만 ChessGame 객체로 지연 파싱 할 수도 있습니다.
-                ChessGame game = stub.toChessGame();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
-```
-
 
 ## 성능
 JCB 에는 2가지 단계의 API가 있습니다.
