@@ -5,14 +5,15 @@ import com.pepero.jcb.core.Chessboard;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PolyglotBookReader {
     private final File bookFile;
 
-    public PolyglotBookReader(String filePath) {
-        this.bookFile = new File(filePath);
+    public PolyglotBookReader(Path filePath) {
+        this.bookFile = filePath.toFile();
         if (!this.bookFile.exists()) {
             throw new RuntimeException("Could not find opening book file! (file path : " + filePath + ")");
         }

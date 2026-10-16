@@ -6,8 +6,10 @@ import com.pepero.jcb.api.book.PolyglotBookReader;
 import com.pepero.jcb.api.syzygy.SyzygyTablebase;
 import com.pepero.jcb.core.GameVariant;
 
+import java.nio.file.Path;
+
 /**
- * Match config data for {@link ArenaRunner} ({@link EngineArena}).
+ * Match config data for {@link MatchRunner} ({@link EngineArena}).
  */
 public class MatchConfig {
     private final int totalGames;
@@ -16,7 +18,7 @@ public class MatchConfig {
     private final EngineConfig engine1Config;
     private final EngineConfig engine2Config;
 
-    private final FENSettingConfig fenSettingConfig;
+    private final MatchFENConfig matchFenConfig;
 
     private final boolean isChess960;
     private final GameVariant variant;
@@ -49,7 +51,7 @@ public class MatchConfig {
 
         this.concurrency = builder.concurrency;
 
-        this.fenSettingConfig = builder.fenSettingConfig;
+        this.matchFenConfig = builder.matchFenConfig;
 
         this.engine1Config = builder.engine1Config;
         this.engine2Config = builder.engine2Config;
@@ -110,8 +112,8 @@ public class MatchConfig {
     public boolean isRepeatOpening() { return repeatOpening; }
 
     // fen setting
-    public FENSettingConfig fenSettingConfig() { return fenSettingConfig; }
-    public boolean hasFENSetting() { return fenSettingConfig != null; }
+    public MatchFENConfig fenSettingConfig() { return matchFenConfig; }
+    public boolean hasFENSetting() { return matchFenConfig != null; }
 
     // adjudication rule
     public AdjudicationRule getResignRule() { return resignRule; }
@@ -136,7 +138,7 @@ public class MatchConfig {
         private EngineConfig engine1Config;
         private EngineConfig engine2Config;
 
-        private FENSettingConfig fenSettingConfig;
+        private MatchFENConfig matchFenConfig;
 
         private GameVariant variant = GameVariant.STANDARD;
         private boolean isChess960 = false;
@@ -183,8 +185,8 @@ public class MatchConfig {
          *     <li>.pgn -> PGN opening book (picking random games)</li>
          * </ul>
          */
-        public Builder openingBook(String bookFilePath) {
-            String lowerPath = bookFilePath.toLowerCase();
+        public Builder openingBook(Path bookFilePath) {
+            String lowerPath = bookFilePath.toString();
 
             if (lowerPath.endsWith(".pgn")) {
                 this.pgnBook = new PGNBookReader(bookFilePath);
@@ -241,8 +243,8 @@ public class MatchConfig {
         /**
          * Starting FEN Setting like handicap
          */
-        public Builder fenSetting(FENSettingConfig config) {
-            this.fenSettingConfig = config;
+        public Builder fenSetting(MatchFENConfig config) {
+            this.matchFenConfig = config;
             return this;
         }
 
@@ -341,7 +343,7 @@ public class MatchConfig {
 
             int startingPositionSources = 0;
 
-            if (fenSettingConfig != null) startingPositionSources++;
+            if (matchFenConfig != null) startingPositionSources++;
             if (polyglotBook != null) startingPositionSources++;
             if (epdBook != null) startingPositionSources++;
             if (pgnBook != null) startingPositionSources++;

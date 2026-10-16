@@ -4,5 +4,5 @@ import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.enums.GameResult;
 
 public record MatchResult(
-        GameResult result, EngineWinner engineWinner, GameOverReason reason, String pgn
+        GameResult result, MatchWinner matchWinner, GameOverReason reason, String pgn
 ) { }

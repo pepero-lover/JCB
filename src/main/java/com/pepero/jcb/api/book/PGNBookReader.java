@@ -3,6 +3,7 @@ package com.pepero.jcb.api.book;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.List;
 
@@ -13,8 +14,8 @@ import java.util.List;
 public class PGNBookReader {
     private final List<String> games;
 
-    public PGNBookReader(String filePath) {
-        File file = new File(filePath);
+    public PGNBookReader(Path filePath) {
+        File file = filePath.toFile();
         if (!file.exists()) {
             throw new RuntimeException("Could not find PGN opening book file! (file path : " + filePath + ")");
         }

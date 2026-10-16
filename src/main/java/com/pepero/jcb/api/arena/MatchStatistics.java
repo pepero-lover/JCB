@@ -12,7 +12,7 @@ public class MatchStatistics {
     private final AtomicInteger errors = new AtomicInteger();
 
     public void record(MatchResult result) {
-        switch (result.engineWinner()) {
+        switch (result.matchWinner()) {
             case ENGINE1 -> engine1Wins.incrementAndGet();
             case ENGINE2 -> engine2Wins.incrementAndGet();
             case DRAW -> draws.incrementAndGet();

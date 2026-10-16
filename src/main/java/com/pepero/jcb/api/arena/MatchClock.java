@@ -1,13 +1,13 @@
 package com.pepero.jcb.api.arena;
 
-public class ChessClock {
+class MatchClock {
     private long whiteTimeMs;
     private long blackTimeMs;
     
     private final long whiteIncMs;
     private final long blackIncMs;
 
-    public ChessClock(long whiteStartMs, long whiteIncMs, long blackStartMs, long blackIncMs) {
+    public MatchClock(long whiteStartMs, long whiteIncMs, long blackStartMs, long blackIncMs) {
         this.whiteTimeMs = whiteStartMs;
         this.whiteIncMs = whiteIncMs;
         this.blackTimeMs = blackStartMs;

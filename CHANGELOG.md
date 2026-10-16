@@ -8,8 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `MatchRunner` (originally `ArenaRunner`), added checking the given engines exists, and are executable.
+  (and also checking working directory exists)
 
 ### Changed
+- On `api.arena`, changed class names.
+  (`ArenaRunner` -> `MatchRunner`, `MoveEvent` -> `MatchMoveEvent`,
+  `EngineWinner` -> `MatchWinner`, `FENSettingConfig` -> `MatchFENConfig`,
+  `ChessClock` -> `MatchClock`).
+- On `EngineArena.ArenaListener`, moved to new file `MatchListener`.
+- On `RunnerListener` at `MatchRunner` (originally `ArenaRunner`), moved to new file `MatchRunnerListener`.
+- And `EngineArena`, `MatchCancellationToken`, `MatchClock`, `ProcessUCIEngineFactory`, `UCIEngineFactory`,
+  changed to package-private.
+- On `EngineConfig`, changed string file path input to `Path`. And also `MatchConfig.Builder.openingBook`, changed to `Path`.
 
 ### Fixed
 

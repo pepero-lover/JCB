@@ -1,6 +1,6 @@
 package com.pepero.jcb.api.arena;
 
-public record MoveEvent(
+public record MatchMoveEvent(
         String fen,
         String moveLan,
         String moveSan,

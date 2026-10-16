@@ -5,7 +5,7 @@ import com.pepero.jcb.api.enums.GameResult;
 
 public record MatchFinishedEvent(
         GameResult result,
-        EngineWinner engineWinner,
+        MatchWinner matchWinner,
         GameOverReason reason,
         String pgn,
         String finalFen

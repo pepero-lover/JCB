@@ -3,6 +3,7 @@ package com.pepero.jcb.api.book;
 import java.io.IOException;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,8 @@ import java.util.List;
 public class EpdBookReader {
     private final List<String> positions = new ArrayList<>();
 
-    public EpdBookReader(String filePath) {
-        File file = new File(filePath);
+    public EpdBookReader(Path filePath) {
+        File file = filePath.toFile();
         if (!file.exists()) {
             throw new RuntimeException("Could not find EPD opening book file! (file path : " + filePath + ")");
         }

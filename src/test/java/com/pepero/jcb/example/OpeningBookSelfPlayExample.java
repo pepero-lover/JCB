@@ -8,12 +8,14 @@ import com.pepero.jcb.api.enums.GameOverReason;
 import com.pepero.jcb.api.uci.EngineLine;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 
 public class OpeningBookSelfPlayExample {
     public static void main(String[] args) throws InterruptedException {
-        PolyglotBookReader bookReader = new PolyglotBookReader("engine/opening.bin");
+        PolyglotBookReader bookReader = new PolyglotBookReader(
+                Path.of("engine/opening.bin"));
 
         ChessGame chessGame = ChessGame.startPosition();
 

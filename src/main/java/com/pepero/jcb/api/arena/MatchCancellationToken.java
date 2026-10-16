@@ -3,7 +3,7 @@ package com.pepero.jcb.api.arena;
 import com.pepero.jcb.api.uci.UCIEngineWrapper;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CancellationToken {
+class MatchCancellationToken {
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
     private volatile UCIEngineWrapper activeEngine;
 

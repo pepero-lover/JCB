@@ -16,8 +16,7 @@ import com.pepero.jcb.core.chess960.Chess960Utils;
 
 import java.util.*;
 
-public class EngineArena {
-
+class EngineArena {
     private final MatchConfig matchConfig;
     private final UCIEngineFactory factory;
 
@@ -25,12 +24,7 @@ public class EngineArena {
 
     private static final long NO_CLOCK_TIMEOUT_SEC = 600;
 
-    public interface ArenaListener {
-        void onMovePlayed(MoveEvent event);
-        void onMatchFinished(MatchFinishedEvent event);
-    }
-
-    private ArenaListener listener;
+    private MatchListener listener;
 
     public EngineArena(MatchConfig config) {
         this.factory = new ProcessUCIEngineFactory();
@@ -107,7 +101,7 @@ public class EngineArena {
         return (int) h;
     }
 
-    public void setArenaListener(ArenaListener listener) {
+    public void setArenaListener(MatchListener listener) {
         this.listener = listener;
     }
 
@@ -138,7 +132,7 @@ public class EngineArena {
      * @param token cancellation token (for aborting game)
      * @return Match result
      */
-    public MatchResult startMatch(int roundNumber, CancellationToken token) {
+    public MatchResult startMatch(int roundNumber, MatchCancellationToken token) {
         boolean isEngine1White = roundNumber % 2 == 1;
 
         ChessGame chessGame;
@@ -162,7 +156,7 @@ public class EngineArena {
             EngineLimit whiteLimit = (isEngine1White ? engine1Limit : engine2Limit);
             EngineLimit blackLimit = (isEngine1White ? engine2Limit : engine1Limit);
 
-            ChessClock clock = new ChessClock(
+            MatchClock clock = new MatchClock(
                     whiteLimit.timeControlMs(),
                     whiteLimit.incrementMs(),
                     blackLimit.timeControlMs(),
@@ -221,7 +215,7 @@ public class EngineArena {
                             chessGame.setTimeStamp("0");
                         }
                         if(listener != null) {
-                            listener.onMovePlayed(new MoveEvent(
+                            listener.onMovePlayed(new MatchMoveEvent(
                                     chessGame.getFEN(),
                                     move,
                                     san,
@@ -375,7 +369,7 @@ public class EngineArena {
                         }
                     }
                     if(listener != null) {
-                        listener.onMovePlayed(new MoveEvent(
+                        listener.onMovePlayed(new MatchMoveEvent(
                                 chessGame.getFEN(),
                                 analysisResult.bestMove(),
                                 san,
@@ -396,16 +390,16 @@ public class EngineArena {
 
         GameResult result = chessGame.getGameResult(true);
         GameOverReason reason = chessGame.getGameOverReason(true);
-        EngineWinner winner = EngineWinner.UNKNOWN;
+        MatchWinner winner = MatchWinner.UNKNOWN;
         String pgn = chessGame.getPGN();
         if(result == GameResult.WHITE_WON) {
-            winner = isEngine1White ? EngineWinner.ENGINE1 : EngineWinner.ENGINE2;
+            winner = isEngine1White ? MatchWinner.ENGINE1 : MatchWinner.ENGINE2;
         } else if(result == GameResult.DRAW) {
-            winner = EngineWinner.DRAW;
+            winner = MatchWinner.DRAW;
         } else if(result == GameResult.BLACK_WON){
-            winner = isEngine1White ? EngineWinner.ENGINE2 : EngineWinner.ENGINE1;
+            winner = isEngine1White ? MatchWinner.ENGINE2 : MatchWinner.ENGINE1;
         } else if(result == GameResult.ABORTED) {
-            winner = EngineWinner.ABORTED;
+            winner = MatchWinner.ABORTED;
         }
 
         if(listener != null) {

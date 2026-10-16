@@ -4,17 +4,18 @@ import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.arena.MatchResult;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 public class EngineArenaExample {
     public static void main(String[] args) {
         // Specify the executable paths for the engines.
-        String engine1Path = new File("engine/stockfish").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish").getAbsolutePath();
+        Path engine1Path = Path.of("engine/stockfish-18");
+        Path engine2Path = Path.of("engine/stockfish-19");
 
         // Specify the engines' working directory.
-        String folder = new File("engine/").getAbsolutePath();
+        Path folder = Path.of("engine/");
 
         try {
             // Create the configuration for Engine 1.
@@ -48,7 +49,7 @@ public class EngineArenaExample {
             //   .epd -> EPD opening book (a fixed starting position per game)
             //   .pgn -> PGN opening book (pick random pgn game) the max opening move count is 16 ply.
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/opening.bin") // You can set an opening book.
+                    .openingBook(Path.of("engine/opening.bin")) // You can set an opening book.
                     .repeatOpening(true) // Play each opening twice, swapping colors.
                     .totalGames(10) // Total number of games to play
                     .concurrency(1) // Number of threads to use (only 1 here)
@@ -57,15 +58,15 @@ public class EngineArenaExample {
                     .build();
 
             // Create the match runner class.
-            ArenaRunner arena = new ArenaRunner(config);
+            MatchRunner arena = new MatchRunner(config);
 
             // Start the arena match.
             // As a listener, we'll export the PGN whenever a game finishes.
-            MatchStatistics statistics = arena.run(new ArenaRunner.RunnerListener() {
+            MatchStatistics statistics = arena.run(new MatchRunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
                     System.out.println("Round " + roundNumber);
-                    System.out.println("RESULT : " + result.result() + "(" + result.engineWinner() + ")");
+                    System.out.println("RESULT : " + result.result() + "(" + result.matchWinner() + ")");
                     System.out.println("PGN : ");
                     System.out.println(result.pgn());
                     System.out.println();
@@ -73,7 +74,7 @@ public class EngineArenaExample {
 
                 @Override
                 public void onGameFailed(int roundNumber, Throwable cause) {
-                    ArenaRunner.RunnerListener.super.onGameFailed(roundNumber, cause);
+                    MatchRunnerListener.super.onGameFailed(roundNumber, cause);
 
                     // When the game failed, print log.
                     cause.printStackTrace();

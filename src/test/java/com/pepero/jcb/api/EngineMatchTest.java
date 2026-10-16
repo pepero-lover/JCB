@@ -4,9 +4,9 @@ import com.pepero.jcb.api.arena.*;
 import com.pepero.jcb.api.arena.MatchResult;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.ChessboardUtils;
-import com.pepero.jcb.core.GameVariant;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -14,10 +14,10 @@ import java.util.concurrent.CountDownLatch;
 
 public class EngineMatchTest {
     public static void main(String[] args) {
-        String engine1Path = new File("engine/stockfish-18").getAbsolutePath();
-        String engine2Path = new File("engine/stockfish-19").getAbsolutePath();
+        Path engine1Path = Path.of("engine/stockfish-18");
+        Path engine2Path = Path.of("engine/stockfish-19");
 
-        String folder = new File("engine/").getAbsolutePath();
+        Path folder = Path.of("engine/");
 
         try {
             EngineConfig engine1Config = new EngineConfig(
@@ -41,7 +41,7 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook("engine/UHO.pgn")
+                    .openingBook(Path.of("engine/UHO.pgn"))
                     //.openingBook("engine/UHO.epd")
                     .drawRule(new AdjudicationRule(
                             40,
@@ -77,11 +77,11 @@ public class EngineMatchTest {
 
             CountDownLatch doneLatch = new CountDownLatch(1);
 
-            ArenaRunner runner = new ArenaRunner(config);
+            MatchRunner runner = new MatchRunner(config);
 
-            runner.setArenaListener(new EngineArena.ArenaListener() {
+            runner.setArenaListener(new MatchListener() {
                 @Override
-                public void onMovePlayed(MoveEvent event) {
+                public void onMovePlayed(MatchMoveEvent event) {
                     ChessboardUtils.printChessBoard(new Chessboard(event.fen()));
                 }
 
@@ -91,12 +91,12 @@ public class EngineMatchTest {
                 }
             });
 
-            Thread runnerThread = new Thread(() -> runner.run(new ArenaRunner.RunnerListener() {
+            Thread runnerThread = new Thread(() -> runner.run(new MatchRunnerListener() {
                 @Override
                 public void onGameFinished(int roundNumber, MatchResult result, MatchStatistics runningStats) {
                     String sb = "ROUND " + roundNumber + "\n" +
                             result.pgn() + "\n" +
-                            result.engineWinner() + " WON\n" +
+                            result.matchWinner() + " WON\n" +
                             result.reason() + "\n" +
                             "Total game completed : " + runningStats.getTotalCompleted() + "\n\n";
 
