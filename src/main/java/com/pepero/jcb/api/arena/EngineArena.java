@@ -46,6 +46,24 @@ class EngineArena {
 
     private static final int MAX_PGN_PICK_ATTEMPTS = 50;
 
+    private void applyOpeningClock(ChessGame game, MatchClock clock, boolean showClk) {
+        int total = game.getTotalMainlineMoveCount();
+        if (total == 0) return;
+
+        for (int ply = 1; ply <= total; ply++) {
+            game.jumpToMainlinePly(ply);
+            boolean moverWasWhite = !game.getTurn();
+
+            clock.spendTime(moverWasWhite, 0);
+            if (showClk) {
+                game.setCurrentMoveClockMilliSeconds(
+                        moverWasWhite ? clock.getWhiteTimeMs() : clock.getBlackTimeMs());
+                game.setTimeStamp("0");
+            }
+        }
+        game.jumpToMainlinePly(total);
+    }
+
     private ChessGame buildPGNOpeningGame(MatchConfig matchConfig, int roundNumber) {
         int effectiveRound = matchConfig.isRepeatOpening() ? (roundNumber + 1) / 2 : roundNumber;
         int roundSeed = mixSeed(matchConfig.getSeed(), effectiveRound);
@@ -162,6 +180,10 @@ class EngineArena {
                     blackLimit.timeControlMs(),
                     blackLimit.incrementMs()
             );
+
+            if (matchConfig.hasPGNBook()) {
+                applyOpeningClock(chessGame, clock, matchConfig.isShowClk());
+            }
 
             chessGame.setHeader("White", isEngine1White ?
                     matchConfig.getEngine1Config().name() : matchConfig.getEngine2Config().name());

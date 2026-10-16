@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `EngineConfig`, changed string file path input to `Path`. And also `MatchConfig.Builder.openingBook`, changed to `Path`.
 
 ### Fixed
+- On `EngineArena`, fixed not showing `clk`, `timestamp` tags and not incrementing times on opening (when the opening book is loaded with `.pgn` file).
 
 ### Performance
 
