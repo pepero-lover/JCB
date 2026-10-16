@@ -2371,10 +2371,10 @@ public class MoveGenerator {
         if ((Attacks.king_attacks[square] & (attackerSide == white ? chessboard.bitboards[K] : chessboard.bitboards[k])) != 0) return true;
 
         long bishopsQueens = (attackerSide == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q]) : (chessboard.bitboards[b] | chessboard.bitboards[q]);
-        if ((Attacks.getBishopAttacks(square, tempOcc) & bishopsQueens) != 0) return true;
+        if (bishopsQueens != 0 && (Attacks.getBishopAttacks(square, tempOcc) & bishopsQueens) != 0) return true;
 
         long rooksQueens = (attackerSide == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) : (chessboard.bitboards[r] | chessboard.bitboards[q]);
-        if ((Attacks.getRookAttacks(square, tempOcc) & rooksQueens) != 0) return true;
+        if (rooksQueens != 0 && (Attacks.getRookAttacks(square, tempOcc) & rooksQueens) != 0) return true;
 
         return false;
     }
@@ -2400,12 +2400,12 @@ public class MoveGenerator {
         long bishopsQueens = (attackerSide == white) ?
                 (chessboard.bitboards[B] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[b] | chessboard.bitboards[q]);
-        if ((Attacks.getBishopAttacks(square, tempOcc) & bishopsQueens) != 0) return true;
+        if (bishopsQueens != 0 && (Attacks.getBishopAttacks(square, tempOcc) & bishopsQueens) != 0) return true;
 
         long rooksQueens = (attackerSide == white) ?
                 (chessboard.bitboards[R] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[r] | chessboard.bitboards[q]);
-        if ((Attacks.getRookAttacks(square, tempOcc) & rooksQueens) != 0) return true;
+        if (rooksQueens != 0 && (Attacks.getRookAttacks(square, tempOcc) & rooksQueens) != 0) return true;
 
         return false;
     }
@@ -2439,12 +2439,12 @@ public class MoveGenerator {
         // attacked by bishops
         long bishopsQueens = (side == white) ? (chessboard.bitboards[B] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[b] | chessboard.bitboards[q]);
-        if ((Attacks.getBishopAttacks(square, occupancy) & bishopsQueens) != 0) return true;
+        if (bishopsQueens != 0 && (Attacks.getBishopAttacks(square, occupancy) & bishopsQueens) != 0) return true;
 
         // attacked by rooks
         long rooksQueens = (side == white) ? (chessboard.bitboards[R] | chessboard.bitboards[Q])
                 : (chessboard.bitboards[r] | chessboard.bitboards[q]);
-        if ((Attacks.getRookAttacks(square, occupancy) & rooksQueens) != 0) return true;
+        if (rooksQueens != 0 && (Attacks.getRookAttacks(square, occupancy) & rooksQueens) != 0) return true;
 
         // attacked by kings
         if (chessboard.gameVariant != GameVariant.ATOMIC &&

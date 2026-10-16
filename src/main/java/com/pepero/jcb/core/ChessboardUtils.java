@@ -485,14 +485,18 @@ public class ChessboardUtils {
                 (oppSide == white ? chessboard.bitboards[N] : chessboard.bitboards[n]);
 
         // bishop
-        checkersMask |= Attacks.getBishopAttacks(kingSquare, chessboard.occupancies[both]) &
-                (oppSide == white ? (chessboard.bitboards[B] | chessboard.bitboards[Q]) :
-                        (chessboard.bitboards[b] | chessboard.bitboards[q]));
+        long bishopsQueens = oppSide == white ? (chessboard.bitboards[B] | chessboard.bitboards[Q]) :
+                (chessboard.bitboards[b] | chessboard.bitboards[q]);
+        if (bishopsQueens != 0) {
+            checkersMask |= Attacks.getBishopAttacks(kingSquare, chessboard.occupancies[both]) & bishopsQueens;
+        }
 
         // rook
-        checkersMask |= Attacks.getRookAttacks(kingSquare, chessboard.occupancies[both]) &
-                (oppSide == white ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) :
-                        (chessboard.bitboards[r] | chessboard.bitboards[q]));
+        long rooksQueens = oppSide == white ? (chessboard.bitboards[R] | chessboard.bitboards[Q]) :
+                (chessboard.bitboards[r] | chessboard.bitboards[q]);
+        if (rooksQueens != 0) {
+            checkersMask |= Attacks.getRookAttacks(kingSquare, chessboard.occupancies[both]) & rooksQueens;
+        }
 
         // queen is already contained
 

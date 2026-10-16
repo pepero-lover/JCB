@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `EngineArena`, fixed not showing `clk`, `timestamp` tags and not incrementing times on opening (when the opening book is loaded with `.pgn` file).
 
 ### Performance
+- On `MoveGenerator` and `ChessboardUtils`, increased MNPS on especially pawn ending,
+  skipping the bishop or rook attack when the bishop or rook occupancy is 0L.
+  (`+9.8%` on `4k3/8/8/8/8/8/4P3/4K3 w - - 0 1` fen)
 
 ## [1.15.0]
 
