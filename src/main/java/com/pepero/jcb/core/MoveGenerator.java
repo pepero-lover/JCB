@@ -804,15 +804,25 @@ public class MoveGenerator {
      */
     public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove,
                                     int pieceTypeFilter, int targetSquareFilter) {
+        return generateMoves(chessboard, moveArray, stopAtFirstMove, pieceTypeFilter, targetSquareFilter, -1);
+    }
+
+    /**
+     * Generate legal moves with optional piece, target and source filters.
+     * Source -1 disables the source filter; drop moves have encoded source a1.
+     */
+    public static int generateMoves(Chessboard chessboard, int[] moveArray, boolean stopAtFirstMove,
+                                    int pieceTypeFilter, int targetSquareFilter, int sourceSquareFilter) {
+        boolean filtered = pieceTypeFilter != -1 || targetSquareFilter != -1 || sourceSquareFilter != -1;
         switch (chessboard.gameVariant) {
             case GIVEAWAY:
             case SUICIDE: {
-                int count = generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove);
-                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
+                int count = generateAntiChessMoves(chessboard, moveArray, stopAtFirstMove && !filtered);
+                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter, sourceSquareFilter);
             }
             case ATOMIC: {
-                int count = generateAtomicMoves(chessboard, moveArray, stopAtFirstMove);
-                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
+                int count = generateAtomicMoves(chessboard, moveArray, stopAtFirstMove && !filtered);
+                return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter, sourceSquareFilter);
             }
             case RACING_KINGS:
                 if (ChessboardUtils.getGameResultForRacingKings(chessboard) != ChessboardUtils.ONGOING_VALUE) {
@@ -821,8 +831,8 @@ public class MoveGenerator {
                 break;
             case HORDE:
                 if (chessboard.side == white) {
-                    int count = generateHordeMoves(chessboard, moveArray, stopAtFirstMove);
-                    return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter);
+                    int count = generateHordeMoves(chessboard, moveArray, stopAtFirstMove && !filtered);
+                    return filterMovesInPlace(moveArray, count, pieceTypeFilter, targetSquareFilter, sourceSquareFilter);
                 }
                 break;
             case THREE_CHECK:
@@ -853,7 +863,8 @@ public class MoveGenerator {
         boolean isDoubleCheck = (checkersInfo & (1 << 13)) != 0;
 
         int myKingPiece = (side == white) ? K : k;
-        boolean kingMovesNeeded = (pieceTypeFilter == -1 || pieceTypeFilter == myKingPiece);
+        boolean kingMovesNeeded = (pieceTypeFilter == -1 || pieceTypeFilter == myKingPiece)
+                && (sourceSquareFilter == -1 || sourceSquareFilter == kingSq);
         boolean nonKingLoopNeeded = (pieceTypeFilter == -1) || (pieceTypeFilter != myKingPiece);
 
         // avoiding check mask
@@ -935,6 +946,7 @@ public class MoveGenerator {
 
             for (int piece = start_piece; piece <= end_piece; piece++) {
                 long bitboard = chessboard.bitboards[piece];
+                if (sourceSquareFilter != -1) bitboard &= 1L << sourceSquareFilter;
 
                 while (bitboard != 0) {
                     int source_square = BitBoardUtils.getLS1BIndex(bitboard);
@@ -1100,12 +1112,13 @@ public class MoveGenerator {
             }
         }
 
-        if (!inCheck && pieceTypeFilter == -1) {
+        if (!inCheck && pieceTypeFilter == -1 && (sourceSquareFilter == -1 || sourceSquareFilter == kingSq)) {
             // generate castling moves
             move_count = generateCastlingMovesStrict(chessboard, moveArray, move_count, kingSq, side, stopAtFirstMove);
         }
 
-        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE && pieceTypeFilter == -1) {
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE && pieceTypeFilter == -1
+                && (sourceSquareFilter == -1 || sourceSquareFilter == a1)) {
             // generate crazy house drop moves
             move_count = generateDropMoves(chessboard, moveArray, move_count, checkMask, stopAtFirstMove);
         }
@@ -1118,14 +1131,16 @@ public class MoveGenerator {
      *
      * @return the new move count after filtering
      */
-    private static int filterMovesInPlace(int[] moveArray, int move_count, int pieceTypeFilter, int targetSquareFilter) {
-        if (pieceTypeFilter == -1 && targetSquareFilter == -1) return move_count;
+    private static int filterMovesInPlace(int[] moveArray, int move_count, int pieceTypeFilter, int targetSquareFilter,
+                                         int sourceSquareFilter) {
+        if (pieceTypeFilter == -1 && targetSquareFilter == -1 && sourceSquareFilter == -1) return move_count;
 
         int write = 0;
         for (int i = 0; i < move_count; i++) {
             int move = moveArray[i];
             if (pieceTypeFilter != -1 && EncodeMove.getMovePiece(move) != pieceTypeFilter) continue;
             if (targetSquareFilter != -1 && EncodeMove.getMoveTarget(move) != targetSquareFilter) continue;
+            if (sourceSquareFilter != -1 && EncodeMove.getMoveSource(move) != sourceSquareFilter) continue;
             moveArray[write++] = move;
         }
         return write;

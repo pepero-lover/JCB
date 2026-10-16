@@ -1102,6 +1102,38 @@ public class ChessGame implements ChessGameReadView{
     }
 
     /**
+     * Apply a move without legality validation, history-tree updates, listener notifications,
+     * or game-over state updates.
+     * <p>
+     * The caller must supply a fully encoded legal move for the current position, for example
+     * from {@link #getLegalMoves()}, and ensure the position has not changed since generation.
+     * Invalid or stale moves may corrupt the board state.
+     *
+     * @param moveInfo a legal move for the current position
+     */
+    public void makeMoveUnchecked(MoveInfo moveInfo) {
+        makeMoveUnchecked(moveInfo.originEncodedData());
+    }
+
+    /**
+     * Apply a fully encoded legal move without validation or history-tree, listener, or
+     * game-over updates.
+     * <p>
+     * The caller must ensure the move and all its flags are valid for the current position.
+     * Invalid or stale moves may corrupt the board state.
+     *
+     * @param encodedMove a fully encoded legal move for the current position
+     */
+    public void makeMoveUnchecked(int encodedMove) {
+        writeLock.lock();
+        try {
+            MoveGenerator.makeMove(this.chessboard, encodedMove);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
      * Unmake move on this ChessGame <br>
      * <b>Warning : This method doesn't update history, call listener, and update game over variable. </b>
      *
@@ -2072,7 +2104,7 @@ public class ChessGame implements ChessGameReadView{
         readLock.lock();
         try {
             int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
-            int move_count = generateMoves(chessboard, move_list);
+            int move_count = generateMoves(chessboard, move_list, false,-1, -1, source.getIndex());
             List<MoveInfo> result = new ArrayList<>(move_count);
 
             for (int count = 0; count < move_count; count++){
@@ -2100,7 +2132,7 @@ public class ChessGame implements ChessGameReadView{
         readLock.lock();
         try {
             int[] move_list = MoveCache.CHESSGAME_MOVE_CACHE.get();
-            int move_count = generateMoves(chessboard, move_list);
+            int move_count = generateMoves(chessboard, move_list, false, -1, target.getIndex());
             List<MoveInfo> result = new ArrayList<>(move_count);
 
             for (int count = 0; count < move_count; count++){
@@ -2833,11 +2865,9 @@ public class ChessGame implements ChessGameReadView{
     public MoveInfo sanToMoveData(String san) {
         if(san == null) throw new NullPointerException("San data can not be null!");
 
-        Chessboard tempBoard;
         readLock.lock();
         try {
-            tempBoard = new Chessboard(this.chessboard);
-            return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(tempBoard, san));
+            return new MoveInfo(ConvertStringMoveUtils.sanToMoveData(this.chessboard, san));
         } finally {
             readLock.unlock();
         }
@@ -2856,11 +2886,9 @@ public class ChessGame implements ChessGameReadView{
     public MoveInfo lanToMoveData(String lan) {
         if(lan == null) throw new NullPointerException("Lan (or uci) data can not be null!");
 
-        Chessboard tempBoard;
         readLock.lock();
         try {
-            tempBoard = new Chessboard(this.chessboard);
-            return new MoveInfo(ConvertStringMoveUtils.lanToMoveData(tempBoard, lan));
+            return new MoveInfo(ConvertStringMoveUtils.lanToMoveData(this.chessboard, lan));
         } finally {
             readLock.unlock();
         }

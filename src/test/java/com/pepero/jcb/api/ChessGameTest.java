@@ -1864,6 +1864,23 @@ public class ChessGameTest {
     }
 
     @Test
+    @DisplayName("makeMoveUnchecked: 두 오버로드는 생성된 수를 반영하고 raw로 원복할 수 있어야 한다")
+    void makeMoveUncheckedAndUnmakeMoveRaw() {
+        for (boolean useMoveInfo : new boolean[]{true, false}) {
+            ChessGame game = ChessGame.startPosition();
+            ChessGame expected = ChessGame.startPosition();
+            MoveInfo move = game.getLegalMovesForSource(Square.e2).get(1);
+            expected.makeMoveRaw(move);
+            if (useMoveInfo) game.makeMoveUnchecked(move);
+            else game.makeMoveUnchecked(move.originEncodedData());
+            assertEquals(expected.getFEN(), game.getFEN());
+            assertTrue(game.getPathToCurrentNode().isEmpty());
+            game.unmakeMoveRaw(move);
+            assertEquals(START_FEN, game.getFEN());
+        }
+    }
+
+    @Test
     @DisplayName("tryMakeMoveRaw(int): 합법수면 true 를 반환하고 반영되며, 불법수면 false 를 반환해야 한다")
     void tryMakeMoveRawWithEncodedMove() {
         ChessGame chessGame = ChessGame.startPosition();

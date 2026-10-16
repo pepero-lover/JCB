@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator` and `ChessboardUtils`, increased MNPS on especially pawn ending,
   skipping the bishop or rook attack when the bishop or rook occupancy is 0L.
   (`+9.8%` on `4k3/8/8/8/8/8/4P3/4K3 w - - 0 1` fen)
+- On `MoveGenerator.generateMoves`, added `sourceSquareFilter` filtering source square piece moves only, and used on calculating
+  `ChessGame.getLegalMovesForSource`.
+- On `ChessGame.sanToMoveData/lanToMoveData`, removed making new `Chessboard` class.
 
 ## [1.15.0]
 
