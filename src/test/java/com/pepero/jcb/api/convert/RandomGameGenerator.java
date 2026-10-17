@@ -18,7 +18,7 @@ public class RandomGameGenerator {
         int maxPly = 80;
         Random random = new Random(1111);
 
-        boolean lanMode = false;
+        boolean lanMode = true;
 
         StringBuilder allGames = new StringBuilder();
 

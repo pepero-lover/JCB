@@ -30,6 +30,11 @@ public class BoardSquares {
     public static final long RANK_7 = 0x00FF000000000000L;
     public static final long RANK_8 = 0xFF00000000000000L;
 
+    // bishop light squares, dark squares
+
+    public static final long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
+    public static final long DARK_SQUARES = 0xAA55AA55AA55AA55L;
+
 
     // for masking king of the hills center squares
     public static final long CENTER_SQUARES =

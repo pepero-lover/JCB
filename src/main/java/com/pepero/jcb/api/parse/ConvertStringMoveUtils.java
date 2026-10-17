@@ -273,22 +273,19 @@ public class ConvertStringMoveUtils {
     }
 
     /**
-     * Translate LAN string to SAN data
-     *
-     * @param chessboard temp chessboard
-     * @param encoded_move encoded move
-     * @return Translated Result
-     *
-     * @throws IllegalMoveException if move is illegal
-     */
-    /**
-     * Appends SAN disambiguation (source file, source rank, or both) to {@code sb} when more than one
-     * piece of {@code type} could legally move to {@code target_square}. Uses the piece-type/target-square
-     * filtered {@link MoveGenerator#generateMoves(Chessboard, int[], boolean, int, int)} overload so only
-     * the relevant candidate moves are generated instead of the full legal move list.
+     * Append disambiguation on given {@link StringBuilder}. (e.g. N"g"e2 -> add "g" after piece type)
      */
     private static void appendDisambiguation(Chessboard chessboard, StringBuilder sb, int type, int target_square,
                                              int source_square, int source_file, int source_rank) {
+        long otherPieces = chessboard.bitboards[type] & ~(1L << source_square);
+        if (type == B || type == b) {
+            long targetColor = ((target_square ^ (target_square >>> 3)) & 1) == 0
+                    ? DARK_SQUARES : LIGHT_SQUARES;
+            otherPieces &= targetColor;
+        }
+        // if the source square piece's count is 1, just return
+        if (otherPieces == 0) return;
+
         int[] move_list = MoveCache.CONVERT_MOVE_CACHE.get();
         int move_count = MoveGenerator.generateMoves(chessboard, move_list, false, type, target_square);
 

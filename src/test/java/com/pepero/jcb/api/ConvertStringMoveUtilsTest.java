@@ -20,6 +20,27 @@ public class ConvertStringMoveUtilsTest {
     private static final String SCHOLARS_MATE_FEN = "r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4";
 
     @Test
+    @DisplayName("비숍 구분 표기는 칸 색과 실제 합법 후보를 기준으로 결정해야 한다")
+    void bishopDisambiguationBySquareColor() {
+        assertBishopSan("7k/8/8/8/8/8/8/2B2B1K w - - 0 1", "c1d2", "Bd2");
+        assertBishopSan("7k/8/8/8/8/8/8/2B1B2K w - - 0 1", "c1d2", "Bcd2");
+        assertBishopSan("k7/8/8/8/8/2B5/8/2B4K w - - 0 1", "c1d2", "B1d2");
+        assertBishopSan("k7/8/8/8/8/2B1B3/8/2B4K w - - 0 1", "c3d2", "Bc3d2");
+        assertBishopSan("2b2b1k/8/8/8/8/8/8/7K b - - 0 1", "c8d7", "Bd7");
+        assertBishopSan("2b1b2k/8/8/8/8/8/8/7K b - - 0 1", "c8d7", "Bcd7");
+        // c2 is pinned by the rook, so only e2 can legally move to d3.
+        assertBishopSan("2r4k/8/8/8/8/8/2B1B3/2K5 w - - 0 1", "e2d3", "Bd3");
+    }
+
+    private void assertBishopSan(String fen, String lan, String expected) {
+        Chessboard board = new Chessboard(fen);
+        assertEquals(expected, ConvertStringMoveUtils.toSanString(board, lan));
+        int move = ConvertStringMoveUtils.lanToMoveData(board, lan);
+        assertEquals(expected, ConvertStringMoveUtils.toSanString(board, move));
+        assertEquals(fen, ChessboardUtils.getFen(board));
+    }
+
+    @Test
     @DisplayName("체크메이트 상황이면 true 를 반환해야 한다")
     void shouldShowCheckmateSymbolTrue() {
         Chessboard board = new Chessboard(SCHOLARS_MATE_FEN);

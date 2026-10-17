@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ChessGame.getLegalMovesForSource`.
 - On `ChessGame.sanToMoveData/lanToMoveData`, removed making new `Chessboard` class.
 - On `ConvertStringMoveUtils.parseLanSequenceToMoveData`, instead of using the `parseLan` calculating san too, used `lanToMoveData`.
+- On `ConvertStringMoveUtils.appendDisambiguation`, added checking the source square piece's count and skipping when the
+  count is 1. And also added checking light/dark-square bishop and skipping disambiguation.
 
 ## [1.15.0]
 
