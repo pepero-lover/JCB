@@ -255,6 +255,35 @@ public class ConvertStringMoveUtilsTest {
     }
 
     @Test
+    @DisplayName("LAN 시퀀스는 특수 수와 후속 수를 정확히 변환하고 원본을 보존해야 한다")
+    void parseLanSequenceToMoveDataSpecialMoves() {
+        assertLanSequence(new Chessboard("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"),
+                "e1g1 e8c8");
+        assertLanSequence(new Chessboard("7k/8/8/3pP3/8/8/8/7K w - d6 0 1"),
+                "e5d6 h8g8");
+        assertLanSequence(new Chessboard("7k/P7/8/8/8/8/8/7K w - - 0 1"),
+                "a7a8q h8h7");
+        assertLanSequence(new Chessboard("7k/8/8/8/8/8/8/7K[N] w - - 0 1",
+                com.pepero.jcb.core.GameVariant.CRAZY_HOUSE), "N@f3 h8g8");
+    }
+
+    private void assertLanSequence(Chessboard board, String sequence) {
+        String originalFen = ChessboardUtils.getFen(board);
+        long originalHash = board.hash_key;
+        Chessboard replay = new Chessboard(board);
+        List<MoveInfo> actual = ConvertStringMoveUtils.parseLanSequenceToMoveData(board, sequence);
+        String[] tokens = sequence.split(" ");
+        assertEquals(tokens.length, actual.size());
+        for (int i = 0; i < tokens.length; i++) {
+            int expected = ConvertStringMoveUtils.lanToMoveData(replay, tokens[i]);
+            assertEquals(expected, actual.get(i).originEncodedData());
+            MoveGenerator.makeMove(replay, expected);
+        }
+        assertEquals(originalFen, ChessboardUtils.getFen(board));
+        assertEquals(originalHash, board.hash_key);
+    }
+
+    @Test
     @DisplayName("SAN 을 LAN 으로 정확히 변환해야 한다")
     void toLanStringBasicMoves() {
         Chessboard board = new Chessboard(Chessboard.start_position);

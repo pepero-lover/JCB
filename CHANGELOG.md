@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator.generateMoves`, added `sourceSquareFilter` filtering source square piece moves only, and used on calculating
   `ChessGame.getLegalMovesForSource`.
 - On `ChessGame.sanToMoveData/lanToMoveData`, removed making new `Chessboard` class.
+- On `ConvertStringMoveUtils.parseLanSequenceToMoveData`, instead of using the `parseLan` calculating san too, used `lanToMoveData`.
 
 ## [1.15.0]
 

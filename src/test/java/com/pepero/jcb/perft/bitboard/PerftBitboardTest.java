@@ -12,9 +12,9 @@ public class PerftBitboardTest {
         // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 start
         // kiwipete r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
 
-        Chessboard chessboard = new Chessboard("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+        Chessboard chessboard = new Chessboard(Chessboard.start_position);
         PerftDriver.perftBitboardTest(chessboard,
-                5,
+                6,
                 1,
                 false,
                 false

@@ -514,6 +514,22 @@ public class ConvertStringMoveUtils {
      * @throws IllegalMoveException if move is illegal
      */
     public static int lanToMoveData(Chessboard chessboard, String lan){
+        return lanToMoveData(chessboard, lan, false);
+    }
+
+    /**
+     * Parse LAN move to encoded move
+     * <p>
+     * Example : e2e4 -> encoded int move data
+     *
+     * @param chessboard chessboard
+     * @param lan LAN move
+     * @return Parsed LAN move to encoded move
+     *
+     * @throws ConvertMoveException if converting move failed
+     * @throws IllegalMoveException if move is illegal
+     */
+    private static int lanToMoveData(Chessboard chessboard, String lan, boolean requireSourcePiece) {
         // check crazy house
         if (lan.contains("@")) {
             String[] parts = lan.split("@");
@@ -552,6 +568,11 @@ public class ConvertStringMoveUtils {
         if(source_square == no_sq || target_square == no_sq) {
             throw new ConvertMoveException("Square string is not correct!", lan,
                     ConvertType.LAN, ConvertErrorType.INCORRECT_SQUARE);
+        }
+
+        if (requireSourcePiece && ChessboardUtils.getPieceTypeOnSquare(chessboard, source_square) == NO_PIECE_CONSTANT) {
+            throw new ConvertMoveException("Piece not found!", lan, chessboard,
+                    ConvertType.LAN, ConvertErrorType.PIECE_NOT_FOUND);
         }
 
         int promotion_type = 0;
@@ -914,11 +935,9 @@ public class ConvertStringMoveUtils {
         List<MoveInfo> moveDataList = new ArrayList<>(lans.length);
 
         for (String lan : lans) {
-            TranslateResult result = parseLan(chessboard, lan);
-
-            moveDataList.add(new MoveInfo(result.moveData));
-
-            MoveGenerator.makeMove(chessboard, result.moveData);
+            int move = lanToMoveData(chessboard, lan, true);
+            moveDataList.add(new MoveInfo(move));
+            MoveGenerator.makeMove(chessboard, move);
         }
 
         return moveDataList;
