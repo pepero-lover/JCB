@@ -21,6 +21,64 @@ public class PGNParserTest {
     }
 
     @Test
+    void nestedAndSiblingVariationsResumeMainline() {
+        MoveNode root = parse("1. e4 e5 (1... c5 (1... e6) 2. Nf3 d6) (1... d5 2. exd5) 2. Nf3 Nc6 *").rootNode();
+        MoveNode e4 = root.children.getFirst();
+        assertEquals(4, e4.children.size());
+        assertPath(e4.children.get(0), "e7e5", "g1f3", "b8c6");
+        assertPath(e4.children.get(1), "c7c5", "g1f3", "d7d6");
+        assertPath(e4.children.get(2), "e7e6");
+        assertPath(e4.children.get(3), "d7d5", "e4d5");
+    }
+
+    @Test
+    void variationsRestoreCastlingEnPassantAndPromotionState() {
+        MoveNode castles = parse("[SetUp \"1\"]\n[FEN \"r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1\"]\n\n"
+                + "1. O-O (1. O-O-O) O-O-O 2. Rf2 *").rootNode();
+        assertPath(castles.children.get(0), "e1g1", "e8c8", "f1f2");
+        assertPath(castles.children.get(1), "e1c1");
+
+        MoveNode ep = parse("[SetUp \"1\"]\n[FEN \"7k/8/8/3pP3/8/8/8/7K w - d6 0 1\"]\n\n"
+                + "1. exd6 (1. Kg1 d4) Kg8 2. d7 *").rootNode();
+        assertPath(ep.children.get(0), "e5d6", "h8g8", "d6d7");
+        assertPath(ep.children.get(1), "h1g1", "d5d4");
+
+        MoveNode promotion = parse("[SetUp \"1\"]\n[FEN \"7k/P7/8/8/8/8/8/7K w - - 0 1\"]\n\n"
+                + "1. a8=Q+ (1. a8=N) Kh7 2. Qa7+ *").rootNode();
+        assertPath(promotion.children.get(0), "a7a8q", "h8h7", "a8a7");
+        assertPath(promotion.children.get(1), "a7a8n");
+    }
+
+    @Test
+    void emptyAndRootVariationsRestoreTheirStartingPositions() {
+        MoveNode root = parse("(1. d4 d5) 1. e4 () e5 *").rootNode();
+        assertPath(root.children.get(0), "d2d4", "d7d5");
+        assertPath(root.children.get(1), "e2e4", "e7e5");
+    }
+
+    @Test
+    void variationsRestoreCrazyhousePocketsAndAtomicExplosions() {
+        MoveNode drops = parse("[Variant \"Crazyhouse\"]\n[SetUp \"1\"]\n"
+                + "[FEN \"7k/8/8/8/8/8/8/7K[N] w - - 0 1\"]\n\n"
+                + "1. N@f3 (1. N@e3) Kg8 2. Ng5 *").rootNode();
+        assertPath(drops.children.get(0), "N@f3", "h8g8", "f3g5");
+        assertPath(drops.children.get(1), "N@e3");
+
+        MoveNode atomic = parse("[Variant \"Atomic\"]\n[SetUp \"1\"]\n"
+                + "[FEN \"7k/nb6/8/8/8/8/8/R5K1 w - - 0 1\"]\n\n"
+                + "1. Rxa7 (1. Ra2) Kg8 2. Kf1 *").rootNode();
+        assertPath(atomic.children.get(0), "a1a7", "h8g8", "g1f1");
+        assertPath(atomic.children.get(1), "a1a2");
+    }
+
+    private void assertPath(MoveNode node, String... moves) {
+        for (int i = 0; i < moves.length; i++) {
+            assertEquals(moves[i], node.moveData.toLanString());
+            if (i + 1 < moves.length) node = node.children.getFirst();
+        }
+    }
+
+    @Test
     @DisplayName("Variant 헤더가 없으면(null) STANDARD 여야 한다")
     void nullVariantHeaderIsStandard() {
         assertEquals(GameVariant.STANDARD, PGNParser.parseVariantHeader(null));

@@ -2686,10 +2686,10 @@ public class ChessGame implements ChessGameReadView{
                 boolean inCheck = ChessboardUtils.isCheck(chessboard);
 
                 if (inCheck) {
-                    if (ChessboardUtils.isCheckmate(chessboard))
+                    if (!ChessboardUtils.hasLegalMoves(chessboard))
                         return GameOverReason.CHECKMATE;
                 } else {
-                    if (ChessboardUtils.isStaleMate(chessboard))
+                    if (!ChessboardUtils.hasLegalMoves(chessboard))
                         return GameOverReason.STALEMATE;
                 }
             }

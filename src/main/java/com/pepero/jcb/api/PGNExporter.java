@@ -21,6 +21,10 @@ import java.util.StringJoiner;
  * {@link ChessGame#getPGN()}.
  */
 class PGNExporter {
+    // when the annotation doesn't exist, uses this value.
+    private static final MoveAnnotationDTO EMPTY_ANNOTATION =
+            new MoveAnnotationDTO(null, null, null, null, null, null, null);
+
     static PGNGame createPGNGame(
             Map<String, String> originalHeaders,
             String startFen,
@@ -104,10 +108,10 @@ class PGNExporter {
             MoveGenerator.unmakeMove(tempBoard, node.moveData.originEncodedData());
         }
 
-        MoveAnnotation nodeAnnotation = node.getAnnotation();
-        MoveAnnotationDTO annotationDTO = new MoveAnnotationDTO(nodeAnnotation.getComment(),
-                nodeAnnotation.getNag(), nodeAnnotation.getClk(), nodeAnnotation.getTimeStamp(),
-                nodeAnnotation.getEval(), nodeAnnotation.getCsl(), nodeAnnotation.getCal());
+        MoveAnnotation nodeAnnotation = node.annotation;
+        MoveAnnotationDTO annotationDTO = nodeAnnotation == null ? EMPTY_ANNOTATION :
+                new MoveAnnotationDTO(nodeAnnotation.getComment(), nodeAnnotation.getNag(), nodeAnnotation.getClk(),
+                        nodeAnnotation.getTimeStamp(), nodeAnnotation.getEval(), nodeAnnotation.getCsl(), nodeAnnotation.getCal());
 
         return new MoveNodeDTO(
                 node.id,

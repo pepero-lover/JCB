@@ -128,8 +128,7 @@ class PGNParser {
 
         String movePGNString = (moveTextStart < len) ? pgnString.substring(moveTextStart) : "";
 
-        record VariationState(MoveNode node, Chessboard snapshotBoard) {}
-        Stack<VariationState> variationStack = new Stack<>();
+        Deque<MoveNode> variationStack = new ArrayDeque<>();
 
         Chessboard pgnChessboard;
         GameVariant parsedVariant = parseVariantHeader(parsedHeaders.get("Variant"));
@@ -180,7 +179,7 @@ class PGNParser {
                     break;
 
                 case VARIATION_START:
-                    variationStack.push(new VariationState(currentParsedNode, new Chessboard(pgnChessboard)));
+                    variationStack.push(currentParsedNode);
                     if (currentParsedNode.moveData != null) {
                         MoveGenerator.unmakeMove(pgnChessboard, currentParsedNode.moveData.originEncodedData());
                         currentParsedNode = currentParsedNode.parent;
@@ -189,9 +188,22 @@ class PGNParser {
 
                 case VARIATION_END:
                     if (!variationStack.isEmpty()) {
-                        VariationState state = variationStack.pop();
-                        currentParsedNode = state.node;
-                        pgnChessboard = state.snapshotBoard;
+                        MoveNode resumeNode = variationStack.pop();
+                        MoveNode branchRoot = resumeNode.parent == null ? resumeNode : resumeNode.parent;
+
+                        // undo variation to the parent
+                        while (currentParsedNode != branchRoot) {
+                            MoveGenerator.unmakeMove(pgnChessboard, currentParsedNode.moveData.originEncodedData());
+                            currentParsedNode = currentParsedNode.parent;
+                        }
+
+                        // and makes the move
+                        // if resume node is root node, doesn't make because of "resumeNode.parent == null ? resumeNode : resumeNode.parent"
+                        if (resumeNode.moveData != null) {
+                            MoveGenerator.makeMove(pgnChessboard, resumeNode.moveData.originEncodedData());
+                        }
+
+                        currentParsedNode = resumeNode;
                     } else {
                         throw new PGNConvertException("There is no move node's parent existing, but the variation ended!",
                                 PGNErrorType.VARIATION_STACK_EMPTY_POP);
@@ -221,11 +233,11 @@ class PGNParser {
                         moveData = ConvertStringMoveUtils.sanToMoveData(pgnChessboard, pureSan);
                     } catch (IllegalMoveException e) {
                         throw e.withPgnParsePosition(
-                                variationStack.isEmpty() ? List.of() : variationStack.peek().node().pathFromRoot(),
+                                variationStack.isEmpty() ? List.of() : variationStack.peek().pathFromRoot(),
                                 pgnChessboard.full_move, pgnChessboard.ply);
                     } catch (ConvertMoveException e) {
                         throw e.withPgnParsePosition(
-                                variationStack.isEmpty() ? List.of() : variationStack.peek().node().pathFromRoot(),
+                                variationStack.isEmpty() ? List.of() : variationStack.peek().pathFromRoot(),
                                 pgnChessboard.full_move, pgnChessboard.ply);
                     }
                     MoveGenerator.makeMove(pgnChessboard, moveData);

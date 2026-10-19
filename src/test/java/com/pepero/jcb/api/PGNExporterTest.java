@@ -18,6 +18,31 @@ public class PGNExporterTest {
     }
 
     @Test
+    void exportDoesNotAllocateAnnotationsOnUnannotatedNodes() {
+        MoveNode root = parseToRootNode("1. e4 {note} e5 2. Nf3 *");
+        MoveNode e4 = root.children.getFirst();
+        MoveNode e5 = e4.children.getFirst();
+        MoveNode nf3 = e5.children.getFirst();
+        assertNull(root.annotation);
+        assertNull(e5.annotation);
+        assertNull(nf3.annotation);
+
+        ChessGame game = ChessGame.startPosition();
+        PGNGame pgn = PGNExporter.createPGNGame(new LinkedHashMap<>(), game.getStartPositionFEN(),
+                GameVariant.STANDARD, false, GameResult.UNKNOWN, root, 100_000);
+        var e4Dto = pgn.rootNode().children().getFirst();
+        var e5Dto = e4Dto.children().getFirst();
+        assertEquals("note", e4Dto.annotation().comment());
+        assertNotNull(e5Dto.annotation());
+        assertNull(e5Dto.annotation().comment());
+        assertSame(pgn.rootNode().annotation(), e5Dto.annotation());
+        assertTrue(PGNExporter.export(game, pgn, false).contains("{note}"));
+        assertNull(root.annotation);
+        assertNull(e5.annotation);
+        assertNull(nf3.annotation);
+    }
+
+    @Test
     @DisplayName("GameResult 각 값이 올바른 PGN 결과 문자열로 매핑되어야 한다")
     void getGameResultStringMapsEachResult() {
         assertEquals("1-0", PGNExporter.getGameResultString(GameResult.WHITE_WON));
