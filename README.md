@@ -10,7 +10,7 @@
 - Java 21 or higher
 
 ## About JCB
-* This project ports the original C code into Java in an object-oriented style, while keeping the procedural C-style approach for the internal move-generation logic to maximize efficiency.
+* JCB is a Java bitboard-based chess library offering a low-level API for performance and an object-oriented API for ease of use.
 * At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
 * The built jar library is only **376KB** in size, yet implements the complete rules and framework for chess.
 * Core bitboard search performance is **60 MNPS (60 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
@@ -45,7 +45,9 @@
 | Racing Kings     | ✅  | ✅ (`UCI_Variant`)     |
 
 ## Credits and References
-* The move generation methods and bitboard logic in this chess engine (nearly everything outside of `com.pepero.jcb.api`) were deeply inspired by a tutorial created by **Code Monkey King**.
+* This library began as a Java port of [BBC](https://github.com/maksimKorzh/bbc) (created by [Code Monkey King](https://github.com/maksimKorzh)).
+  Over time, it has evolved into its current form through continuous refinement and expansion of features, such as move
+  generation and board management. Special thanks to [**Code Monkey King**](https://github.com/maksimKorzh) for providing the foundation for the initial bitboard implementation and for offering valuable learning resources.
 * Syzygy tablebase probing (`com.pepero.jcb.api.syzygy`) is derived from **Fathom** by Ronald de Man and Jon Dart (MIT license, https://github.com/jdart1/Fathom).
 * Gaviota tablebase probing (`com.pepero.jcb.api.gaviota`) is derived from the **Gaviota Tablebases** probing code by Miguel A. Ballicora (X11/MIT license, https://github.com/michiguel/Gaviota-Tablebases).
 
@@ -216,5 +218,6 @@ Reproduction code:
 [`PerftResultTest`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/perft/PerftResultTest.java)
 [`ConvertStringMoveUtilsBenchmark`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/ConvertStringMoveUtilsBenchmark.java)
 [`RandomGameGenerator`](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/api/convert/RandomGameGenerator.java)
+
 ## License
 This project is licensed under the MIT License.

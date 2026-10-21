@@ -10,8 +10,7 @@
 - Java 21 이상
 
 ## JCB 에 대해
-
-* 원본의 C 코드에서 Java 로 객체 지향적으로 만들고, 내부 무브 제너레이팅 로직에서는 절차 지향의 C 코드를 가져와 효율을 높였습니다.
+* Java로 구현한 비트보드 기반 체스 라이브러리로, 성능을 위한 저수준 API와 사용 편의성을 위한 객체 지향 API를 제공합니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
 * 빌드된 jar 라이브러리 파일 크기가 376KB에 불과하지만, 체스의 모든 규칙과 엔진 프레임워크를 완벽히 구현했습니다.
 * 코어 비트보드 탐색 성능은 **60 MNPS (초당 6,000만 노드)** 입니다. (cpu i7-14700KF 기준)
@@ -46,7 +45,9 @@
 | Racing Kings     | ✅   | ✅ (`UCI_Variant`)  |
 
 ## 참고 및 출처
-* 이 체스 엔진의 수 생성 메서드 또는 비트보드 로직 ('com.pepero.jcb.api' 이외의 거의 모든 것들) 은 **Code Monkey King** 님이 만드신 튜토리얼에서 깊은 영감을 받았습니다.
+* 이 라이브러리는 초기 개발 당시에 [BBC](https://github.com/maksimKorzh/bbc) (by [Code Monkey King](https://github.com/maksimKorzh))
+  을 자바로 포팅하는 과정에서 시작하였습니다. 이후 수 생성, 보드 관리 등 기능을 지속적으로 수정 및 확장하여 지금의 체스 라이브러리로 발전했습니다.
+  초기 비트보드 구현의 기반과 학습 자료를 제공한 [**Code Monkey King**](https://github.com/maksimKorzh) 에게 감사드립니다.
 * Syzygy 테이블베이스 프로빙(`com.pepero.jcb.api.syzygy`)은 Ronald de Man과 Jon Dart의 **Fathom**(MIT 라이선스, https://github.com/jdart1/Fathom ) 에서 파생되었습니다.
 * Gaviota 테이블베이스 프로빙(`com.pepero.jcb.api.gaviota`)은 Miguel A. Ballicora의 **Gaviota Tablebases** 프로빙 코드(X11/MIT 라이선스, https://github.com/michiguel/Gaviota-Tablebases ) 에서 파생되었습니다.
 
