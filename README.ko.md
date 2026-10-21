@@ -157,16 +157,20 @@ public class MainExample {
 
 전체 소스는 [`example`](https://github.com/pepero-lover/JCB/tree/main/src/test/java/com/pepero/jcb/example) 폴더에서 확인하실 수 있습니다.
 
-| 예제                                                                                                                                         | 내용                                                              | 주요 클래스                                  |
-|----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|----------------------------------------------|
-| [체스 GUI 힌트 기능](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GUIExample.java)                     | 기물을 클릭했을 때 갈 수 있는 칸 표시와 점수 계산                 | `ChessGame`, `MoveInfo`, `Square`            |
-| [게임 종료 조건 및 상태 체크](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GameStateExample.java)      | 체크메이트, 스테일메이트, 무승부 등 상태 확인                     | `ChessGame`, `GameOverReason`                |
-| [엔진끼리 대결하기](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/EngineExample.java)                   | 동시 실행, 판정 규칙, PGN 출력을 포함한 UCI 엔진 대전             | `MatchRunner`, `MatchConfig`, `EngineConfig` |
-| [Syzygy 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SyzygyExample.java)                 | Syzygy 테이블베이스로 WDL / DTZ 조회와 수 평가                    | `SyzygyTablebase`, `SyzygyAnalyzer`          |
-| [Gaviota 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GaviotaExample.java)               | Gaviota 테이블베이스로 WDL / DTM 조회와 수 평가                   | `GaviotaTablebase`, `GaviotaAnalyzer`        |
-| [Perft](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PerftExample.java)                                | `ChessGame`, `Chessboard` 기준 싱글/멀티스레드 Perft              | `PerftDriver`, `Chessboard`                  |
-| [오프닝북](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNtoPolyglotConvertExample.java)              | PGN 게임들로 Polyglot `.bin` 북 빌드, 엔진 대전에서 오프닝북 사용 | `PolyglotBookBuilder`, `MatchConfig`         |
-| [대용량 PGN 데이터베이스 스트리밍](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNStreamExample.java) | 수 GB 단위 PGN 파일을 한 번에 올리지 않고 게임 단위로 순회        | `PGNDatabaseIterator`, `PGNGameStub`         |
+| 예제                                                                                                                              | 내용                                             | 주요 클래스                                       |
+|---------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|----------------------------------------------|
+| [체스 GUI 힌트 기능](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GUIExample.java)              | 기물을 클릭했을 때 갈 수 있는 칸 표시와 점수 계산                  | `ChessGame`, `MoveInfo`, `Square`            |
+| [Swing 체스 GUI](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SwingChess.java) | 기물 이동, 합법 수 표시, 승격 선택, 무르기·다시 두기를 지원하는 보드 | `ChessGame`, `MoveInfo`, `Square` |
+| [Swing 테이블베이스 뷰어](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SwingChessTablebase.java) | 기물을 움직이며 후보 수별 WDL / DTZ와 가능한 경우 DTM을 확인하는 보드 | `CombinedAnalyzer`, `SyzygyTablebase`, `GaviotaTablebase` |
+| [게임 종료 조건 및 상태 체크](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GameStateExample.java)    | 체크메이트, 스테일메이트, 무승부 등 상태 확인                     | `ChessGame`, `GameOverReason`                |
+| [엔진끼리 대결하기](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/EngineExample.java)              | 동시 실행, 판정 규칙, PGN 출력을 포함한 UCI 엔진 대전            | `MatchRunner`, `MatchConfig`, `EngineConfig` |
+| [Syzygy 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SyzygyExample.java)          | Syzygy 테이블베이스로 WDL / DTZ 조회와 수 평가              | `SyzygyTablebase`, `SyzygyAnalyzer`          |
+| [Gaviota 테이블베이스](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GaviotaExample.java)        | Gaviota 테이블베이스로 WDL / DTM 조회와 수 평가             | `GaviotaTablebase`, `GaviotaAnalyzer`        |
+| [Perft](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PerftExample.java)                   | `ChessGame`, `Chessboard` 기준 싱글/멀티스레드 Perft    | `PerftDriver`, `Chessboard`                  |
+| [오프닝북](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNtoPolyglotConvertExample.java)     | PGN 게임들로 Polyglot `.bin` 북 빌드, 엔진 대전에서 오프닝북 사용 | `PolyglotBookBuilder`, `MatchConfig`         |
+| [대용량 PGN 데이터베이스 스트리밍](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNStreamExample.java) | 수 GB 단위 PGN 파일을 한 번에 올리지 않고 게임 단위로 순회          | `PGNDatabaseIterator`, `PGNGameStub`         |
+
+`SwingChessTablebase`를 실행하려면 예제 소스의 Syzygy·Gaviota 디렉터리 경로와 시작 FEN을 로컬 테이블베이스 파일에 맞게 설정하세요. `SwingChess`는 외부 파일 없이 실행할 수 있습니다.
 
 `MatchConfig.Builder.openingBook(Path)`는 파일 확장자를 보고 자동으로 오프닝북 종류를 인식합니다.
 - `.bin` &rarr; Polyglot 오프닝북, 게임 진행 중 매 수마다 조회

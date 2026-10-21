@@ -160,6 +160,8 @@ Browse the full source in the [`example`](https://github.com/pepero-lover/JCB/tr
 | Example                            | What it shows                                                               | Key classes                                  |
 |------------------------------------|-----------------------------------------------------------------------------|----------------------------------------------|
 | [Move hints for chess GUIs](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GUIExample.java) | Show the squares a clicked piece can move to, with score calculation        | `ChessGame`, `MoveInfo`, `Square`            |
+| [Swing chess GUI](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SwingChess.java) | Interactive board with legal move hints, promotion selection, undo, and redo | `ChessGame`, `MoveInfo`, `Square` |
+| [Swing tablebase viewer](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SwingChessTablebase.java) | Interactive board with WDL / DTZ and optional DTM results for candidate moves | `CombinedAnalyzer`, `SyzygyTablebase`, `GaviotaTablebase` |
 | [Game-over conditions](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/GameStateExample.java) | Detect checkmate, stalemate, draws and other state checks                   | `ChessGame`, `GameOverReason`                |
 | [Engine vs. Engine matches](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/EngineExample.java) | Run UCI engine matches with concurrency, adjudication, and PGN output       | `MatchRunner`, `MatchConfig`, `EngineConfig` |
 | [Syzygy tablebases](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/SyzygyExample.java) | Probe WDL / DTZ and rank moves from a Syzygy tablebase                      | `SyzygyTablebase`, `SyzygyAnalyzer`          |
@@ -167,6 +169,9 @@ Browse the full source in the [`example`](https://github.com/pepero-lover/JCB/tr
 | [Perft](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PerftExample.java) | Single / multi-threaded perft with `ChessGame` and `Chessboard`             | `PerftDriver`, `Chessboard`                  |
 | [Opening books](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNtoPolyglotConvertExample.java) | Build a Polyglot `.bin` book from PGN games and use books in engine matches | `PolyglotBookBuilder`, `MatchConfig`         |
 | [Streaming large PGN databases](https://github.com/pepero-lover/JCB/blob/main/src/test/java/com/pepero/jcb/example/PGNStreamExample.java) | Iterate multi-gigabyte PGN files game by game without loading them at once  | `PGNDatabaseIterator`, `PGNGameStub`         |
+
+To run `SwingChessTablebase`, set the Syzygy and Gaviota directory paths and the starting FEN in the example source to match your local tablebase files.
+`SwingChess` runs without external files.
 
 `MatchConfig.Builder.openingBook(Path)` auto-detects the opening book type from the file extension:
 - `.bin` &rarr; a Polyglot opening book, queried move by move during the game
