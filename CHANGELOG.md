@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Performance
+
+## [1.16.0]
+
+### Added
 - On `MatchRunner` (originally `ArenaRunner`), added checking the given engines exists, and are executable.
   (and also checking working directory exists)
 
@@ -587,7 +597,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved public classes under `api/parse/pgn` into `api/` and made them
   package-private, tightening the public API surface.
 
-[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/pepero-lover/JCB/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/pepero-lover/JCB/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/pepero-lover/JCB/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/pepero-lover/JCB/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/pepero-lover/JCB/compare/v1.12.0...v1.13.0

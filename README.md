@@ -1,7 +1,7 @@
 # JCB (Java Chess Board)
 ![Java](https://img.shields.io/badge/Java-21%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Size](https://img.shields.io/badge/Size-376KB-orange)
+![Size](https://img.shields.io/badge/Size-388KB-orange)
 [![](https://jitpack.io/v/pepero-lover/JCB.svg)](https://jitpack.io/#pepero-lover/JCB)
 
 [한국어](README.ko.md) | English
@@ -12,7 +12,7 @@
 ## About JCB
 * JCB is a Java bitboard-based chess library offering a low-level API for performance and an object-oriented API for ease of use.
 * At the same time, the API layer uses Enum classes for piece types, chessboard squares, and more, along with strengthened exception handling to make the API easier to use.
-* The built jar library is only **376KB** in size, yet implements the complete rules and framework for chess.
+* The built jar library is only **388KB** in size, yet implements the complete rules and framework for chess.
 * Core bitboard search performance is **60 MNPS (60 million nodes per second)**. (Benchmarked on an i7-14700KF CPU)
 * Includes a built-in Syzygy / Gaviota tablebase decoder.
 * This project has zero external library dependencies (except JUnit, used only for testing).
@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle`.
 ```groovy
 dependencies {
-  implementation 'com.github.pepero-lover:JCB:v1.15.0'
+  implementation 'com.github.pepero-lover:JCB:v1.16.0'
 }
 ```
 
@@ -89,7 +89,7 @@ dependencyResolutionManagement {
 2. Add the dependency to your `build.gradle.kts`.
 ```kotlin
 dependencies {
-  implementation("com.github.pepero-lover:JCB:v1.15.0")
+  implementation("com.github.pepero-lover:JCB:v1.16.0")
 }
 ```
 
@@ -108,7 +108,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pepero-lover</groupId>
   <artifactId>JCB</artifactId>
-  <version>v1.15.0</version>
+  <version>v1.16.0</version>
 </dependency>
 ```
 

@@ -239,7 +239,7 @@ public class FastPerftCalculator {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Processor : " + Runtime.getRuntime().availableProcessors());
-        int nthreads = 28;
+        int nthreads = Runtime.getRuntime().availableProcessors() - 2;
 
         System.out.println("maxMemory = " + Runtime.getRuntime().maxMemory() / (1L << 30) + " GB");
 
@@ -250,9 +250,9 @@ public class FastPerftCalculator {
         Chessboard board = new Chessboard(Chessboard.start_position);
         //Chessboard board = new Chessboard("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
 
-        int depth = 10;
+        int depth = 9;
         int splitPly = 3;
-        PerftTable table = new PerftTable(16384);
+        PerftTable table = new PerftTable(4*1024);
 
         long start = System.nanoTime();
         long nodes = perftMt(board, depth, splitPly, table, nthreads);

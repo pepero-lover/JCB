@@ -51,7 +51,7 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * {@code if (game.canUndo()) game.unmakeMove();}) are not atomic across calls &mdash;
  * synchronize externally if you need that.
  */
-public class ChessGame implements ChessGameReadView{
+public class ChessGame implements ChessGameReadView {
     // start position constant
     public static final String START_POSITION = Chessboard.start_position;
 

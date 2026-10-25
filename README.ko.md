@@ -1,7 +1,7 @@
 # JCB (Java Chess Board)
 ![Java](https://img.shields.io/badge/Java-21%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Size](https://img.shields.io/badge/Size-376KB-orange)
+![Size](https://img.shields.io/badge/Size-388KB-orange)
 [![](https://jitpack.io/v/pepero-lover/JCB.svg)](https://jitpack.io/#pepero-lover/JCB)
 
 한국어 | [English](README.md)
@@ -12,7 +12,7 @@
 ## JCB 에 대해
 * Java로 구현한 비트보드 기반 체스 라이브러리로, 성능을 위한 저수준 API와 사용 편의성을 위한 객체 지향 API를 제공합니다.
 * 동시에 API 코드 안에서는 Enum 으로 기물 종류, 체스 보드 칸등의 클래스를 사용하였고, 예외 처리를 강화하여 API 를 더 쉽게 사용 할 수 있도록 만들었습니다.
-* 빌드된 jar 라이브러리 파일 크기가 376KB에 불과하지만, 체스의 모든 규칙과 엔진 프레임워크를 완벽히 구현했습니다.
+* 빌드된 jar 라이브러리 파일 크기가 388KB에 불과하지만, 체스의 모든 규칙과 엔진 프레임워크를 완벽히 구현했습니다.
 * 코어 비트보드 탐색 성능은 **60 MNPS (초당 6,000만 노드)** 입니다. (cpu i7-14700KF 기준)
 * Syzygy / Gaviota 테이블베이스 디코더가 포함되어 있습니다.
 * 이 프로젝트는 외부 라이브러리 의존성이 전혀 없습니다. (단, 테스트용 JUnit 제외)
@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle 에 추가하세요.
 ```groovy
 dependencies {
-  implementation 'com.github.pepero-lover:JCB:v1.15.0'
+  implementation 'com.github.pepero-lover:JCB:v1.16.0'
 }
 ```
 
@@ -89,7 +89,7 @@ dependencyResolutionManagement {
 2. 의존성을 build.gradle.kts 에 추가하세요.
 ```kotlin
 dependencies {
-  implementation("com.github.pepero-lover:JCB:v1.15.0")
+  implementation("com.github.pepero-lover:JCB:v1.16.0")
 }
 ```
 
@@ -108,7 +108,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pepero-lover</groupId>
   <artifactId>JCB</artifactId>
-  <version>v1.15.0</version>
+  <version>v1.16.0</version>
 </dependency>
 ```
 
