@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MoveGenerator.makeMove`, removed the duplicated xor hashing (`chessboard.hash_key ^= Zobrist.promoted_keys[target_square]`)
 
 #### Others
+- On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
 - On `ChessboardUtils.getFen`,
   fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
   ("3+1" -> "1+3")

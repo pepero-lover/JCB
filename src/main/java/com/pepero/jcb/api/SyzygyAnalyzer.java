@@ -243,6 +243,9 @@ public class SyzygyAnalyzer {
         int childWdl = tablebase.getWdlData(board);
         int ourWdl = -childWdl;
         boolean isMate = ourWdl > 0 && ChessboardUtils.isCheckmate(board);
+        if (isMate) {
+            return new SyzygyMoveDTO(new MoveInfo(move), 2, 0, zeroing, true);
+        }
         int distance = Math.abs(tablebase.getDtzData(board));
 
         if (!zeroing && (halfMoveClock + distance > 100)) {
