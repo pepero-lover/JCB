@@ -219,6 +219,8 @@ public class UCIEngineWrapper implements AutoCloseable {
                 throw new UCIEngineException("Chess 960 option not found!");
             }
             setOptionSync("UCI_Chess960", "true");
+        } else {
+            setOptionSync("UCI_Chess960", "false");
         }
 
         supportVariant(chessGame.getGameVariant());

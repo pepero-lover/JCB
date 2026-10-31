@@ -295,7 +295,7 @@ public class PGNDatabaseIteratorTest {
 
         try (PGNDatabaseIterator it = new PGNDatabaseIterator(path)) {
             PGNGameStub stub = it.next();
-            var chessGame = stub.toChessGame();
+            ChessGame chessGame = stub.toChessGame();
 
             assertNotNull(chessGame);
             assertEquals(5, chessGame.getTotalNodeCount());

@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `CRAZY_HOUSE` variant, changed the checking when the bishop's and knight's count including the pocket is 1 or 0.
 
 #### Others
-
+- Added `PGNExporter.createHeaders`, automatically adding `FEN`, `Chess960`, `SetUp`, `Result` tags. 
 
 ### Fixed
 
 #### ChessGame
 - On `isGameOver`, fixed checking 75 moves draw first and then checking the checkmate
+- On `heavyWeightCopy`, fixed not copying the nag annotation on move node copy
+- On `getMainlinePGN`, fixed not adding `"Setup"`, `"FEN"`, etc. tags.
 
 #### Hashing
 - On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
@@ -36,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessboardUtils.getFen`,
   fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
   ("3+1" -> "1+3")
+- On `UCIEngineWrapper`, fixed not disabling chess 960 option when the previous `ChessGame` used chess 960 but current
+  `ChessGame` didn't.
 
 ### Performance
 

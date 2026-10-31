@@ -22,7 +22,7 @@ class PolyglotBookWriter {
         try (RandomAccessFile raf = new RandomAccessFile(outPath, "rw")) {
             raf.setLength(0);
 
-            for (var entry : entries) {
+            for (Map.Entry<PGNBookAggregator.BookKey, Integer> entry : entries) {
                 long hash = entry.getKey().hash();
                 int polyMove = entry.getKey().polyMove();
                 int weight = Math.min(entry.getValue(), 0xFFFF); // unsigned short clamp

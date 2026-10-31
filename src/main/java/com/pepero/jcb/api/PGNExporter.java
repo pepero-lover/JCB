@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import static com.pepero.jcb.core.constant.SideToMove.white;
+
 /**
  * Export {@link ChessGame} class to PGN string. <br>
  * This class doesn't have toPGN() method, if you want to parse the PGN string on {@link ChessGame} class, go to
@@ -25,14 +27,13 @@ class PGNExporter {
     private static final MoveAnnotationDTO EMPTY_ANNOTATION =
             new MoveAnnotationDTO(null, null, null, null, null, null, null);
 
-    static PGNGame createPGNGame(
+    static LinkedHashMap<String, String> createHeaders(
             Map<String, String> originalHeaders,
             String startFen,
             GameVariant variant,
             boolean isChess960,
-            GameResult result,
-            MoveNode rootNode,
-            int maxNodes) {
+            GameResult result) {
+
         LinkedHashMap<String, String> pgnHeaders = new LinkedHashMap<>(originalHeaders);
 
         if (isChess960) pgnHeaders.put("Variant", "Chess960");
@@ -62,9 +63,21 @@ class PGNExporter {
 
         pgnHeaders.put("Result", getGameResultString(result));
 
-        Chessboard tempBoard = new Chessboard(startFen);
-        tempBoard.gameVariant = variant;
-        tempBoard.isChess960 = isChess960;
+        return pgnHeaders;
+    }
+
+    static PGNGame createPGNGame(
+            Map<String, String> originalHeaders,
+            String startFen,
+            GameVariant variant,
+            boolean isChess960,
+            GameResult result,
+            MoveNode rootNode,
+            int maxNodes) {
+        LinkedHashMap<String, String> pgnHeaders = createHeaders(
+                originalHeaders, startFen, variant, isChess960, result);
+
+        Chessboard tempBoard = new Chessboard(startFen, isChess960, variant);
 
         MoveNodeDTO rootDTO = buildPGNTreeWithSan(rootNode, tempBoard, maxNodes, new int[1]);
 
@@ -127,7 +140,7 @@ class PGNExporter {
     /**
      * Export PGNGame to pgn string
      *
-     * @param chessGame chess pgn
+     * @param chessGame chess game
      * @param pgn PGN Game data
      * @param isPure contain commentary, clk, nag, etc.
      * @return Exported pgn string
@@ -141,11 +154,17 @@ class PGNExporter {
         }
         sb.append("\n");
 
-        String[] spilt_startFEN = chessGame.getStartPositionFEN().split("\\s+");
-        int startFullMove = spilt_startFEN.length > 5 ? Integer.parseInt(spilt_startFEN[5]) : 1;
+        Chessboard startBoard = new Chessboard(
+                chessGame.getStartPositionFEN(),
+                chessGame.isChess960(),
+                chessGame.getGameVariant()
+        );
+
+        int startFullMove = startBoard.full_move / 2 + 1;
+        boolean whiteToMove = startBoard.side == white;
 
         if (pgn.rootNode() != null && pgn.rootNode().children() != null && !pgn.rootNode().children().isEmpty()) {
-            buildMoveText(pgn.rootNode().children(), sb, spilt_startFEN[1].equals("w"),
+            buildMoveText(pgn.rootNode().children(), sb, whiteToMove,
                     startFullMove, true, isPure);
         }
 

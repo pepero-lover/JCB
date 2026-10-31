@@ -1,5 +1,6 @@
 package com.pepero.jcb.api;
 
+import com.pepero.jcb.api.dto.MoveNodeDTO;
 import com.pepero.jcb.api.enums.GameResult;
 import com.pepero.jcb.core.GameVariant;
 
@@ -30,8 +31,8 @@ public class PGNExporterTest {
         ChessGame game = ChessGame.startPosition();
         PGNGame pgn = PGNExporter.createPGNGame(new LinkedHashMap<>(), game.getStartPositionFEN(),
                 GameVariant.STANDARD, false, GameResult.UNKNOWN, root, 100_000);
-        var e4Dto = pgn.rootNode().children().getFirst();
-        var e5Dto = e4Dto.children().getFirst();
+        MoveNodeDTO e4Dto = pgn.rootNode().children().getFirst();
+        MoveNodeDTO e5Dto = e4Dto.children().getFirst();
         assertEquals("note", e4Dto.annotation().comment());
         assertNotNull(e5Dto.annotation());
         assertNull(e5Dto.annotation().comment());

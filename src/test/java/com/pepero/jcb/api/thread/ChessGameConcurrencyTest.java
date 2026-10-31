@@ -3,6 +3,7 @@ package com.pepero.jcb.api.thread;
 import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.ChessGameListener;
 import com.pepero.jcb.api.dto.MoveInfo;
+import com.pepero.jcb.api.dto.MoveNodeDTO;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -397,7 +398,7 @@ public class ChessGameConcurrencyTest {
      */
     private static int rootChildCount(ChessGame game) {
         try {
-            var root = game.getRootNode();
+            MoveNodeDTO root = game.getRootNode();
             return root.children().size();
         } catch (RuntimeException e) {
             System.err.println("  could not read history tree: " + e);

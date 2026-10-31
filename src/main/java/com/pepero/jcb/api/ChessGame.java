@@ -553,14 +553,15 @@ public class ChessGame implements ChessGameReadView {
         target.cachedFen = source.cachedFen;
 
         if (source.annotation != null) {
-            var sourceAnnotation = source.annotation;
-            var targetAnnotation = target.getAnnotation();
-            targetAnnotation.clk = sourceAnnotation.clk;
-            targetAnnotation.timeStamp = sourceAnnotation.timeStamp;
+            MoveAnnotation sourceAnnotation = source.annotation;
+            MoveAnnotation targetAnnotation = target.getAnnotation();
             targetAnnotation.eval = sourceAnnotation.eval;
             targetAnnotation.csl = sourceAnnotation.csl;
             targetAnnotation.cal = sourceAnnotation.cal;
             targetAnnotation.comment = sourceAnnotation.comment;
+            targetAnnotation.nag = sourceAnnotation.nag;
+            targetAnnotation.clk = sourceAnnotation.clk;
+            targetAnnotation.timeStamp = sourceAnnotation.timeStamp;
         }
     }
 
@@ -4402,9 +4403,20 @@ public class ChessGame implements ChessGameReadView {
 
             GameOverCheckOutcome outcome = evaluateGameStateForNotificationAt(getLastMainlineNode(this.moveHistoryRoot));
 
+            Map<String, String> pgnHeaders = PGNExporter.createHeaders(
+                    this.headers,
+                    this.startPositionFEN,
+                    this.chessboard.gameVariant,
+                    this.chessboard.isChess960,
+                    outcome.gameResult());
+
             StringBuilder sb = new StringBuilder();
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                sb.append("[").append(entry.getKey()).append(" \"").append(entry.getValue()).append("\"]\n");
+            for (Map.Entry<String, String> entry : pgnHeaders.entrySet()) {
+                sb.append("[")
+                        .append(entry.getKey())
+                        .append(" \"")
+                        .append(entry.getValue())
+                        .append("\"]\n");
             }
             sb.append("\n");
 
