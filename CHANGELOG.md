@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Insufficient-material logics
+- Changed insufficient-material draw logic (on `ChessboardUtils.isInsufficientMaterial`).
+- When `THREE_CHECK` variant, added checking the `king vs king` situation
+- When the knight(s) exists, now it doesn't check the bishop's color and return true.
+- On `CRAZY_HOUSE` variant, changed the checking when the bishop's and knight's count including the pocket is 1 or 0
+
 ### Fixed
 
 ### Performance

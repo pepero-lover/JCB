@@ -2975,4 +2975,52 @@ public class ChessGameTest {
 
         assertFalse(game.tryUnmakeMoveRaw(e4));
     }
+
+    @Test
+    void insufficientMaterialStandard() {
+        String[] draws = {
+                "7k/8/8/8/8/8/8/K7",
+                "7k/8/8/8/8/8/8/KN6",
+                "7k/8/8/8/8/8/8/KB6",
+                "7k/8/8/8/8/3b4/8/KB6",
+                "7k/8/8/8/8/8/8/KB1B4"
+        };
+        for (String position : draws) {
+            assertTrue(ChessGame.fromFEN(position + " w - - 0 1").isInsufficientMaterial(), position);
+        }
+        String[] ongoing = {
+                "7k/8/8/8/8/3b4/8/KB1N4",
+                "7k/8/8/8/8/4b3/8/KB6",
+                "7k/8/8/8/8/8/8/KNN5",
+                "7k/8/8/8/8/8/1P6/K7"
+        };
+        for (String position : ongoing) {
+            assertFalse(ChessGame.fromFEN(position + " w - - 0 1").isInsufficientMaterial(), position);
+        }
+    }
+
+    @Test
+    void insufficientMaterialThreeCheck() {
+        ChessGame kings = ChessGame.fromFEN("7k/8/8/8/8/8/8/K7 w - - 0 1", GameVariant.THREE_CHECK);
+        assertTrue(kings.isInsufficientMaterial());
+        assertEquals(GameOverReason.INSUFFICIENT_MATERIAL, kings.isGameOver());
+        for (String piece : new String[]{"B", "N"}) {
+            assertFalse(ChessGame.fromFEN("7k/8/8/8/8/8/8/K" + piece + "6 w - - 0 1",
+                    GameVariant.THREE_CHECK).isInsufficientMaterial());
+        }
+        assertFalse(ChessGame.fromFEN("7k/8/8/8/8/8/1P6/K7 w - - 0 1",
+                GameVariant.THREE_CHECK).isInsufficientMaterial());
+    }
+
+    @Test
+    void insufficientMaterialCrazyhouse() {
+        assertTrue(ChessGame.fromFEN("7k/8/8/8/8/8/8/K7[N] w - - 0 1",
+                GameVariant.CRAZY_HOUSE).isInsufficientMaterial());
+        assertFalse(ChessGame.fromFEN("7k/8/8/8/8/3b4/8/KB6[] w - - 0 1",
+                GameVariant.CRAZY_HOUSE).isInsufficientMaterial());
+        assertFalse(ChessGame.fromFEN("7k/8/8/8/8/8/8/KB~6[] w - - 0 1",
+                GameVariant.CRAZY_HOUSE).isInsufficientMaterial());
+        assertFalse(ChessGame.fromFEN("7k/8/8/8/8/8/8/KB6[N] w - - 0 1",
+                GameVariant.CRAZY_HOUSE).isInsufficientMaterial());
+    }
 }

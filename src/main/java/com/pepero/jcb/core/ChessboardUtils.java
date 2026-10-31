@@ -660,17 +660,15 @@ public class ChessboardUtils {
         if (chessboard.gameVariant == GameVariant.GIVEAWAY
                 || chessboard.gameVariant == GameVariant.SUICIDE
                 || chessboard.gameVariant == GameVariant.ATOMIC
-                || chessboard.gameVariant == GameVariant.THREE_CHECK
                 || chessboard.gameVariant == GameVariant.KING_OF_THE_HILL
                 || chessboard.gameVariant == GameVariant.RACING_KINGS
                 || chessboard.gameVariant == GameVariant.HORDE) {
             return false;
         }
 
-        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
-            int totalPocketPieces = 0;
-            for (int piece = P; piece <= k; piece++) totalPocketPieces += chessboard.pocket[piece];
-            if (totalPocketPieces > 0) return false;
+        if (chessboard.gameVariant == GameVariant.THREE_CHECK) {
+            return (chessboard.occupancies[white] | chessboard.occupancies[black])
+                    == (chessboard.bitboards[K] | chessboard.bitboards[k]);
         }
 
         if(chessboard.bitboards[P] != 0 || chessboard.bitboards[p] != 0) return false;
@@ -686,15 +684,22 @@ public class ChessboardUtils {
         int white_minor = white_knight + white_bishop;
         int black_minor = black_knight + black_bishop;
 
+        if (chessboard.gameVariant == GameVariant.CRAZY_HOUSE) {
+            if (chessboard.promoted_pieces != 0L) return false;
+            if (chessboard.pocket[P] != 0 || chessboard.pocket[p] != 0
+                    || chessboard.pocket[R] != 0 || chessboard.pocket[r] != 0
+                    || chessboard.pocket[Q] != 0 || chessboard.pocket[q] != 0) return false;
+            int pocketMinors = chessboard.pocket[N] + chessboard.pocket[n]
+                    + chessboard.pocket[B] + chessboard.pocket[b];
+            return white_minor + black_minor + pocketMinors <= 1;
+        }
+
         if (white_minor + black_minor <= 1) return true;
 
-        if (white_bishop == 1 && black_bishop == 1) {
-            long LIGHT_SQUARES = 0x55AA55AA55AA55AAL;
-
-            boolean isWhiteBishopOnLight = (chessboard.bitboards[B] & LIGHT_SQUARES) != 0;
-            boolean isBlackBishopOnLight = (chessboard.bitboards[b] & LIGHT_SQUARES) != 0;
-
-            return isWhiteBishopOnLight == isBlackBishopOnLight;
+        if (white_knight + black_knight == 0) {
+            long lightSquares = 0x55AA55AA55AA55AAL;
+            long bishops = chessboard.bitboards[B] | chessboard.bitboards[b];
+            return (bishops & lightSquares) == 0L || (bishops & ~lightSquares) == 0L;
         }
 
         return false;
