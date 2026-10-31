@@ -94,9 +94,9 @@ public class Chessboard {
     // For chess 960
 
     // king side rook square on chess 960
-    public int king_side_rook_file = -1;
+    public final int[] king_side_rook_file = {-1, -1};
     // queen side rook on chess 960
-    public int queen_side_rook_file = -1;
+    public final int[] queen_side_rook_file = {-1, -1};
 
     // For crazy house
 
@@ -200,8 +200,8 @@ public class Chessboard {
         this.gameVariant = GameVariant.STANDARD;
 
         // chess 960
-        this.king_side_rook_file = -1;
-        this.queen_side_rook_file = -1;
+        Arrays.fill(this.king_side_rook_file, -1);
+        Arrays.fill(this.queen_side_rook_file, -1);
 
         // init hash key
         this.hash_key = Zobrist.generateHashKey(this);
@@ -257,8 +257,8 @@ public class Chessboard {
         this.gameVariant = source.gameVariant;
         this.isChess960 = source.isChess960;
 
-        this.king_side_rook_file = source.king_side_rook_file;
-        this.queen_side_rook_file = source.queen_side_rook_file;
+        System.arraycopy(source.king_side_rook_file, 0, this.king_side_rook_file, 0, 2);
+        System.arraycopy(source.queen_side_rook_file, 0, this.queen_side_rook_file, 0, 2);
 
         int copyDepth = source.MAX_DEPTH;
 

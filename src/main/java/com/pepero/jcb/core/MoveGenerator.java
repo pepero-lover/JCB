@@ -1634,9 +1634,9 @@ public class MoveGenerator {
 
         if (side == white) {
             // make sure the white king side castling right
-            if ((chessboard.castle & CastlingRights.WK) != 0 && chessboard.king_side_rook_file != -1) {
+            if ((chessboard.castle & CastlingRights.WK) != 0 && chessboard.king_side_rook_file[side] != -1) {
                 // rook square
-                int r_sq = chessboard.king_side_rook_file;
+                int r_sq = chessboard.king_side_rook_file[side];
                 // "+ 56" is converting black king side rook file to white king side rook file
 
                 // make sure the rook exists
@@ -1680,8 +1680,8 @@ public class MoveGenerator {
 
             // the next is the same
 
-            if ((chessboard.castle & CastlingRights.WQ) != 0 && chessboard.queen_side_rook_file != -1) {
-                int r_sq = chessboard.queen_side_rook_file;
+            if ((chessboard.castle & CastlingRights.WQ) != 0 && chessboard.queen_side_rook_file[side] != -1) {
+                int r_sq = chessboard.queen_side_rook_file[side];
 
                 if (BitBoardUtils.getBit(chessboard.bitboards[R], r_sq)) {
                     long betweenMask = RAY_BETWEEN[kingSq][r_sq];
@@ -1702,8 +1702,8 @@ public class MoveGenerator {
                 }
             }
         } else {
-            if ((chessboard.castle & CastlingRights.BK) != 0 && chessboard.king_side_rook_file != -1) {
-                int r_sq = chessboard.king_side_rook_file + 56;
+            if ((chessboard.castle & CastlingRights.BK) != 0 && chessboard.king_side_rook_file[side] != -1) {
+                int r_sq = chessboard.king_side_rook_file[side] + 56;
 
                 if (BitBoardUtils.getBit(chessboard.bitboards[r], r_sq)) {
                     long betweenMask = RAY_BETWEEN[kingSq][r_sq];
@@ -1724,8 +1724,8 @@ public class MoveGenerator {
                 }
             }
 
-            if ((chessboard.castle & CastlingRights.BQ) != 0 && chessboard.queen_side_rook_file != -1) {
-                int r_sq = chessboard.queen_side_rook_file + 56;
+            if ((chessboard.castle & CastlingRights.BQ) != 0 && chessboard.queen_side_rook_file[side] != -1) {
+                int r_sq = chessboard.queen_side_rook_file[side] + 56;
 
                 if (BitBoardUtils.getBit(chessboard.bitboards[r], r_sq)) {
                     long betweenMask = RAY_BETWEEN[kingSq][r_sq];
@@ -1920,7 +1920,6 @@ public class MoveGenerator {
                     chessboard.promoted_captured_history[chessboard.ply] = true;
                     chessboard.promoted_pieces =
                             BitBoardUtils.popBit(chessboard.promoted_pieces, target_square);
-                    chessboard.hash_key ^= Zobrist.promoted_keys[target_square];
                 } else {
                     int pieceToPocket = EncodedPieces.normalizePieceColor(captured_bb_piece, chessboard.side);
 
@@ -2133,10 +2132,10 @@ public class MoveGenerator {
             if (piece == K) chessboard.castle &= ~(CastlingRights.WK | CastlingRights.WQ);
             if (piece == k) chessboard.castle &= ~(CastlingRights.BK | CastlingRights.BQ);
 
-            int wk_rook_sq = (chessboard.king_side_rook_file != -1) ? chessboard.king_side_rook_file : h1;
-            int wq_rook_sq = (chessboard.queen_side_rook_file != -1) ? chessboard.queen_side_rook_file : a1;
-            int bk_rook_sq = (chessboard.king_side_rook_file != -1) ? chessboard.king_side_rook_file + 56 : h8;
-            int bq_rook_sq = (chessboard.queen_side_rook_file != -1) ? chessboard.queen_side_rook_file + 56 : a8;
+            int wk_rook_sq = (chessboard.king_side_rook_file[white] != -1) ? chessboard.king_side_rook_file[white] : h1;
+            int wq_rook_sq = (chessboard.queen_side_rook_file[white] != -1) ? chessboard.queen_side_rook_file[white] : a1;
+            int bk_rook_sq = (chessboard.king_side_rook_file[black] != -1) ? chessboard.king_side_rook_file[black] + 56 : h8;
+            int bq_rook_sq = (chessboard.queen_side_rook_file[black] != -1) ? chessboard.queen_side_rook_file[black] + 56 : a8;
 
             if (source_square == wk_rook_sq || target_square == wk_rook_sq) chessboard.castle &= ~CastlingRights.WK;
             if (source_square == wq_rook_sq || target_square == wq_rook_sq) chessboard.castle &= ~CastlingRights.WQ;

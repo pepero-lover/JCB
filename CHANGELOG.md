@@ -11,13 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Refactoring
+- Refactored `Chessboard.king/queen_side_rook_file` to an array. (index 0 is white, 1 is black)
+
 #### Insufficient-material logics
 - Changed insufficient-material draw logic (on `ChessboardUtils.isInsufficientMaterial`).
-- When `THREE_CHECK` variant, added checking the `king vs king` situation
+- When `THREE_CHECK` variant, added checking the `king vs king` situation.
 - When the knight(s) exists, now it doesn't check the bishop's color and return true.
-- On `CRAZY_HOUSE` variant, changed the checking when the bishop's and knight's count including the pocket is 1 or 0
+- On `CRAZY_HOUSE` variant, changed the checking when the bishop's and knight's count including the pocket is 1 or 0.
+
+#### Others
+
 
 ### Fixed
+
+#### ChessGame
+- On `isGameOver`, fixed checking 75 moves draw first and then checking the checkmate
+
+#### Hashing
+- On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
+- On `MoveGenerator.makeMove`, removed the duplicated xor hashing (`chessboard.hash_key ^= Zobrist.promoted_keys[target_square]`)
+
+#### Others
+- On `ChessboardUtils.getFen`,
+  fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
+  ("3+1" -> "1+3")
 
 ### Performance
 

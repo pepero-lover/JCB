@@ -150,27 +150,27 @@ public class ChessboardUtils {
         chessboard.side = (fenDivided.length > 1 && fenDivided[1].equals("b")) ? black : white;
 
         // parse castling rights
-        chessboard.king_side_rook_file = -1;
-        chessboard.queen_side_rook_file = -1;
+        Arrays.fill(chessboard.king_side_rook_file, -1);
+        Arrays.fill(chessboard.queen_side_rook_file, -1);
 
         if (fenDivided.length > 2 && !fenDivided[2].equals("-")) {
             for (char c : fenDivided[2].toCharArray()) {
                 switch (c) {
                     case 'K':
                         chessboard.castle |= CastlingRights.WK;
-                        chessboard.king_side_rook_file = 7; // h-file
+                        chessboard.king_side_rook_file[white] = 7; // h-file
                         break;
                     case 'Q':
                         chessboard.castle |= CastlingRights.WQ;
-                        chessboard.queen_side_rook_file = 0; // a-file
+                        chessboard.queen_side_rook_file[white] = 0; // a-file
                         break;
                     case 'k':
                         chessboard.castle |= CastlingRights.BK;
-                        chessboard.king_side_rook_file = 7; // h-file
+                        chessboard.king_side_rook_file[black] = 7; // h-file
                         break;
                     case 'q':
                         chessboard.castle |= CastlingRights.BQ;
-                        chessboard.queen_side_rook_file = 0; // a-file
+                        chessboard.queen_side_rook_file[black] = 0; // a-file
                         break;
                     default:
                         // when Chess 960
@@ -181,16 +181,16 @@ public class ChessboardUtils {
 
                                 int f = c - 'A';
                                 chessboard.castle |= (f > king_file) ? CastlingRights.WK : CastlingRights.WQ;
-                                if (f > king_file) chessboard.king_side_rook_file = f;
-                                else chessboard.queen_side_rook_file = f;
+                                if (f > king_file) chessboard.king_side_rook_file[white] = f;
+                                else chessboard.queen_side_rook_file[white] = f;
                             } else if (c >= 'a' && c <= 'h') {
                                 int black_king_sq = BitBoardUtils.getLS1BIndex(chessboard.bitboards[k]);
                                 int king_file = black_king_sq % 8;
 
                                 int f = c - 'a';
                                 chessboard.castle |= (f > king_file) ? CastlingRights.BK : CastlingRights.BQ;
-                                if (f > king_file) chessboard.king_side_rook_file = f;
-                                else chessboard.queen_side_rook_file = f;
+                                if (f > king_file) chessboard.king_side_rook_file[black] = f;
+                                else chessboard.queen_side_rook_file[black] = f;
                             }
                         }
                         break;
@@ -367,10 +367,10 @@ public class ChessboardUtils {
             if ((chessboard.castle & CastlingRights.BK) != 0) castle.append("k");
             if ((chessboard.castle & CastlingRights.BQ) != 0) castle.append("q");
         } else {
-            char wkr = (char) ('A' + chessboard.king_side_rook_file);
-            char wqr = (char) ('A' + chessboard.queen_side_rook_file);
-            char bkr = (char) ('a' + chessboard.king_side_rook_file);
-            char bqr = (char) ('a' + chessboard.queen_side_rook_file);
+            char wkr = (char) ('A' + chessboard.king_side_rook_file[white]);
+            char wqr = (char) ('A' + chessboard.queen_side_rook_file[white]);
+            char bkr = (char) ('a' + chessboard.king_side_rook_file[black]);
+            char bqr = (char) ('a' + chessboard.queen_side_rook_file[black]);
 
             if ((chessboard.castle & CastlingRights.WK) != 0) castle.append(wkr);
             if ((chessboard.castle & CastlingRights.WQ) != 0) castle.append(wqr);
@@ -389,8 +389,8 @@ public class ChessboardUtils {
 
         // lichess 3 check
         if (chessboard.gameVariant == GameVariant.THREE_CHECK && dialect == FENDialect.LICHESS) {
-            int whiteRemaining = 3 - chessboard.check_count[white];
-            int blackRemaining = 3 - chessboard.check_count[black];
+            int whiteRemaining = 3 - chessboard.check_count[black];
+            int blackRemaining = 3 - chessboard.check_count[white];
             fen.append(whiteRemaining).append("+").append(blackRemaining).append(" ");
         }
 
@@ -955,10 +955,10 @@ public class ChessboardUtils {
         sb.append("      Castling:  ");
         int allCastlingRights = CastlingRights.WK | CastlingRights.WQ | CastlingRights.BK | CastlingRights.BQ;
         if (chessboard.isChess960 && (chessboard.castle & allCastlingRights) != 0) {
-            if ((chessboard.castle & CastlingRights.WK) != 0) sb.append((char) ('A' + chessboard.king_side_rook_file));
-            if ((chessboard.castle & CastlingRights.WQ) != 0) sb.append((char) ('A' + chessboard.queen_side_rook_file));
-            if ((chessboard.castle & CastlingRights.BK) != 0) sb.append((char) ('a' + chessboard.king_side_rook_file));
-            if ((chessboard.castle & CastlingRights.BQ) != 0) sb.append((char) ('a' + chessboard.queen_side_rook_file));
+            if ((chessboard.castle & CastlingRights.WK) != 0) sb.append((char) ('A' + chessboard.king_side_rook_file[white]));
+            if ((chessboard.castle & CastlingRights.WQ) != 0) sb.append((char) ('A' + chessboard.queen_side_rook_file[white]));
+            if ((chessboard.castle & CastlingRights.BK) != 0) sb.append((char) ('a' + chessboard.king_side_rook_file[black]));
+            if ((chessboard.castle & CastlingRights.BQ) != 0) sb.append((char) ('a' + chessboard.queen_side_rook_file[black]));
         } else {
             sb
                     .append(((chessboard.castle & CastlingRights.WK) != 0) ? 'K' : '-')

@@ -78,8 +78,10 @@ public class Zobrist {
 
         // init pocket piece key
         for (int piece = P; piece <= k; piece++) {
-            for (int square = 0; square < 64; square++) {
-                pocket_keys[piece][square] = Random.getRandom64BitsNumber();
+            pocket_keys[piece][0] = 0L;
+
+            for (int count = 1; count < pocket_keys[piece].length; count++) {
+                pocket_keys[piece][count] = Random.getRandom64BitsNumber();
             }
         }
 

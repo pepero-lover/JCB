@@ -73,7 +73,7 @@ public class PolyglotMoveEncoder {
 
         int rookFile;
         if (board.isChess960) {
-            rookFile = isKingSide ? board.king_side_rook_file : board.queen_side_rook_file;
+            rookFile = isKingSide ? board.king_side_rook_file[board.side] : board.queen_side_rook_file[board.side];
         } else {
             rookFile = isKingSide ? 7 : 0;
         }

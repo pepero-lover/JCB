@@ -2677,11 +2677,6 @@ public class ChessGame implements ChessGameReadView {
                     return GameOverReason.KING_RACE;
             }
 
-            int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
-
-            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
-            if(chessboard.half_ply >= 150) return GameOverReason.SEVENTYFIVE_MOVES;
-
             if(chessboard.gameVariant != GameVariant.GIVEAWAY && chessboard.gameVariant != GameVariant.SUICIDE) {
                 boolean inCheck = ChessboardUtils.isCheck(chessboard);
 
@@ -2693,6 +2688,11 @@ public class ChessGame implements ChessGameReadView {
                         return GameOverReason.STALEMATE;
                 }
             }
+
+            int repetitionCount = ChessboardUtils.getRepetitionCount(this.chessboard, 5);
+
+            if(repetitionCount >= 5) return GameOverReason.FIVEFOLD;
+            if(chessboard.half_ply >= 150) return GameOverReason.SEVENTYFIVE_MOVES;
 
             if(ChessboardUtils.isInsufficientMaterial(chessboard))
                 return GameOverReason.INSUFFICIENT_MATERIAL;

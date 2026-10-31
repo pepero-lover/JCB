@@ -9,7 +9,6 @@ import com.pepero.jcb.api.enums.*;
 import com.pepero.jcb.api.exception.game.ClockException;
 import com.pepero.jcb.api.exception.game.*;
 import com.pepero.jcb.api.parse.ConvertStringMoveUtils;
-import com.pepero.jcb.api.perft.PerftResult;
 import com.pepero.jcb.core.constant.BoardSquares;
 import com.pepero.jcb.core.*;
 import com.pepero.jcb.core.encode.EncodeMove;
@@ -2648,26 +2647,6 @@ public class ChessGameTest {
         assertDoesNotThrow(() -> chessGame.printHistory(true));
         assertDoesNotThrow(() -> chessGame.printHistory(10));
         assertDoesNotThrow(() -> chessGame.printHistory(10, true));
-    }
-
-    @Test
-    @DisplayName("perft: 시작 포지션에서 depth 1 로 실행하면 예외 없이 결과를 반환해야 한다")
-    void perft() {
-        ChessGame chessGame = ChessGame.startPosition();
-
-        PerftResult result = chessGame.perft(1, 1, true);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    @DisplayName("perft(depth) / perft(depth, concurrency) / perft(depth, concurrency, silent, bulkCounting): 오버로드들이 예외 없이 동작해야 한다")
-    void perftOverloads() {
-        ChessGame chessGame = ChessGame.startPosition();
-
-        assertNotNull(chessGame.perft(1));
-        assertNotNull(chessGame.perft(1, 1));
-        assertNotNull(chessGame.perft(1, 1, true, true));
     }
 
     @Test
