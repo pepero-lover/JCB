@@ -61,6 +61,9 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
             // a BOM in front of the first '[' would hide the first game's headers
             if (first != null && !first.isEmpty() && first.charAt(0) == '\uFEFF')
                 first = first.substring(1);
+            while (first != null && first.isBlank()) {
+                first = bf.readLine();
+            }
             this.lookahead_line = first;
         } catch (IOException e) {
             try {
@@ -86,8 +89,6 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
         StringBuilder raw_pgn = new StringBuilder(INITIAL_GAME_CAPACITY);
 
         try {
-            skipBlankLines();
-
             // parse headers
             while (lookahead_line != null && lookahead_line.startsWith("[")) {
                 parseHeaderLine(lookahead_line, headers);

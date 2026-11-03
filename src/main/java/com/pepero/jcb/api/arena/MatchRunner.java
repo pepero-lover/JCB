@@ -23,7 +23,6 @@ public class MatchRunner {
     private final AtomicInteger roundNumber = new AtomicInteger(1);
     private final AtomicBoolean stopRequested = new AtomicBoolean(false);
     private final ConcurrentHashMap<Integer, MatchCancellationToken> activeTokens = new ConcurrentHashMap<>();
-    private volatile ExecutorService pool;
 
     /**
      * @param matchConfig match config
@@ -44,9 +43,6 @@ public class MatchRunner {
     public void stop() {
         if (stopRequested.compareAndSet(false, true)) {
             activeTokens.values().forEach(MatchCancellationToken::cancel);
-            if (pool != null) {
-                pool.shutdown();
-            }
         }
     }
 
@@ -64,38 +60,47 @@ public class MatchRunner {
         int totalGames = matchConfig.getTotalGames();
         int concurrency = Math.max(1, matchConfig.getConcurrency());
 
-        pool = Executors.newFixedThreadPool(concurrency);
+        ExecutorService pool = Executors.newFixedThreadPool(concurrency);
         List<Future<Void>> futures = new ArrayList<>();
 
-        for (int i = 0; i < totalGames; i++) {
-            if (stopRequested.get()) break;
+        try {
+            for (int i = 0; i < totalGames; i++) {
+                if (stopRequested.get()) break;
 
-            int round = roundNumber.getAndIncrement();
-            MatchCancellationToken token = new MatchCancellationToken();
-            activeTokens.put(round, token);
+                int round = roundNumber.getAndIncrement();
+                MatchCancellationToken token = new MatchCancellationToken();
+                activeTokens.put(round, token);
 
-            futures.add(pool.submit(() -> {
-                try {
-                    MatchResult result = arena.startMatch(round, token);
-                    statistics.record(result);
+                futures.add(pool.submit(() -> {
+                    try {
+                        if (stopRequested.get()) return null;
 
-                    if (runnerListener != null) {
-                        runnerListener.onGameFinished(round, result, statistics);
+                        MatchResult result;
+                        try {
+                            result = arena.startMatch(round, token);
+                        } catch (Exception e) {
+                            statistics.recordError();
+                            if (runnerListener != null) {
+                                runnerListener.onGameFailed(round, e);
+                            }
+                            return null;
+                        }
+
+                        statistics.record(result);
+                        if (runnerListener != null) {
+                            runnerListener.onGameFinished(round, result, statistics);
+                        }
+                        return null;
+                    } finally {
+                        activeTokens.remove(round);
                     }
-                } catch (Exception e) {
-                    statistics.recordError();
-                    if (runnerListener != null) {
-                        runnerListener.onGameFailed(round, e);
-                    }
-                } finally {
-                    activeTokens.remove(round);
-                }
-                return null;
-            }));
+                }));
+            }
+
+            awaitAll(futures);
+        } finally {
+            pool.shutdown();
         }
-
-        awaitAll(futures);
-        pool.shutdown();
 
         if (runnerListener != null) {
             runnerListener.onAllGamesFinished(statistics, stopRequested.get());

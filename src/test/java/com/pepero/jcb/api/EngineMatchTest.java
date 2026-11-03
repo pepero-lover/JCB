@@ -41,8 +41,9 @@ public class EngineMatchTest {
             );
 
             MatchConfig config = new MatchConfig.Builder()
-                    .openingBook(Path.of("engine/UHO.pgn"))
-                    //.openingBook("engine/UHO.epd")
+                    .openingBook(Path.of("engine/opening.bin"))
+                    //.openingBook(Path.of("engine/UHO.pgn"))
+                    //.openingBook(Path.of("engine/UHO.epd"))
                     .drawRule(new AdjudicationRule(
                             40,
                             16,

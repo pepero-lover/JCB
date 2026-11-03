@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
 - On `MoveGenerator.makeMove`, removed the duplicated xor hashing (`chessboard.hash_key ^= Zobrist.promoted_keys[target_square]`)
 
+#### Engine Arena (api/arena)
+- On `MatchRunner`, fixed `RejectedExecutionException` when stopping while submitting games.
+- On `MatchRunner`, fixed counting a finished game as an error when `onGameFinished` crashes.
+
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
 - On `ChessboardUtils.getFen`,
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ("3+1" -> "1+3")
 - On `UCIEngineWrapper`, fixed not disabling chess 960 option when the previous `ChessGame` used chess 960 but current
   `ChessGame` didn't.
+- On `PGNDatabaseIterator`, fixed creating empty `PGNGameStub` when empty .pgn file has been given.
 
 ### Performance
 
