@@ -8,7 +8,6 @@ import java.nio.file.Path;
 
 public class PolyglotTest {
     public static void main(String[] args) throws IOException {
-        //PolyglotBookBuilder.build("engine/UHO.pgn", "engine/UHO.bin", 20);
         PolyglotBookReader reader = new PolyglotBookReader(
                 Path.of("engine/UHO.bin"));
 

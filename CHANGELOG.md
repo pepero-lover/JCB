@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Removed
+- Removed Polyglot book generation from PGN files.
+
 #### Refactoring
 - Refactored `Chessboard.king/queen_side_rook_file` to an array. (index 0 is white, 1 is black)
 
