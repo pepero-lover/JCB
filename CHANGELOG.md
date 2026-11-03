@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `MatchRunner`, fixed `RejectedExecutionException` when stopping while submitting games.
 - On `MatchRunner`, fixed counting a finished game as an error when `onGameFinished` crashes.
 
+#### Converting
+- On `lanToMoveData`, added strictly checking crazy house move format (left/right side of @ string length should be respectively 1, 2)
+
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
 - On `ChessboardUtils.getFen`,

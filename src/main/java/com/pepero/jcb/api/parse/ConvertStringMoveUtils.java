@@ -529,9 +529,11 @@ public class ConvertStringMoveUtils {
     private static int lanToMoveData(Chessboard chessboard, String lan, boolean requireSourcePiece) {
         // check crazy house
         if (lan.contains("@")) {
-            String[] parts = lan.split("@");
-            if (parts.length != 2) throw new ConvertMoveException("Invalid drop format!", lan,
-                    ConvertType.LAN, ConvertErrorType.DROP_MOVE);
+            String[] parts = lan.split("@", -1);
+            if (parts.length != 2 || parts[0].length() != 1 || parts[1].length() != 2) {
+                throw new ConvertMoveException("Invalid drop format!", lan,
+                        ConvertType.LAN, ConvertErrorType.DROP_MOVE);
+            }
 
             char pieceChar = parts[0].charAt(0);
             int target_square = BoardSquares.coordinates_to_square(parts[1]);
