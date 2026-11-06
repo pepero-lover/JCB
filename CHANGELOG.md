@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Hashing
 - On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
 - On `MoveGenerator.makeMove`, removed the duplicated xor hashing (`chessboard.hash_key ^= Zobrist.promoted_keys[target_square]`)
+- Fixed repetition detection by including enpassant hash key when a legal enpassant capture is available.
 
 #### Engine Arena (api/arena)
 - On `MatchRunner`, fixed `RejectedExecutionException` when stopping while submitting games.

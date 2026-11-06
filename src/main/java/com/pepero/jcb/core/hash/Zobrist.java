@@ -3,6 +3,7 @@ package com.pepero.jcb.core.hash;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
+import com.pepero.jcb.core.MoveGenerator;
 import com.pepero.jcb.core.util.Random;
 
 import static com.pepero.jcb.core.constant.BoardSquares.*;
@@ -124,10 +125,7 @@ public class Zobrist {
             }
         }
 
-        // if enpassant square is on board
-        if (chessboard.enpassant != no_sq)
-            // hash enpassant
-            final_key ^= enpassant_keys[chessboard.enpassant];
+        final_key ^= hashEnpassantKey(chessboard);
 
         // hash castling rights
         final_key ^= castling_keys[chessboard.castle];
@@ -161,5 +159,19 @@ public class Zobrist {
 
         // return generated hash key
         return final_key;
+    }
+
+    /**
+     * Hash enpassant key (if enpassant is available, hashes. if not, doesn't hash)
+     * @return hash key
+     */
+    public static long hashEnpassantKey(Chessboard chessboard) {
+        if (chessboard.enpassant == no_sq) return 0;
+
+        if (!MoveGenerator.hasLegalEnPassantCapture(chessboard)) {
+            return 0;
+        }
+
+        return enpassant_keys[chessboard.enpassant];
     }
 }

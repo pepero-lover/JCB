@@ -266,6 +266,108 @@ public class MoveGenerator {
     }
 
     /**
+     * Checks whether the side to move has a legal enpassant capture
+     */
+    public static boolean hasLegalEnPassantCapture(Chessboard chessboard) {
+        int target = chessboard.enpassant;
+        if (target == no_sq) return false;
+
+        int side = chessboard.side;
+        int opponent = side ^ 1;
+
+        // pawn capture candidates
+        // - - - - t - - -
+        // - - - @ p @ - -
+
+        // (t is target square, and @ is candidate)
+
+        long candidates = Attacks.pawn_attacks[opponent][target]
+                & chessboard.bitboards[side == white ? P : p];
+        if (candidates == 0) return false;
+
+        // captured pawn (by enpassant) square
+        int capturedSquare = side == white ? target - 8 : target + 8;
+        long capturedPawn = 1L << capturedSquare;
+        long enemyPawns = chessboard.bitboards[side == white ? p : P];
+
+        // check exceptional states (normally, it doesn't happen but for blocking weird fen)
+        if (
+                (enemyPawns & capturedPawn) == 0 // when the enemy pawn doesn't exist on square
+                ||
+                (chessboard.occupancies[both] & (1L << target)) != 0) // when the piece on target square exists
+        {
+            return false;
+        }
+
+        if (chessboard.gameVariant == GameVariant.SUICIDE || chessboard.gameVariant == GameVariant.GIVEAWAY) {
+            // when antichess variant, doesn't have to check king safety
+            return true;
+        } else if (chessboard.gameVariant == GameVariant.HORDE && side == white) {
+            // when horde variant and the side is white (who has more pawns),
+            // doesn't have to check king safety because the white king doesn't exist
+            return true;
+        } else if (chessboard.gameVariant == GameVariant.ATOMIC) {
+            long king = chessboard.bitboards[side == white ? K : k];
+            long oppKing = chessboard.bitboards[side == white ? k : K];
+
+            // if the king doesn't exist, the game has already been over so doesn't have any legal moves
+            if (king == 0 || oppKing == 0) return false;
+
+            int kingSq = BitBoardUtils.getLS1BIndex(king);
+            int oppKingSq = BitBoardUtils.getLS1BIndex(oppKing);
+
+            boolean isKingsTouching =
+                    (Attacks.king_attacks[kingSq] & oppKing) != 0;
+            int pawnPiece = side == white ? P : p;
+
+            while (candidates != 0) {
+                int source = BitBoardUtils.getLS1BIndex(candidates);
+
+                // get whether this enpassant move legal
+                if (isAtomicCaptureLegal(
+                        chessboard,
+                        side,
+                        pawnPiece,
+                        source,
+                        target,
+                        capturedSquare,
+                        0,
+                        kingSq,
+                        oppKingSq,
+                        isKingsTouching)) {
+                    return true;
+                }
+
+                candidates &= candidates - 1;
+            }
+
+            return false;
+        } else {
+            long king = chessboard.bitboards[side == white ? K : k];
+            if (king == 0) return false;
+            int kingSquare = BitBoardUtils.getLS1BIndex(king);
+
+            // get whether the king is attacked or not (isEnpassantSafe() only checks slider attacks)
+            if ((Attacks.pawn_attacks[side][kingSquare] & (enemyPawns & ~capturedPawn)) != 0
+                    || (Attacks.knight_attacks[kingSquare] & chessboard.bitboards[side == white ? n : N]) != 0
+                    || (Attacks.king_attacks[kingSquare] & chessboard.bitboards[side == white ? k : K]) != 0) {
+                return false;
+            }
+
+            // check whether candidates are legal
+            while (candidates != 0) {
+                int source = BitBoardUtils.getLS1BIndex(candidates);
+                if (isEnPassantSafe(chessboard, kingSquare, source, target, side)) return true;
+                candidates &= candidates - 1;
+            }
+        }
+
+
+        return false;
+    }
+
+
+    /**
      * Generate horde moves
      *
      * @param chessboard chess board
@@ -1882,6 +1984,9 @@ public class MoveGenerator {
             chessboard.promoted_captured_history[chessboard.ply] = false;
         }
 
+        // xor this current enpassant key before making move
+        chessboard.hash_key ^= Zobrist.hashEnpassantKey(chessboard);
+
         // parse move
         int source_square = EncodeMove.getMoveSource(move);
         int target_square = EncodeMove.getMoveTarget(move);
@@ -2093,37 +2198,7 @@ public class MoveGenerator {
             }
         }
 
-        // hash enpassant if available (remove enpassant from hash key)
-        if(chessboard.enpassant != no_sq){
-            chessboard.hash_key ^= Zobrist.enpassant_keys[chessboard.enpassant];
-        }
-
-        // reset enpassant square
-        chessboard.enpassant = no_sq;
-
-        // handle double pawn push
-        if (double_push){
-            // set enpassant square depending on the side to move
-            //chessboard.enpassant = (chessboard.side == white) ? target_square + 8 : target_square - 8;
-
-            // white to move
-            if (chessboard.side == white){
-                // set enpassant square
-                chessboard.enpassant = target_square - 8;
-
-                // hash enpassant
-                chessboard.hash_key ^= Zobrist.enpassant_keys[target_square - 8];
-            }
-
-            // black to move
-            else {
-                // set enpassant square
-                chessboard.enpassant = target_square + 8;
-
-                // hash enpassant
-                chessboard.hash_key ^= Zobrist.enpassant_keys[target_square + 8];
-            }
-        }
+        chessboard.enpassant = double_push ? (chessboard.side == white ? target_square - 8 : target_square + 8) : no_sq;
 
         // remove castling rights if king moved
         chessboard.hash_key ^= Zobrist.castling_keys[chessboard.castle];
@@ -2166,6 +2241,9 @@ public class MoveGenerator {
 
         // hash side
         chessboard.hash_key ^= Zobrist.side_key;
+
+        // hash enpassant
+        chessboard.hash_key ^= Zobrist.hashEnpassantKey(chessboard);
 
         // if three check variant,
         if(chessboard.gameVariant == GameVariant.THREE_CHECK) {
