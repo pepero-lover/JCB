@@ -4260,18 +4260,25 @@ public class ChessGame implements ChessGameReadView {
 
             FENValidator.validateString(fenToLoad, chess960ToLoad, variantToLoad);
 
-            this.chessboard.gameVariant = variantToLoad;
-            this.chessboard.isChess960 = chess960ToLoad;
+            Chessboard loadedBoard;
             try {
-                ChessboardUtils.parseFen(this.chessboard, fenToLoad);
+                loadedBoard = new Chessboard(
+                        fenToLoad,
+                        chess960ToLoad,
+                        variantToLoad
+                );
             } catch (Exception e) {
                 FENConvertException convertException = new FENConvertException(
-                        "Could not parse the fen: \"" + fenToLoad + "\" (" + e.getMessage() + ")",
+                        "Could not parse the fen: \"" + fenToLoad
+                                + "\" (" + e.getMessage() + ")",
                         FENErrorType.UNKNOWN);
                 convertException.initCause(e);
                 throw convertException;
             }
-            FENValidator.validateLogicalState(this.chessboard, variantToLoad);
+
+            FENValidator.validateLogicalState(loadedBoard, variantToLoad);
+
+            this.chessboard.copyFrom(loadedBoard);
             this.startPositionFEN = ChessboardUtils.getFen(this.chessboard);
             captureInitialPieceCounts();
 

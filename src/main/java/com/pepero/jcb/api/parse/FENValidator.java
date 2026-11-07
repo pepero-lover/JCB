@@ -177,6 +177,12 @@ public class FENValidator {
         if(variant == GameVariant.GIVEAWAY || variant == GameVariant.SUICIDE) {
             return;
         }
+        if(variant == GameVariant.ATOMIC) {
+            if (whiteKingCount > 1 || blackKingCount > 1 || (whiteKingCount < 1 && blackKingCount < 1)) {
+                throw new FENConvertException("Invalid FEN: There must be a white or black king, or both",
+                        FENErrorType.KING_COUNT);
+            }
+        }
         if(variant != GameVariant.HORDE) {
             if (whiteKingCount != 1 || blackKingCount != 1) {
                 throw new FENConvertException("Invalid FEN: There must be exactly one white king and one black king.",

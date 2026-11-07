@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `isGameOver`, fixed checking 75 moves draw first and then checking the checkmate
 - On `heavyWeightCopy`, fixed not copying the nag annotation on move node copy
 - On `getMainlinePGN`, fixed not adding `"Setup"`, `"FEN"`, etc. tags.
+- On `loadPGN`, fixed overwriting `chessboard` first and checking fen later when the pgn contains SetUp, FEN tags.
+
+#### FEN Validator
+- Fixed throwing exception when the game's variant is horde and the pawn(s) is on 1st rank.
+- Fixed throwing exception when the atomic variant game's white king count or black king count is 0.
 
 #### Hashing
 - On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
@@ -47,7 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
-- On `FENValidator`, fixed throwing exception when the game's variant is horde and the pawn(s) is on 1st rank
 - On `ChessboardUtils.getFen`,
   fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
   ("3+1" -> "1+3")
