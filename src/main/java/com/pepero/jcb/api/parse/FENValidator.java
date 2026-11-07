@@ -3,6 +3,7 @@ package com.pepero.jcb.api.parse;
 import com.pepero.jcb.api.exception.convert.FENConvertException;
 import com.pepero.jcb.api.exception.type.FENErrorType;
 import com.pepero.jcb.core.ChessboardUtils;
+import com.pepero.jcb.core.bitboard.Attacks;
 import com.pepero.jcb.core.bitboard.BitBoardUtils;
 import com.pepero.jcb.core.Chessboard;
 import com.pepero.jcb.core.GameVariant;
@@ -277,9 +278,14 @@ public class FENValidator {
                     FENErrorType.KING_COUNT);
         }
 
-        if (MoveGenerator.isSquareAttacked(chessboard, oppositeKingSquare, chessboard.side)) {
-            throw new FENConvertException("Invalid FEN: The side not to move is in check. (Impossible game state)",
-                    FENErrorType.IMPOSSIBLE_GAME_STATE);
+        if(!(chessboard.gameVariant == GameVariant.ATOMIC &&
+                // if king touching and atomic
+                (Attacks.king_attacks[oppositeKingSquare]
+                & chessboard.bitboards[oppositeSide == white ? k : K]) != 0)) {
+            if (MoveGenerator.isSquareAttacked(chessboard, oppositeKingSquare, chessboard.side)) {
+                throw new FENConvertException("Invalid FEN: The side not to move is in check. (Impossible game state)",
+                        FENErrorType.IMPOSSIBLE_GAME_STATE);
+            }
         }
 
         if (variant == GameVariant.RACING_KINGS) {

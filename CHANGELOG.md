@@ -35,8 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `loadPGN`, fixed overwriting `chessboard` first and checking fen later when the pgn contains SetUp, FEN tags.
 
 #### FEN Validator
-- Fixed throwing exception when the game's variant is horde and the pawn(s) is on 1st rank.
-- Fixed throwing exception when the atomic variant game's white king count or black king count is 0.
+- Fixed judging incorrectly when the game's variant is horde and the pawn(s) is on 1st rank.
+- Fixed judging incorrectly when the atomic variant game's white king count or black king count is 0.
+- Fixed judging incorrectly when the atomic variant game's white and black king are touching.
 
 #### Hashing
 - On `Zobrist` hashing, fixed not matching the hash when `CRAZY_HOUSE` variant and the taken out piece's pocket count was 1.
