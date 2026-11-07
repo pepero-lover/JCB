@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
+- On `FENValidator`, fixed throwing exception when the game's variant is horde and the pawn(s) is on 1st rank
 - On `ChessboardUtils.getFen`,
   fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
   ("3+1" -> "1+3")

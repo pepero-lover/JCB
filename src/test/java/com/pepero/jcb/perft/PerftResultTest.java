@@ -4,6 +4,7 @@ import com.pepero.jcb.api.ChessGame;
 import com.pepero.jcb.api.perft.PerftDriver;
 import com.pepero.jcb.api.perft.PerftResult;
 import com.pepero.jcb.core.Chessboard;
+import com.pepero.jcb.core.GameVariant;
 
 import java.util.ArrayList;
 import java.util.List;

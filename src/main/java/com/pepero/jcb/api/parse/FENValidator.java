@@ -152,7 +152,7 @@ public class FENValidator {
                                     "Invalid FEN: Black pawns cannot exist on the 1st or 8th rank on horde variant.",
                                     FENErrorType.PAWN_EXIST_LAST_RANK);
                         }
-                        if(c == 'P' && i == 7) {
+                        if(c == 'P' && i == 0) {
                             throw new FENConvertException(
                                     "Invalid FEN: White pawns cannot exist on the 8th rank on horde variant.",
                                     FENErrorType.PAWN_EXIST_LAST_RANK);
