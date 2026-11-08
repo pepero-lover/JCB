@@ -20,7 +20,7 @@ import static com.pepero.jcb.core.constant.EncodedPieces.*;
  * About error types on {@link FENConvertException}, go to {@link FENErrorType}.
  */
 public class FENValidator {
-    private static final Pattern THREE_CHECK_TOKEN_PATTERN = Pattern.compile("\\d+\\+\\d+");
+    private static final Pattern THREE_CHECK_TOKEN_PATTERN = Pattern.compile("\\+?\\d+\\+\\d+");
     private static final Pattern CASTLING_PATTERN_STANDARD = Pattern.compile("^(-|[KQkq]{1,4})$");
     private static final Pattern CASTLING_PATTERN_CHESS960 = Pattern.compile("^(-|[KQkqA-Ha-h]{1,4})$");
     private static final Pattern ENPASSANT_PATTERN = Pattern.compile("^(-|[a-h][36])$");
@@ -320,19 +320,32 @@ public class FENValidator {
 
     private static void validateChecksToken(String checksToken) {
         if (!THREE_CHECK_TOKEN_PATTERN.matcher(checksToken).matches()) {
-            throw new FENConvertException("Invalid FEN: Invalid check count format. (" + checksToken + ")",
+            throw new FENConvertException(
+                    "Invalid FEN: Invalid check count format. (" + checksToken + ")",
                     FENErrorType.INVALID_THREE_CHECK_FORMAT,
                     checksToken);
         }
 
-        String[] parts = checksToken.split("\\+");
-        int first = Integer.parseInt(parts[0]);
-        int second = Integer.parseInt(parts[1]);
+        String normalized = checksToken.startsWith("+")
+                ? checksToken.substring(1)
+                : checksToken;
+        String[] parts = normalized.split("\\+");
 
-        if (first < 0 || first > 3 || second < 0 || second > 3) {
-            throw new FENConvertException("Invalid FEN: Check count must be between 0 and 3. (" + checksToken + ")",
-                    FENErrorType.INVALID_THREE_CHECK_NUMBER,
-                    checksToken);
+        try {
+            int first = Integer.parseInt(parts[0]);
+            int second = Integer.parseInt(parts[1]);
+
+            if (first >= 0 && first <= 3 && second >= 0 && second <= 3) {
+                return;
+            }
+        } catch (NumberFormatException ignored) {
+            
         }
+
+        throw new FENConvertException(
+                "Invalid FEN: Check count must be between 0 and 3. ("
+                        + checksToken + ")",
+                FENErrorType.INVALID_THREE_CHECK_NUMBER,
+                checksToken);
     }
 }
