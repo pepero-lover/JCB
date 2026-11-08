@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessboardUtils.getFen`,
   fixed printing wrong when the game variant and `FENDialect` is respectively `THREE_CHECK` and `LICHESS`.
   ("3+1" -> "1+3")
+- On `ChessboardUtils.getRepetitionCount/isRepetitionDraw`, fixed returning false even the position repeated `n` times on crazy house variant.
 - On `UCIEngineWrapper`, fixed not disabling chess 960 option when the previous `ChessGame` used chess 960 but current
   `ChessGame` didn't.
 - On `PGNDatabaseIterator`, fixed creating empty `PGNGameStub` when empty .pgn file has been given.

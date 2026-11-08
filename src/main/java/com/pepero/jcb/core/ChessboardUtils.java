@@ -819,7 +819,9 @@ public class ChessboardUtils {
     public static int getRepetitionCount(Chessboard chessboard, int maxCount) {
         int count = 1;
 
-        int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
+        // if crazy house, the repetition with capture move can happen, because crazy house variant can drop piece
+        int limit = chessboard.gameVariant != GameVariant.CRAZY_HOUSE ?
+                Math.max(0, chessboard.ply - chessboard.half_ply) : 0;
 
         for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
             if (chessboard.hash_key_history[i] == chessboard.hash_key){
@@ -845,7 +847,9 @@ public class ChessboardUtils {
     public static boolean isRepetitionDraw(Chessboard chessboard, int rootPly) {
         int count = 1;
 
-        int limit = Math.max(0, chessboard.ply - chessboard.half_ply);
+        // if crazy house, the repetition with capture move can happen, because crazy house variant can drop piece
+        int limit = chessboard.gameVariant != GameVariant.CRAZY_HOUSE ?
+                Math.max(0, chessboard.ply - chessboard.half_ply) : 0;
 
         for (int i = chessboard.ply - 2; i >= limit; i -= 2) {
             if (chessboard.hash_key_history[i] == chessboard.hash_key) {
