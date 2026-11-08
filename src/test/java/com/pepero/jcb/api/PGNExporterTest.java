@@ -14,6 +14,39 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class PGNExporterTest {
 
+    @Test
+    void exportPreservesSpacesInHeadersAndComments() {
+        ChessGame game = ChessGame.startPosition();
+        game.setHeader("Event", "Alpha  Beta");
+        game.makeMoveLan("e2e4");
+        game.setCurrentMoveComment("left  middle   right");
+
+        String exported = game.getPGN();
+        assertTrue(exported.contains("[Event \"Alpha  Beta\"]"));
+        assertTrue(exported.contains("{left  middle   right}"));
+        assertTrue(exported.contains("} *"));
+        assertFalse(exported.contains("}  *"));
+
+        ChessGame restored = ChessGame.fromPGN(exported);
+        assertEquals("Alpha  Beta", restored.getHeaders().get("Event"));
+        assertTrue(restored.getPGN().contains("{left  middle   right}"));
+    }
+
+    @Test
+    void exportReplacesCommentBracesWithoutAddingMoves() {
+        ChessGame game = ChessGame.startPosition();
+        game.makeMoveLan("e2e4");
+        game.setCurrentMoveComment("calculation } e5 { remainder");
+
+        String exported = game.getPGN();
+        assertTrue(exported.contains("{calculation ) e5 ( remainder}"));
+        assertEquals("calculation } e5 { remainder",
+                game.getRootNode().children().getFirst().annotation().comment());
+        ChessGame restored = ChessGame.fromPGN(exported);
+        assertEquals(1, restored.getTotalMainlineMoveCount());
+        assertTrue(restored.getPGN().contains("{calculation ) e5 ( remainder}"));
+    }
+
     private static MoveNode parseToRootNode(String pgn) {
         return PGNParser.parse(pgn, 100_000, new AtomicLong()).rootNode();
     }

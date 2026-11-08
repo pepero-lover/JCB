@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Converting
 - On `lanToMoveData`, added strictly checking crazy house move format (left/right side of @ string length should be respectively 1, 2)
 
+#### PGN export
+- Fixed adding move or crashing when the comment data has `{` or `}`
+- Fixed removing multiple spaces like
+```
+[White "Pepero   lover"] -> [White "Pepero lover"]
+```
+
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move
 - On `ChessboardUtils.getFen`,

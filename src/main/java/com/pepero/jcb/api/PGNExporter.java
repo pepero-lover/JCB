@@ -168,9 +168,9 @@ class PGNExporter {
                     startFullMove, true, isPure);
         }
 
-        sb.append(" ").append(getGameResultString(pgn.matchResult()));
+        sb.append(getGameResultString(pgn.matchResult()));
 
-        return sb.toString().replaceAll(" +", " ").trim();
+        return sb.toString().trim();
     }
 
     public static String getGameResultString(GameResult gameResult) {
@@ -242,7 +242,9 @@ class PGNExporter {
                 innerContent.add(mainMove.annotation().comment());
             }
 
-            sb.append("{").append(innerContent).append("} ");
+            // PGN brace comments have no escape sequence for literal braces.
+            String comment = innerContent.toString().replace('{', '(').replace('}', ')');
+            sb.append("{").append(comment).append("} ");
             interrupted = true;
         }
 
