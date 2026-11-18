@@ -45,33 +45,37 @@ public class PolyglotHashUtils {
             }
         }
 
-        // Castling
+        // castling
         if ((board.castle & CastlingRights.WK) != 0) hash ^= PolyglotConstant.POLYGLOT_RAND[768];
         if ((board.castle & CastlingRights.WQ) != 0) hash ^= PolyglotConstant.POLYGLOT_RAND[769];
         if ((board.castle & CastlingRights.BK) != 0) hash ^= PolyglotConstant.POLYGLOT_RAND[770];
         if ((board.castle & CastlingRights.BQ) != 0) hash ^= PolyglotConstant.POLYGLOT_RAND[771];
 
-        // Enpassant hashing
+        // enpassant hashing
         if (board.enpassant != -1 && board.enpassant != BoardSquares.no_sq) {
-            int epFile = board.enpassant % 8;
-            boolean canBeCaptured = false;
+            int enpassant_file = board.enpassant % 8;
+            boolean can_captured = false;
 
             if (board.side == white) {
-                int pawnRank = 3;
-                if (epFile > 0 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile - 1)) == P)
-                    canBeCaptured = true;
-                if (epFile < 7 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile + 1)) == P)
-                    canBeCaptured = true;
+                int pawn_rank = 4;
+                if (enpassant_file > 0 && ChessboardUtils.getPieceTypeOnSquare(board,
+                        pawn_rank * 8 + (enpassant_file - 1)) == P)
+                    can_captured = true;
+                if (enpassant_file < 7 && ChessboardUtils.getPieceTypeOnSquare(board,
+                        pawn_rank * 8 + (enpassant_file + 1)) == P)
+                    can_captured = true;
             } else {
-                int pawnRank = 4;
-                if (epFile > 0 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile - 1)) == p)
-                    canBeCaptured = true;
-                if (epFile < 7 && ChessboardUtils.getPieceTypeOnSquare(board, pawnRank * 8 + (epFile + 1)) == p)
-                    canBeCaptured = true;
+                int pawn_rank = 3;
+                if (enpassant_file > 0 && ChessboardUtils.getPieceTypeOnSquare(board,
+                        pawn_rank * 8 + (enpassant_file - 1)) == p)
+                    can_captured = true;
+                if (enpassant_file < 7 && ChessboardUtils.getPieceTypeOnSquare(board,
+                        pawn_rank * 8 + (enpassant_file + 1)) == p)
+                    can_captured = true;
             }
 
-            if (canBeCaptured) {
-                hash ^= PolyglotConstant.POLYGLOT_RAND[772 + epFile];
+            if (can_captured) {
+                hash ^= PolyglotConstant.POLYGLOT_RAND[772 + enpassant_file];
             }
         }
 

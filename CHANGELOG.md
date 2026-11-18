@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On `ChessboardUtils.getRepetitionCount/isRepetitionDraw`, fixed returning false even the position repeated `n` times on crazy house variant.
 - On `UCIEngineWrapper`, fixed not disabling chess 960 option when the previous `ChessGame` used chess 960 but current
   `ChessGame` didn't.
+- On `PolyglotHashUtils`, fixed not hashing enpassant even the pawn can be captured by enpassant.
 - On `PGNDatabaseIterator`, fixed creating empty `PGNGameStub` when empty .pgn file has been given.
 
 ### Performance
