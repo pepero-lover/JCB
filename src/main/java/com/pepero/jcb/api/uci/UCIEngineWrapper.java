@@ -265,6 +265,10 @@ public class UCIEngineWrapper implements AutoCloseable {
                     setOptionSync("UCI_Variant", "racingkings");
                     break;
             }
+        } else {
+            if(hasOption("UCI_Variant")) {
+                setOptionSync("UCI_Variant", "chess");
+            }
         }
     }
 

@@ -69,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ChessGame` didn't.
 - On `PolyglotHashUtils`, fixed not hashing enpassant even the pawn can be captured by enpassant.
 - On `PGNDatabaseIterator`, fixed creating empty `PGNGameStub` when empty .pgn file has been given.
+- On `UCIEngineWarpper`, fixed not changing engine's variant to standard chess even the given variant is standard.
 
 ### Performance
 

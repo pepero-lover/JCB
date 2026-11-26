@@ -90,7 +90,7 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
 
         try {
             // parse headers
-            while (lookahead_line != null && lookahead_line.startsWith("[")) {
+            while (lookahead_line != null && lookahead_line.stripLeading().startsWith("[")) {
                 parseHeaderLine(lookahead_line, headers);
                 raw_pgn.append(lookahead_line).append('\n');
                 lookahead_line = reader.readLine();
@@ -144,12 +144,10 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
     }
 
     /**
-     * Get whether this line starts another game <br>
-     * If inside comment but starts with "[Event ", returns true because of the possibility of typo.
+     * Get whether this line starts another game
      */
     private static boolean startsNewGame(String line, boolean insideComment) {
-        if (line.isEmpty() || line.charAt(0) != '[') return false;
-        return !insideComment || line.startsWith("[Event ");
+        return !insideComment && line.stripLeading().startsWith("[");
     }
 
     /**
