@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- On `PGNDatabaseIterator`, added separating games without headers by result tokens (`1-0`, `0-1`, `1/2-1/2`, `*`),
+  including multiple games on the same line.
 
 ### Changed
 
@@ -58,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 [White "Pepero   lover"] -> [White "Pepero lover"]
 ```
+
+#### PGN database
+- On `PGNDatabaseIterator`, fixed not reading indented headers and splitting a game's headers when blank lines exist between tags.
+- On `PGNDatabaseIterator`, fixed splitting games when `[Event ` exists inside a comment.
+- On separating games, added ignoring result tokens inside comments or nested variations, and keeping comments after the result with the same game.
 
 #### Others
 - On `SyzygyTablebase`, fixed returning wdl 1 even the move is checkmating move

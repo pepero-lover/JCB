@@ -205,18 +205,18 @@ public class PGNDatabaseIteratorTest {
     }
 
     @Test
-    @DisplayName("주석 안이어도 '[Event '로 시작하면 오타로 간주하고 새 게임 시작으로 취급해야 한다")
-    void eventHeaderInsideCommentStillStartsNewGame() throws IOException {
+    @DisplayName("주석 안의 Event 태그는 새 게임으로 취급하지 않아야 한다")
+    void eventHeaderInsideCommentDoesNotStartNewGame() throws IOException {
         String content =
                 """
                 [Event "Game One"]
                 [Result "1-0"]
 
-                1. e4 { unterminated comment
+                1. e4 { comment
                 [Event "Game Two"]
                 [Result "0-1"]
+                } e5 1-0
 
-                1. d4 d5 0-1
                 """;
         Path path = writeFile("typo.pgn", content);
 
@@ -227,7 +227,64 @@ public class PGNDatabaseIteratorTest {
             }
         }
 
-        assertEquals(List.of("Game One", "Game Two"), events);
+        assertEquals(List.of("Game One"), events);
+    }
+
+    @Test
+    void blankLinesBetweenIndentedTagsAndMissingEvent() throws IOException {
+        Path path = writeFile("headers.pgn",
+                "  [Site \"First\"]\n\n  [White \"Alice\"]\n\n1. e4 *\n"
+                + "\n  [White \"Bob\"]\n\n[Result \"*\"]\n\n1. d4 *\n");
+        try (var it = new PGNDatabaseIterator(path)) {
+            var first = it.next();
+            assertEquals("First", first.headers().get("Site"));
+            assertEquals("Alice", first.headers().get("White"));
+            assertEquals("Bob", it.next().headers().get("White"));
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
+    void headerlessGamesSplitAtEveryResultIncludingOnSameLine() throws IOException {
+        Path path = writeFile("headerless.pgn",
+                "1. e4 e5 1-0 1. d4 d5 0-1\n1. c4 c5 1/2-1/2\n1. Nf3 *\n\n");
+        try (var it = new PGNDatabaseIterator(path)) {
+            for (String result : List.of("1-0", "0-1", "1/2-1/2", "*")) {
+                assertTrue(it.hasNext());
+                var game = it.next();
+                assertTrue(game.headers().isEmpty());
+                assertTrue(game.rawPGN().stripTrailing().endsWith(result));
+                assertNotNull(game.toChessGame());
+            }
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
+    void resultsInCommentsAndNestedVariationsDoNotSplitGames() throws IOException {
+        Path path = writeFile("nested.pgn",
+                "1. e4 {1-0\n[Event \"comment\"]\n} (1. d4 (1. c4 0-1) 1/2-1/2)\n"
+                + "; * { this brace is ignored\ne5 * {trailing\n1-0} ; 0-1\n\n1. d4 *\n");
+        try (var it = new PGNDatabaseIterator(path)) {
+            var first = it.next();
+            assertTrue(first.rawPGN().contains("[Event \"comment\"]"));
+            assertTrue(first.rawPGN().contains("{trailing\n1-0}"));
+            assertTrue(it.next().rawPGN().contains("1. d4 *"));
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
+    void missingResultRecoversAtNextHeaderAndEof() throws IOException {
+        Path path = writeFile("missing-result.pgn",
+                "[White \"Alice\"]\n\n1. e4 e5\n\n[Site \"Second\"]\n\n1. d4 d5");
+        try (var it = new PGNDatabaseIterator(path)) {
+            assertEquals("Alice", it.next().headers().get("White"));
+            var second = it.next();
+            assertEquals("Second", second.headers().get("Site"));
+            assertTrue(second.rawPGN().contains("1. d4 d5"));
+            assertFalse(it.hasNext());
+        }
     }
 
     @Test

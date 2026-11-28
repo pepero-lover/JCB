@@ -27,6 +27,7 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
 
     // 64kb buffer
     private static final int BUFFER_SIZE = 1 << 16;
+
     // pgn game capacity
     private static final int INITIAL_GAME_CAPACITY = 2048;
 
@@ -89,22 +90,29 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
         StringBuilder raw_pgn = new StringBuilder(INITIAL_GAME_CAPACITY);
 
         try {
-            // parse headers
-            while (lookahead_line != null && lookahead_line.stripLeading().startsWith("[")) {
-                parseHeaderLine(lookahead_line, headers);
+            while (lookahead_line != null && (lookahead_line.isBlank()
+                    || lookahead_line.stripLeading().startsWith("["))) {
+                if (!lookahead_line.isBlank()) parseHeaderLine(lookahead_line, headers);
                 raw_pgn.append(lookahead_line).append('\n');
                 lookahead_line = reader.readLine();
             }
 
-            skipBlankLines();
             raw_pgn.append('\n');
 
-            // raw movetext
-            boolean insideComment = false;
+            MoveTextScanner scanner = new MoveTextScanner();
             while (lookahead_line != null) {
-                if (startsNewGame(lookahead_line, insideComment)) break;
+                if (scanner.atTopLevel() && lookahead_line.stripLeading().startsWith("[")) break;
 
-                insideComment = scanComments(lookahead_line, insideComment);
+                // scans line
+                int boundary = scanner.scan(lookahead_line);
+
+                // if this line ends current pgn
+                if (boundary >= 0) {
+                    // add to raw_pgn string builder
+                    raw_pgn.append(lookahead_line, 0, boundary);
+                    lookahead_line = lookahead_line.substring(boundary);
+                    break;
+                }
                 raw_pgn.append(lookahead_line).append('\n');
                 lookahead_line = reader.readLine();
             }
@@ -113,15 +121,6 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
         }
 
         return new PGNGameStub(headers, raw_pgn.toString());
-    }
-
-    /**
-     * Skip empty lines
-     */
-    private void skipBlankLines() throws IOException {
-        while (lookahead_line != null && lookahead_line.isBlank()) {
-            lookahead_line = reader.readLine();
-        }
     }
 
     /**
@@ -143,29 +142,65 @@ public class PGNDatabaseIterator implements Iterator<PGNGameStub>, Iterable<PGNG
         headers.put(key, value);
     }
 
-    /**
-     * Get whether this line starts another game
-     */
-    private static boolean startsNewGame(String line, boolean insideComment) {
-        return !insideComment && line.stripLeading().startsWith("[");
-    }
+    private static final class MoveTextScanner {
+        private boolean insideComment;
+        private int variationDepth;
+        private boolean terminated;
 
-    /**
-     * Tracks whether the end of this line is still inside a <code>{ }</code> comment. Braces after a
-     * <code>;</code> (rest-of-line comment) don't count.
-     */
-    private static boolean scanComments(String line, boolean insideComment) {
-        for (int i = 0, n = line.length(); i < n; i++) {
-            char c = line.charAt(i);
-            if (insideComment) {
-                if (c == '}') insideComment = false;
-            } else if (c == '{') {
-                insideComment = true;
-            } else if (c == ';') {
-                break;
-            }
+        boolean atTopLevel() {
+            return !insideComment && variationDepth == 0;
         }
-        return insideComment;
+
+        /**
+         * Scans given line, checking the line and changing the state (is inside comment, variation depth, is this game terminated) <br>
+         * Returns next game's starting index, if there isn't next game terminator or something on this line, returns -1
+         *
+         * @param line one of the pgn lines
+         * @return next game's starting index, if there isn't next game terminator or something on this line, returns -1
+         */
+        int scan(String line) {
+            if (!insideComment && line.startsWith("%")) return -1;
+            for (int i = 0; i < line.length();) {
+                char c = line.charAt(i);
+                if (insideComment) {
+                    if (c == '}') insideComment = false;
+                    i++;
+                } else if (Character.isWhitespace(c)) {
+                    i++;
+                } else if (c == '{') {
+                    insideComment = true;
+                    i++;
+                } else if (c == ';') {
+                    return -1;
+                } else if (terminated) {
+                    return i;
+                } else if (c == '(') {
+                    variationDepth++;
+                    i++;
+                } else if (c == ')') {
+                    if (variationDepth > 0) variationDepth--;
+                    i++;
+                } else {
+                    int start = i++;
+
+                    // get delimiter index
+                    while (i < line.length() && !isDelimiter(line.charAt(i))) i++;
+
+                    if (variationDepth == 0) {
+                        // and check is this termination token
+                        String token = line.substring(start, i);
+                        terminated = token.equals("1-0") || token.equals("0-1")
+                                || token.equals("1/2-1/2") || token.equals("*");
+                    }
+                }
+            }
+            return -1;
+        }
+
+        private static boolean isDelimiter(char c) {
+            return Character.isWhitespace(c) || c == '{' || c == '}'
+                    || c == '(' || c == ')' || c == ';' || c == '$' || c == '.';
+        }
     }
 
     @Override
